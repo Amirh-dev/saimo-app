@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/screens/_screens.dart';
+import 'package:simo_learn/utils/_utils.dart';
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: AppStrings.appName,
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        useMaterial3: true,
+      ),
+      home: const SampleMainScreen(),
+    );
+  }
+}
