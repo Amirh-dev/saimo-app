@@ -1,17 +1,23 @@
+ 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
+import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
-Row authHeaderWidget({required bool userIsRegistering}) {
+Row authHeaderWidget(BuildContext
+ context,{required Enum authType}) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
       ReImage(
-        userIsRegistering
+        authType == AuthMode.register
             ? 'assets/images/register.png'
-            : 'assets/images/login.png',
+            : authType == AuthMode.login
+                ? 'assets/images/login.png'
+                : 'assets/images/login.png',
         width: 170,
         height: 160,
       ),
@@ -19,32 +25,42 @@ Row authHeaderWidget({required bool userIsRegistering}) {
       Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-                border: Border.all(color: const Color(0x23232b1a)),
-                borderRadius: BorderRadius.circular(100)),
-            child: const Icon(
-              Icons.arrow_forward,
-              size: 18,
-              color: AppColors.black1,
-            ).hMargin(15).vMargin(15),
+          GestureDetector(
+            onTap: () {
+              context.back();
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0x23232b1a)),
+                  borderRadius: BorderRadius.circular(100)),
+              child: const Icon(
+                Icons.arrow_forward,
+                size: 18,
+                color: AppColors.black1,
+              ).hMargin(15).vMargin(15),
+            ),
           ),
           ReText(
-            userIsRegistering ? 'ثبت نام' : 'ورود به حساب',
+            authType == AuthMode.register
+                ? 'ثبت نام'
+                : authType == AuthMode.login
+                    ? 'ورود به حساب'
+                    : 'ورود کد تایید',
             fontSize: 16,
             fontWeight: FontWeight.w900,
           ),
           ReText(
-            userIsRegistering
+            authType == AuthMode.register
                 ? 'یک حساب ایجاد کنید.'
-                : 'به حساب کاربری خود وارد شوید.',
+                : authType == AuthMode.login
+                    ? 'به حساب کاربری خود وارد شوید.'
+                    : 'کد تایید ارسال شده را وارد کنید.',
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ).tMargin(2)
         ],
       ),
-      
     ],
   );
 }

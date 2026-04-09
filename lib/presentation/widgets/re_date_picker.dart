@@ -287,7 +287,7 @@ class _DatePickerModalState extends State<_DatePickerModal> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 26),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AppColors.gray2),
@@ -326,8 +326,7 @@ class _DatePickerModalState extends State<_DatePickerModal> {
               ],
             ),
           ),
-          // Pickers
-          Padding(
+           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Row(
               children: [
@@ -350,8 +349,7 @@ class _DatePickerModalState extends State<_DatePickerModal> {
                           onSelectedItemChanged: (index) {
                             setState(() {
                               _selectedYear = widget.startYear + index;
-                              // Adjust day if current day exceeds max days in month
-                              int maxDays = widget.getDaysInMonth(
+                               int maxDays = widget.getDaysInMonth(
                                 _selectedYear,
                                 _selectedMonth,
                               );
@@ -398,8 +396,7 @@ class _DatePickerModalState extends State<_DatePickerModal> {
                           onSelectedItemChanged: (index) {
                             setState(() {
                               _selectedMonth = index + 1;
-                              // Adjust day if current day exceeds max days in month
-                              int maxDays = widget.getDaysInMonth(
+                               int maxDays = widget.getDaysInMonth(
                                 _selectedYear,
                                 _selectedMonth,
                               );
