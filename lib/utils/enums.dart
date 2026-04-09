@@ -1,3 +1,3 @@
 enum RequestStatus { initial, loading, success, failure }
-
-enum SortOrder { asc, desc }
+enum AuthMode { login, register }
+enum birthDateType { day, month, year }

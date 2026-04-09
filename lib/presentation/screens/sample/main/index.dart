@@ -12,8 +12,8 @@ class SampleMainScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            const ReText(AppStrings.appName, size: 20, weight: FontWeight.bold),
+        title: const ReText(AppStrings.appName,
+            fontSize: 20, fontWeight: FontWeight.bold),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/screens/_screens.dart';
+import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 class MyApp extends StatelessWidget {
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
-      home: const SampleMainScreen(),
+      home: const LoginScreen(),
     );
   }
 }

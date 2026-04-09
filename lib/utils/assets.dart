@@ -1,3 +1,5 @@
-class AppAssets {
-  static const String sample = 'assets/images/sample.png';
+class Assets {
+   
+  static const String eyeClosed = 'assets/icons/eyeclosed.svg';
+  static const String emptyImagePlaceholder = 'assets/vectors/place-holder.svg';
 }
