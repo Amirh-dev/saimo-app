@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
@@ -42,12 +43,12 @@ class OTPCodeScreen extends StatelessWidget {
                       ],
                       enabled: true,
                       focusNode: _focusNode,
-                      onCompleted: (otp) => (value) {},
+                      onCompleted: (otp) => (value) {
+                        context.to(const ProfileScreen());
+                      },
                       cursor: const VerticalDivider(
                         color: Colors.black,
                       ).vMargin(15),
-
-                      // Default style for all inputs
                       defaultPinTheme: PinTheme(
                         height: 50,
                         width: 50,
@@ -64,7 +65,6 @@ class OTPCodeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       focusedPinTheme: PinTheme(
                         height: 55,
                         width: 55,
@@ -84,7 +84,9 @@ class OTPCodeScreen extends StatelessWidget {
                       ),
                     ),
                     ReButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.to(const ProfileScreen());
+                      },
                       text: 'ورود',
                     ).tMargin(24),
                     ReButton(
