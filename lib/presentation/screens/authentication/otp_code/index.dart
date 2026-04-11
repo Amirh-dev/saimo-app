@@ -27,6 +27,7 @@ class OTPCodeScreen extends StatelessWidget {
               authHeaderWidget(context, authType: AuthMode.otpCode)
                   .tMargin(160),
               Container(
+                height: 226,
                 margin: const EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                     color: AppColors.white,
@@ -82,7 +83,7 @@ class OTPCodeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ),
+                    ).sizedBox(height: 52),
                     ReButton(
                       onPressed: () {
                         context.to(const ProfileScreen());
