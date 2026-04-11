@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:simo_learn/utils/colors.dart';
-import 'package:solar_icons/solar_icons.dart';
+ import 'package:solar_icons/solar_icons.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -223,8 +223,9 @@ class ProfileScreen extends StatelessWidget {
                     Flexible(
                       flex: 1,
                       child: profileItem('خروج', SolarIconsOutline.logout,
-                          AppColors.errorColor, () {},
-                          showSuffixIcon: false),
+                          AppColors.errorColor, () {
+                        context.to(const TasksScreen());
+                      }, showSuffixIcon: false),
                     ),
                   ],
                 ).vMargin(12)
@@ -234,49 +235,52 @@ class ProfileScreen extends StatelessWidget {
         ));
   }
 
-  Container profileItem(
+  GestureDetector profileItem(
       String title, IconData icon, Color itemColor, Function onTap,
       {bool? showSuffixIcon}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 26),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        color: AppColors.white,
-      ),
-      child: Row(
-        mainAxisAlignment: !(showSuffixIcon == false)
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.end,
-        children: [
-          if (!(showSuffixIcon == false))
-            Icon(
-              Icons.arrow_back_ios,
-              size: 16,
-              color: itemColor,
-            ),
-          Row(
-            children: [
-              ReText(
-                title,
-                color: AppColors.black1,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ).rMargin(10),
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: itemColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: itemColor,
-                  size: 16,
-                ),
+    return GestureDetector(
+      onTap: () => onTap(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 26),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          color: AppColors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: !(showSuffixIcon == false)
+              ? MainAxisAlignment.spaceBetween
+              : MainAxisAlignment.end,
+          children: [
+            if (!(showSuffixIcon == false))
+              Icon(
+                Icons.arrow_back_ios,
+                size: 16,
+                color: itemColor,
               ),
-            ],
-          ),
-        ],
+            Row(
+              children: [
+                ReText(
+                  title,
+                  color: AppColors.black1,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ).rMargin(10),
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: itemColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: itemColor,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
