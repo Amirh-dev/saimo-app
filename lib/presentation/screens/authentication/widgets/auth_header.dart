@@ -1,4 +1,3 @@
- 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
@@ -7,8 +6,7 @@ import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
-Row authHeaderWidget(BuildContext
- context,{required Enum authType}) {
+Row authHeaderWidget(BuildContext context, {required Enum authType}) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
@@ -18,7 +16,9 @@ Row authHeaderWidget(BuildContext
             : authType == AuthMode.login
                 ? 'assets/images/login.png'
                 : 'assets/images/login.png',
-        width: 170,
+        width: authType == AuthMode.login || authType == AuthMode.otpCode
+            ? 140
+            : 170,
         height: 160,
       ),
       const Spacer(),

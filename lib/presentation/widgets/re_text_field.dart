@@ -107,17 +107,18 @@ class _ReTextFieldState extends State<ReTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final isObscured = widget.obscureText ?? false;
+    final isMultiline = (widget.maxLines ?? 1) > 1 && !isObscured;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: TextFormField(
         focusNode: widget.focusNode,
         autofocus: widget.autofocus,
         onChanged: widget.onChanged,
-        maxLines: widget.obscureText != null && !widget.obscureText!
-            ? 1
-            : widget.maxLines,
+        maxLines: isMultiline ? widget.maxLines : 1,
         enabled: widget.isEnabled,
-        obscureText: !(widget.obscureText ?? true),
+        obscureText: isObscured,
         obscuringCharacter: "*",
         textInputAction: widget.textInputAction,
         controller: widget.controller,
@@ -133,9 +134,15 @@ class _ReTextFieldState extends State<ReTextField> {
         keyboardType: widget.keyboardType,
         decoration: InputDecoration(
           hintText: widget.placeholder,
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: isMultiline ? 12 : 18,
+          ),
           hintStyle: TextStyle(
             fontFamily: 'Sanse',
             fontSize: widget.fontSize ?? 14,
+            height: 1.2,
             fontWeight: widget.fontWeight,
             color: Colors.grey.shade500,
           ),
@@ -206,18 +213,19 @@ class _ReTextFieldState extends State<ReTextField> {
         ),
         validator: widget.validator,
         style: TextStyle(
-          fontSize: widget.fontSize ?? 18,
+          fontSize: widget.fontSize ?? 16,
+          height: 1.2,
           fontFamily: 'Sanse',
           color: widget.textColor ?? Colors.black,
         ),
-        textAlign: widget.keyboardType == TextInputType.number ||
-                widget.keyboardType == TextInputType.phone
-            ? TextAlign.left
-            : widget.inputTextAlign,
+        textAlign: widget.placeholderAlign ??
+            (widget.keyboardType == TextInputType.number ||
+                    widget.keyboardType == TextInputType.phone
+                ? TextAlign.left
+                : widget.inputTextAlign),
         textDirection: _inputDirection,
-        textAlignVertical: (widget.maxLines != null && widget.maxLines! > 1)
-            ? TextAlignVertical.top
-            : null,
+        textAlignVertical:
+            isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
       ),
     ).sizedBox(height: 58, width: double.infinity);
   }

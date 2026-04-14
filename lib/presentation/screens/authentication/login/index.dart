@@ -13,62 +13,76 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray1,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            children: [
-              authHeaderWidget(context, authType: AuthMode.login),
-              Container(
-                margin: const EdgeInsets.only(top: 10),
-                decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(40)),
+      body: SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ReTextField(
-                      backgroundColor: AppColors.gray1,
-                      placeholder: 'شماره تماس',
-                      maxLength: 11,
-                      keyboardType: TextInputType.number,
-                      suffixIcon: Container(
-                          margin: const EdgeInsets.only(top: 15, left: 15),
-                          child: const ReText(
-                            '98+',
-                            color: AppColors.black1,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          )),
-                    ),
-                    ReButton(
-                      onPressed: () {
-                        context.to(const RegisterScreen());
-                      },
-                      text: 'ورود',
-                    ).tMargin(24),
-                    ReButton(
-                      isOutlined: true,
-                      color: AppColors.gray2,
-                      textColor: AppColors.black1,
-                      background: AppColors.white,
-                      onPressed: () {
-                        context.to(const RegisterScreen());
-                      },
-                      text: 'ثبت نام',
-                    ).tMargin(8),
+                    Column(
+                      children: [
+                        authHeaderWidget(context, authType: AuthMode.login),
+                        Container(
+                          margin: const EdgeInsets.only(top: 10),
+                          decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(40)),
+                          child: Column(
+                            children: [
+                              ReTextField(
+                                placeholderAlign: TextAlign.right,
+                                backgroundColor: AppColors.gray1,
+                                placeholder: 'شماره تماس',
+                                maxLength: 11,
+                                keyboardType: TextInputType.number,
+                                suffixIcon: Container(
+                                    margin: const EdgeInsets.only(
+                                        top: 15, left: 15),
+                                    child: const ReText(
+                                      '98+',
+                                      color: AppColors.black1,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                              ),
+                              ReButton(
+                                onPressed: () {
+                                  context.to(const RegisterScreen());
+                                },
+                                text: 'ورود',
+                              ).tMargin(24),
+                              ReButton(
+                                isOutlined: true,
+                                color: AppColors.gray2,
+                                textColor: AppColors.black1,
+                                background: AppColors.white,
+                                onPressed: () {
+                                  context.to(const RegisterScreen());
+                                },
+                                text: 'ثبت نام',
+                              ).tMargin(8),
+                            ],
+                          ).hMargin(16).vMargin(18),
+                        )
+                      ],
+                    ).tMargin(130),
+                    const ReText(
+                      'سایمو لرن',
+                      color: AppColors.black1,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ).bMargin(10)
                   ],
-                ).hMargin(16).vMargin(18),
-              )
-            ],
-          ).tMargin(160),
-          const ReText(
-            'سایمو لرن',
-            color: AppColors.black1,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ).bMargin(32)
-        ],
-      ).hMargin(45),
+                ).hMargin(30),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

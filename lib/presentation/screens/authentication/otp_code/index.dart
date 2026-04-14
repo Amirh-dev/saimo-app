@@ -19,98 +19,111 @@ class OTPCodeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray1,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            children: [
-              authHeaderWidget(context, authType: AuthMode.otpCode)
-                  .tMargin(160),
-              Container(
-                height: 226,
-                margin: const EdgeInsets.only(top: 10),
-                decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(40)),
+      body: SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Pinput(
-                      controller: codeController,
-                      length: 5,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
+                    Column(
+                      children: [
+                        authHeaderWidget(context, authType: AuthMode.otpCode)
+                            .tMargin(130),
+                        Container(
+                          height: 226,
+                          margin: const EdgeInsets.only(top: 10),
+                          decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(40)),
+                          child: Column(
+                            children: [
+                              Pinput(
+                                controller: codeController,
+                                length: 5,
+                                autofocus: true,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                enabled: true,
+                                focusNode: _focusNode,
+                                onCompleted: (otp) => (value) {
+                                  context.to(const ProfileScreen());
+                                },
+                                cursor: const VerticalDivider(
+                                  color: Colors.black,
+                                ).vMargin(15),
+                                defaultPinTheme: PinTheme(
+                                  height: 50,
+                                  width: 50,
+                                  textStyle: const TextStyle(
+                                    fontFamily: 'Sanse',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF6F6F6),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(
+                                          0xFFd0d0d0), // light gray border
+                                    ),
+                                  ),
+                                ),
+                                focusedPinTheme: PinTheme(
+                                  height: 55,
+                                  width: 55,
+                                  textStyle: const TextStyle(
+                                    fontFamily: 'Sanse',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF6F6F6),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.primary,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ).sizedBox(height: 52),
+                              ReButton(
+                                onPressed: () {
+                                  context.to(const ProfileScreen());
+                                },
+                                text: 'ورود',
+                              ).tMargin(24),
+                              ReButton(
+                                isOutlined: true,
+                                color: AppColors.gray2,
+                                textColor: AppColors.black1,
+                                background: AppColors.white,
+                                onPressed: () {},
+                                text: 'ارسل مجدد کد',
+                              ).tMargin(8),
+                            ],
+                          ).hMargin(16).vMargin(18),
+                        )
                       ],
-                      enabled: true,
-                      focusNode: _focusNode,
-                      onCompleted: (otp) => (value) {
-                        context.to(const ProfileScreen());
-                      },
-                      cursor: const VerticalDivider(
-                        color: Colors.black,
-                      ).vMargin(15),
-                      defaultPinTheme: PinTheme(
-                        height: 50,
-                        width: 50,
-                        textStyle: const TextStyle(
-                          fontFamily: 'Sanse',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F6F6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFd0d0d0), // light gray border
-                          ),
-                        ),
-                      ),
-                      focusedPinTheme: PinTheme(
-                        height: 55,
-                        width: 55,
-                        textStyle: const TextStyle(
-                          fontFamily: 'Sanse',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F6F6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ).sizedBox(height: 52),
-                    ReButton(
-                      onPressed: () {
-                        context.to(const ProfileScreen());
-                      },
-                      text: 'ورود',
-                    ).tMargin(24),
-                    ReButton(
-                      isOutlined: true,
-                      color: AppColors.gray2,
-                      textColor: AppColors.black1,
-                      background: AppColors.white,
-                      onPressed: () {},
-                      text: 'ارسل مجدد کد',
-                    ).tMargin(8),
+                    ),
+                    const ReText(
+                      'سایمو لرن',
+                      color: AppColors.black1,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ).bMargin(10)
                   ],
-                ).hMargin(16).vMargin(18),
-              )
-            ],
+                ).hMargin(30),
+              ),
+            ),
           ),
-          const ReText(
-            'سایمو لرن',
-            color: AppColors.black1,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ).bMargin(32)
-        ],
-      ).hMargin(45),
+        ),
+      ),
     );
   }
 }

@@ -12,8 +12,7 @@ class AppColors {
   static const Color gray2 = Color(0xFFEBECF0);
   static const Color simoCoin = Color(0xFFF0B430);
   static const Color secondary = Color(0xFF4361EE);
-
-
+  static const Color done = Color(0xFF1AC56A);
 
   static const Color dark1Color = Color(0xFFFEFEFE);
   static const Color dark2Color = Color(0xFFF9F9F9);
