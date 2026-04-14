@@ -7,7 +7,6 @@ import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
-
 import '../../../widgets/re_text.dart';
 
 class OTPCodeScreen extends StatelessWidget {
@@ -93,6 +92,7 @@ class OTPCodeScreen extends StatelessWidget {
                                 ),
                               ).sizedBox(height: 52),
                               ReButton(
+                                isEnabled: codeController.text.length == 5,
                                 onPressed: () {
                                   context.to(const ProfileScreen());
                                 },

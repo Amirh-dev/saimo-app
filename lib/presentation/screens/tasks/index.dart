@@ -271,7 +271,7 @@ class _TasksScreenState extends State<TasksScreen>
     }
 
     final width = context.deviceWidth;
-    final padding = width < 600 ? 16.0 : 20.0;
+    final padding = width < 600 ? 28.0 : 22.0;
     final titleSize = width < 600 ? 15.0 : 16.0;
     final subtitleSize = width < 600 ? 12.0 : 13.0;
     final tagSize = width < 600 ? 11.0 : 12.0;
@@ -408,12 +408,12 @@ class _TasksScreenState extends State<TasksScreen>
                 itemBuilder: (_, index) {
                   final task = tasks[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 2),
                     child: _buildTaskDot(
                       showTopLine: index != 0,
                       showBottomLine: index != tasks.length - 1,
                       isDone: task['status'] == 'done',
-                      height: _checklistItemHeight - 16,
+                      height: _checklistItemHeight - 4,
                     ),
                   );
                 },
@@ -427,7 +427,7 @@ class _TasksScreenState extends State<TasksScreen>
                 itemExtent: _checklistItemHeight,
                 itemCount: tasks.length,
                 itemBuilder: (_, index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
                   child: _buildTaskTile(
                     context,
                     tasks[index],
