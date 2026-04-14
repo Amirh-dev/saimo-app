@@ -116,6 +116,8 @@ class _TasksScreenState extends State<TasksScreen>
       duration: const Duration(milliseconds: 250),
       vsync: this,
     );
+    _animationController.value = 1.0;
+    _slideAnimationController.value = 1.0;
 
     _checklistDotsScrollController = ScrollController();
     _checklistCardsScrollController = ScrollController();
@@ -160,6 +162,10 @@ class _TasksScreenState extends State<TasksScreen>
 
   List<Jalali> get _weekDaysList {
     return List.generate(7, (index) => _today.addDays(index - 3));
+  }
+
+  bool _isSameDay(Jalali a, Jalali b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   Widget _buildTaskDot({
@@ -809,14 +815,20 @@ class _TasksScreenState extends State<TasksScreen>
                                   const SizedBox(width: 0),
                               itemBuilder: (context, index) {
                                 final date = _weekDaysList[index];
-                                final isSelected = date == _selectedDate;
+                                final isSelected = _isSameDay(
+                                  date,
+                                  _selectedDate,
+                                );
                                 return GestureDetector(
-                                  onTap: () => setState(() {
-                                    _selectedDate = date;
-                                    _animationController.forward(from: 0.0);
-                                    _slideAnimationController.forward(
-                                        from: 0.0);
-                                  }),
+                                  onTap: () {
+                                    if (_isSameDay(date, _selectedDate)) return;
+                                    setState(() {
+                                      _selectedDate = date;
+                                      _animationController.forward(from: 0.0);
+                                      _slideAnimationController.forward(
+                                          from: 0.0);
+                                    });
+                                  },
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeInOutCubic,
