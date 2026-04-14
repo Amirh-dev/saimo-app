@@ -29,7 +29,8 @@ class _TasksScreenState extends State<TasksScreen>
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
   bool _isSyncingChecklistScroll = false;
-  static const double _checklistItemHeight = 120.0;
+  static const double _checklistItemHeight = 90.0;
+  static const double _checklistItemVerticalPadding = 6.0;
 
   void _initChecklistTasks() {
     _checklistTasks = [
@@ -175,9 +176,10 @@ class _TasksScreenState extends State<TasksScreen>
     required double height,
   }) {
     const circleSize = 32.0;
-    const segmentCount = 5;
-    const segmentHeight = 6.0;
-    const segmentGap = 4.0;
+    const segmentCount = 2;
+    const segmentWidth = 2.0;
+    const segmentHeight = 3.5;
+    const segmentGap = 8.0;
     final lineAreaHeight = math.max(0.0, (height - circleSize) / 2);
     final fittedSegmentCount = math.min(
       segmentCount,
@@ -185,11 +187,11 @@ class _TasksScreenState extends State<TasksScreen>
     );
 
     Widget buildShortLine() => Container(
-          width: 1,
+          width: segmentWidth,
           height: segmentHeight,
           decoration: BoxDecoration(
             color: AppColors.black1,
-            borderRadius: BorderRadius.circular(1),
+            borderRadius: BorderRadius.circular(100),
           ),
         );
 
@@ -202,13 +204,15 @@ class _TasksScreenState extends State<TasksScreen>
 
       return SizedBox(
         height: lineAreaHeight,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(
-            fittedSegmentCount * 2 - 1,
-            (index) => index.isEven
-                ? buildShortLine()
-                : const SizedBox(height: segmentGap),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              fittedSegmentCount * 2 - 1,
+              (index) => index.isEven
+                  ? buildShortLine()
+                  : const SizedBox(height: segmentGap),
+            ),
           ),
         ),
       );
@@ -271,10 +275,9 @@ class _TasksScreenState extends State<TasksScreen>
     }
 
     final width = context.deviceWidth;
-    final padding = width < 600 ? 28.0 : 22.0;
+    const padding = 16.0;
     final titleSize = width < 600 ? 15.0 : 16.0;
     final subtitleSize = width < 600 ? 12.0 : 13.0;
-    final tagSize = width < 600 ? 11.0 : 12.0;
     final isDone = task['status'] == 'done';
     final opacity = isDone ? 0.5 : 1.0;
 
@@ -299,7 +302,7 @@ class _TasksScreenState extends State<TasksScreen>
             borderRadius: BorderRadius.circular(24),
             onTap: toggleTaskStatus,
             child: Padding(
-              padding: EdgeInsets.all(padding),
+              padding: const EdgeInsets.all(padding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -320,7 +323,7 @@ class _TasksScreenState extends State<TasksScreen>
                             ? TextDecoration.lineThrough
                             : TextDecoration.none,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       ReText(
                         task['subtitle'] ?? '',
                         fontSize: subtitleSize,
@@ -331,7 +334,6 @@ class _TasksScreenState extends State<TasksScreen>
                             ? TextDecoration.lineThrough
                             : TextDecoration.none,
                       ),
-                      const SizedBox(height: 12),
                     ],
                   ),
                 ],
@@ -349,12 +351,12 @@ class _TasksScreenState extends State<TasksScreen>
   ) {
     if (tasks.isEmpty) {
       return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const ReImage(
             'assets/images/empty_list.png',
             width: 180,
-          ),
+          ).tMargin(150),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -398,28 +400,7 @@ class _TasksScreenState extends State<TasksScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 46,
-              child: ListView.builder(
-                controller: _checklistDotsScrollController,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemExtent: _checklistItemHeight,
-                itemCount: tasks.length,
-                itemBuilder: (_, index) {
-                  final task = tasks[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: _buildTaskDot(
-                      showTopLine: index != 0,
-                      showBottomLine: index != tasks.length - 1,
-                      isDone: task['status'] == 'done',
-                      height: _checklistItemHeight - 4,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
+            // Task cards
             Expanded(
               child: ListView.builder(
                 controller: _checklistCardsScrollController,
@@ -427,14 +408,36 @@ class _TasksScreenState extends State<TasksScreen>
                 itemExtent: _checklistItemHeight,
                 itemCount: tasks.length,
                 itemBuilder: (_, index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: _checklistItemVerticalPadding,
+                  ),
                   child: _buildTaskTile(
                     context,
                     tasks[index],
                     index,
                     tasks.length,
-                  ),
+                  ).lMargin(12),
                 ),
+              ),
+            ),
+
+            // Dots timeline
+            SizedBox(
+              width: 50,
+              child: ListView.builder(
+                controller: _checklistDotsScrollController,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                itemExtent: _checklistItemHeight,
+                itemCount: tasks.length,
+                itemBuilder: (_, index) {
+                  final task = tasks[index];
+                  return _buildTaskDot(
+                    showTopLine: index != 0,
+                    showBottomLine: index != tasks.length - 1,
+                    isDone: task['status'] == 'done',
+                    height: _checklistItemHeight,
+                  );
+                },
               ),
             ),
           ],
@@ -509,225 +512,6 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
-  Widget _buildTimedTaskTile(
-    BuildContext context,
-    Map<String, dynamic> task,
-    int index,
-    int total,
-  ) {
-    void toggleTaskStatus() {
-      setState(() {
-        if (task['status'] != 'done') {
-          task['status'] = 'done';
-          task['progress'] = 1.0;
-        }
-      });
-    }
-
-    final width = context.deviceWidth;
-    final padding = width < 600 ? 18.0 : 20.0;
-    final titleSize = width < 600 ? 15.5 : 16.5;
-    final subtitleSize = width < 600 ? 12.0 : 13.0;
-    final progress = task['progress'] as double? ?? 0.0;
-    final status = task['status'] as String? ?? 'play';
-    final durationLabel = task['label'] as String? ?? '';
-    final elapsed = task['elapsed'] as String? ?? '';
-    final duration = task['duration'] as String? ?? '';
-
-    final iconData = status == 'pause'
-        ? Icons.pause
-        : status == 'done'
-            ? Icons.check
-            : Icons.play_arrow;
-    final iconColor = status == 'done' ? AppColors.black1 : AppColors.primary;
-    final progressColor =
-        status == 'done' ? AppColors.black1 : AppColors.primary;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: IntrinsicHeight(
-        child: Row(
-          textDirection: TextDirection.ltr,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: toggleTaskStatus,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.gray2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black1.withOpacity(0.06),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(padding),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          textDirection: TextDirection.ltr,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: iconColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                iconData,
-                                color: iconColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  ReText(
-                                    task['title'] ?? '',
-                                    fontSize: titleSize,
-                                    isBold: true,
-                                    color: AppColors.black1,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  ReText(
-                                    task['subtitle'] ?? '',
-                                    fontSize: subtitleSize,
-                                    color: AppColors.black1.withOpacity(0.65),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ReText(
-                              '$elapsed / $duration',
-                              fontSize: 12,
-                              color: AppColors.black1.withOpacity(0.7),
-                            ),
-                            ReText(
-                              'زمان باقی مانده',
-                              fontSize: 12,
-                              color: AppColors.black1.withOpacity(0.45),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: Container(
-                            height: 6,
-                            color: AppColors.gray2,
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerRight,
-                              widthFactor: progress.clamp(0.0, 1.0),
-                              child: Container(
-                                color: progressColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            _buildTaskTimelineMarker(
-              showTopLine: index != 0,
-              showBottomLine: index != total - 1,
-              icon: iconData,
-              iconColor: iconColor,
-              durationLabel: durationLabel,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimedTaskList(
-    BuildContext context,
-    List<Map<String, dynamic>> tasks,
-  ) {
-    if (tasks.isEmpty) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const ReImage(
-            'assets/images/empty_list.png',
-            width: 180,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(right: 20),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 30),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: AppColors.white,
-                ),
-                child:
-                    const Icon(Icons.add, size: 20, color: AppColors.primary),
-              ),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  ReText(
-                    'هیچ تسک زمان داری ندارید!',
-                    fontSize: 16,
-                    isBold: true,
-                  ),
-                  ReText(
-                    'برای امروز تسکی اضافه نکردید.',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black1,
-                  )
-                ],
-              ),
-            ],
-          ).tMargin(22)
-        ],
-      );
-    }
-
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          itemCount: tasks.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 0),
-          itemBuilder: (_, index) => _buildTimedTaskTile(
-            context,
-            tasks[index],
-            index,
-            tasks.length,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -741,8 +525,8 @@ class _TasksScreenState extends State<TasksScreen>
                 decoration: const BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
+                    bottomLeft: Radius.circular(50),
+                    bottomRight: Radius.circular(50),
                   ),
                 ),
                 child: Column(
@@ -777,140 +561,7 @@ class _TasksScreenState extends State<TasksScreen>
                         ),
                       ),
                     ),
-                    Container(
-                      height: 78,
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.gray2,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: const Icon(
-                              SolarIconsOutline.calendar,
-                              color: AppColors.black1,
-                            ),
-                          ),
-                          const SizedBox(width: 0),
-                          Expanded(
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              itemCount: _weekDaysList.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(width: 0),
-                              itemBuilder: (context, index) {
-                                final date = _weekDaysList[index];
-                                final isSelected = _isSameDay(
-                                  date,
-                                  _selectedDate,
-                                );
-                                return GestureDetector(
-                                  onTap: () {
-                                    if (_isSameDay(date, _selectedDate)) return;
-                                    setState(() {
-                                      _selectedDate = date;
-                                      _animationController.forward(from: 0.0);
-                                      _slideAnimationController.forward(
-                                          from: 0.0);
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOutCubic,
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.black1
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: isSelected ? 12 : 5,
-                                      horizontal: isSelected ? 12 : 0,
-                                    ),
-                                    width: isSelected ? null : 35,
-                                    child: Center(
-                                      child: isSelected
-                                          ? SlideTransition(
-                                              position: Tween<Offset>(
-                                                begin: const Offset(-0.2, 0),
-                                                end: Offset.zero,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent:
-                                                      _slideAnimationController,
-                                                  curve: Curves.easeOutCubic,
-                                                ),
-                                              ),
-                                              child: FadeTransition(
-                                                opacity: Tween<double>(
-                                                  begin: 0,
-                                                  end: 1,
-                                                ).animate(
-                                                  CurvedAnimation(
-                                                    parent:
-                                                        _slideAnimationController,
-                                                    curve: Curves.easeInCubic,
-                                                  ),
-                                                ),
-                                                child: ScaleTransition(
-                                                  scale: Tween<double>(
-                                                    begin: 0.8,
-                                                    end: 1.0,
-                                                  ).animate(
-                                                    CurvedAnimation(
-                                                      parent:
-                                                          _animationController,
-                                                      curve: Curves.elasticOut,
-                                                    ),
-                                                  ),
-                                                  child: ReText(
-                                                    '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                                    fontSize: 13,
-                                                    isBold: true,
-                                                    color: AppColors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const SizedBox(height: 6),
-                                                ReText(
-                                                  convertToPersianNumbers(
-                                                    date.day.toString(),
-                                                  ),
-                                                  fontSize: 16,
-                                                  isBold: true,
-                                                  color: AppColors.black1,
-                                                ),
-                                              ],
-                                            ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    calenderWidget(),
                   ],
                 ),
               ),
@@ -986,16 +637,143 @@ class _TasksScreenState extends State<TasksScreen>
               Expanded(
                 child: TabBarView(
                   children: [
-                    Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: _buildTaskList(context, _checklistTasks)),
-                    _buildTimedTaskList(context, _timedTasks),
+                    _buildTaskList(context, _checklistTasks),
+                    _buildTaskList(context, []),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Container calenderWidget() {
+    return Container(
+      height: 78,
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 20,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.gray2,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 10,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Icon(
+              SolarIconsOutline.calendar,
+              color: AppColors.black1,
+            ),
+          ),
+          const SizedBox(width: 0),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _weekDaysList.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 0),
+              itemBuilder: (context, index) {
+                final date = _weekDaysList[index];
+                final isSelected = _isSameDay(
+                  date,
+                  _selectedDate,
+                );
+                return GestureDetector(
+                  onTap: () {
+                    if (_isSameDay(date, _selectedDate)) return;
+                    setState(() {
+                      _selectedDate = date;
+                      _animationController.forward(from: 0.0);
+                      _slideAnimationController.forward(from: 0.0);
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubic,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.black1 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSelected ? 12 : 5,
+                      horizontal: isSelected ? 12 : 0,
+                    ),
+                    width: isSelected ? null : 35,
+                    child: Center(
+                      child: isSelected
+                          ? SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(-0.2, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: _slideAnimationController,
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              ),
+                              child: FadeTransition(
+                                opacity: Tween<double>(
+                                  begin: 0,
+                                  end: 1,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: _slideAnimationController,
+                                    curve: Curves.easeInCubic,
+                                  ),
+                                ),
+                                child: ScaleTransition(
+                                  scale: Tween<double>(
+                                    begin: 0.8,
+                                    end: 1.0,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: _animationController,
+                                      curve: Curves.elasticOut,
+                                    ),
+                                  ),
+                                  child: ReText(
+                                    '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
+                                    fontSize: 13,
+                                    isBold: true,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 6),
+                                ReText(
+                                  convertToPersianNumbers(
+                                    date.day.toString(),
+                                  ),
+                                  fontSize: 16,
+                                  isBold: true,
+                                  color: AppColors.black1,
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
