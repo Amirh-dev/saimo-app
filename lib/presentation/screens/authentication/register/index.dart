@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
+import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
+import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/presentation/widgets/re_text_field.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
-import 'package:solar_icons/solar_icons.dart';
-
-import '../../../widgets/re_date_picker.dart';
-import '../../../widgets/re_text_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,24 +19,288 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  late TextEditingController _firstNameController;
-  late TextEditingController _lastNameController;
+  late TextEditingController _fullNameController;
   late TextEditingController _phoneController;
+  Jalali? _birthDate;
+  int? _selectedStudyIndex;
+  bool _isStudyMenuExpanded = false;
+  final LayerLink _studyLayerLink = LayerLink();
+  final GlobalKey _studyHeaderKey = GlobalKey();
+  OverlayEntry? _studyOverlayEntry;
+
+  static const List<String> _studyOptions = [
+    'زیر ۴ ساعت',
+    'بین ۴ تا ۷ ساعت',
+    'بیش از ۷ ساعت',
+  ];
+
+  double _rf(double size) {
+    final width = MediaQuery.sizeOf(context).width;
+    final scale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
+    return size * scale;
+  }
 
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController();
-    _lastNameController = TextEditingController();
+    _fullNameController = TextEditingController();
     _phoneController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _removeStudyOverlay();
+    _fullNameController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openBirthDatePicker() async {
+    _closeStudyMenu();
+    final selectedDate = await showReModalBottomSheet<Jalali>(
+      context: context,
+      isScrollControlled: false,
+      builder: (_) => BirthDatePickerBottomSheet(
+        initialDate: _birthDate ?? Jalali.now(),
+      ),
+    );
+
+    if (selectedDate == null) return;
+    setState(() {
+      _birthDate = selectedDate;
+    });
+  }
+
+  void _removeStudyOverlay() {
+    _studyOverlayEntry?.remove();
+    _studyOverlayEntry = null;
+  }
+
+  void _closeStudyMenu() {
+    _removeStudyOverlay();
+    if (!mounted || !_isStudyMenuExpanded) return;
+    setState(() {
+      _isStudyMenuExpanded = false;
+    });
+  }
+
+  void _toggleStudyMenu() {
+    if (_isStudyMenuExpanded) {
+      _closeStudyMenu();
+      return;
+    }
+
+    final currentContext = _studyHeaderKey.currentContext;
+    if (currentContext == null) return;
+    final renderBox = currentContext.findRenderObject() as RenderBox?;
+    final overlay = Overlay.of(context);
+    if (renderBox == null) return;
+
+    final menuWidth = renderBox.size.width;
+    _studyOverlayEntry = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: Material(
+          color: Colors.transparent,
+          child: Stack(
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _closeStudyMenu,
+                child: const SizedBox.expand(),
+              ),
+              CompositedTransformFollower(
+                link: _studyLayerLink,
+                showWhenUnlinked: false,
+                offset: const Offset(0, 72),
+                child: SizedBox(
+                  width: menuWidth,
+                  child: _buildStudyOptions(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_studyOverlayEntry!);
+    if (!mounted) return;
+    setState(() {
+      _isStudyMenuExpanded = true;
+    });
+  }
+
+  Widget _buildNameAndDateRow() {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: _openBirthDatePicker,
+          child: Container(
+            height: 58,
+            width: 122,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppColors.gray2),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 12,
+                  color: AppColors.black1,
+                ),
+                const Spacer(),
+                ReText(
+                  _birthDate == null
+                      ? 'تاریخ تولد'
+                      : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
+                  fontSize: _rf(14),
+                  fontWeight: FontWeight.w700,
+                  color: _birthDate == null
+                      ? AppColors.dark6Color
+                      : AppColors.black1,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ReTextField(
+            backgroundColor: AppColors.gray1,
+            borderColor: AppColors.gray1,
+            borderRadius: 24,
+            controller: _fullNameController,
+            placeholder: 'نام و نام خانوادگی',
+            placeholderAlign: TextAlign.right,
+            fontSize: _rf(13),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return ReTextField(
+      controller: _phoneController,
+      keyboardType: TextInputType.number,
+      maxLength: 10,
+      placeholderAlign: TextAlign.right,
+      placeholder: 'شماره تماس',
+      backgroundColor: AppColors.gray1,
+      onChanged: (p0) {
+        setState(() {});
+      },
+      borderColor: AppColors.gray1,
+      borderRadius: 24,
+      fontSize: _rf(15),
+      fontWeight: FontWeight.w700,
+      suffixIcon: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: 1,
+          child: ReText(
+            '+98',
+            isPersian: false,
+            fontSize: _rf(12),
+            fontWeight: FontWeight.w700,
+            color: AppColors.black1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudyHeader() {
+    return CompositedTransformTarget(
+      link: _studyLayerLink,
+      child: GestureDetector(
+        onTap: _toggleStudyMenu,
+        child: Container(
+          key: _studyHeaderKey,
+          height: 62,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.gray1,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: AppColors.gray2, width: 1.5),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Row(
+            children: [
+              Icon(
+                _isStudyMenuExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                size: 22,
+                color: AppColors.black1,
+              ),
+              const Spacer(),
+              ReText(
+                _selectedStudyIndex == null
+                    ? 'میزان مطالعه'
+                    : _studyOptions[_selectedStudyIndex!],
+                fontSize: _rf(13),
+                fontWeight: FontWeight.w500,
+                color: AppColors.black1,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudyOptions() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: AppColors.gray2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black1.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(_studyOptions.length, (index) {
+            final isSelected = _selectedStudyIndex == index;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedStudyIndex = index;
+                });
+                _closeStudyMenu();
+              },
+              child: Container(
+                height: 62,
+                width: double.infinity,
+                color: isSelected ? AppColors.gray2 : AppColors.white,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: ReText(
+                  _studyOptions[index],
+                  fontSize: _rf(13),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.black1,
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
   }
 
   @override
@@ -59,88 +323,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         Container(
                           margin: const EdgeInsets.only(top: 10),
                           decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(40)),
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(40),
+                          ),
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    flex: 1,
-                                    child: ReTextField(
-                                      backgroundColor: AppColors.gray1,
-                                      placeholder: 'نام خانوادگی',
-                                      controller: _firstNameController,
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    width: 8,
-                                  ),
-                                  Flexible(
-                                    flex: 1,
-                                    child: ReTextField(
-                                      backgroundColor: AppColors.gray1,
-                                      placeholder: 'نام',
-                                      controller: _lastNameController,
-                                    ),
-                                  )
-                                ],
-                              ),
-                              ReTextField(
-                                backgroundColor: AppColors.gray1,
-                                placeholder: 'شماره تماس',
-                                maxLength: 11,
-                                keyboardType: TextInputType.number,
-                                placeholderAlign: TextAlign.right,
-                                textInputAction: TextInputAction.done,
-                                controller: _phoneController,
-                                suffixIcon: Container(
-                                    margin: const EdgeInsets.only(
-                                        top: 15, left: 15),
-                                    child: const ReText(
-                                      '98+',
-                                      color: AppColors.black1,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    )),
-                              ).tMargin(16),
-                              Container(
-                                margin: const EdgeInsets.only(top: 16),
-                                width: double.infinity,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.gray2),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Icon(
-                                      SolarIconsOutline.arrowDown,
-                                      size: 18,
-                                    ),
-                                    ReText(
-                                      'انتخاب رشته، شغل و ...',
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ],
-                                ).hMargin(16),
-                              ),
-                              ReDatePicker(
-                                onDateChanged: (date) {
-                                  // Handle date selection
-                                  debugPrint(
-                                      'Selected date: ${date?.toString()}');
-                                },
-                              ).tMargin(16),
+                              _buildNameAndDateRow(),
+                              _buildPhoneField().tMargin(12),
+                              _buildStudyHeader().tMargin(14),
                               ReButton(
                                 onPressed: () {
+                                  _closeStudyMenu();
                                   context.to(OTPCodeScreen());
                                 },
+                                fontSize: 16,
                                 text: 'ورود',
                               ).tMargin(24),
                               ReButton(
@@ -149,8 +345,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 textColor: AppColors.black1,
                                 background: AppColors.white,
                                 onPressed: () {
+                                  _closeStudyMenu();
                                   context.to(const RegisterScreen());
                                 },
+                                fontSize: 16,
                                 text: 'ثبت نام',
                               ).tMargin(8),
                             ],
@@ -158,10 +356,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ],
                     ).tMargin(130),
-                    const ReText(
+                    ReText(
                       'سایمو لرن',
                       color: AppColors.black1,
-                      fontSize: 13,
+                      fontSize: _rf(12),
                       fontWeight: FontWeight.w600,
                     ).bMargin(10)
                   ],

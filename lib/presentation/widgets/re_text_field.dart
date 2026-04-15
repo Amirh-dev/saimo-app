@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:simo_learn/utils/colors.dart';
 
 import '_widgets.dart';
 
@@ -33,6 +32,8 @@ class ReTextField extends StatefulWidget {
   final void Function()? onClear;
   final Color? color;
   final Color? backgroundColor;
+  final Color? borderColor;
+  final double? borderRadius;
   final Color? textColor;
   final int? maxLength;
   final bool showClearButton;
@@ -59,6 +60,8 @@ class ReTextField extends StatefulWidget {
     this.onClear,
     this.color,
     this.backgroundColor,
+    this.borderColor,
+    this.borderRadius,
     this.maxLength,
     this.showClearButton = false,
     this.textColor,
@@ -105,10 +108,17 @@ class _ReTextFieldState extends State<ReTextField> {
         : TextDirection.ltr;
   }
 
+  bool get _isNumericKeyboard {
+    return widget.keyboardType == TextInputType.number ||
+        widget.keyboardType == TextInputType.phone;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isObscured = widget.obscureText ?? false;
     final isMultiline = (widget.maxLines ?? 1) > 1 && !isObscured;
+    final resolvedRadius = widget.borderRadius ?? 16;
+    final resolvedBorderColor = widget.borderColor ?? AppColors.dark2Color;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -125,8 +135,11 @@ class _ReTextFieldState extends State<ReTextField> {
         onFieldSubmitted: widget.onFieldSubmitted,
         onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         inputFormatters: [
-          if (widget.keyboardType == TextInputType.number)
-            FilteringTextInputFormatter.digitsOnly,
+          if (_isNumericKeyboard)
+            FilteringTextInputFormatter.allow(
+              RegExp(r'[0-9۰-۹٠-٩]'),
+            ),
+          if (_isNumericKeyboard) PersianDigitNormalizerInputFormatter(),
           LengthLimitingTextInputFormatter(widget.maxLength),
           if (widget.useSeprator) ThousandSeparatorInputFormatter(),
         ],
@@ -157,24 +170,24 @@ class _ReTextFieldState extends State<ReTextField> {
             color: AppColors.errorColor,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppColors.dark2Color),
+            borderRadius: BorderRadius.circular(resolvedRadius),
+            borderSide: BorderSide(color: resolvedBorderColor),
           ),
           filled: true,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppColors.dark2Color),
+            borderRadius: BorderRadius.circular(resolvedRadius),
+            borderSide: BorderSide(color: resolvedBorderColor),
           ),
           disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: widget.color ?? AppColors.dark2Color),
+            borderRadius: BorderRadius.circular(resolvedRadius),
+            borderSide: BorderSide(color: resolvedBorderColor),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(resolvedRadius),
             borderSide: const BorderSide(color: AppColors.errorColor),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(resolvedRadius),
             borderSide: BorderSide(
               color: widget.color ?? AppColors.primary,
             ),
@@ -206,6 +219,10 @@ class _ReTextFieldState extends State<ReTextField> {
                           ),
                       ],
                     )),
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
           prefixIcon: widget.icon != null
               ? Icon(widget.icon, color: Colors.grey.shade500)
               : null,
@@ -219,10 +236,7 @@ class _ReTextFieldState extends State<ReTextField> {
           color: widget.textColor ?? Colors.black,
         ),
         textAlign: widget.placeholderAlign ??
-            (widget.keyboardType == TextInputType.number ||
-                    widget.keyboardType == TextInputType.phone
-                ? TextAlign.left
-                : widget.inputTextAlign),
+            (_isNumericKeyboard ? TextAlign.left : widget.inputTextAlign),
         textDirection: _inputDirection,
         textAlignVertical:
             isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
@@ -256,5 +270,41 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
         offset: formattedText.length - selectionIndexFromEnd,
       ),
     );
+  }
+}
+
+class PersianDigitNormalizerInputFormatter extends TextInputFormatter {
+  static const Map<String, String> _digitMap = {
+    '۰': '0',
+    '۱': '1',
+    '۲': '2',
+    '۳': '3',
+    '۴': '4',
+    '۵': '5',
+    '۶': '6',
+    '۷': '7',
+    '۸': '8',
+    '۹': '9',
+    '٠': '0',
+    '١': '1',
+    '٢': '2',
+    '٣': '3',
+    '٤': '4',
+    '٥': '5',
+    '٦': '6',
+    '٧': '7',
+    '٨': '8',
+    '٩': '9',
+  };
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final normalizedText =
+        newValue.text.split('').map((char) => _digitMap[char] ?? char).join();
+
+    return newValue.copyWith(text: normalizedText);
   }
 }

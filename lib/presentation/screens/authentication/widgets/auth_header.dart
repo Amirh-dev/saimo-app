@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
@@ -7,6 +6,10 @@ import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
 Row authHeaderWidget(BuildContext context, {required Enum authType}) {
+  final width = MediaQuery.sizeOf(context).width;
+  final fontScale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
+  double rf(double size) => size * fontScale;
+
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
@@ -47,7 +50,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'ورود به حساب'
                     : 'ورود کد تایید',
-            fontSize: 16,
+            fontSize: rf(15),
             fontWeight: FontWeight.w900,
           ),
           ReText(
@@ -56,7 +59,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'به حساب کاربری خود وارد شوید.'
                     : 'کد تایید ارسال شده را وارد کنید.',
-            fontSize: 13,
+            fontSize: rf(12),
             fontWeight: FontWeight.w600,
           ).tMargin(2)
         ],
