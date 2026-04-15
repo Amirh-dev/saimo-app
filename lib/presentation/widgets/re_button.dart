@@ -48,7 +48,6 @@ class ReButton extends StatelessWidget {
 
   void onPressedFunc(BuildContext context) {
     if ((isEnabled ?? true) && (isLoading != true)) {
-      vibrate(duration: 20);
       onPressed?.call();
     }
   }
@@ -85,45 +84,65 @@ class ReButton extends StatelessWidget {
   }
 
   Widget buildContent() {
+    final bool hasIcon = icon != null;
+    final bool hasText = text != null && text!.trim().isNotEmpty;
+    final bool shouldShowOnlyIcon = (showOnlyIcon ?? false) && hasIcon;
+    final Color resolvedContentColor = textColor ??
+        (isOutlined ? (color ?? AppColors.dark4Color) : Colors.white);
+
+    if (isLoading != null && isLoading!) {
+      return ReDotsLoader(color: resolvedContentColor);
+    }
+
     return Directionality(
       textDirection: textDirection,
-      child: (isLoading != null && isLoading!)
-          ? ReDotsLoader(
-              color:
-                  isOutlined ? (color ?? AppColors.dark4Color) : Colors.white,
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (showOnlyIcon != null && icon != null) ...[
-                  Icon(
-                    icon!,
-                    color: textColor ??
-                        (isOutlined
-                            ? (color ?? AppColors.dark4Color)
-                            : Colors.white),
-                    size: iconSize ?? 22,
-                  ).center,
-                  if (text != null) const SizedBox(width: 0),
-                ],
-                if (text != null)
-                  Flexible(
-                    child: ReText(
-                      text!,
-                      isPersian: isPersianText ?? true,
-                      color: textColor ??
-                          (isOutlined
-                              ? (color ?? AppColors.dark4Color)
-                              : Colors.white),
-                      fontSize: fontSize ?? 16,
-                      textAlign: TextAlign.center,
-                      fontWeight: fontWeight ?? FontWeight.bold,
-                      maxLines: 2,
-                    ),
+      child: shouldShowOnlyIcon
+          ? Icon(
+              icon!,
+              color: resolvedContentColor,
+              size: iconSize ?? 22,
+            ).center
+          : hasIcon && hasText
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(
+                        icon!,
+                        color: resolvedContentColor,
+                        size: iconSize ?? 22,
+                      ),
+                      ReText(
+                        text!,
+                        isPersian: isPersianText ?? true,
+                        color: resolvedContentColor,
+                        fontSize: fontSize ?? 16,
+                        textAlign: TextAlign.center,
+                        fontWeight: fontWeight ?? FontWeight.bold,
+                        maxLines: 2,
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                )
+              : hasIcon
+                  ? Icon(
+                      icon!,
+                      color: resolvedContentColor,
+                      size: iconSize ?? 22,
+                    ).center
+                  : hasText
+                      ? ReText(
+                          text!,
+                          isPersian: isPersianText ?? true,
+                          color: resolvedContentColor,
+                          fontSize: fontSize ?? 16,
+                          textAlign: TextAlign.center,
+                          fontWeight: fontWeight ?? FontWeight.bold,
+                          maxLines: 2,
+                        )
+                      : const SizedBox.shrink(),
     );
   }
 }

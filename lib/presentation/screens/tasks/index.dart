@@ -4,10 +4,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/tasks/widgets/add_task_bottom_sheet.dart';
+import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
-import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -270,9 +271,14 @@ class _TasksScreenState extends State<TasksScreen>
   ) {
     void toggleTaskStatus() {
       setState(() {
-        if (task['status'] != 'done') {
-          task['status'] = 'done';
+        final status = task['status'] as String?;
+        if (status == 'done') {
+          task['status'] = task['previousStatus'] ?? 'pending';
+          return;
         }
+
+        task['previousStatus'] = status ?? 'pending';
+        task['status'] = 'done';
       });
     }
 
@@ -508,29 +514,32 @@ class _TasksScreenState extends State<TasksScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gray2),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.add,
-                          size: 18,
-                          color: AppColors.primary,
-                        ).rMargin(6),
-                        const ReText(
-                          'افزودن تسک',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppColors.black1,
-                        ),
-                      ],
+                  GestureDetector(
+                    onTap: _showAddTaskBottomSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.gray2),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.add,
+                            size: 18,
+                            color: AppColors.primary,
+                          ).rMargin(6),
+                          const ReText(
+                            'افزودن تسک',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppColors.black1,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const ReText(
@@ -578,7 +587,7 @@ class _TasksScreenState extends State<TasksScreen>
                 child: TabBarView(
                   children: [
                     _buildTaskList(context, _checklistTasks),
-                    _buildTaskList(context, _timedTasks),
+                    _buildTaskList(context, []),
                   ],
                 ),
               ),
@@ -604,6 +613,37 @@ class _TasksScreenState extends State<TasksScreen>
       case 4:
         context.toOff(const ProfileScreen());
         break;
+    }
+  }
+
+  Future<void> _showAddTaskBottomSheet() async {
+    final newTask = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: AppColors.black1.withOpacity(0.2),
+      builder: (_) => const AddTaskBottomSheet(),
+    );
+
+    if (newTask == null) return;
+
+    setState(() {
+      _checklistTasks.insert(0, newTask);
+    });
+
+    if (_checklistCardsScrollController.hasClients) {
+      _checklistCardsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+    if (_checklistDotsScrollController.hasClients) {
+      _checklistDotsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     }
   }
 

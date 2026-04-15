@@ -30,7 +30,8 @@ class AppBottomNavigationBar extends StatelessWidget {
       final isActive = index == currentIndex;
       return GestureDetector(
         onTap: () => onTap(index),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 600),
           width: 52,
           height: 52,
           decoration: BoxDecoration(
