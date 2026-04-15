@@ -37,6 +37,7 @@ class ReTextField extends StatefulWidget {
   final Color? textColor;
   final int? maxLength;
   final bool showClearButton;
+  final double? height;
 
   const ReTextField({
     super.key,
@@ -64,6 +65,7 @@ class ReTextField extends StatefulWidget {
     this.borderRadius,
     this.maxLength,
     this.showClearButton = false,
+    this.height,
     this.textColor,
     this.fontSize,
     this.fontWeight,
@@ -241,7 +243,7 @@ class _ReTextFieldState extends State<ReTextField> {
         textAlignVertical:
             isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
       ),
-    ).sizedBox(height: 58, width: double.infinity);
+    ).sizedBox(height: widget.height ?? 58, width: double.infinity);
   }
 }
 

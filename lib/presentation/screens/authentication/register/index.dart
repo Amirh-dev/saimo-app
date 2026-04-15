@@ -136,7 +136,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         GestureDetector(
           onTap: _openBirthDatePicker,
           child: Container(
-            height: 58,
+            margin: const EdgeInsets.only(bottom: 4),
+            height: 50,
             width: 122,
             decoration: BoxDecoration(
               color: AppColors.white,
@@ -149,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 12,
-                  color: AppColors.black1,
+                  color: AppColors.dark6Color,
                 ),
                 const Spacer(),
                 ReText(
@@ -171,11 +172,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: ReTextField(
             backgroundColor: AppColors.gray1,
             borderColor: AppColors.gray1,
-            borderRadius: 24,
+            borderRadius: 100,
+            height: 60,
             controller: _fullNameController,
             placeholder: 'نام و نام خانوادگی',
             placeholderAlign: TextAlign.right,
-            fontSize: _rf(13),
+            fontSize: _rf(15),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -204,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           alignment: Alignment.centerLeft,
           widthFactor: 1,
           child: ReText(
-            '+98',
+            '98+',
             isPersian: false,
             fontSize: _rf(12),
             fontWeight: FontWeight.w700,
@@ -244,7 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _selectedStudyIndex == null
                     ? 'میزان مطالعه'
                     : _studyOptions[_selectedStudyIndex!],
-                fontSize: _rf(13),
+                fontSize: _rf(15),
                 fontWeight: FontWeight.w500,
                 color: AppColors.black1,
               ),

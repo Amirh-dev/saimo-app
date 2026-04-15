@@ -304,6 +304,7 @@ class _BirthDatePickerBottomSheetState
                       text: 'ثبت',
                       textDirection: TextDirection.ltr,
                       icon: Icons.arrow_back_ios_new_rounded,
+                      iconSize: 14,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       background: AppColors.primary,
@@ -325,6 +326,7 @@ class _BirthDatePickerBottomSheetState
                     child: ReButton(
                       textDirection: TextDirection.ltr,
                       text: 'لغو',
+                      iconSize: 14,
                       isOutlined: true,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

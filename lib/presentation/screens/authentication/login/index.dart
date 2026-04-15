@@ -58,13 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 maxLength: 11,
                                 keyboardType: TextInputType.number,
                                 suffixIcon: Container(
-                                    margin: const EdgeInsets.only(
-                                        top: 15, left: 15),
+                                    margin: const EdgeInsets.only(left: 15),
                                     child: ReText(
                                       '98+',
-                                      color: AppColors.black1,
+                                      isPersian: false,
                                       fontSize: _rf(12),
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.black1,
                                     )),
                               ),
                               ReButton(

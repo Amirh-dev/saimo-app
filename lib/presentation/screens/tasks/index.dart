@@ -301,7 +301,7 @@ class _TasksScreenState extends State<TasksScreen>
 
     final width = context.deviceWidth;
     const padding = 16.0;
-    final titleSize = width < 600 ? 15.0 : 16.0;
+    final titleSize = width < 600 ? 14.0 : 16.0;
     final subtitleSize = width < 600 ? 12.0 : 13.0;
     final isDone = task['status'] == 'done';
     final opacity = isDone ? 0.5 : 1.0;
@@ -582,7 +582,7 @@ class _TasksScreenState extends State<TasksScreen>
                   ),
                   const ReText(
                     'تسک های امروز',
-                    fontSize: 16,
+                    fontSize: 14,
                     isBold: true,
                     color: AppColors.black1,
                   ),
@@ -782,7 +782,7 @@ class _TasksScreenState extends State<TasksScreen>
                                   ),
                                   child: ReText(
                                     '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                    fontSize: 13,
+                                    fontSize: 11,
                                     isBold: true,
                                     color: AppColors.white,
                                   ),
@@ -797,7 +797,7 @@ class _TasksScreenState extends State<TasksScreen>
                                   convertToPersianNumbers(
                                     date.day.toString(),
                                   ),
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   isBold: true,
                                   color: AppColors.black1,
                                 ),
