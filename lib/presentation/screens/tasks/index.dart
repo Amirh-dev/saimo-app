@@ -7,6 +7,8 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
+import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -446,78 +448,16 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
-  Widget _buildTaskTimelineMarker({
-    required bool showTopLine,
-    required bool showBottomLine,
-    required IconData icon,
-    required Color iconColor,
-    required String durationLabel,
-  }) {
-    return SizedBox(
-      width: 62,
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Expanded(
-            child: Container(
-              width: 2,
-              color: showTopLine ? AppColors.gray2 : Colors.transparent,
-            ),
-          ),
-          Row(
-            textDirection: TextDirection.rtl,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Flexible(
-                child: ReText(
-                  durationLabel,
-                  fontSize: 11,
-                  color: AppColors.black1.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: iconColor, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black1.withOpacity(0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    icon,
-                    size: 16,
-                    color: iconColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: Container(
-              width: 2,
-              color: showBottomLine ? AppColors.gray2 : Colors.transparent,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         backgroundColor: AppColors.gray1,
+        bottomNavigationBar: AppBottomNavigationBar(
+          currentIndex: 2,
+          onTap: _onBottomNavigationTap,
+        ),
         body: SafeArea(
           child: Column(
             children: [
@@ -539,7 +479,7 @@ class _TasksScreenState extends State<TasksScreen>
                       prefixIcon: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: AppColors.gray2,
+                          color: AppColors.white,
                         ),
                         child: Stack(
                           alignment: Alignment.topRight,
@@ -638,7 +578,7 @@ class _TasksScreenState extends State<TasksScreen>
                 child: TabBarView(
                   children: [
                     _buildTaskList(context, _checklistTasks),
-                    _buildTaskList(context, []),
+                    _buildTaskList(context, _timedTasks),
                   ],
                 ),
               ),
@@ -647,6 +587,24 @@ class _TasksScreenState extends State<TasksScreen>
         ),
       ),
     );
+  }
+
+  void _onBottomNavigationTap(int index) {
+    if (index == 2) return;
+    switch (index) {
+      case 0:
+        context.toOff(const HomeScreen());
+        break;
+      case 1:
+        context.toOff(const TrophiesScreen());
+        break;
+      case 3:
+        context.toOff(const TimerScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
   }
 
   Container calenderWidget() {

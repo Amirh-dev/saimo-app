@@ -40,9 +40,11 @@ extension ContextRouterExtension on BuildContext {
 
   void toOff(Widget child, {String? routeName}) =>
       Navigator.of(this).pushReplacement(
-        MaterialPageRoute(
-          builder: (input) => child,
+        PageRouteBuilder(
+          pageBuilder: (context, animation1, animation2) => child,
+          transitionDuration: Duration.zero,
           settings: RouteSettings(name: routeName),
+          reverseTransitionDuration: Duration.zero,
         ),
       );
   void toOffNamed(String path) => Navigator.of(this).pushReplacementNamed(path);

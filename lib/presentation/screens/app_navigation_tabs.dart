@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/index.dart';
+import 'package:simo_learn/utils/colors.dart';
+import 'package:simo_learn/utils/extentions.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomNavigationScaffold(
+      currentIndex: 0,
+      onTap: (index) {
+        if (index == 0) return;
+        _navigateToIndex(context, index);
+      },
+      body: const SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 32),
+            Center(
+              child: Text(
+                'خانه',
+                style: TextStyle(
+                  color: AppColors.black1,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28),
+              child: Center(
+                child: Text(
+                  'این صفحه به عنوان صفحه اصلی شما طراحی شده است.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.black1,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToIndex(BuildContext context, int index) {
+    switch (index) {
+      case 1:
+        context.toOff(const TrophiesScreen());
+        break;
+      case 2:
+        context.toOff(const TasksScreen());
+        break;
+      case 3:
+        context.toOff(const TimerScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
+  }
+}
+
+class TrophiesScreen extends StatelessWidget {
+  const TrophiesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomNavigationScaffold(
+      currentIndex: 1,
+      onTap: (index) {
+        if (index == 1) return;
+        _navigateToIndex(context, index);
+      },
+      body: const SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 32),
+            Center(
+              child: Text(
+                'جوایز',
+                style: TextStyle(
+                  color: AppColors.black1,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28),
+              child: Center(
+                child: Text(
+                  'صفحه جوایز و دستاوردها در اینجا نمایش داده می‌شود.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.black1,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToIndex(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.toOff(const HomeScreen());
+        break;
+      case 2:
+        context.toOff(const TasksScreen());
+        break;
+      case 3:
+        context.toOff(const TimerScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
+  }
+}
+
+class TimerScreen extends StatelessWidget {
+  const TimerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomNavigationScaffold(
+      currentIndex: 3,
+      onTap: (index) {
+        if (index == 3) return;
+        _navigateToIndex(context, index);
+      },
+      body: const SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: 32),
+            Center(
+              child: Text(
+                'زمان‌دار',
+                style: TextStyle(
+                  color: AppColors.black1,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28),
+              child: Center(
+                child: Text(
+                  'صفحه زمان‌دار و تایمر شما در این قسمت قرار می‌گیرد.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.black1,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToIndex(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.toOff(const HomeScreen());
+        break;
+      case 1:
+        context.toOff(const TrophiesScreen());
+        break;
+      case 2:
+        context.toOff(const TasksScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
+  }
+}
