@@ -199,17 +199,6 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       Row(
                         children: [
                           Expanded(
-                            flex: 2,
-                            child: _ActionButton(
-                              text: 'افزودن',
-                              icon: Icons.add,
-                              background: AppColors.primary,
-                              textColor: AppColors.white,
-                              onTap: _submitTask,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
                             child: _ActionButton(
                               text: 'لغو',
                               icon: Icons.close,
@@ -219,6 +208,17 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                               onTap: () {
                                 Navigator.of(context).pop();
                               },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: _ActionButton(
+                              text: 'افزودن',
+                              icon: Icons.add,
+                              background: AppColors.primary,
+                              textColor: AppColors.white,
+                              onTap: _submitTask,
                             ),
                           ),
                         ],

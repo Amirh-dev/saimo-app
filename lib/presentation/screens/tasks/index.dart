@@ -179,21 +179,24 @@ class _TasksScreenState extends State<TasksScreen>
     required double height,
   }) {
     const circleSize = 32.0;
-    const segmentCount = 2;
     const segmentWidth = 2.0;
-    const segmentHeight = 3.5;
-    const segmentGap = 8.0;
-    final lineAreaHeight = math.max(0.0, (height - circleSize) / 2);
-    final fittedSegmentCount = math.min(
-      segmentCount,
-      ((lineAreaHeight + segmentGap) / (segmentHeight + segmentGap)).floor(),
+    const segmentHeight = 2.8;
+    const targetSegmentGap = 3.0;
+    const dotConnectorGap = 3.0;
+    final lineAreaHeight = math.max(
+      0.0,
+      (height - circleSize - (dotConnectorGap * 2)) / 2,
+    );
+    final fittedSegmentCount = math.max(
+      1,
+      (lineAreaHeight / (segmentHeight + targetSegmentGap)).floor(),
     );
 
     Widget buildShortLine() => Container(
           width: segmentWidth,
           height: segmentHeight,
           decoration: BoxDecoration(
-            color: AppColors.black1,
+            color: AppColors.gray2,
             borderRadius: BorderRadius.circular(100),
           ),
         );
@@ -205,17 +208,29 @@ class _TasksScreenState extends State<TasksScreen>
         return SizedBox(height: lineAreaHeight);
       }
 
+      final effectiveGap = math.max(
+        0.0,
+        (lineAreaHeight / fittedSegmentCount) - segmentHeight,
+      );
+      final edgeGap = effectiveGap / 2;
+
       return SizedBox(
         height: lineAreaHeight,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              fittedSegmentCount * 2 - 1,
-              (index) => index.isEven
-                  ? buildShortLine()
-                  : const SizedBox(height: segmentGap),
-            ),
+        child: Stack(
+          children: List.generate(
+            fittedSegmentCount,
+            (index) {
+              final top = edgeGap + (index * (segmentHeight + effectiveGap));
+              return Positioned(
+                top: top,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: buildShortLine(),
+                ),
+              );
+            },
           ),
         ),
       );
@@ -228,6 +243,7 @@ class _TasksScreenState extends State<TasksScreen>
         mainAxisSize: MainAxisSize.max,
         children: [
           buildShortLines(showTopLine),
+          const SizedBox(height: dotConnectorGap),
           Container(
             width: circleSize,
             height: circleSize,
@@ -257,6 +273,7 @@ class _TasksScreenState extends State<TasksScreen>
                   : null,
             ),
           ),
+          const SizedBox(height: dotConnectorGap),
           buildShortLines(showBottomLine),
         ],
       ),
@@ -307,7 +324,7 @@ class _TasksScreenState extends State<TasksScreen>
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(100),
             onTap: toggleTaskStatus,
             child: Padding(
               padding: const EdgeInsets.all(padding),
@@ -364,7 +381,7 @@ class _TasksScreenState extends State<TasksScreen>
           const ReImage(
             'assets/images/empty_list.png',
             width: 180,
-          ).tMargin(150),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

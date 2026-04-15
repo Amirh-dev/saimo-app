@@ -13,7 +13,7 @@ class AppBottomNavigationBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const double _barHeight = 70;
-  static const double _circleDiameter = 40;
+  static const double _circleDiameter = 30;
 
   @override
   Widget build(BuildContext context) {
