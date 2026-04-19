@@ -6,6 +6,42 @@ import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:vibration/vibration.dart';
 
+const Map<String, String> _englishToPersianNumbersMap = {
+  '0': '۰',
+  '1': '۱',
+  '2': '۲',
+  '3': '۳',
+  '4': '۴',
+  '5': '۵',
+  '6': '۶',
+  '7': '۷',
+  '8': '۸',
+  '9': '۹',
+};
+
+const Map<String, String> _persianArabicToEnglishNumbersMap = {
+  '۰': '0',
+  '۱': '1',
+  '۲': '2',
+  '۳': '3',
+  '۴': '4',
+  '۵': '5',
+  '۶': '6',
+  '۷': '7',
+  '۸': '8',
+  '۹': '9',
+  '٠': '0',
+  '١': '1',
+  '٢': '2',
+  '٣': '3',
+  '٤': '4',
+  '٥': '5',
+  '٦': '6',
+  '٧': '7',
+  '٨': '8',
+  '٩': '9',
+};
+
 String? formatDate(DateTime? date) {
   if (date == null) return null;
   return '${date.day}/${date.month}/${date.year}';
@@ -19,24 +55,19 @@ String removeSeparators(String input) {
   return input.replaceAll(',', '');
 }
 
+String convertToEnglishNumbers(String input) {
+  return input.replaceAllMapped(RegExp(r'[۰-۹٠-٩]'), (match) {
+    return _persianArabicToEnglishNumbersMap[match.group(0)] ?? match.group(0)!;
+  });
+}
+
 String convertToPersianNumbers(String input, {bool addSeparator = false}) {
-  Map<String, String> numbersMap = {
-    '0': '۰',
-    '1': '۱',
-    '2': '۲',
-    '3': '۳',
-    '4': '۴',
-    '5': '۵',
-    '6': '۶',
-    '7': '۷',
-    '8': '۸',
-    '9': '۹',
-  };
+  final normalizedInput = convertToEnglishNumbers(input);
 
   if (addSeparator) {
     String separator = ',';
 
-    String reversedInput = input.split('').reversed.join();
+    String reversedInput = normalizedInput.split('').reversed.join();
 
     String result = reversedInput.replaceAllMapped(RegExp(r'\d{1,3}'), (match) {
       return '${match.group(0)!}$separator';
@@ -44,12 +75,37 @@ String convertToPersianNumbers(String input, {bool addSeparator = false}) {
 
     return result.split('').reversed.join().replaceAllMapped(RegExp(r'\d'),
         (match) {
-      return numbersMap[match.group(0)]!;
+      return _englishToPersianNumbersMap[match.group(0)]!;
     }).replaceFirst(',', '');
   } else {
-    return input.replaceAllMapped(RegExp(r'\d'), (match) {
-      return numbersMap[match.group(0)]!;
+    return normalizedInput.replaceAllMapped(RegExp(r'\d'), (match) {
+      return _englishToPersianNumbersMap[match.group(0)]!;
     });
+  }
+}
+
+class PersianDigitsInputFormatter extends TextInputFormatter {
+  const PersianDigitsInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final persianText = convertToPersianNumbers(newValue.text);
+
+    final baseOffset =
+        newValue.selection.baseOffset.clamp(0, persianText.length).toInt();
+    final extentOffset =
+        newValue.selection.extentOffset.clamp(0, persianText.length).toInt();
+
+    return newValue.copyWith(
+      text: persianText,
+      selection: TextSelection(
+        baseOffset: baseOffset,
+        extentOffset: extentOffset,
+      ),
+    );
   }
 }
 
@@ -295,4 +351,3 @@ String formatTime(int seconds) {
 //   } else {
 //     throw 'Could not launch $phoneUri';
 //   }
-

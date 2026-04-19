@@ -611,11 +611,17 @@ class _TasksScreenState extends State<TasksScreen>
                     fontFamily: 'Sanse',
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
+                    fontVariations: <FontVariation>[
+                      FontVariation.weight(600),
+                    ],
                   ),
                   unselectedLabelStyle: const TextStyle(
                     fontFamily: 'Sanse',
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
+                    fontVariations: <FontVariation>[
+                      FontVariation.weight(400),
+                    ],
                   ),
                   tabs: const [
                     Tab(text: 'چک لیست'),

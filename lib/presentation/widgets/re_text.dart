@@ -38,6 +38,13 @@ class ReText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedWeight = isBold ? FontWeight.bold : fontWeight;
+    final sanseVariationWeight = switch (resolvedWeight.value) {
+      <= 100 => 100.0,
+      >= 900 => 900.0,
+      _ => (resolvedWeight.value - 100).toDouble(),
+    };
+
     return Text(
       isPersian ? convertToPersianNumbers(text) : text,
       maxLines: maxLines,
@@ -48,7 +55,12 @@ class ReText extends StatelessWidget {
         fontSize: fontSize,
         decorationColor: color,
         decorationThickness: 2,
-        fontWeight: isBold ? FontWeight.bold : fontWeight,
+        fontWeight: resolvedWeight,
+        fontVariations: fontFamily == 'Sanse'
+            ? <FontVariation>[
+                FontVariation.weight(sanseVariationWeight),
+              ]
+            : null,
         color: color,
         letterSpacing: -0.5,
         fontFamily: fontFamily,

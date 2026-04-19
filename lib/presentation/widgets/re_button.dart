@@ -120,7 +120,7 @@ class ReButton extends StatelessWidget {
                         color: resolvedContentColor,
                         fontSize: fontSize ?? 16,
                         textAlign: TextAlign.center,
-                        fontWeight: fontWeight ?? FontWeight.bold,
+                        fontWeight: fontWeight ?? FontWeight.w800,
                         maxLines: 2,
                       ),
                     ],

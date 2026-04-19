@@ -101,7 +101,10 @@ class _ReTextFieldState extends State<ReTextField> {
   }
 
   String _applyThousandSeparator(String text) {
-    return _formatter.format(int.tryParse(text.replaceAll(',', '')) ?? 0);
+    final normalized = convertToEnglishNumbers(text).replaceAll(',', '');
+    final value = int.tryParse(normalized);
+    if (value == null) return '';
+    return convertToPersianNumbers(_formatter.format(value));
   }
 
   TextDirection get _inputDirection {
@@ -121,6 +124,15 @@ class _ReTextFieldState extends State<ReTextField> {
     final isMultiline = (widget.maxLines ?? 1) > 1 && !isObscured;
     final resolvedRadius = widget.borderRadius ?? 16;
     final resolvedBorderColor = widget.borderColor ?? AppColors.dark2Color;
+    final resolvedFontWeight = widget.fontWeight ?? FontWeight.w400;
+    final sanseVariationWeight = switch (resolvedFontWeight.value) {
+      <= 100 => 100.0,
+      >= 900 => 900.0,
+      _ => (resolvedFontWeight.value - 100).toDouble(),
+    };
+    final fontVariations = <FontVariation>[
+      FontVariation.weight(sanseVariationWeight),
+    ];
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -141,7 +153,7 @@ class _ReTextFieldState extends State<ReTextField> {
             FilteringTextInputFormatter.allow(
               RegExp(r'[0-9۰-۹٠-٩]'),
             ),
-          if (_isNumericKeyboard) PersianDigitNormalizerInputFormatter(),
+          if (_isNumericKeyboard) const PersianDigitsInputFormatter(),
           LengthLimitingTextInputFormatter(widget.maxLength),
           if (widget.useSeprator) ThousandSeparatorInputFormatter(),
         ],
@@ -158,13 +170,15 @@ class _ReTextFieldState extends State<ReTextField> {
             fontFamily: 'Sanse',
             fontSize: widget.fontSize ?? 14,
             height: 1.2,
-            fontWeight: widget.fontWeight,
+            fontWeight: resolvedFontWeight,
+            fontVariations: fontVariations,
             color: Colors.grey.shade500,
           ),
           labelStyle: TextStyle(
             fontFamily: 'Sanse',
             fontSize: widget.fontSize ?? 10,
-            fontWeight: widget.fontWeight,
+            fontWeight: resolvedFontWeight,
+            fontVariations: fontVariations,
             color: Colors.grey.shade500,
           ),
           errorStyle: const TextStyle(
@@ -235,6 +249,8 @@ class _ReTextFieldState extends State<ReTextField> {
           fontSize: widget.fontSize ?? 16,
           height: 1.2,
           fontFamily: 'Sanse',
+          fontWeight: resolvedFontWeight,
+          fontVariations: fontVariations,
           color: widget.textColor ?? Colors.black,
         ),
         textAlign: widget.placeholderAlign ??
@@ -259,54 +275,22 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
       return newValue.copyWith(text: '');
     }
 
-    final int selectionIndexFromEnd =
-        newValue.text.length - newValue.selection.end;
+    final normalized = convertToEnglishNumbers(newValue.text);
+    final rawNumberText = normalized.replaceAll(',', '');
+    final parsed = int.tryParse(rawNumberText);
+    if (parsed == null) return oldValue;
 
-    final String formattedText = _formatter.format(
-      int.parse(newValue.text.replaceAll(',', '')),
-    );
+    final int selectionIndexFromEnd = normalized.length - newValue.selection.end;
+    final String formattedText =
+        convertToPersianNumbers(_formatter.format(parsed));
+    final selectionOffset =
+        (formattedText.length - selectionIndexFromEnd).clamp(0, formattedText.length).toInt();
 
     return TextEditingValue(
       text: formattedText,
       selection: TextSelection.collapsed(
-        offset: formattedText.length - selectionIndexFromEnd,
+        offset: selectionOffset,
       ),
     );
-  }
-}
-
-class PersianDigitNormalizerInputFormatter extends TextInputFormatter {
-  static const Map<String, String> _digitMap = {
-    '۰': '0',
-    '۱': '1',
-    '۲': '2',
-    '۳': '3',
-    '۴': '4',
-    '۵': '5',
-    '۶': '6',
-    '۷': '7',
-    '۸': '8',
-    '۹': '9',
-    '٠': '0',
-    '١': '1',
-    '٢': '2',
-    '٣': '3',
-    '٤': '4',
-    '٥': '5',
-    '٦': '6',
-    '٧': '7',
-    '٨': '8',
-    '٩': '9',
-  };
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final normalizedText =
-        newValue.text.split('').map((char) => _digitMap[char] ?? char).join();
-
-    return newValue.copyWith(text: normalizedText);
   }
 }

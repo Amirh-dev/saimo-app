@@ -5,6 +5,7 @@ import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
+import 'package:simo_learn/utils/helpers.dart';
 
 class AddTaskBottomSheet extends StatefulWidget {
   const AddTaskBottomSheet({super.key});
@@ -315,6 +316,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
               maxLength: maxLength,
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
+              inputFormatters: const [
+                PersianDigitsInputFormatter(),
+              ],
               onChanged: (_) {
                 setState(() {});
               },
@@ -323,6 +327,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 color: AppColors.black1,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
+                fontVariations: <FontVariation>[
+                  FontVariation.weight(500),
+                ],
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
@@ -334,6 +341,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   color: AppColors.black1.withOpacity(0.45),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
+                  fontVariations: const <FontVariation>[
+                    FontVariation.weight(500),
+                  ],
                 ),
               ),
             ),
@@ -368,7 +378,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
               const ReText(
                 'تاریخ',
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 color: AppColors.black1,
               ),
             ],
@@ -395,7 +405,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   ReText(
                     _formattedDate,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.black1,
                   ),
                 ],
@@ -439,7 +449,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                   ),
                   const Spacer(),
                   const ReText(
-                    'تکرار هفتگی',
+                    'تـکــــرار هفتگی',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.dark7Color,
@@ -505,7 +515,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
           const ReText(
             'یادآوری',
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: AppColors.black1,
           ),
         ],
@@ -541,7 +551,7 @@ class _ActionButton extends StatelessWidget {
         icon: icon,
         fontSize: 16,
         iconSize: 18,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w800,
         background: background,
         textDirection: TextDirection.ltr,
         textColor: textColor,
