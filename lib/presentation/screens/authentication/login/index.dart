@@ -16,12 +16,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController phoneController = TextEditingController();
 
-  double _rf(double size) {
-    final width = MediaQuery.sizeOf(context).width;
-    final scale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
-    return size * scale;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Column(
                             children: [
                               ReTextField(
+                                borderRadius: 100,
                                 onChanged: (p0) {
                                   setState(() {});
                                 },
@@ -54,15 +49,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 placeholderAlign: TextAlign.right,
                                 backgroundColor: AppColors.gray1,
                                 placeholder: 'شماره تماس',
-                                fontSize: _rf(15),
+                                fontSize: 15,
                                 maxLength: 11,
                                 keyboardType: TextInputType.number,
                                 suffixIcon: Container(
                                     margin: const EdgeInsets.only(left: 15),
-                                    child: ReText(
+                                    child: const ReText(
                                       '98+',
                                       isPersian: false,
-                                      fontSize: _rf(12),
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.black1,
                                     )),
@@ -72,9 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   context.to(const RegisterScreen());
                                 },
-                                fontSize: _rf(15),
+                                fontSize: 15,
                                 text: 'ورود',
-                              ).tMargin(24),
+                              ).tMargin(16),
                               ReButton(
                                 isOutlined: true,
                                 color: AppColors.gray2,
@@ -83,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   context.to(const RegisterScreen());
                                 },
-                                fontSize: _rf(15),
+                                fontSize: 15,
                                 text: 'ثبت نام',
                               ).tMargin(8),
                             ],
@@ -91,10 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         )
                       ],
                     ).tMargin(130),
-                    ReText(
+                    const ReText(
                       'سایمو لرن',
                       color: AppColors.black1,
-                      fontSize: _rf(12),
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ).bMargin(10)
                   ],

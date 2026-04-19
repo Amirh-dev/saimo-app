@@ -237,11 +237,12 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   Widget _buildHeader(BuildContext context) {
     return SizedBox(
       height: 62,
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           const Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               ReText(
                 'افزودن چک لیست',
@@ -258,14 +259,14 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 textAlign: TextAlign.center,
               ),
             ],
-          ),
+          ).rMargin(10),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               child: Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.gray2),
@@ -294,7 +295,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
       height: 56,
       decoration: BoxDecoration(
         color: AppColors.gray2,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(100),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(

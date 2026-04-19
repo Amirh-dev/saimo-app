@@ -243,7 +243,7 @@ class _ReTextFieldState extends State<ReTextField> {
         textAlignVertical:
             isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
       ),
-    ).sizedBox(height: widget.height ?? 58, width: double.infinity);
+    ).sizedBox(height: widget.height ?? 55, width: double.infinity);
   }
 }
 

@@ -80,19 +80,9 @@ class AppBottomNavigationBar extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       buildNavIcon(
-                        activeIcon: SolarIconsBold.home,
-                        inactiveIcon: SolarIconsOutline.home,
-                        index: 0,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.cupFirst,
-                        inactiveIcon: SolarIconsOutline.cupFirst,
-                        index: 1,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.checklistMinimalistic,
-                        inactiveIcon: SolarIconsOutline.checklistMinimalistic,
-                        index: 2,
+                        activeIcon: SolarIconsBold.user,
+                        inactiveIcon: SolarIconsOutline.user,
+                        index: 4,
                       ),
                       buildNavIcon(
                         activeIcon: SolarIconsBold.alarm,
@@ -100,9 +90,19 @@ class AppBottomNavigationBar extends StatelessWidget {
                         index: 3,
                       ),
                       buildNavIcon(
-                        activeIcon: SolarIconsBold.user,
-                        inactiveIcon: SolarIconsOutline.user,
-                        index: 4,
+                        activeIcon: SolarIconsBold.checklistMinimalistic,
+                        inactiveIcon: SolarIconsOutline.checklistMinimalistic,
+                        index: 2,
+                      ),
+                      buildNavIcon(
+                        activeIcon: SolarIconsBold.cupFirst,
+                        inactiveIcon: SolarIconsOutline.cupFirst,
+                        index: 1,
+                      ),
+                      buildNavIcon(
+                        activeIcon: SolarIconsBold.home,
+                        inactiveIcon: SolarIconsOutline.home,
+                        index: 0,
                       ),
                     ],
                   ),
@@ -131,7 +131,7 @@ class AppBottomNavigationScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray1,
+        backgroundColor: AppColors.gray1,
       body: body,
       bottomNavigationBar: AppBottomNavigationBar(
         currentIndex: currentIndex,

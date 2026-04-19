@@ -47,12 +47,6 @@ class _BirthDatePickerBottomSheetState
   late FixedExtentScrollController _monthController;
   late FixedExtentScrollController _dayController;
 
-  double _rf(double size) {
-    final width = MediaQuery.sizeOf(context).width;
-    final scale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
-    return size * scale;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -125,7 +119,7 @@ class _BirthDatePickerBottomSheetState
       height: 60,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.gray1,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(31),
         border: Border.all(color: AppColors.gray2),
       ),
@@ -161,7 +155,7 @@ class _BirthDatePickerBottomSheetState
                     child: Center(
                       child: ReText(
                         labels[index],
-                        fontSize: darkSelected ? _rf(15) : _rf(14),
+                        fontSize: darkSelected ? 15 : 14,
                         fontWeight: FontWeight.w800,
                         color: isSelected
                             ? (darkSelected
@@ -185,7 +179,7 @@ class _BirthDatePickerBottomSheetState
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.gray1,
+        color: AppColors.white,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(32),
         ),
@@ -193,7 +187,7 @@ class _BirthDatePickerBottomSheetState
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+          padding: const EdgeInsets.fromLTRB(32, 10, 32, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -209,46 +203,53 @@ class _BirthDatePickerBottomSheetState
               SizedBox(
                 height: 64,
                 child: Stack(
-                  alignment: Alignment.center,
+                  alignment: Alignment.topRight,
                   children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ReText(
-                          'تاریخ تولد',
-                          fontSize: _rf(19),
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.black1,
-                        ),
-                        const SizedBox(height: 2),
-                        ReText(
-                          'انتخاب تاریخ تولد',
-                          fontSize: _rf(13),
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dark6Color,
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ReText(
+                              'تاریخ تولد',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.black1,
+                            ),
+                            SizedBox(height: 2),
+                            ReText(
+                              'انتخاب تاریخ تولد',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.dark6Color,
+                            ),
+                          ],
+                        ).bMargin(8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.gray2),
+                                color: AppColors.white,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: AppColors.black1,
+                                size: 18,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.gray2),
-                            color: AppColors.gray1,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: AppColors.black1,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
+                    )
                   ],
                 ),
               ),
@@ -331,7 +332,7 @@ class _BirthDatePickerBottomSheetState
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       icon: Icons.close,
-                      background: AppColors.gray1,
+                      background: AppColors.white,
                       textColor: AppColors.black1,
                       onPressed: () => Navigator.of(context).pop(),
                     ),

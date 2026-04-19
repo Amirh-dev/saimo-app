@@ -303,6 +303,7 @@ class _TasksScreenState extends State<TasksScreen>
     const padding = 16.0;
     final titleSize = width < 600 ? 14.0 : 16.0;
     final subtitleSize = width < 600 ? 12.0 : 13.0;
+
     final isDone = task['status'] == 'done';
     final opacity = isDone ? 0.5 : 1.0;
 
@@ -335,14 +336,14 @@ class _TasksScreenState extends State<TasksScreen>
                     Icons.arrow_back_ios,
                     size: 12,
                     color: AppColors.black1,
-                  ),
+                  ).lMargin(5),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       ReText(
                         task['title'] ?? '',
                         fontSize: titleSize,
-                        isBold: true,
+                        fontWeight: FontWeight.w900,
                         color: AppColors.black1,
                         decoration: isDone
                             ? TextDecoration.lineThrough
@@ -353,7 +354,7 @@ class _TasksScreenState extends State<TasksScreen>
                         task['subtitle'] ?? '',
                         fontSize: subtitleSize,
                         color: Color.lerp(
-                            AppColors.black1, Colors.transparent, 0.25),
+                            AppColors.gray, Colors.transparent, 0.25),
                         fontWeight: FontWeight.w600,
                         decoration: isDone
                             ? TextDecoration.lineThrough
@@ -411,19 +412,19 @@ class _TasksScreenState extends State<TasksScreen>
                               color: AppColors.primary,
                             ),
                           ),
-                          Column(
+                          const Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const ReText(
+                              ReText(
                                 'چک لیستی ندارید!',
                                 fontSize: 16,
-                                isBold: true,
+                                fontWeight: FontWeight.w900,
                               ),
                               ReText(
                                 'برای امروز تسکی اضافه نکردید.',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.black1.withOpacity(0.5),
+                                color: AppColors.gray,
                               ),
                             ],
                           ),
@@ -582,7 +583,8 @@ class _TasksScreenState extends State<TasksScreen>
                   ),
                   const ReText(
                     'تسک های امروز',
-                    fontSize: 14,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
                     isBold: true,
                     color: AppColors.black1,
                   ),

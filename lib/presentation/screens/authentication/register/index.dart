@@ -34,12 +34,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     'بیش از ۷ ساعت',
   ];
 
-  double _rf(double size) {
-    final width = MediaQuery.sizeOf(context).width;
-    final scale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
-    return size * scale;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -132,16 +126,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildNameAndDateRow() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
       children: [
         GestureDetector(
           onTap: _openBirthDatePicker,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 4),
             height: 50,
             width: 122,
+            margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(100),
               border: Border.all(color: AppColors.gray2),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -150,18 +147,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 12,
-                  color: AppColors.dark6Color,
+                  color: AppColors.black,
                 ),
                 const Spacer(),
                 ReText(
                   _birthDate == null
                       ? 'تاریخ تولد'
                       : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
-                  fontSize: _rf(14),
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: _birthDate == null
-                      ? AppColors.dark6Color
-                      : AppColors.black1,
+                  color:
+                      _birthDate == null ? AppColors.black : AppColors.black1,
                 ),
               ],
             ),
@@ -177,7 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: _fullNameController,
             placeholder: 'نام و نام خانوادگی',
             placeholderAlign: TextAlign.right,
-            fontSize: _rf(15),
+            fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -197,18 +193,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         setState(() {});
       },
       borderColor: AppColors.gray1,
-      borderRadius: 24,
-      fontSize: _rf(15),
+      borderRadius: 100,
+      fontSize: 15,
       fontWeight: FontWeight.w700,
-      suffixIcon: Padding(
-        padding: const EdgeInsets.only(left: 14),
+      suffixIcon: const Padding(
+        padding: EdgeInsets.only(left: 15),
         child: Align(
           alignment: Alignment.centerLeft,
           widthFactor: 1,
           child: ReText(
             '98+',
             isPersian: false,
-            fontSize: _rf(12),
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             color: AppColors.black1,
           ),
@@ -224,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onTap: _toggleStudyMenu,
         child: Container(
           key: _studyHeaderKey,
-          height: 62,
+          height: 54,
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.gray1,
@@ -246,7 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _selectedStudyIndex == null
                     ? 'میزان مطالعه'
                     : _studyOptions[_selectedStudyIndex!],
-                fontSize: _rf(15),
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: AppColors.black1,
               ),
@@ -293,7 +289,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ReText(
                   _studyOptions[index],
-                  fontSize: _rf(13),
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: AppColors.black1,
                 ),
@@ -331,7 +327,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             children: [
                               _buildNameAndDateRow(),
-                              _buildPhoneField().tMargin(12),
+                              _buildPhoneField().tMargin(4),
                               _buildStudyHeader().tMargin(14),
                               ReButton(
                                 onPressed: () {
@@ -339,8 +335,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   context.to(OTPCodeScreen());
                                 },
                                 fontSize: 16,
-                                text: 'ورود',
-                              ).tMargin(24),
+                                text: 'ثبت نام',
+                              ).tMargin(14),
                               ReButton(
                                 isOutlined: true,
                                 color: AppColors.gray2,
@@ -351,17 +347,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   context.to(const RegisterScreen());
                                 },
                                 fontSize: 16,
-                                text: 'ثبت نام',
+                                text: 'ورود به حساب',
                               ).tMargin(8),
                             ],
                           ).hMargin(16).vMargin(18),
                         ),
                       ],
                     ).tMargin(130),
-                    ReText(
+                    const ReText(
                       'سایمو لرن',
                       color: AppColors.black1,
-                      fontSize: _rf(12),
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ).bMargin(10)
                   ],

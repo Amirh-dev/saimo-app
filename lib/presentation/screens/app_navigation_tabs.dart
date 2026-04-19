@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
@@ -21,26 +22,22 @@ class HomeScreen extends StatelessWidget {
           children: [
             SizedBox(height: 32),
             Center(
-              child: Text(
+              child: ReText(
                 'خانه',
-                style: TextStyle(
-                  color: AppColors.black1,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                color: AppColors.black1,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 16),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 28),
               child: Center(
-                child: Text(
+                child: ReText(
                   'این صفحه به عنوان صفحه اصلی شما طراحی شده است.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.black1,
-                    fontSize: 16,
-                  ),
+                  color: AppColors.black1,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -79,36 +76,30 @@ class TrophiesScreen extends StatelessWidget {
         if (index == 1) return;
         _navigateToIndex(context, index);
       },
-      body: const SafeArea(
-        child: Column(
+      body: SafeArea(
+        child: const Column(
           children: [
-            SizedBox(height: 32),
             Center(
-              child: Text(
+              child: ReText(
                 'جوایز',
-                style: TextStyle(
-                  color: AppColors.black1,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                color: AppColors.black1,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
               ),
             ),
-            SizedBox(height: 16),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 28),
               child: Center(
-                child: Text(
+                child: ReText(
                   'صفحه جوایز و دستاوردها در اینجا نمایش داده می‌شود.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.black1,
-                    fontSize: 16,
-                  ),
+                  color: AppColors.black1,
+                  fontSize: 16,
                 ),
               ),
             ),
           ],
-        ),
+        ).tMargin(22),
       ),
     );
   }
@@ -147,26 +138,22 @@ class TimerScreen extends StatelessWidget {
           children: [
             SizedBox(height: 32),
             Center(
-              child: Text(
+              child: ReText(
                 'زمان‌دار',
-                style: TextStyle(
-                  color: AppColors.black1,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                color: AppColors.black1,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 16),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 28),
               child: Center(
-                child: Text(
+                child: ReText(
                   'صفحه زمان‌دار و تایمر شما در این قسمت قرار می‌گیرد.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.black1,
-                    fontSize: 16,
-                  ),
+                  color: AppColors.black1,
+                  fontSize: 16,
                 ),
               ),
             ),

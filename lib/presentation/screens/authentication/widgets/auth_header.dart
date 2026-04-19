@@ -7,8 +7,6 @@ import 'package:simo_learn/utils/extentions.dart';
 
 Row authHeaderWidget(BuildContext context, {required Enum authType}) {
   final width = MediaQuery.sizeOf(context).width;
-  final fontScale = ((width / 375).clamp(0.85, 1.0)) * 0.92;
-  double rf(double size) => size * fontScale;
 
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
@@ -40,7 +38,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
               child: const Icon(
                 Icons.arrow_forward,
                 size: 18,
-                color: AppColors.black1,
+                color: AppColors.gray,
               ).hMargin(15).vMargin(15),
             ),
           ),
@@ -50,7 +48,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'ورود به حساب'
                     : 'ورود کد تایید',
-            fontSize: rf(15),
+            fontSize: 15,
             fontWeight: FontWeight.w900,
           ),
           ReText(
@@ -59,7 +57,8 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'به حساب کاربری خود وارد شوید.'
                     : 'کد تایید ارسال شده را وارد کنید.',
-            fontSize: rf(12),
+            fontSize: 12,
+            color: AppColors.gray,
             fontWeight: FontWeight.w600,
           ).tMargin(2)
         ],
