@@ -18,9 +18,10 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 ? 'assets/images/login.png'
                 : 'assets/images/login.png',
         width: authType == AuthMode.login || authType == AuthMode.otpCode
-            ? 140
+            ? 160
             : 170,
         height: 160,
+        fit: BoxFit.cover,
       ),
       const Spacer(),
       Column(
@@ -48,7 +49,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'ورود به حساب'
                     : 'ورود کد تایید',
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w900,
           ),
           ReText(
@@ -57,7 +58,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 : authType == AuthMode.login
                     ? 'به حساب کاربری خود وارد شوید.'
                     : 'کد تایید ارسال شده را وارد کنید.',
-            fontSize: 12,
+            fontSize: 13,
             color: AppColors.gray,
             fontWeight: FontWeight.w600,
           ).tMargin(2)

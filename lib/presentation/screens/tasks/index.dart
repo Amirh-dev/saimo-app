@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/tasks/widgets/add_task_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
@@ -31,9 +30,11 @@ class _TasksScreenState extends State<TasksScreen>
   late List<Map<String, dynamic>> _timedTasks;
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
+  int? _expandedChecklistTaskIndex;
   bool _isSyncingChecklistScroll = false;
-  static const double _checklistItemHeight = 90.0;
-  static const double _checklistItemVerticalPadding = 6.0;
+  static const double _checklistItemCollapsedHeight = 90.0;
+  static const double _checklistItemExpandedHeight = 140.0;
+  static const Duration _taskExpansionDuration = Duration(milliseconds: 260);
 
   void _initChecklistTasks() {
     _checklistTasks = [
@@ -44,7 +45,7 @@ class _TasksScreenState extends State<TasksScreen>
         'status': 'pending',
       },
       {
-        'title': 'تمرین ریاضی',
+        'title': 'مطالعـــه فارسی',
         'subtitle': 'حل تمرین کتاب درسی',
         'time': '۱۲:۱۵',
         'status': 'pending',
@@ -172,11 +173,88 @@ class _TasksScreenState extends State<TasksScreen>
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  double _checklistRowHeightAt(int index) {
+    return _expandedChecklistTaskIndex == index
+        ? _checklistItemExpandedHeight
+        : _checklistItemCollapsedHeight;
+  }
+
+  void _toggleChecklistTaskStatus(int index) {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    setState(() {
+      final task = _checklistTasks[index];
+      final status = task['status'] as String?;
+      if (status == 'done') {
+        task['status'] = task['previousStatus'] ?? 'pending';
+        return;
+      }
+
+      task['previousStatus'] = status ?? 'pending';
+      task['status'] = 'done';
+    });
+  }
+
+  void _toggleChecklistTaskActions(int index) {
+    setState(() {
+      _expandedChecklistTaskIndex =
+          _expandedChecklistTaskIndex == index ? null : index;
+    });
+  }
+
+  void _deleteChecklistTask(int index) {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    setState(() {
+      _checklistTasks.removeAt(index);
+
+      if (_expandedChecklistTaskIndex == index) {
+        _expandedChecklistTaskIndex = null;
+      } else if (_expandedChecklistTaskIndex != null &&
+          _expandedChecklistTaskIndex! > index) {
+        _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! - 1;
+      }
+    });
+  }
+
+  void _addChecklistTaskToToday(int index) {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    setState(() {
+      final task = Map<String, dynamic>.from(_checklistTasks.removeAt(index));
+      final now = DateTime.now();
+
+      task['status'] = 'pending';
+      task['date'] = Jalali.now();
+      task['time'] =
+          '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
+
+      _checklistTasks.insert(0, task);
+      _expandedChecklistTaskIndex = 0;
+    });
+
+    if (_checklistCardsScrollController.hasClients) {
+      _checklistCardsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    if (_checklistDotsScrollController.hasClients) {
+      _checklistDotsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   Widget _buildTaskDot({
     required bool showTopLine,
     required bool showBottomLine,
     required bool isDone,
     required double height,
+    required VoidCallback onTap,
   }) {
     const circleSize = 32.0;
     const segmentWidth = 2.0;
@@ -196,7 +274,7 @@ class _TasksScreenState extends State<TasksScreen>
           width: segmentWidth,
           height: segmentHeight,
           decoration: BoxDecoration(
-            color: AppColors.gray2,
+            color: AppColors.gray,
             borderRadius: BorderRadius.circular(100),
           ),
         );
@@ -244,33 +322,38 @@ class _TasksScreenState extends State<TasksScreen>
         children: [
           buildShortLines(showTopLine),
           const SizedBox(height: dotConnectorGap),
-          Container(
-            width: circleSize,
-            height: circleSize,
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              shape: BoxShape.circle,
-            ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
             child: Container(
-              width: 24,
-              height: 24,
-              margin: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color:
-                    isDone ? AppColors.done.withOpacity(0.2) : AppColors.white,
-                border: Border.all(
-                  width: 2,
-                  color: isDone ? Colors.transparent : AppColors.gray2,
-                ),
+              width: circleSize,
+              height: circleSize,
+              decoration: const BoxDecoration(
+                color: AppColors.white,
                 shape: BoxShape.circle,
               ),
-              child: isDone
-                  ? const Icon(
-                      CupertinoIcons.checkmark_alt,
-                      size: 16,
-                      color: AppColors.done,
-                    )
-                  : null,
+              child: Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDone
+                      ? AppColors.done.withOpacity(0.2)
+                      : AppColors.white,
+                  border: Border.all(
+                    width: 2,
+                    color: isDone ? Colors.transparent : AppColors.gray,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: isDone
+                    ? const Icon(
+                        CupertinoIcons.checkmark_alt,
+                        size: 16,
+                        color: AppColors.done,
+                      )
+                    : null,
+              ),
             ),
           ),
           const SizedBox(height: dotConnectorGap),
@@ -284,86 +367,128 @@ class _TasksScreenState extends State<TasksScreen>
     BuildContext context,
     Map<String, dynamic> task,
     int index,
-    int total,
   ) {
-    void toggleTaskStatus() {
-      setState(() {
-        final status = task['status'] as String?;
-        if (status == 'done') {
-          task['status'] = task['previousStatus'] ?? 'pending';
-          return;
-        }
-
-        task['previousStatus'] = status ?? 'pending';
-        task['status'] = 'done';
-      });
-    }
-
-    final width = context.deviceWidth;
     const padding = 16.0;
-    final titleSize = width < 600 ? 14.0 : 16.0;
-    final subtitleSize = width < 600 ? 12.0 : 13.0;
+    const titleSize = 14.0;
+    const subtitleSize = 10.0;
 
     final isDone = task['status'] == 'done';
     final opacity = isDone ? 0.5 : 1.0;
+    final isExpanded = _expandedChecklistTaskIndex == index;
 
     return Opacity(
       opacity: opacity,
-      child: Container(
+      child: AnimatedContainer(
+        duration: _taskExpansionDuration,
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(100),
+          borderRadius: BorderRadius.circular(isExpanded ? 36 : 100),
           border: Border.all(color: AppColors.gray2),
           boxShadow: [
             BoxShadow(
               color: AppColors.black1.withOpacity(0.06),
-              blurRadius: 14,
+              blurRadius: 100,
               offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Material(
           color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(100),
-            onTap: toggleTaskStatus,
-            child: Padding(
-              padding: const EdgeInsets.all(padding),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(
-                    Icons.arrow_back_ios,
-                    size: 12,
-                    color: AppColors.black1,
-                  ).lMargin(5),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ReText(
-                        task['title'] ?? '',
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.black1,
-                        decoration: isDone
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                      ),
-                      const SizedBox(height: 2),
-                      ReText(
-                        task['subtitle'] ?? '',
-                        fontSize: subtitleSize,
-                        color: Color.lerp(
-                            AppColors.gray, Colors.transparent, 0.25),
-                        fontWeight: FontWeight.w600,
-                        decoration: isDone
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                      ),
-                    ],
+          child: Padding(
+            padding: const EdgeInsets.all(padding),
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () => _toggleChecklistTaskActions(index),
+                  onLongPress: () => _toggleChecklistTaskStatus(index),
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        AnimatedRotation(
+                          duration: _taskExpansionDuration,
+                          curve: Curves.easeOutCubic,
+                          turns: isExpanded ? -0.25 : 0,
+                          child: const Icon(
+                            Icons.arrow_back_ios,
+                            size: 12,
+                            color: AppColors.black1,
+                          ),
+                        ).lMargin(5),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            ReText(
+                              task['title'] ?? '',
+                              fontSize: titleSize,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.black1,
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                            ),
+                            const SizedBox(height: 2),
+                            ReText(
+                              task['subtitle'] ?? '',
+                              fontSize: subtitleSize,
+                              color: Color.lerp(
+                                  AppColors.gray, Colors.transparent, 0.25),
+                              fontWeight: FontWeight.w600,
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+                ClipRect(
+                  child: AnimatedAlign(
+                    duration: _taskExpansionDuration,
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    heightFactor: isExpanded ? 1 : 0,
+                    child: AnimatedOpacity(
+                      duration: _taskExpansionDuration,
+                      curve: Curves.easeOutCubic,
+                      opacity: isExpanded ? 1 : 0,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _TaskItemActionButton(
+                                text: 'افزودن به امروز',
+                                textColor: AppColors.primary,
+                                background: const Color(0xFFFBEAE5),
+                                icon: Icons.add,
+                                iconColor: AppColors.primary,
+                                onTap: () => _addChecklistTaskToToday(index),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _TaskItemActionButton(
+                                text: 'حذف تسک',
+                                textColor: AppColors.black1,
+                                background: AppColors.white,
+                                borderColor: AppColors.gray2,
+                                icon: SolarIconsOutline.trashBinMinimalistic,
+                                iconColor: AppColors.dark5Color,
+                                onTap: () => _deleteChecklistTask(index),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -452,17 +577,16 @@ class _TasksScreenState extends State<TasksScreen>
               child: ListView.builder(
                 controller: _checklistCardsScrollController,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                itemExtent: _checklistItemHeight,
                 itemCount: tasks.length,
-                itemBuilder: (_, index) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: _checklistItemVerticalPadding,
-                  ),
+                itemBuilder: (_, index) => AnimatedContainer(
+                  duration: _taskExpansionDuration,
+                  curve: Curves.easeOutCubic,
+                  height: _checklistRowHeightAt(index),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: _buildTaskTile(
                     context,
                     tasks[index],
                     index,
-                    tasks.length,
                   ).lMargin(12),
                 ),
               ),
@@ -474,15 +598,20 @@ class _TasksScreenState extends State<TasksScreen>
               child: ListView.builder(
                 controller: _checklistDotsScrollController,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                itemExtent: _checklistItemHeight,
                 itemCount: tasks.length,
                 itemBuilder: (_, index) {
                   final task = tasks[index];
-                  return _buildTaskDot(
-                    showTopLine: index != 0,
-                    showBottomLine: index != tasks.length - 1,
-                    isDone: task['status'] == 'done',
-                    height: _checklistItemHeight,
+                  return AnimatedContainer(
+                    duration: _taskExpansionDuration,
+                    curve: Curves.easeOutCubic,
+                    height: _checklistRowHeightAt(index),
+                    child: _buildTaskDot(
+                      showTopLine: index != 0,
+                      showBottomLine: index != tasks.length - 1,
+                      isDone: task['status'] == 'done',
+                      height: _checklistRowHeightAt(index),
+                      onTap: () => _toggleChecklistTaskStatus(index),
+                    ),
                   );
                 },
               ),
@@ -585,7 +714,6 @@ class _TasksScreenState extends State<TasksScreen>
                     'تسک های امروز',
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    isBold: true,
                     color: AppColors.black1,
                   ),
                 ],
@@ -606,7 +734,7 @@ class _TasksScreenState extends State<TasksScreen>
                     borderRadius: BorderRadius.circular(24),
                   ),
                   labelColor: AppColors.black1,
-                  unselectedLabelColor: AppColors.black1.withOpacity(0.5),
+                  unselectedLabelColor: AppColors.gray,
                   labelStyle: const TextStyle(
                     fontFamily: 'Sanse',
                     fontWeight: FontWeight.w700,
@@ -675,6 +803,9 @@ class _TasksScreenState extends State<TasksScreen>
 
     setState(() {
       _checklistTasks.insert(0, newTask);
+      if (_expandedChecklistTaskIndex != null) {
+        _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! + 1;
+      }
     });
 
     if (_checklistCardsScrollController.hasClients) {
@@ -818,6 +949,59 @@ class _TasksScreenState extends State<TasksScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TaskItemActionButton extends StatelessWidget {
+  const _TaskItemActionButton({
+    required this.text,
+    required this.textColor,
+    required this.background,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+    this.borderColor,
+  });
+
+  final String text;
+  final Color textColor;
+  final Color background;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback onTap;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(100),
+          border: borderColor == null ? null : Border.all(color: borderColor!),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 26,
+              color: iconColor,
+            ),
+            const Spacer(),
+            ReText(
+              text,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
+          ],
+        ),
       ),
     );
   }

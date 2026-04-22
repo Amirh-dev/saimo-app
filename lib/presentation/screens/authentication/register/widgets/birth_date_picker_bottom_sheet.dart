@@ -114,7 +114,11 @@ class _BirthDatePickerBottomSheetState
     required double selectedWidth,
     required double itemExtent,
     bool darkSelected = false,
+    bool reverseHorizontalOrder = false,
   }) {
+    final outerQuarterTurns = reverseHorizontalOrder ? 1 : 3;
+    final labelQuarterTurns = reverseHorizontalOrder ? 3 : 1;
+
     return Container(
       height: 60,
       width: double.infinity,
@@ -137,7 +141,7 @@ class _BirthDatePickerBottomSheetState
             ),
           ),
           RotatedBox(
-            quarterTurns: 3,
+            quarterTurns: outerQuarterTurns,
             child: ListWheelScrollView.useDelegate(
               controller: controller,
               itemExtent: itemExtent,
@@ -151,7 +155,7 @@ class _BirthDatePickerBottomSheetState
                 builder: (context, index) {
                   final isSelected = index == selectedIndex;
                   return RotatedBox(
-                    quarterTurns: 1,
+                    quarterTurns: labelQuarterTurns,
                     child: Center(
                       child: ReText(
                         labels[index],
@@ -210,7 +214,7 @@ class _BirthDatePickerBottomSheetState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ReText(
@@ -227,7 +231,7 @@ class _BirthDatePickerBottomSheetState
                               color: AppColors.dark6Color,
                             ),
                           ],
-                        ).bMargin(8),
+                        ).bMargin(8).rMargin(12),
                         Align(
                           alignment: Alignment.centerRight,
                           child: GestureDetector(
@@ -243,7 +247,7 @@ class _BirthDatePickerBottomSheetState
                               child: const Icon(
                                 Icons.close,
                                 color: AppColors.black1,
-                                size: 18,
+                                size: 16,
                               ),
                             ),
                           ),
@@ -280,7 +284,8 @@ class _BirthDatePickerBottomSheetState
                   });
                 },
                 selectedWidth: 94,
-                itemExtent: 72,
+                itemExtent: 80,
+                reverseHorizontalOrder: true,
               ),
               const SizedBox(height: 10),
               _buildSliderRow(
@@ -295,6 +300,7 @@ class _BirthDatePickerBottomSheetState
                 selectedWidth: 40,
                 itemExtent: 44,
                 darkSelected: true,
+                reverseHorizontalOrder: true,
               ),
               const SizedBox(height: 20),
               Row(

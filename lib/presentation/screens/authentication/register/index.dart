@@ -154,8 +154,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _birthDate == null
                       ? 'تاریخ تولد'
                       : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                   color:
                       _birthDate == null ? AppColors.black : AppColors.black1,
                 ),
@@ -173,7 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: _fullNameController,
             placeholder: 'نام و نام خانوادگی',
             placeholderAlign: TextAlign.right,
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -194,8 +194,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
       borderColor: AppColors.gray1,
       borderRadius: 100,
-      fontSize: 15,
-      fontWeight: FontWeight.w700,
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
       suffixIcon: const Padding(
         padding: EdgeInsets.only(left: 15),
         child: Align(
@@ -203,9 +203,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           widthFactor: 1,
           child: ReText(
             '98+',
-            isPersian: false,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+            isPersian: true,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
             color: AppColors.black1,
           ),
         ),
@@ -235,16 +235,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
                 size: 22,
-                color: AppColors.black1,
+                color: _selectedStudyIndex == null
+                    ? AppColors.gray
+                    : AppColors.black1,
               ),
               const Spacer(),
               ReText(
                 _selectedStudyIndex == null
                     ? 'میزان مطالعه'
                     : _studyOptions[_selectedStudyIndex!],
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.black1,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _selectedStudyIndex == null
+                    ? AppColors.gray
+                    : AppColors.black1,
               ),
             ],
           ),

@@ -41,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Column(
                             children: [
                               ReTextField(
+                                fontWeight: FontWeight.w600,
                                 borderRadius: 100,
                                 onChanged: (p0) {
                                   setState(() {});
@@ -49,16 +50,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 placeholderAlign: TextAlign.right,
                                 backgroundColor: AppColors.gray1,
                                 placeholder: 'شماره تماس',
-                                fontSize: 15,
+                                fontSize: 13,
                                 maxLength: 11,
                                 keyboardType: TextInputType.number,
                                 suffixIcon: Container(
                                     margin: const EdgeInsets.only(left: 15),
                                     child: const ReText(
                                       '98+',
-                                      isPersian: false,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                      isPersian: true,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
                                       color: AppColors.black1,
                                     )),
                               ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/helpers.dart';
@@ -68,35 +69,34 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
 
   bool get _isFormValid => _titleController.text.trim().isNotEmpty;
 
-  String get _formattedDate {
+  String get _scheduleDateLabel {
     final today = Jalali.now();
     final isToday = _selectedDate.year == today.year &&
         _selectedDate.month == today.month &&
         _selectedDate.day == today.day;
     final prefix = isToday ? 'امروز، ' : '';
-    final hour = _selectedTime.hour.toString().padLeft(2, '0');
-    final minute = _selectedTime.minute.toString().padLeft(2, '0');
-    return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year} - $hour:$minute';
+    return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
 
-  Future<void> _pickPersianDateTime() async {
-    final result = await showModalBottomSheet<_PersianDateTimePickerResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.black1.withOpacity(0.2),
-      builder: (_) => _PersianDateTimePickerSheet(
-        initialDate: _selectedDate,
-        initialTime: _selectedTime,
-        monthNames: _persianMonths,
-      ),
-    );
-
-    if (result == null) return;
-
+  Future<void> _openScheduleModal({bool preferWeekly = false}) async {
     setState(() {
-      _selectedDate = result.date;
-      _selectedTime = result.time;
+      _isWeeklyRepeat = preferWeekly;
+      if (preferWeekly) {
+        _isReminderEnabled = true;
+      }
+    });
+  }
+
+  void _selectDateModeDirectly() {
+    setState(() {
+      _isWeeklyRepeat = false;
+    });
+  }
+
+  void _selectWeeklyRepeatDirectly() {
+    setState(() {
+      _isWeeklyRepeat = true;
+      _isReminderEnabled = true;
     });
   }
 
@@ -247,20 +247,19 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
             children: [
               ReText(
                 'افزودن چک لیست',
-                fontSize: 20,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
                 color: AppColors.black1,
-                textAlign: TextAlign.center,
               ),
               ReText(
                 'افزودن تسک چک لیست',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.dark6Color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gray,
                 textAlign: TextAlign.center,
               ),
             ],
-          ).rMargin(10),
+          ).rMargin(10).tMargin(3),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
@@ -339,7 +338,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 hintStyle: TextStyle(
                   fontFamily: 'Sanse',
                   color: AppColors.black1.withOpacity(0.45),
-                  fontSize: 15,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   fontVariations: const <FontVariation>[
                     FontVariation.weight(500),
@@ -354,112 +353,12 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   }
 
   Widget _buildDateCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const ReText(
-                'تاریخ',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black1,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _pickPersianDateTime,
-            child: Container(
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.gray1,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.gray2),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.black1,
-                    size: 16,
-                  ),
-                  const Spacer(),
-                  ReText(
-                    _formattedDate,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black1,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Divider(
-            color: AppColors.gray2,
-            thickness: 1,
-            height: 1,
-          ),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isWeeklyRepeat = !_isWeeklyRepeat;
-              });
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.dark4Color),
-                    ),
-                    child: _isWeeklyRepeat
-                        ? Container(
-                            margin: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const Spacer(),
-                  const ReText(
-                    'تـکــــرار هفتگی',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.dark7Color,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return _ScheduleSelectionCard(
+      formattedDateLabel: _scheduleDateLabel,
+      isWeeklyRepeat: _isWeeklyRepeat,
+      onSelectDateMode: _selectDateModeDirectly,
+      onDateTap: _openScheduleModal,
+      onSelectWeeklyRepeat: _selectWeeklyRepeatDirectly,
     );
   }
 
@@ -474,43 +373,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isReminderEnabled = !_isReminderEnabled;
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              width: 44,
-              height: 28,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: _isReminderEnabled
-                    ? AppColors.primary.withOpacity(0.25)
-                    : AppColors.gray2,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                alignment: _isReminderEnabled
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isReminderEnabled
-                        ? AppColors.primary
-                        : AppColors.dark4Color,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          switchWidget(),
           const Spacer(),
           const ReText(
             'یادآوری',
@@ -520,6 +383,308 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
           ),
         ],
       ),
+    );
+  }
+
+  GestureDetector switchWidget() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isReminderEnabled = !_isReminderEnabled;
+        });
+      },
+      child: Transform.flip(
+        flipX: true,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          width: 44,
+          height: 28,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: _isReminderEnabled
+                ? AppColors.primary.withOpacity(0.25)
+                : AppColors.gray2,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: _isReminderEnabled
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _isReminderEnabled
+                    ? AppColors.primary
+                    : AppColors.dark4Color,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskScheduleResult {
+  const _TaskScheduleResult({
+    required this.selectedDate,
+    required this.selectedTime,
+    required this.repeatWeekly,
+  });
+
+  final Jalali selectedDate;
+  final TimeOfDay selectedTime;
+  final bool repeatWeekly;
+}
+
+class _TaskScheduleModal extends StatefulWidget {
+  const _TaskScheduleModal({
+    required this.initialDate,
+    required this.initialTime,
+    required this.initialWeeklyRepeat,
+    required this.monthNames,
+  });
+
+  final Jalali initialDate;
+  final TimeOfDay initialTime;
+  final bool initialWeeklyRepeat;
+  final List<String> monthNames;
+
+  @override
+  State<_TaskScheduleModal> createState() => _TaskScheduleModalState();
+}
+
+class _TaskScheduleModalState extends State<_TaskScheduleModal> {
+  late Jalali _selectedDate;
+  late TimeOfDay _selectedTime;
+  late bool _isWeeklyRepeat;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.initialDate;
+    _selectedTime = widget.initialTime;
+    _isWeeklyRepeat = widget.initialWeeklyRepeat;
+  }
+
+  String get _formattedDateLabel {
+    final now = Jalali.now();
+    final isToday = _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
+    final prefix = isToday ? 'امروز، ' : '';
+    return '$prefix${_selectedDate.day} ${widget.monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
+  }
+
+  void _closeWithResult({required bool repeatWeekly}) {
+    Navigator.of(context).pop(
+      _TaskScheduleResult(
+        selectedDate: _selectedDate,
+        selectedTime: _selectedTime,
+        repeatWeekly: repeatWeekly,
+      ),
+    );
+  }
+
+  Future<void> _handleDateTap() async {
+    final result = await showModalBottomSheet<_PersianDateTimePickerResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: AppColors.black1.withOpacity(0.2),
+      builder: (_) => _PersianDateTimePickerSheet(
+        initialDate: _selectedDate,
+        initialTime: _selectedTime,
+        monthNames: widget.monthNames,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    _selectedDate = result.date;
+    _selectedTime = result.time;
+    _closeWithResult(repeatWeekly: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: _ScheduleSelectionCard(
+          formattedDateLabel: _formattedDateLabel,
+          isWeeklyRepeat: _isWeeklyRepeat,
+          onSelectDateMode: () => _closeWithResult(repeatWeekly: false),
+          onDateTap: _handleDateTap,
+          onSelectWeeklyRepeat: () => _closeWithResult(repeatWeekly: true),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleSelectionCard extends StatelessWidget {
+  const _ScheduleSelectionCard({
+    required this.formattedDateLabel,
+    required this.isWeeklyRepeat,
+    required this.onSelectDateMode,
+    required this.onDateTap,
+    required this.onSelectWeeklyRepeat,
+  });
+
+  final String formattedDateLabel;
+  final bool isWeeklyRepeat;
+  final VoidCallback onSelectDateMode;
+  final VoidCallback onDateTap;
+  final VoidCallback onSelectWeeklyRepeat;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDateModeSelected = !isWeeklyRepeat;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: isDateModeSelected ? null : onSelectDateMode,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              opacity: isDateModeSelected ? 1 : 0.55,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ReText(
+                    'تاریخ',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDateModeSelected
+                        ? AppColors.black1
+                        : AppColors.dark7Color,
+                  ),
+                  const SizedBox(width: 8),
+                  _RadioDot(isSelected: isDateModeSelected),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          IgnorePointer(
+            ignoring: !isDateModeSelected,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              opacity: isDateModeSelected ? 1 : 0.45,
+              child: GestureDetector(
+                onTap: onDateTap,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  height: 62,
+                  decoration: BoxDecoration(
+                    color: AppColors.gray1,
+                    borderRadius: BorderRadius.circular(34),
+                    border: Border.all(color: AppColors.gray2),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.gray,
+                        size: 10,
+                      ),
+                      const Spacer(),
+                      ReText(
+                        formattedDateLabel,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.black1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(
+            color: AppColors.gray2,
+            thickness: 1,
+            height: 1,
+          ),
+          GestureDetector(
+            onTap: isWeeklyRepeat ? null : onSelectWeeklyRepeat,
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              opacity: isWeeklyRepeat ? 1 : 0.55,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ReText(
+                      'تکرار هفتگی',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isWeeklyRepeat
+                          ? AppColors.black1
+                          : AppColors.dark7Color,
+                    ),
+                    const SizedBox(width: 8),
+                    _RadioDot(isSelected: isWeeklyRepeat),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadioDot extends StatelessWidget {
+  const _RadioDot({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.dark4Color),
+      ),
+      child: isSelected
+          ? Center(
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
