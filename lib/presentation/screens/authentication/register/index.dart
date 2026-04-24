@@ -96,6 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Material(
           color: Colors.transparent,
           child: Stack(
+            alignment: Alignment.topCenter,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.translucent,
@@ -133,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         GestureDetector(
           onTap: _openBirthDatePicker,
           child: Container(
-            height: 50,
+            height: 55,
             width: 122,
             margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
@@ -169,12 +170,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             backgroundColor: AppColors.gray1,
             borderColor: AppColors.gray1,
             borderRadius: 100,
-            height: 60,
             controller: _fullNameController,
             placeholder: 'نام و نام خانوادگی',
             placeholderAlign: TextAlign.right,
             fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -220,10 +220,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onTap: _toggleStudyMenu,
         child: Container(
           key: _studyHeaderKey,
-          height: 54,
+          height: 55,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.gray1,
+            color: _isStudyMenuExpanded ? AppColors.gray1 : AppColors.white,
             borderRadius: BorderRadius.circular(30),
             border: Border.all(color: AppColors.gray2, width: 1.5),
           ),
@@ -235,9 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
                 size: 22,
-                color: _selectedStudyIndex == null
-                    ? AppColors.gray
-                    : AppColors.black1,
+                color: AppColors.black1,
               ),
               const Spacer(),
               ReText(
@@ -246,9 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     : _studyOptions[_selectedStudyIndex!],
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: _selectedStudyIndex == null
-                    ? AppColors.gray
-                    : AppColors.black1,
+                color: AppColors.black1,
               ),
             ],
           ),
@@ -338,7 +334,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   _closeStudyMenu();
                                   context.to(OTPCodeScreen());
                                 },
-                                fontSize: 16,
                                 text: 'ثبت نام',
                               ).tMargin(14),
                               ReButton(
@@ -350,7 +345,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   _closeStudyMenu();
                                   context.to(const RegisterScreen());
                                 },
-                                fontSize: 16,
                                 text: 'ورود به حساب',
                               ).tMargin(8),
                             ],

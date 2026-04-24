@@ -59,7 +59,7 @@ class ReButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 55,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? () => onPressedFunc(context) : null,

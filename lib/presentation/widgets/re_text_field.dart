@@ -280,11 +280,13 @@ class ThousandSeparatorInputFormatter extends TextInputFormatter {
     final parsed = int.tryParse(rawNumberText);
     if (parsed == null) return oldValue;
 
-    final int selectionIndexFromEnd = normalized.length - newValue.selection.end;
+    final int selectionIndexFromEnd =
+        normalized.length - newValue.selection.end;
     final String formattedText =
         convertToPersianNumbers(_formatter.format(parsed));
-    final selectionOffset =
-        (formattedText.length - selectionIndexFromEnd).clamp(0, formattedText.length).toInt();
+    final selectionOffset = (formattedText.length - selectionIndexFromEnd)
+        .clamp(0, formattedText.length)
+        .toInt();
 
     return TextEditingValue(
       text: formattedText,

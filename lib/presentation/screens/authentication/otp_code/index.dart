@@ -35,7 +35,7 @@ class OTPCodeScreen extends StatelessWidget {
                         authHeaderWidget(context, authType: AuthMode.otpCode)
                             .tMargin(130),
                         Container(
-                          height: 226,
+                          height: 230,
                           margin: const EdgeInsets.only(top: 10),
                           decoration: BoxDecoration(
                               color: AppColors.white,

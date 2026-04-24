@@ -6,8 +6,6 @@ import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
 Row authHeaderWidget(BuildContext context, {required Enum authType}) {
-  final width = MediaQuery.sizeOf(context).width;
-
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
@@ -48,7 +46,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 ? 'ثبت نام'
                 : authType == AuthMode.login
                     ? 'ورود به حساب'
-                    : 'ورود کد تایید',
+                    : 'کد تایید',
             fontSize: 16,
             fontWeight: FontWeight.w900,
           ),
