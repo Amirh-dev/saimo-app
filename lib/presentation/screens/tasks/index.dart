@@ -736,20 +736,14 @@ class _TasksScreenState extends State<TasksScreen>
                   labelColor: AppColors.black1,
                   unselectedLabelColor: AppColors.gray,
                   labelStyle: const TextStyle(
-                    fontFamily: 'Sanse',
-                    fontWeight: FontWeight.w700,
+                    fontFamily: AppFonts.iranSans,
+                    fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    fontVariations: <FontVariation>[
-                      FontVariation.weight(600),
-                    ],
                   ),
                   unselectedLabelStyle: const TextStyle(
-                    fontFamily: 'Sanse',
+                    fontFamily: AppFonts.iranSans,
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
-                    fontVariations: <FontVariation>[
-                      FontVariation.weight(400),
-                    ],
                   ),
                   tabs: const [
                     Tab(text: 'چک لیست'),

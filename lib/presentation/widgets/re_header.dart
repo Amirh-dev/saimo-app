@@ -15,7 +15,7 @@ Widget reAppHeader(String title, {Widget? suffixIcon, Widget? prefixIcon}) {
             title,
             color: AppColors.black1,
             fontSize: 20,
-            fontWeight: FontWeight.w900,
+            fontWeight: 1100,
           ),
         ),
       ),

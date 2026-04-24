@@ -43,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ReTextField(
                                 fontWeight: FontWeight.w600,
                                 borderRadius: 100,
+                                borderColor: AppColors.gray1,
                                 onChanged: (p0) {
                                   setState(() {});
                                 },
@@ -53,15 +54,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontSize: 13,
                                 maxLength: 11,
                                 keyboardType: TextInputType.number,
-                                suffixIcon: Container(
-                                    margin: const EdgeInsets.only(left: 15),
-                                    child: const ReText(
+                                suffixIcon: const Padding(
+                                  padding: EdgeInsets.only(left: 15),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: 1,
+                                    child: ReText(
                                       '98+',
                                       isPersian: true,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.black1,
-                                    )),
+                                    ),
+                                  ),
+                                ),
                               ),
                               ReButton(
                                 isEnabled: phoneController.text.length == 11,

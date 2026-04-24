@@ -25,8 +25,8 @@ class HomeScreen extends StatelessWidget {
               child: ReText(
                 'خانه',
                 color: AppColors.black1,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: 1000,
               ),
             ),
             SizedBox(height: 16),
@@ -84,7 +84,7 @@ class TrophiesScreen extends StatelessWidget {
                 'جوایز',
                 color: AppColors.black1,
                 fontSize: 20,
-                fontWeight: FontWeight.w900,
+                fontWeight: 1000,
               ),
             ),
             Padding(
@@ -141,8 +141,8 @@ class TimerScreen extends StatelessWidget {
               child: ReText(
                 'زمان‌دار',
                 color: AppColors.black1,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: 1000,
               ),
             ),
             SizedBox(height: 16),

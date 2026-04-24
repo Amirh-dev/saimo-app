@@ -4,9 +4,6 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:simo_learn/utils/colors.dart';
-import 'package:simo_learn/utils/extentions.dart';
-import 'package:simo_learn/utils/helpers.dart';
 
 class AddTaskBottomSheet extends StatefulWidget {
   const AddTaskBottomSheet({super.key});
@@ -322,13 +319,10 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 setState(() {});
               },
               style: const TextStyle(
-                fontFamily: 'Sanse',
+                fontFamily: AppFonts.iranSans,
                 color: AppColors.black1,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                fontVariations: <FontVariation>[
-                  FontVariation.weight(500),
-                ],
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
@@ -336,13 +330,10 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 counterText: '',
                 isDense: true,
                 hintStyle: TextStyle(
-                  fontFamily: 'Sanse',
+                  fontFamily: AppFonts.iranSans,
                   color: AppColors.black1.withOpacity(0.45),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  fontVariations: const <FontVariation>[
-                    FontVariation.weight(500),
-                  ],
                 ),
               ),
             ),

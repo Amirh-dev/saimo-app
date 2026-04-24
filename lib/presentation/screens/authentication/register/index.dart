@@ -106,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               CompositedTransformFollower(
                 link: _studyLayerLink,
                 showWhenUnlinked: false,
-                offset: const Offset(0, 72),
+                offset: const Offset(0, 60),
                 child: SizedBox(
                   width: menuWidth,
                   child: _buildStudyOptions(),
@@ -126,58 +126,90 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildNameAndDateRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        GestureDetector(
-          onTap: _openBirthDatePicker,
-          child: Container(
-            height: 55,
+    const double rowHeight = 55;
+
+    return SizedBox(
+      height: rowHeight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
             width: 122,
-            margin: const EdgeInsets.only(bottom: 4),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: AppColors.gray2),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 12,
-                  color: AppColors.black,
+            child: GestureDetector(
+              onTap: _openBirthDatePicker,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppColors.gray2),
                 ),
-                const Spacer(),
-                ReText(
-                  _birthDate == null
-                      ? 'تاریخ تولد'
-                      : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      _birthDate == null ? AppColors.black : AppColors.black1,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 12,
+                      color: AppColors.black,
+                    ),
+                    const Spacer(),
+                    ReText(
+                      _birthDate == null
+                          ? 'تاریخ تولد'
+                          : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _birthDate == null
+                          ? AppColors.black
+                          : AppColors.black1,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ReTextField(
-            backgroundColor: AppColors.gray1,
-            borderColor: AppColors.gray1,
-            borderRadius: 100,
-            controller: _fullNameController,
-            placeholder: 'نام و نام خانوادگی',
-            placeholderAlign: TextAlign.right,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              height: rowHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.gray1,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              alignment: Alignment.center,
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: TextFormField(
+                  controller: _fullNameController,
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
+                  textAlign: TextAlign.right,
+                  textAlignVertical: TextAlignVertical.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
+                  decoration: InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    hintText: 'نام و نام خانوادگی',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      height: 1.2,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

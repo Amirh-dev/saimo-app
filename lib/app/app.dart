@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:simo_learn/presentation/screens/_screens.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
@@ -13,9 +12,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+        fontFamily: AppFonts.iranSans,
         useMaterial3: true,
       ),
-      home: LoginScreen(),
+      home: const LoginScreen(),
     );
   }
 }

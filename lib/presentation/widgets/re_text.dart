@@ -6,7 +6,7 @@ class ReText extends StatelessWidget {
   final String text;
   final double fontSize;
   final int? maxLines;
-  final FontWeight fontWeight;
+  final Object? fontWeight;
   final bool isBold;
   final bool isPersian;
   final TextAlign textAlign;
@@ -27,7 +27,7 @@ class ReText extends StatelessWidget {
     this.isPersian = true,
     this.textAlign = TextAlign.end,
     this.color,
-    this.fontFamily = 'Sanse',
+    this.fontFamily = AppFonts.iranSans,
     this.overflow = TextOverflow.ellipsis,
     this.textDirection = TextDirection.rtl,
     this.lineHeight,
@@ -38,12 +38,12 @@ class ReText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedWeight = isBold ? FontWeight.bold : fontWeight;
-    final sanseVariationWeight = switch (resolvedWeight.value) {
-      <= 100 => 100.0,
-      >= 900 => 900.0,
-      _ => (resolvedWeight.value - 100).toDouble(),
-    };
+    final resolvedWeightConfig = _resolveFontWeight(
+      requestedWeight: isBold ? FontWeight.bold : fontWeight,
+    );
+    final resolvedFontFamily = resolvedWeightConfig.variableWeight == null
+        ? fontFamily
+        : AppFonts.iranSansVar;
 
     return Text(
       isPersian ? convertToPersianNumbers(text) : text,
@@ -55,19 +55,53 @@ class ReText extends StatelessWidget {
         fontSize: fontSize,
         decorationColor: color,
         decorationThickness: 2,
-        fontWeight: resolvedWeight,
-        fontVariations: fontFamily == 'Sanse'
-            ? <FontVariation>[
-                FontVariation.weight(sanseVariationWeight),
-              ]
-            : null,
+        fontWeight: resolvedWeightConfig.staticWeight,
+        fontVariations: resolvedWeightConfig.variableWeight == null
+            ? null
+            : <FontVariation>[
+                FontVariation.weight(resolvedWeightConfig.variableWeight!),
+              ],
         color: color,
         letterSpacing: -0.5,
-        fontFamily: fontFamily,
+        fontFamily: resolvedFontFamily,
       ),
       textDirection: textDirection,
       textAlign: textAlign,
       overflow: overflow,
     );
   }
+
+  _ResolvedFontWeight _resolveFontWeight({
+    required Object? requestedWeight,
+  }) {
+    if (requestedWeight is num) {
+      final normalizedWeight = requestedWeight.toDouble();
+      if (normalizedWeight > 900) {
+        return _ResolvedFontWeight(
+          variableWeight: normalizedWeight.clamp(1, 1000).toDouble(),
+        );
+      }
+
+      final roundedWeightStep =
+          (normalizedWeight.clamp(100, 900) / 100).round().clamp(1, 9);
+      return _ResolvedFontWeight(
+        staticWeight: FontWeight.values[roundedWeightStep - 1],
+      );
+    }
+
+    return _ResolvedFontWeight(
+      staticWeight:
+          requestedWeight is FontWeight ? requestedWeight : FontWeight.normal,
+    );
+  }
+}
+
+class _ResolvedFontWeight {
+  final FontWeight? staticWeight;
+  final double? variableWeight;
+
+  const _ResolvedFontWeight({
+    this.staticWeight,
+    this.variableWeight,
+  });
 }

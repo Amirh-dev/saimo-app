@@ -8,7 +8,7 @@ class ReButton extends StatelessWidget {
   final String? text;
   final VoidCallback? onPressed;
   final IconData? icon;
-  final FontWeight? fontWeight;
+  final Object? fontWeight;
   final bool? isLoading;
   final bool isOutlined;
   final Color? color;

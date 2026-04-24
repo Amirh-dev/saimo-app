@@ -122,17 +122,10 @@ class _ReTextFieldState extends State<ReTextField> {
   Widget build(BuildContext context) {
     final isObscured = widget.obscureText ?? false;
     final isMultiline = (widget.maxLines ?? 1) > 1 && !isObscured;
+    final resolvedHeight = widget.height ?? 55;
     final resolvedRadius = widget.borderRadius ?? 16;
     final resolvedBorderColor = widget.borderColor ?? AppColors.dark2Color;
     final resolvedFontWeight = widget.fontWeight ?? FontWeight.w400;
-    final sanseVariationWeight = switch (resolvedFontWeight.value) {
-      <= 100 => 100.0,
-      >= 900 => 900.0,
-      _ => (resolvedFontWeight.value - 100).toDouble(),
-    };
-    final fontVariations = <FontVariation>[
-      FontVariation.weight(sanseVariationWeight),
-    ];
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -159,30 +152,40 @@ class _ReTextFieldState extends State<ReTextField> {
         ],
         cursorColor: widget.color,
         keyboardType: widget.keyboardType,
+        buildCounter: widget.maxLength == null
+            ? null
+            : (
+                context, {
+                required int currentLength,
+                required bool isFocused,
+                int? maxLength,
+              }) =>
+                null,
         decoration: InputDecoration(
           hintText: widget.placeholder,
-          isDense: true,
+          constraints:
+              isMultiline
+                  ? null
+                  : BoxConstraints.tightFor(height: resolvedHeight),
           contentPadding: EdgeInsets.symmetric(
             horizontal: 16,
             vertical: isMultiline ? 12 : 18,
           ),
           hintStyle: TextStyle(
-            fontFamily: 'Sanse',
+            fontFamily: AppFonts.iranSans,
             fontSize: widget.fontSize ?? 14,
             height: 1.2,
             fontWeight: resolvedFontWeight,
-            fontVariations: fontVariations,
             color: Colors.grey.shade500,
           ),
           labelStyle: TextStyle(
-            fontFamily: 'Sanse',
+            fontFamily: AppFonts.iranSans,
             fontSize: widget.fontSize ?? 10,
             fontWeight: resolvedFontWeight,
-            fontVariations: fontVariations,
             color: Colors.grey.shade500,
           ),
           errorStyle: const TextStyle(
-            fontFamily: 'Sanse',
+            fontFamily: AppFonts.iranSans,
             color: AppColors.errorColor,
           ),
           border: OutlineInputBorder(
@@ -248,9 +251,8 @@ class _ReTextFieldState extends State<ReTextField> {
         style: TextStyle(
           fontSize: widget.fontSize ?? 16,
           height: 1.2,
-          fontFamily: 'Sanse',
+          fontFamily: AppFonts.iranSans,
           fontWeight: resolvedFontWeight,
-          fontVariations: fontVariations,
           color: widget.textColor ?? Colors.black,
         ),
         textAlign: widget.placeholderAlign ??
@@ -259,7 +261,7 @@ class _ReTextFieldState extends State<ReTextField> {
         textAlignVertical:
             isMultiline ? TextAlignVertical.top : TextAlignVertical.center,
       ),
-    ).sizedBox(height: widget.height ?? 55, width: double.infinity);
+    ).sizedBox(height: resolvedHeight, width: double.infinity);
   }
 }
 

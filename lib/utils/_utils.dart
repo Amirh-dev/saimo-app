@@ -2,6 +2,7 @@ export 'assets.dart';
 export 'colors.dart';
 export 'enums.dart';
 export 'exceptions.dart';
+export 'fonts.dart';
 export 'extentions.dart';
 export 'helpers.dart';
 export 'strings.dart';
