@@ -43,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ReTextField(
                                 fontWeight: FontWeight.w600,
                                 borderRadius: 100,
-                                borderColor: AppColors.gray1,
                                 onChanged: (p0) {
                                   setState(() {});
                                 },

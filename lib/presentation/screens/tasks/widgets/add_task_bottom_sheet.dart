@@ -21,6 +21,9 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _tagController;
+  late FocusNode _titleFocusNode;
+  late FocusNode _descriptionFocusNode;
+  late FocusNode _tagFocusNode;
 
   static const List<String> _persianMonths = [
     'فروردین',
@@ -45,14 +48,31 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     _titleController = TextEditingController();
     _descriptionController = TextEditingController();
     _tagController = TextEditingController();
+    _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _tagFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
   }
 
   @override
   void dispose() {
+    _titleFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _descriptionFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _tagFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _tagController.dispose();
     super.dispose();
+  }
+
+  void _handleFieldFocusChange() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   int get _descriptionCount => _descriptionController.text.length;
@@ -174,11 +194,13 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       _buildField(
                         hintText: 'عنوان',
                         controller: _titleController,
+                        focusNode: _titleFocusNode,
                       ),
                       SizedBox(height: sectionSpacing),
                       _buildField(
                         hintText: 'توضیح کوتاه',
                         controller: _descriptionController,
+                        focusNode: _descriptionFocusNode,
                         maxLength: 50,
                         leadingText:
                             '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
@@ -187,6 +209,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                       _buildField(
                         hintText: 'افزودن تگ',
                         controller: _tagController,
+                        focusNode: _tagFocusNode,
                         leadingText: '${_tagsCount > 2 ? 2 : _tagsCount}/2',
                       ),
                       SizedBox(height: sectionSpacing + 4),
@@ -285,14 +308,35 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   Widget _buildField({
     required String hintText,
     required TextEditingController controller,
+    required FocusNode focusNode,
     String? leadingText,
     int? maxLength,
   }) {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: AppColors.gray2,
+        color: AppColors.gray1,
         borderRadius: BorderRadius.circular(100),
+        border: Border.all(
+          color: focusNode.hasFocus
+              ? AppColors.primary
+              : AppColors.gray1,
+          width: focusNode.hasFocus ? 1.4 : 0,
+        ),
+        boxShadow: focusNode.hasFocus
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: AppColors.black1.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Row(
@@ -308,9 +352,11 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
           ],
           Expanded(
             child: TextField(
+              focusNode: focusNode,
               controller: controller,
               maxLength: maxLength,
               textAlign: TextAlign.right,
+              textAlignVertical: TextAlignVertical.center,
               textDirection: TextDirection.rtl,
               inputFormatters: const [
                 PersianDigitsInputFormatter(),
