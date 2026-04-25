@@ -30,7 +30,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
               context.back();
             },
             child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 16, top: 24),
               decoration: BoxDecoration(
                   border: Border.all(color: const Color(0x23232b1a)),
                   borderRadius: BorderRadius.circular(100)),

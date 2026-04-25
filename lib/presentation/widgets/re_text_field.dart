@@ -172,14 +172,9 @@ class _ReTextFieldState extends State<ReTextField> {
         boxShadow: _hasFocus
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.10),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.black1.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
+                  color: AppColors.primary.withOpacity(0.20),
+                  spreadRadius: 2.5,
+                  offset: Offset.zero,
                 ),
               ]
             : null,
@@ -276,8 +271,8 @@ class _ReTextFieldState extends State<ReTextField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(resolvedRadius),
               borderSide: BorderSide(
-                color: widget.color ?? AppColors.primary,
-                width: 1.4,
+                color: (widget.color ?? AppColors.primary).withOpacity(0.80),
+                width: 1.5,
               ),
             ),
             suffixIcon: widget.suffixIcon ??

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -28,6 +29,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   late List<Map<String, dynamic>> _checklistTasks;
   late List<Map<String, dynamic>> _timedTasks;
+  Timer? _timedTaskTicker;
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
   int? _expandedChecklistTaskIndex;
@@ -66,7 +68,8 @@ class _TasksScreenState extends State<TasksScreen>
         'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
         'elapsed': '۴۳:۵۲',
         'duration': '۴۵:۰۰',
-        'progress': 0.93,
+        'durationSeconds': 2700,
+        'remainingSeconds': 2632,
         'status': 'pause',
         'label': '۴۵ دقیقه',
       },
@@ -75,8 +78,19 @@ class _TasksScreenState extends State<TasksScreen>
         'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
         'elapsed': '۴۳:۵۲',
         'duration': '۴۵:۰۰',
-        'progress': 0.45,
+        'durationSeconds': 2700,
+        'remainingSeconds': 1215,
         'status': 'play',
+        'label': '۴۵ دقیقه',
+      },
+      {
+        'title': 'مطالعه فارسی',
+        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
+        'elapsed': '۰۰:۰۰',
+        'duration': '۴۵:۰۰',
+        'durationSeconds': 2700,
+        'remainingSeconds': 2700,
+        'status': 'pending',
         'label': '۴۵ دقیقه',
       },
       {
@@ -84,7 +98,8 @@ class _TasksScreenState extends State<TasksScreen>
         'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
         'elapsed': '۴۳:۵۲',
         'duration': '۴۵:۰۰',
-        'progress': 1.0,
+        'durationSeconds': 2700,
+        'remainingSeconds': 0,
         'status': 'done',
         'label': '۴۵ دقیقه',
       },
@@ -154,10 +169,13 @@ class _TasksScreenState extends State<TasksScreen>
       );
       _isSyncingChecklistScroll = false;
     });
+
+    _ensureTimedTaskTicker();
   }
 
   @override
   void dispose() {
+    _timedTaskTicker?.cancel();
     _checklistDotsScrollController.dispose();
     _checklistCardsScrollController.dispose();
     _animationController.dispose();
@@ -177,6 +195,39 @@ class _TasksScreenState extends State<TasksScreen>
     return _expandedChecklistTaskIndex == index
         ? _checklistItemExpandedHeight
         : _checklistItemCollapsedHeight;
+  }
+
+  void _ensureTimedTaskTicker() {
+    final hasRunningTask = _timedTasks.any((task) => task['status'] == 'pause');
+    if (!hasRunningTask) {
+      _timedTaskTicker?.cancel();
+      _timedTaskTicker = null;
+      return;
+    }
+
+    _timedTaskTicker ??= Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tickTimedTasks(),
+    );
+  }
+
+  void _tickTimedTasks() {
+    if (!mounted) return;
+
+    setState(() {
+      for (final task in _timedTasks) {
+        if (task['status'] != 'pause') continue;
+
+        final remaining = (task['remainingSeconds'] as int? ?? 0) - 1;
+        task['remainingSeconds'] = math.max(0, remaining);
+
+        if ((task['remainingSeconds'] as int) == 0) {
+          task['status'] = 'done';
+        }
+      }
+    });
+
+    _ensureTimedTaskTicker();
   }
 
   void _toggleChecklistTaskStatus(int index) {
@@ -622,6 +673,367 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
+  Color _timedTaskColor(String status) {
+    switch (status) {
+      case 'pause':
+        return AppColors.primary;
+      case 'play':
+        return AppColors.secondary;
+      case 'done':
+        return AppColors.done;
+      default:
+        return AppColors.black1;
+    }
+  }
+
+  IconData _timedTaskIcon(String status) {
+    switch (status) {
+      case 'pause':
+        return Icons.pause_rounded;
+      case 'play':
+        return Icons.play_arrow_rounded;
+      case 'done':
+        return CupertinoIcons.checkmark_alt;
+      default:
+        return Icons.play_arrow_rounded;
+    }
+  }
+
+  String _timedTaskDurationValue(Map<String, dynamic> task) {
+    return (task['label']?.toString() ?? '').replaceAll('دقیقه', '').trim();
+  }
+
+  bool _timedTaskShowsProgress(Map<String, dynamic> task) {
+    final status = task['status'] as String? ?? 'pending';
+    return status == 'pause' || status == 'play';
+  }
+
+  double _timedTaskRowHeight(Map<String, dynamic> task) {
+    return _timedTaskShowsProgress(task) ? 98 : 74;
+  }
+
+  double _timedTaskRemainingProgress(Map<String, dynamic> task) {
+    final duration = task['durationSeconds'] as int? ?? 1;
+    final remaining = task['remainingSeconds'] as int? ?? 0;
+    return (remaining / duration).clamp(0.0, 1.0);
+  }
+
+  String _formatTimedTaskSeconds(int seconds) {
+    final safeSeconds = math.max(0, seconds);
+    final minutes = safeSeconds ~/ 60;
+    final remainingSeconds = safeSeconds % 60;
+    final formatted =
+        '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    return convertToPersianNumbers(formatted);
+  }
+
+  String _timedTaskRemainingLabel(Map<String, dynamic> task) {
+    return _formatTimedTaskSeconds(task['remainingSeconds'] as int? ?? 0);
+  }
+
+  String _timedTaskDurationLabel(Map<String, dynamic> task) {
+    return _formatTimedTaskSeconds(task['durationSeconds'] as int? ?? 0);
+  }
+
+  void _toggleTimedTaskTimer(int index) {
+    if (index < 0 || index >= _timedTasks.length) return;
+
+    setState(() {
+      final task = _timedTasks[index];
+      final status = task['status'] as String? ?? 'pending';
+      final remaining = task['remainingSeconds'] as int? ?? 0;
+
+      if (status == 'done' || remaining <= 0) return;
+
+      if (status == 'pause') {
+        task['status'] = 'play';
+        return;
+      }
+
+      for (final timedTask in _timedTasks) {
+        if (timedTask['status'] == 'pause') {
+          timedTask['status'] = 'play';
+        }
+      }
+      task['status'] = 'pause';
+    });
+
+    _ensureTimedTaskTicker();
+  }
+
+  Widget _buildTimedConnector({
+    required bool visible,
+    required double height,
+  }) {
+    if (!visible) return SizedBox(height: height);
+
+    const segmentHeight = 3.0;
+    const segmentGap = 4.0;
+    final count = math.max(1, (height / (segmentHeight + segmentGap)).floor());
+
+    return SizedBox(
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(
+          count,
+          (_) => Container(
+            width: 2,
+            height: segmentHeight,
+            decoration: BoxDecoration(
+              color: AppColors.dark4Color,
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimedTaskMarker({
+    required Map<String, dynamic> task,
+    required bool showTopLine,
+    required bool showBottomLine,
+    required double height,
+  }) {
+    final status = task['status'] as String? ?? 'pending';
+    final color = _timedTaskColor(status);
+    final isDone = status == 'done';
+
+    return SizedBox(
+      width: 42,
+      height: height,
+      child: Column(
+        children: [
+          _buildTimedConnector(
+            visible: showTopLine,
+            height: math.max(0, (height - 58) / 2),
+          ),
+          Container(
+            width: 35,
+            height: 58,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(color: AppColors.gray2),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withOpacity(0.12),
+                    border: Border.all(color: color.withOpacity(0.70)),
+                  ),
+                  child: Icon(
+                    isDone
+                        ? CupertinoIcons.checkmark_alt
+                        : Icons.timer_outlined,
+                    size: 12,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                ReText(
+                  _timedTaskDurationValue(task),
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.black1,
+                  textAlign: TextAlign.center,
+                ),
+                const ReText(
+                  'دقیقه',
+                  fontSize: 7,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          _buildTimedConnector(
+            visible: showBottomLine,
+            height: math.max(0, (height - 58) / 2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimedTaskTile(Map<String, dynamic> task, int index) {
+    const titleSize = 14.0;
+    const subtitleSize = 10.0;
+
+    final status = task['status'] as String? ?? 'pending';
+    final color = _timedTaskColor(status);
+    final progress = _timedTaskRemainingProgress(task);
+    final hasProgress = _timedTaskShowsProgress(task);
+    final isDone = status == 'done';
+    final cardHeight = hasProgress ? 84.0 : 60.0;
+
+    return Opacity(
+      opacity: isDone ? 0.55 : 1,
+      child: Container(
+        height: cardHeight,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(color: AppColors.gray2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black1.withOpacity(0.05),
+              blurRadius: 80,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: hasProgress ? 10 : 8,
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.arrow_back_ios,
+                  size: 11,
+                  color: AppColors.gray,
+                ),
+                const Spacer(),
+                Expanded(
+                  flex: 6,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ReText(
+                        task['title'] ?? '',
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.black1,
+                        decoration: isDone ? TextDecoration.lineThrough : null,
+                      ),
+                      const SizedBox(height: 2),
+                      ReText(
+                        task['subtitle'] ?? '',
+                        fontSize: subtitleSize,
+                        color: Color.lerp(
+                          AppColors.gray,
+                          Colors.transparent,
+                          0.25,
+                        ),
+                        fontWeight: FontWeight.w600,
+                        decoration: isDone ? TextDecoration.lineThrough : null,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => _toggleTimedTaskTimer(index),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _timedTaskIcon(status),
+                      color: AppColors.white,
+                      size: status == 'done' ? 17 : 21,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (hasProgress) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  ReText(
+                    _timedTaskRemainingLabel(task),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.black1,
+                    textDirection: TextDirection.ltr,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 2,
+                        backgroundColor: AppColors.gray2,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  ReText(
+                    _timedTaskDurationLabel(task),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimedTaskList(BuildContext context) {
+    if (_timedTasks.isEmpty) {
+      return _buildTaskList(context, const []);
+    }
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 18, 14, 16),
+          itemCount: _timedTasks.length,
+          itemBuilder: (context, index) {
+            final task = _timedTasks[index];
+            final rowHeight = _timedTaskRowHeight(task);
+
+            return SizedBox(
+              height: rowHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: _buildTimedTaskTile(task, index),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildTimedTaskMarker(
+                    task: task,
+                    showTopLine: index != 0,
+                    showBottomLine: index != _timedTasks.length - 1,
+                    height: rowHeight,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -755,7 +1167,7 @@ class _TasksScreenState extends State<TasksScreen>
                 child: TabBarView(
                   children: [
                     _buildTaskList(context, _checklistTasks),
-                    _buildTaskList(context, []),
+                    _buildTimedTaskList(context),
                   ],
                 ),
               ),

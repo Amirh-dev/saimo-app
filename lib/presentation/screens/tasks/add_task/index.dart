@@ -194,7 +194,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final sectionSpacing = width < 360 ? 10.0 : 12.0;
 
     return Scaffold(
-      backgroundColor: AppColors.gray1,
+      backgroundColor: AppColors.white,
       body: SafeArea(
         child: AnimatedPadding(
           duration: const Duration(milliseconds: 200),
@@ -340,16 +340,20 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     String? leadingText,
     int? maxLength,
   }) {
+    final isFocused = focusNode.hasFocus;
+
     return Container(
-      height: 56,
+      height: 55,
       decoration: BoxDecoration(
         color: AppColors.gray1,
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(
-          color: focusNode.hasFocus ? AppColors.primary : AppColors.gray1,
-          width: focusNode.hasFocus ? 1.4 : 0,
-        ),
-        boxShadow: focusNode.hasFocus
+        border: isFocused
+            ? Border.all(
+                color: AppColors.primary,
+                width: 1.4,
+              )
+            : null,
+        boxShadow: isFocused
             ? [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.10),
@@ -384,6 +388,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               textAlign: TextAlign.right,
               textAlignVertical: TextAlignVertical.center,
               textDirection: TextDirection.rtl,
+              cursorColor: AppColors.primary,
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               inputFormatters: const [
                 PersianDigitsInputFormatter(),
               ],
