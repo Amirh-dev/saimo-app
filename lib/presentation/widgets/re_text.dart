@@ -11,7 +11,6 @@ class ReText extends StatelessWidget {
   final bool isPersian;
   final TextAlign textAlign;
   final Color? color;
-  final String? fontFamily;
   final double? lineHeight;
   final TextOverflow overflow;
   final TextDirection textDirection;
@@ -27,7 +26,6 @@ class ReText extends StatelessWidget {
     this.isPersian = true,
     this.textAlign = TextAlign.end,
     this.color,
-    this.fontFamily = AppFonts.iranSans,
     this.overflow = TextOverflow.ellipsis,
     this.textDirection = TextDirection.rtl,
     this.lineHeight,
@@ -38,13 +36,6 @@ class ReText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedWeightConfig = _resolveFontWeight(
-      requestedWeight: isBold ? FontWeight.bold : fontWeight,
-    );
-    final resolvedFontFamily = resolvedWeightConfig.variableWeight == null
-        ? fontFamily
-        : AppFonts.iranSansVar;
-
     return Text(
       isPersian ? convertToPersianNumbers(text) : text,
       maxLines: maxLines,
@@ -55,53 +46,16 @@ class ReText extends StatelessWidget {
         fontSize: fontSize,
         decorationColor: color,
         decorationThickness: 2,
-        fontWeight: resolvedWeightConfig.staticWeight,
-        fontVariations: resolvedWeightConfig.variableWeight == null
-            ? null
-            : <FontVariation>[
-                FontVariation.weight(resolvedWeightConfig.variableWeight!),
-              ],
+        fontVariations: AppFonts.fontVariations(
+          isBold ? FontWeight.bold : fontWeight,
+        ),
         color: color,
         letterSpacing: -0.5,
-        fontFamily: resolvedFontFamily,
+        fontFamily: AppFonts.iranSansVar,
       ),
       textDirection: textDirection,
       textAlign: textAlign,
       overflow: overflow,
     );
   }
-
-  _ResolvedFontWeight _resolveFontWeight({
-    required Object? requestedWeight,
-  }) {
-    if (requestedWeight is num) {
-      final normalizedWeight = requestedWeight.toDouble();
-      if (normalizedWeight > 900) {
-        return _ResolvedFontWeight(
-          variableWeight: normalizedWeight.clamp(1, 1000).toDouble(),
-        );
-      }
-
-      final roundedWeightStep =
-          (normalizedWeight.clamp(100, 900) / 100).round().clamp(1, 9);
-      return _ResolvedFontWeight(
-        staticWeight: FontWeight.values[roundedWeightStep - 1],
-      );
-    }
-
-    return _ResolvedFontWeight(
-      staticWeight:
-          requestedWeight is FontWeight ? requestedWeight : FontWeight.normal,
-    );
-  }
-}
-
-class _ResolvedFontWeight {
-  final FontWeight? staticWeight;
-  final double? variableWeight;
-
-  const _ResolvedFontWeight({
-    this.staticWeight,
-    this.variableWeight,
-  });
 }

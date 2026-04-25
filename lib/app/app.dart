@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-        fontFamily: AppFonts.iranSans,
+        fontFamily: AppFonts.iranSansVar,
         useMaterial3: true,
       ),
       home: const LoginScreen(),

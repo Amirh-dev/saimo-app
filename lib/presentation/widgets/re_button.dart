@@ -56,6 +56,7 @@ class ReButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool enabled = (isEnabled ?? true) && onPressed != null;
     final double radius = borderRadius ?? 32;
+    final Color resolvedButtonColor = _resolveButtonColor(enabled);
 
     return SizedBox(
       width: double.infinity,
@@ -66,29 +67,39 @@ class ReButton extends StatelessWidget {
         child: Container(
           padding: padding ?? EdgeInsets.zero,
           decoration: BoxDecoration(
-            color: (background != null)
-                ? background
-                : (enabled
-                    ? (color ?? AppColors.primary)
-                    : AppColors.dark4Color),
+            color: resolvedButtonColor,
             borderRadius: BorderRadius.circular(radius),
             border: isOutlined
                 ? Border.all(color: color ?? AppColors.dark4Color)
                 : null,
           ),
           alignment: Alignment.center,
-          child: buildContent(),
+          child: buildContent(resolvedButtonColor),
         ),
       ),
     );
   }
 
-  Widget buildContent() {
+  Color _resolveButtonColor(bool enabled) {
+    return background ??
+        (enabled ? (color ?? AppColors.primary) : AppColors.dark4Color);
+  }
+
+  Object _resolveTextFontWeight(Color resolvedButtonColor) {
+    return fontWeight ??
+        (resolvedButtonColor == AppColors.primary
+            ? FontWeight.w800
+            : FontWeight.w600);
+  }
+
+  Widget buildContent(Color resolvedButtonColor) {
     final bool hasIcon = icon != null;
     final bool hasText = text != null && text!.trim().isNotEmpty;
     final bool shouldShowOnlyIcon = (showOnlyIcon ?? false) && hasIcon;
     final Color resolvedContentColor = textColor ??
         (isOutlined ? (color ?? AppColors.dark4Color) : Colors.white);
+    final Object resolvedFontWeight =
+        _resolveTextFontWeight(resolvedButtonColor);
 
     if (isLoading != null && isLoading!) {
       return ReDotsLoader(color: resolvedContentColor);
@@ -120,7 +131,7 @@ class ReButton extends StatelessWidget {
                         color: resolvedContentColor,
                         fontSize: fontSize ?? 16,
                         textAlign: TextAlign.center,
-                        fontWeight: fontWeight ?? FontWeight.w800,
+                        fontWeight: resolvedFontWeight,
                         maxLines: 2,
                       ),
                     ],
@@ -139,7 +150,7 @@ class ReButton extends StatelessWidget {
                           color: resolvedContentColor,
                           fontSize: fontSize ?? 16,
                           textAlign: TextAlign.center,
-                          fontWeight: fontWeight ?? FontWeight.bold,
+                          fontWeight: resolvedFontWeight,
                           maxLines: 2,
                         )
                       : const SizedBox.shrink(),

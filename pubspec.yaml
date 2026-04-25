@@ -73,26 +73,6 @@ flutter:
   assets:
     - assets/images/
   fonts:
-    - family: IRANSans
-      fonts:
-        - asset: assets/fonts/IRANSansXFaNum-ThinD4.ttf
-          weight: 100
-        - asset: assets/fonts/IRANSansXFaNum-UltraLightD4.ttf
-          weight: 200
-        - asset: assets/fonts/IRANSansXFaNum-LightD4.ttf
-          weight: 300
-        - asset: assets/fonts/IRANSansXFaNum-RegularD4.ttf
-          weight: 400
-        - asset: assets/fonts/IRANSansXFaNum-MediumD4.ttf
-          weight: 500
-        - asset: assets/fonts/IRANSansXFaNum-DemiBoldD4.ttf
-          weight: 600
-        - asset: assets/fonts/IRANSansXFaNum-BoldD4.ttf
-          weight: 700
-        - asset: assets/fonts/IRANSansXFaNum-ExtraBoldD4.ttf
-          weight: 800
-        - asset: assets/fonts/IRANSansXFaNum-BlackD4.ttf
-          weight: 900
     - family: IRANSansVar
       fonts:
         - asset: assets/fonts/IRANSansXVF.ttf

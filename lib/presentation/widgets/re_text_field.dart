@@ -162,6 +162,7 @@ class _ReTextFieldState extends State<ReTextField> {
     final resolvedFillColor = widget.backgroundColor ?? AppColors.gray1;
     final resolvedInactiveBorderColor = resolvedFillColor;
     final resolvedFontWeight = widget.fontWeight ?? FontWeight.w400;
+    final resolvedFontVariations = AppFonts.fontVariations(resolvedFontWeight);
     final resolvedHintColor = AppColors.black1.withOpacity(0.45);
     final resolvedIconColor = AppColors.black1.withOpacity(0.45);
 
@@ -227,20 +228,20 @@ class _ReTextFieldState extends State<ReTextField> {
               vertical: isMultiline ? 12 : 18,
             ),
             hintStyle: TextStyle(
-              fontFamily: AppFonts.iranSans,
+              fontFamily: AppFonts.iranSansVar,
               fontSize: widget.fontSize ?? 14,
               height: 1.2,
-              fontWeight: resolvedFontWeight,
+              fontVariations: resolvedFontVariations,
               color: resolvedHintColor,
             ),
             labelStyle: TextStyle(
-              fontFamily: AppFonts.iranSans,
+              fontFamily: AppFonts.iranSansVar,
               fontSize: widget.fontSize ?? 10,
-              fontWeight: resolvedFontWeight,
+              fontVariations: resolvedFontVariations,
               color: resolvedHintColor,
             ),
             errorStyle: const TextStyle(
-              fontFamily: AppFonts.iranSans,
+              fontFamily: AppFonts.iranSansVar,
               color: AppColors.errorColor,
             ),
             border: OutlineInputBorder(
@@ -319,8 +320,8 @@ class _ReTextFieldState extends State<ReTextField> {
           style: TextStyle(
             fontSize: widget.fontSize ?? 16,
             height: 1.2,
-            fontFamily: AppFonts.iranSans,
-            fontWeight: resolvedFontWeight,
+            fontFamily: AppFonts.iranSansVar,
+            fontVariations: resolvedFontVariations,
             color: widget.textColor ?? AppColors.black1,
           ),
           textAlign: widget.placeholderAlign ??

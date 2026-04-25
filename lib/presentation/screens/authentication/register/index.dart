@@ -10,6 +10,7 @@ import 'package:simo_learn/presentation/widgets/re_text_field.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
+import 'package:simo_learn/utils/fonts.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -217,10 +218,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       FocusManager.instance.primaryFocus?.unfocus(),
                   textAlign: TextAlign.right,
                   textAlignVertical: TextAlignVertical.center,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    fontFamily: AppFonts.iranSansVar,
                     fontSize: 13,
                     height: 1.2,
-                    fontWeight: FontWeight.w600,
+                    fontVariations: AppFonts.fontVariations(FontWeight.w600),
                     color: AppColors.black1,
                   ),
                   decoration: InputDecoration(
@@ -228,9 +230,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: InputBorder.none,
                     hintText: 'نام و نام خانوادگی',
                     hintStyle: TextStyle(
+                      fontFamily: AppFonts.iranSansVar,
                       fontSize: 13,
                       height: 1.2,
-                      fontWeight: FontWeight.w600,
+                      fontVariations: AppFonts.fontVariations(FontWeight.w600),
                       color: AppColors.black1.withOpacity(0.45),
                     ),
                   ),
@@ -388,15 +391,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Column(
                             children: [
                               _buildNameAndDateRow(),
-                              _buildPhoneField().tMargin(4),
-                              _buildStudyHeader().tMargin(14),
+                              _buildPhoneField().tMargin(8),
+                              _buildStudyHeader().tMargin(8),
                               ReButton(
                                 onPressed: () {
                                   _closeStudyMenu();
                                   context.to(OTPCodeScreen());
                                 },
                                 text: 'ثبت نام',
-                              ).tMargin(14),
+                              ).tMargin(16),
                               ReButton(
                                 isOutlined: true,
                                 color: AppColors.gray2,

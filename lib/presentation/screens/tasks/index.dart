@@ -735,14 +735,14 @@ class _TasksScreenState extends State<TasksScreen>
                   ),
                   labelColor: AppColors.black1,
                   unselectedLabelColor: AppColors.gray,
-                  labelStyle: const TextStyle(
-                    fontFamily: AppFonts.iranSans,
-                    fontWeight: FontWeight.w900,
+                  labelStyle: TextStyle(
+                    fontFamily: AppFonts.iranSansVar,
+                    fontVariations: AppFonts.fontVariations(FontWeight.w900),
                     fontSize: 14,
                   ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontFamily: AppFonts.iranSans,
-                    fontWeight: FontWeight.w500,
+                  unselectedLabelStyle: TextStyle(
+                    fontFamily: AppFonts.iranSansVar,
+                    fontVariations: AppFonts.fontVariations(FontWeight.w500),
                     fontSize: 14,
                   ),
                   tabs: const [
@@ -836,7 +836,7 @@ class _TasksScreenState extends State<TasksScreen>
       child: Row(
         children: [
           Container(
-            width: 46,
+            width: 44,
             height: 46,
             decoration: BoxDecoration(
               color: AppColors.white,

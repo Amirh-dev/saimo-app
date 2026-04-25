@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   context.to(const RegisterScreen());
                                 },
-                                fontSize: 15,
+                                fontSize: 16,
                                 text: 'ورود',
                               ).tMargin(16),
                               ReButton(

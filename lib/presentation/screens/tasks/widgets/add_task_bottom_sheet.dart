@@ -318,9 +318,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
         color: AppColors.gray1,
         borderRadius: BorderRadius.circular(100),
         border: Border.all(
-          color: focusNode.hasFocus
-              ? AppColors.primary
-              : AppColors.gray1,
+          color: focusNode.hasFocus ? AppColors.primary : AppColors.gray1,
           width: focusNode.hasFocus ? 1.4 : 0,
         ),
         boxShadow: focusNode.hasFocus
@@ -364,11 +362,11 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
               onChanged: (_) {
                 setState(() {});
               },
-              style: const TextStyle(
-                fontFamily: AppFonts.iranSans,
+              style: TextStyle(
+                fontFamily: AppFonts.iranSansVar,
                 color: AppColors.black1,
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontVariations: AppFonts.fontVariations(FontWeight.w600),
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
@@ -376,10 +374,10 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
                 counterText: '',
                 isDense: true,
                 hintStyle: TextStyle(
-                  fontFamily: AppFonts.iranSans,
+                  fontFamily: AppFonts.iranSansVar,
                   color: AppColors.black1.withOpacity(0.45),
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
                 ),
               ),
             ),

@@ -19,7 +19,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
             ? 160
             : 170,
         height: 160,
-        fit: BoxFit.cover,
+        fit: BoxFit.fitWidth,
       ),
       const Spacer(),
       Column(

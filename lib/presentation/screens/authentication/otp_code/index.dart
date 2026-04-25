@@ -61,10 +61,12 @@ class OTPCodeScreen extends StatelessWidget {
                                 defaultPinTheme: PinTheme(
                                   height: 50,
                                   width: 50,
-                                  textStyle: const TextStyle(
-                                    fontFamily: AppFonts.iranSans,
+                                  textStyle: TextStyle(
+                                    fontFamily: AppFonts.iranSansVar,
                                     fontSize: 18,
-                                    fontWeight: FontWeight.w600,
+                                    fontVariations: AppFonts.fontVariations(
+                                      FontWeight.w600,
+                                    ),
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF6F6F6),
@@ -78,10 +80,12 @@ class OTPCodeScreen extends StatelessWidget {
                                 focusedPinTheme: PinTheme(
                                   height: 55,
                                   width: 55,
-                                  textStyle: const TextStyle(
-                                    fontFamily: AppFonts.iranSans,
+                                  textStyle: TextStyle(
+                                    fontFamily: AppFonts.iranSansVar,
                                     fontSize: 18,
-                                    fontWeight: FontWeight.w800,
+                                    fontVariations: AppFonts.fontVariations(
+                                      FontWeight.w800,
+                                    ),
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF6F6F6),
