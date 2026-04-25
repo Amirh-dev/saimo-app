@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:simo_learn/presentation/screens/tasks/widgets/add_task_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
@@ -166,7 +166,7 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   List<Jalali> get _weekDaysList {
-    return List.generate(7, (index) => _today.addDays(index - 3));
+    return List.generate(17, (index) => _today.addDays(index - 3));
   }
 
   bool _isSameDay(Jalali a, Jalali b) {
@@ -683,7 +683,7 @@ class _TasksScreenState extends State<TasksScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: _showAddTaskBottomSheet,
+                    onTap: _openAddTaskScreen,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         vertical: 10,
@@ -784,13 +784,9 @@ class _TasksScreenState extends State<TasksScreen>
     }
   }
 
-  Future<void> _showAddTaskBottomSheet() async {
-    final newTask = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.black1.withOpacity(0.2),
-      builder: (_) => const AddTaskBottomSheet(),
+  Future<void> _openAddTaskScreen() async {
+    final newTask = await context.to<Map<String, dynamic>>(
+      const AddTaskScreen(),
     );
 
     if (newTask == null) return;
@@ -872,6 +868,7 @@ class _TasksScreenState extends State<TasksScreen>
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOutCubic,
+                    height: 46,
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.black1 : Colors.transparent,
                       borderRadius: BorderRadius.circular(100),
@@ -880,7 +877,7 @@ class _TasksScreenState extends State<TasksScreen>
                       vertical: isSelected ? 12 : 5,
                       horizontal: isSelected ? 12 : 0,
                     ),
-                    width: isSelected ? null : 35,
+                    width: isSelected ? 135 : 35,
                     child: Center(
                       child: isSelected
                           ? SlideTransition(

@@ -1,21 +1,21 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
-class AddTaskBottomSheet extends StatefulWidget {
-  const AddTaskBottomSheet({super.key});
+class AddTaskScreen extends StatefulWidget {
+  const AddTaskScreen({super.key});
 
   @override
-  State<AddTaskBottomSheet> createState() => _AddTaskBottomSheetState();
+  State<AddTaskScreen> createState() => _AddTaskScreenState();
 }
 
-class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
+class _AddTaskScreenState extends State<AddTaskScreen> {
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
   late Jalali _selectedDate;
+  late Jalali _visibleCalendarMonth;
   late TimeOfDay _selectedTime;
 
   late TextEditingController _titleController;
@@ -44,6 +44,7 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   void initState() {
     super.initState();
     _selectedDate = Jalali.now();
+    _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     _selectedTime = TimeOfDay.fromDateTime(DateTime.now());
     _titleController = TextEditingController();
     _descriptionController = TextEditingController();
@@ -95,18 +96,11 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
 
-  Future<void> _openScheduleModal({bool preferWeekly = false}) async {
-    setState(() {
-      _isWeeklyRepeat = preferWeekly;
-      if (preferWeekly) {
-        _isReminderEnabled = true;
-      }
-    });
-  }
-
   void _selectDateModeDirectly() {
     setState(() {
       _isWeeklyRepeat = false;
+      _visibleCalendarMonth =
+          Jalali(_selectedDate.year, _selectedDate.month, 1);
     });
   }
 
@@ -114,6 +108,46 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     setState(() {
       _isWeeklyRepeat = true;
       _isReminderEnabled = true;
+    });
+  }
+
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
+  Jalali _addMonths(Jalali month, int delta) {
+    final monthIndex = (month.year * 12) + month.month - 1 + delta;
+    return Jalali(monthIndex ~/ 12, (monthIndex % 12) + 1, 1);
+  }
+
+  bool get _canGoToPreviousCalendarMonth {
+    final today = Jalali.now();
+    final currentMonth = Jalali(today.year, today.month, 1);
+    return _compareJalaliDate(_visibleCalendarMonth, currentMonth) > 0;
+  }
+
+  void _goToPreviousCalendarMonth() {
+    if (!_canGoToPreviousCalendarMonth) return;
+    setState(() {
+      _visibleCalendarMonth = _addMonths(_visibleCalendarMonth, -1);
+    });
+  }
+
+  void _goToNextCalendarMonth() {
+    setState(() {
+      _visibleCalendarMonth = _addMonths(_visibleCalendarMonth, 1);
+    });
+  }
+
+  void _selectCalendarDate(Jalali date) {
+    final today = Jalali.now();
+    if (_compareJalaliDate(date, today) < 0) return;
+
+    setState(() {
+      _selectedDate = date;
+      _visibleCalendarMonth = Jalali(date.year, date.month, 1);
     });
   }
 
@@ -159,23 +193,17 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     final horizontalPadding = width < 360 ? 14.0 : 18.0;
     final sectionSpacing = width < 360 ? 10.0 : 12.0;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      padding:
-          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: AppColors.gray1,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(34),
-            ),
+    return Scaffold(
+      backgroundColor: AppColors.gray1,
+      body: SafeArea(
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: SafeArea(
-            top: false,
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
@@ -391,8 +419,14 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
     return _ScheduleSelectionCard(
       formattedDateLabel: _scheduleDateLabel,
       isWeeklyRepeat: _isWeeklyRepeat,
+      selectedDate: _selectedDate,
+      visibleMonth: _visibleCalendarMonth,
+      monthNames: _persianMonths,
+      canGoToPreviousMonth: _canGoToPreviousCalendarMonth,
       onSelectDateMode: _selectDateModeDirectly,
-      onDateTap: _openScheduleModal,
+      onDateSelected: _selectCalendarDate,
+      onPreviousMonth: _goToPreviousCalendarMonth,
+      onNextMonth: _goToNextCalendarMonth,
       onSelectWeeklyRepeat: _selectWeeklyRepeatDirectly,
     );
   }
@@ -465,123 +499,75 @@ class _AddTaskBottomSheetState extends State<AddTaskBottomSheet> {
   }
 }
 
-class _TaskScheduleResult {
-  const _TaskScheduleResult({
-    required this.selectedDate,
-    required this.selectedTime,
-    required this.repeatWeekly,
-  });
-
-  final Jalali selectedDate;
-  final TimeOfDay selectedTime;
-  final bool repeatWeekly;
-}
-
-class _TaskScheduleModal extends StatefulWidget {
-  const _TaskScheduleModal({
-    required this.initialDate,
-    required this.initialTime,
-    required this.initialWeeklyRepeat,
-    required this.monthNames,
-  });
-
-  final Jalali initialDate;
-  final TimeOfDay initialTime;
-  final bool initialWeeklyRepeat;
-  final List<String> monthNames;
-
-  @override
-  State<_TaskScheduleModal> createState() => _TaskScheduleModalState();
-}
-
-class _TaskScheduleModalState extends State<_TaskScheduleModal> {
-  late Jalali _selectedDate;
-  late TimeOfDay _selectedTime;
-  late bool _isWeeklyRepeat;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDate = widget.initialDate;
-    _selectedTime = widget.initialTime;
-    _isWeeklyRepeat = widget.initialWeeklyRepeat;
-  }
-
-  String get _formattedDateLabel {
-    final now = Jalali.now();
-    final isToday = _selectedDate.year == now.year &&
-        _selectedDate.month == now.month &&
-        _selectedDate.day == now.day;
-    final prefix = isToday ? 'امروز، ' : '';
-    return '$prefix${_selectedDate.day} ${widget.monthNames[_selectedDate.month - 1]} ${_selectedDate.year}';
-  }
-
-  void _closeWithResult({required bool repeatWeekly}) {
-    Navigator.of(context).pop(
-      _TaskScheduleResult(
-        selectedDate: _selectedDate,
-        selectedTime: _selectedTime,
-        repeatWeekly: repeatWeekly,
-      ),
-    );
-  }
-
-  Future<void> _handleDateTap() async {
-    final result = await showModalBottomSheet<_PersianDateTimePickerResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.black1.withOpacity(0.2),
-      builder: (_) => _PersianDateTimePickerSheet(
-        initialDate: _selectedDate,
-        initialTime: _selectedTime,
-        monthNames: widget.monthNames,
-      ),
-    );
-
-    if (result == null || !mounted) return;
-
-    _selectedDate = result.date;
-    _selectedTime = result.time;
-    _closeWithResult(repeatWeekly: false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: _ScheduleSelectionCard(
-          formattedDateLabel: _formattedDateLabel,
-          isWeeklyRepeat: _isWeeklyRepeat,
-          onSelectDateMode: () => _closeWithResult(repeatWeekly: false),
-          onDateTap: _handleDateTap,
-          onSelectWeeklyRepeat: () => _closeWithResult(repeatWeekly: true),
-        ),
-      ),
-    );
-  }
-}
-
 class _ScheduleSelectionCard extends StatelessWidget {
   const _ScheduleSelectionCard({
     required this.formattedDateLabel,
     required this.isWeeklyRepeat,
+    required this.selectedDate,
+    required this.visibleMonth,
+    required this.monthNames,
+    required this.canGoToPreviousMonth,
     required this.onSelectDateMode,
-    required this.onDateTap,
+    required this.onDateSelected,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
     required this.onSelectWeeklyRepeat,
   });
 
   final String formattedDateLabel;
   final bool isWeeklyRepeat;
+  final Jalali selectedDate;
+  final Jalali visibleMonth;
+  final List<String> monthNames;
+  final bool canGoToPreviousMonth;
   final VoidCallback onSelectDateMode;
-  final VoidCallback onDateTap;
+  final ValueChanged<Jalali> onDateSelected;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
   final VoidCallback onSelectWeeklyRepeat;
+
+  static const List<String> _weekDayLabels = [
+    'ش',
+    'ی',
+    'د',
+    'س',
+    'چ',
+    'پ',
+    'ج',
+  ];
+
+  bool _isSameDay(Jalali a, Jalali b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
+  int _persianWeekStartOffset(Jalali date) {
+    return date.weekDay - 1;
+  }
+
+  List<Jalali?> _monthGridDates() {
+    final firstDay = Jalali(visibleMonth.year, visibleMonth.month, 1);
+    final leadingEmptyCells = _persianWeekStartOffset(firstDay);
+    final dates = <Jalali?>[
+      for (var i = 0; i < leadingEmptyCells; i++) null,
+      for (var day = 1; day <= firstDay.monthLength; day++)
+        Jalali(visibleMonth.year, visibleMonth.month, day),
+    ];
+    while (dates.length % 7 != 0) {
+      dates.add(null);
+    }
+    return dates;
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDateModeSelected = !isWeeklyRepeat;
+    final today = Jalali.now();
 
     return Container(
       decoration: BoxDecoration(
@@ -594,7 +580,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: isDateModeSelected ? null : onSelectDateMode,
+            onTap: onSelectDateMode,
             behavior: HitTestBehavior.opaque,
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 180),
@@ -618,51 +604,42 @@ class _ScheduleSelectionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          IgnorePointer(
-            ignoring: !isDateModeSelected,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              opacity: isDateModeSelected ? 1 : 0.45,
-              child: GestureDetector(
-                onTap: onDateTap,
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: AppColors.gray1,
-                    borderRadius: BorderRadius.circular(34),
-                    border: Border.all(color: AppColors.gray2),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.gray,
-                        size: 10,
-                      ),
-                      const Spacer(),
-                      ReText(
-                        formattedDateLabel,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.black1,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          _SelectedDateSummary(
+            formattedDateLabel: formattedDateLabel,
+            isEnabled: isDateModeSelected,
+            onTap: onSelectDateMode,
           ),
-          const SizedBox(height: 14),
-          const Divider(
-            color: AppColors.gray2,
-            thickness: 1,
-            height: 1,
+          AnimatedSize(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: isDateModeSelected
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: _buildCalendar(today),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: isDateModeSelected
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Divider(
+                      color: AppColors.gray2,
+                      thickness: 1,
+                      height: 1,
+                    ),
+                  )
+                : const SizedBox(
+                    key: ValueKey('date-divider-hidden'),
+                    width: double.infinity,
+                  ),
           ),
           GestureDetector(
-            onTap: isWeeklyRepeat ? null : onSelectWeeklyRepeat,
+            onTap: onSelectWeeklyRepeat,
             behavior: HitTestBehavior.opaque,
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 180),
@@ -689,6 +666,232 @@ class _ScheduleSelectionCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCalendar(Jalali today) {
+    final dates = _monthGridDates();
+
+    return Container(
+      key: ValueKey('${visibleMonth.year}-${visibleMonth.month}'),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
+      child: Column(
+        children: [
+          Row(
+            textDirection: TextDirection.ltr,
+            children: [
+              _CalendarNavButton(
+                icon: Icons.chevron_left_rounded,
+                onTap: onNextMonth,
+                isEnabled: true,
+              ),
+              const Spacer(),
+              ReText(
+                '${monthNames[visibleMonth.month - 1]} ${convertToPersianNumbers(visibleMonth.year.toString())}',
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.black1,
+              ),
+              const Spacer(),
+              _CalendarNavButton(
+                icon: Icons.chevron_right_rounded,
+                onTap: onPreviousMonth,
+                isEnabled: canGoToPreviousMonth,
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              for (final label in _weekDayLabels)
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      label,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: dates.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 5,
+              crossAxisSpacing: 5,
+              childAspectRatio: 1.22,
+            ),
+            itemBuilder: (context, index) {
+              final date = dates[index];
+              if (date == null) return const SizedBox.shrink();
+
+              final isSelected = _isSameDay(date, selectedDate);
+              final isToday = _isSameDay(date, today);
+              final isDisabled = _compareJalaliDate(date, today) < 0;
+
+              return _CalendarDayCell(
+                date: date,
+                isSelected: isSelected,
+                isToday: isToday,
+                isDisabled: isDisabled,
+                onTap: isDisabled ? null : () => onDateSelected(date),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectedDateSummary extends StatelessWidget {
+  const _SelectedDateSummary({
+    required this.formattedDateLabel,
+    required this.isEnabled,
+    required this.onTap,
+  });
+
+  final String formattedDateLabel;
+  final bool isEnabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: isEnabled,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        opacity: isEnabled ? 1 : 0.45,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: 54,
+            decoration: BoxDecoration(
+              color: AppColors.gray1,
+              borderRadius: BorderRadius.circular(34),
+              border: Border.all(color: AppColors.gray2),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_month_rounded,
+                  color: AppColors.gray,
+                  size: 18,
+                ),
+                const Spacer(),
+                ReText(
+                  formattedDateLabel,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarNavButton extends StatelessWidget {
+  const _CalendarNavButton({
+    required this.icon,
+    required this.onTap,
+    required this.isEnabled,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isEnabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: isEnabled ? 1 : 0.28,
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: AppColors.gray1,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: AppColors.gray2),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: AppColors.black1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarDayCell extends StatelessWidget {
+  const _CalendarDayCell({
+    required this.date,
+    required this.isSelected,
+    required this.isToday,
+    required this.isDisabled,
+    required this.onTap,
+  });
+
+  final Jalali date;
+  final bool isSelected;
+  final bool isToday;
+  final bool isDisabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isSelected
+        ? AppColors.primary
+        : (isToday ? AppColors.primary.withOpacity(0.45) : AppColors.gray2);
+    final textColor = isSelected
+        ? AppColors.white
+        : (isDisabled ? AppColors.dark5Color : AppColors.black1);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.gray1,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: borderColor),
+        ),
+        child: Center(
+          child: ReText(
+            convertToPersianNumbers(date.day.toString()),
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: textColor,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }
@@ -757,316 +960,6 @@ class _ActionButton extends StatelessWidget {
         textColor: textColor,
         isOutlined: borderColor != null,
         color: borderColor,
-      ),
-    );
-  }
-}
-
-class _PersianDateTimePickerResult {
-  const _PersianDateTimePickerResult({
-    required this.date,
-    required this.time,
-  });
-
-  final Jalali date;
-  final TimeOfDay time;
-}
-
-class _PersianDateTimePickerSheet extends StatefulWidget {
-  const _PersianDateTimePickerSheet({
-    required this.initialDate,
-    required this.initialTime,
-    required this.monthNames,
-  });
-
-  final Jalali initialDate;
-  final TimeOfDay initialTime;
-  final List<String> monthNames;
-
-  @override
-  State<_PersianDateTimePickerSheet> createState() =>
-      _PersianDateTimePickerSheetState();
-}
-
-class _PersianDateTimePickerSheetState
-    extends State<_PersianDateTimePickerSheet> {
-  late int _selectedYear;
-  late int _selectedMonth;
-  late int _selectedDay;
-  late int _selectedHour;
-  late int _selectedMinute;
-
-  late List<int> _years;
-  late FixedExtentScrollController _yearController;
-  late FixedExtentScrollController _monthController;
-  late FixedExtentScrollController _dayController;
-  late FixedExtentScrollController _hourController;
-  late FixedExtentScrollController _minuteController;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = Jalali.now();
-
-    _selectedYear = widget.initialDate.year;
-    _selectedMonth = widget.initialDate.month;
-    _selectedDay = widget.initialDate.day;
-    _selectedHour = widget.initialTime.hour;
-    _selectedMinute = widget.initialTime.minute;
-
-    _years = List<int>.generate(
-      61,
-      (index) => now.year - 20 + index,
-    );
-
-    final yearInitialIndex = _years.indexOf(_selectedYear);
-    if (yearInitialIndex == -1) {
-      _selectedYear = _years[20];
-    }
-    _yearController = FixedExtentScrollController(
-      initialItem: yearInitialIndex == -1 ? 20 : yearInitialIndex,
-    );
-    _monthController = FixedExtentScrollController(
-      initialItem: _selectedMonth - 1,
-    );
-    _dayController = FixedExtentScrollController(
-      initialItem: _selectedDay - 1,
-    );
-    _hourController = FixedExtentScrollController(
-      initialItem: _selectedHour,
-    );
-    _minuteController = FixedExtentScrollController(
-      initialItem: _selectedMinute,
-    );
-  }
-
-  @override
-  void dispose() {
-    _yearController.dispose();
-    _monthController.dispose();
-    _dayController.dispose();
-    _hourController.dispose();
-    _minuteController.dispose();
-    super.dispose();
-  }
-
-  int get _daysInSelectedMonth =>
-      Jalali(_selectedYear, _selectedMonth, 1).monthLength;
-
-  void _normalizeDayIfNeeded() {
-    final maxDay = _daysInSelectedMonth;
-    if (_selectedDay <= maxDay) return;
-
-    _selectedDay = maxDay;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_dayController.hasClients) return;
-      _dayController.jumpToItem(_selectedDay - 1);
-    });
-  }
-
-  Widget _buildWheelPicker({
-    required String label,
-    required int itemCount,
-    required FixedExtentScrollController controller,
-    required ValueChanged<int> onChanged,
-    required String Function(int index) itemTextBuilder,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          ReText(
-            label,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.black1,
-          ),
-          const SizedBox(height: 8),
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              color: AppColors.gray1,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.gray2),
-            ),
-            child: CupertinoPicker(
-              scrollController: controller,
-              itemExtent: 36,
-              useMagnifier: true,
-              magnification: 1.05,
-              onSelectedItemChanged: onChanged,
-              selectionOverlay: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.28),
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              children: List<Widget>.generate(
-                itemCount,
-                (index) => Center(
-                  child: ReText(
-                    itemTextBuilder(index),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black1,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmSelection() {
-    Navigator.of(context).pop(
-      _PersianDateTimePickerResult(
-        date: Jalali(_selectedYear, _selectedMonth, _selectedDay),
-        time: TimeOfDay(hour: _selectedHour, minute: _selectedMinute),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(30),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.gray2,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const ReText(
-                'انتخاب تاریخ و زمان',
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.black1,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  _buildWheelPicker(
-                    label: 'سال',
-                    itemCount: _years.length,
-                    controller: _yearController,
-                    onChanged: (index) {
-                      setState(() {
-                        _selectedYear = _years[index];
-                        _normalizeDayIfNeeded();
-                      });
-                    },
-                    itemTextBuilder: (index) => _years[index].toString(),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildWheelPicker(
-                    label: 'ماه',
-                    itemCount: widget.monthNames.length,
-                    controller: _monthController,
-                    onChanged: (index) {
-                      setState(() {
-                        _selectedMonth = index + 1;
-                        _normalizeDayIfNeeded();
-                      });
-                    },
-                    itemTextBuilder: (index) => widget.monthNames[index],
-                  ),
-                  const SizedBox(width: 8),
-                  _buildWheelPicker(
-                    label: 'روز',
-                    itemCount: _daysInSelectedMonth,
-                    controller: _dayController,
-                    onChanged: (index) {
-                      setState(() {
-                        _selectedDay = index + 1;
-                      });
-                    },
-                    itemTextBuilder: (index) => (index + 1).toString(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  _buildWheelPicker(
-                    label: 'ساعت',
-                    itemCount: 24,
-                    controller: _hourController,
-                    onChanged: (index) {
-                      setState(() {
-                        _selectedHour = index;
-                      });
-                    },
-                    itemTextBuilder: (index) =>
-                        index.toString().padLeft(2, '0'),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildWheelPicker(
-                    label: 'دقیقه',
-                    itemCount: 60,
-                    controller: _minuteController,
-                    onChanged: (index) {
-                      setState(() {
-                        _selectedMinute = index;
-                      });
-                    },
-                    itemTextBuilder: (index) =>
-                        index.toString().padLeft(2, '0'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: ReButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        text: 'لغو',
-                        textColor: AppColors.black1,
-                        background: AppColors.white,
-                        isOutlined: true,
-                        color: AppColors.gray2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: ReButton(
-                        onPressed: _confirmSelection,
-                        text: 'تایید',
-                        background: AppColors.primary,
-                        textColor: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
