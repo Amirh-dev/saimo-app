@@ -1,8 +1,899 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
+
+class AddTimedTaskScreen extends StatefulWidget {
+  const AddTimedTaskScreen({super.key});
+
+  @override
+  State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
+}
+
+class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
+  static const List<String> _persianMonths = [
+    'فروردین',
+    'اردیبهشت',
+    'خرداد',
+    'تیر',
+    'مرداد',
+    'شهریور',
+    'مهر',
+    'آبان',
+    'آذر',
+    'دی',
+    'بهمن',
+    'اسفند',
+  ];
+
+  static const List<int> _minuteOptions = [60, 55, 50, 45, 40, 35, 30];
+
+  bool _isWeeklyRepeat = false;
+  bool _isReminderEnabled = false;
+
+  late Jalali _selectedDate;
+  late Jalali _visibleCalendarMonth;
+
+  int _selectedMinutes = 45;
+  late PageController _minutesPageController;
+
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _tagController;
+  late TextEditingController _noteController;
+
+  late FocusNode _titleFocusNode;
+  late FocusNode _descriptionFocusNode;
+  late FocusNode _tagFocusNode;
+  late FocusNode _noteFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = Jalali.now();
+    _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
+    _selectedMinutes = _minuteOptions.contains(45) ? 45 : _minuteOptions.first;
+    _minutesPageController = PageController(
+      initialPage: _minuteOptions.indexOf(_selectedMinutes).clamp(
+            0,
+            _minuteOptions.length - 1,
+          ),
+      viewportFraction: 0.22,
+    );
+    _titleController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _tagController = TextEditingController();
+    _noteController = TextEditingController();
+    _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _tagFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _noteFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _titleFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _descriptionFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _tagFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _noteFocusNode
+      ..removeListener(_handleFieldFocusChange)
+      ..dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _tagController.dispose();
+    _noteController.dispose();
+    _minutesPageController.dispose();
+    super.dispose();
+  }
+
+  void _handleFieldFocusChange() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  bool get _isFormValid => _titleController.text.trim().isNotEmpty;
+
+  int get _descriptionCount => _descriptionController.text.length;
+
+  int get _noteCount => _noteController.text.length;
+
+  int get _tagsCount {
+    return _tagController.text
+        .split(RegExp(r'[,\u060C]'))
+        .where((tag) => tag.trim().isNotEmpty)
+        .length;
+  }
+
+  String get _scheduleDateLabel {
+    final today = Jalali.now();
+    final isToday = _selectedDate.year == today.year &&
+        _selectedDate.month == today.month &&
+        _selectedDate.day == today.day;
+    final prefix = isToday ? 'امروز، ' : '';
+    return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
+  }
+
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
+  Jalali _addMonths(Jalali month, int delta) {
+    final monthIndex = (month.year * 12) + month.month - 1 + delta;
+    return Jalali(monthIndex ~/ 12, (monthIndex % 12) + 1, 1);
+  }
+
+  int _persianWeekStartOffset(Jalali date) {
+    return date.weekDay - 1;
+  }
+
+  List<Jalali?> _monthGridDates(Jalali month) {
+    final firstDay = Jalali(month.year, month.month, 1);
+    final leadingEmptyCells = _persianWeekStartOffset(firstDay);
+    final dates = <Jalali?>[
+      for (var i = 0; i < leadingEmptyCells; i++) null,
+      for (var day = 1; day <= firstDay.monthLength; day++)
+        Jalali(month.year, month.month, day),
+    ];
+    while (dates.length % 7 != 0) {
+      dates.add(null);
+    }
+    return dates;
+  }
+
+  Future<void> _openDatePickerSheet() async {
+    final today = Jalali.now();
+    var sheetMonth = _visibleCalendarMonth;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final monthLabel =
+                '${_persianMonths[sheetMonth.month - 1]} ${sheetMonth.year}';
+            final canGoPrev = _compareJalaliDate(
+                  sheetMonth,
+                  Jalali(today.year, today.month, 1),
+                ) >
+                0;
+            final gridDates = _monthGridDates(sheetMonth);
+
+            return SafeArea(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(26),
+                    topRight: Radius.circular(26),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.gray2,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _CalendarNavButton(
+                          icon: Icons.arrow_back_ios_new_rounded,
+                          isEnabled: true,
+                          onTap: () {
+                            setSheetState(() {
+                              sheetMonth = _addMonths(sheetMonth, 1);
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 10),
+                        _CalendarNavButton(
+                          icon: Icons.arrow_forward_ios_rounded,
+                          isEnabled: canGoPrev,
+                          onTap: () {
+                            if (!canGoPrev) return;
+                            setSheetState(() {
+                              sheetMonth = _addMonths(sheetMonth, -1);
+                            });
+                          },
+                        ),
+                        const Spacer(),
+                        ReText(
+                          monthLabel,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.black1,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: gridDates.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 6,
+                        crossAxisSpacing: 6,
+                        childAspectRatio: 1.05,
+                      ),
+                      itemBuilder: (_, index) {
+                        final date = gridDates[index];
+                        if (date == null) return const SizedBox.shrink();
+
+                        final isSelected = date.year == _selectedDate.year &&
+                            date.month == _selectedDate.month &&
+                            date.day == _selectedDate.day;
+                        final isDisabled = _compareJalaliDate(date, today) < 0;
+                        final isToday = date.year == today.year &&
+                            date.month == today.month &&
+                            date.day == today.day;
+
+                        return _CalendarDayCell(
+                          date: date,
+                          isSelected: isSelected,
+                          isToday: isToday,
+                          isDisabled: isDisabled,
+                          onTap: isDisabled
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _selectedDate = date;
+                                    _visibleCalendarMonth =
+                                        Jalali(date.year, date.month, 1);
+                                  });
+                                  Navigator.of(sheetContext).pop();
+                                },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openCalendarModal() async {
+    final picked = await showModalBottomSheet<Jalali>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return _ThreeColumnJalaliDatePickerSheet(
+          initialDate: _selectedDate,
+          minDate: Jalali.now(),
+          monthNames: _persianMonths,
+        );
+      },
+    );
+
+    if (picked == null || !mounted) return;
+    setState(() {
+      _selectedDate = picked;
+      _visibleCalendarMonth = Jalali(picked.year, picked.month, 1);
+    });
+  }
+
+  void _submitTimedTask() {
+    if (!_isFormValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: ReText(
+            'عنوان تسک را وارد کنید',
+            color: AppColors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+      return;
+    }
+
+    final description = _descriptionController.text.trim();
+    final tags = _tagController.text.trim();
+    final note = _noteController.text.trim();
+    final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
+
+    final subtitle = description.isNotEmpty
+        ? description
+        : (note.isNotEmpty
+            ? note
+            : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
+
+    final durationSeconds = _selectedMinutes * 60;
+
+    Navigator.of(context).pop(
+      <String, dynamic>{
+        'title': _titleController.text.trim(),
+        'subtitle': subtitle,
+        'durationSeconds': durationSeconds,
+        'remainingSeconds': durationSeconds,
+        'status': 'pending',
+        'label': '$minutesLabel دقیقه',
+        'date': _selectedDate,
+        'tags': tags,
+        'note': note,
+        'repeatWeekly': _isWeeklyRepeat,
+        'reminder': _isReminderEnabled,
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = context.deviceWidth;
+    final horizontalPadding = width < 360 ? 14.0 : 18.0;
+    final sectionSpacing = width < 360 ? 10.0 : 12.0;
+
+    return Scaffold(
+      backgroundColor: AppColors.white,
+      body: SafeArea(
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    10,
+                    horizontalPadding,
+                    14,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildTimedHeader(context),
+                      SizedBox(height: sectionSpacing),
+                      _buildPillField(
+                        hintText: 'عنوان',
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                      ),
+                      SizedBox(height: sectionSpacing),
+                      _buildPillField(
+                        hintText: 'توضیح کوتاه',
+                        controller: _descriptionController,
+                        focusNode: _descriptionFocusNode,
+                        maxLength: 50,
+                        leadingPill:
+                            '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
+                      ),
+                      SizedBox(height: sectionSpacing),
+                      _buildPillField(
+                        hintText: 'افزودن تگ',
+                        controller: _tagController,
+                        focusNode: _tagFocusNode,
+                        leadingPill: '${_tagsCount > 2 ? 2 : _tagsCount}/2',
+                      ),
+                      SizedBox(height: sectionSpacing + 2),
+                      _buildDurationPicker(),
+                      SizedBox(height: sectionSpacing),
+                      _buildNoteField(),
+                      SizedBox(height: sectionSpacing),
+                      _buildDateCardCompact(),
+                      SizedBox(height: sectionSpacing),
+                      _buildReminderCardCompact(),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ActionButton(
+                              text: 'لغو',
+                              icon: Icons.close,
+                              background: AppColors.white,
+                              textColor: AppColors.black1,
+                              borderColor: AppColors.gray2,
+                              onTap: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            flex: 2,
+                            child: _ActionButton(
+                              text: 'افزودن',
+                              icon: Icons.add,
+                              background: AppColors.primary,
+                              textColor: AppColors.white,
+                              onTap: _submitTimedTask,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimedHeader(BuildContext context) {
+    return SizedBox(
+      height: 62,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ReText(
+                'افزودن تسک زمان دار',
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: AppColors.black1,
+              ),
+              ReText(
+                'افزودن تسک زمان دار',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gray,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ).rMargin(10).tMargin(3),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.gray2),
+                  color: AppColors.gray1,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: AppColors.black1,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPillField({
+    required String hintText,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    String? leadingPill,
+    int? maxLength,
+  }) {
+    final isFocused = focusNode.hasFocus;
+
+    return Container(
+      height: 55,
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(100),
+        border:
+            isFocused ? Border.all(color: AppColors.primary, width: 1.4) : null,
+        boxShadow: isFocused
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: AppColors.black1.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          if (leadingPill != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.gray2,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: ReText(
+                leadingPill,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.black1.withOpacity(0.45),
+                textDirection: TextDirection.ltr,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: TextField(
+              focusNode: focusNode,
+              controller: controller,
+              maxLength: maxLength,
+              textAlign: TextAlign.right,
+              textAlignVertical: TextAlignVertical.center,
+              textDirection: TextDirection.rtl,
+              cursorColor: AppColors.primary,
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
+              inputFormatters: const [
+                PersianDigitsInputFormatter(),
+              ],
+              onChanged: (_) {
+                setState(() {});
+              },
+              style: TextStyle(
+                fontFamily: AppFonts.iranSansVar,
+                color: AppColors.black1,
+                fontSize: 15,
+                fontVariations: AppFonts.fontVariations(FontWeight.w600),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hintText,
+                counterText: '',
+                isDense: true,
+                hintStyle: TextStyle(
+                  fontFamily: AppFonts.iranSansVar,
+                  color: AppColors.black1.withOpacity(0.45),
+                  fontSize: 13,
+                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurationPicker() {
+    const itemHeight = 44.0;
+    const pickerHeight = 56.0;
+    const highlightWidth = 76.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ReText(
+                'دقیقه',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black1.withOpacity(0.5),
+              ).rMargin(4),
+              const ReText(
+                'تنظیم مدت زمان',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black1,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: pickerHeight,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(100),
+              border: Border.all(color: AppColors.gray2),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Selection highlight (fixed size so the wheel doesn't "jump")
+                Container(
+                  width: highlightWidth,
+                  height: itemHeight,
+                  decoration: BoxDecoration(
+                    color: AppColors.black1,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+                PageView.builder(
+                  controller: _minutesPageController,
+                  padEnds: true,
+                  itemCount: _minuteOptions.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _selectedMinutes = _minuteOptions[index];
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final value = _minuteOptions[index];
+                    final isSelected = value == _selectedMinutes;
+                    return Center(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          _minutesPageController.animateToPage(
+                            index,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                          );
+                        },
+                        child: SizedBox(
+                          width: highlightWidth,
+                          height: itemHeight,
+                          child: Center(
+                            child: ReText(
+                              convertToPersianNumbers(value.toString()),
+                              fontSize: isSelected ? 16 : 13,
+                              fontWeight: FontWeight.w400,
+                              color:
+                                  isSelected ? AppColors.white : AppColors.gray,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoteField() {
+    final isFocused = _noteFocusNode.hasFocus;
+    final safeCount = _noteCount > 200 ? 200 : _noteCount;
+
+    return Container(
+      height: 110,
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(26),
+        border: isFocused
+            ? Border.all(color: AppColors.primary, width: 1.4)
+            : Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.gray2,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: ReText(
+              '${convertToPersianNumbers(safeCount.toString())}/200',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.black1.withOpacity(0.45),
+              textDirection: TextDirection.ltr,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              focusNode: _noteFocusNode,
+              controller: _noteController,
+              maxLength: 200,
+              maxLines: 4,
+              minLines: 3,
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              cursorColor: AppColors.primary,
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
+              inputFormatters: const [
+                PersianDigitsInputFormatter(),
+              ],
+              onChanged: (_) => setState(() {}),
+              style: TextStyle(
+                fontFamily: AppFonts.iranSansVar,
+                color: AppColors.black1,
+                fontSize: 14,
+                fontVariations: AppFonts.fontVariations(FontWeight.w600),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: 'یادداشت',
+                counterText: '',
+                isDense: true,
+                hintStyle: TextStyle(
+                  fontFamily: AppFonts.iranSansVar,
+                  color: AppColors.black1.withOpacity(0.45),
+                  fontSize: 13,
+                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateCardCompact() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              const ReText(
+                'تاریخ',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black1,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.errorColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _openCalendarModal,
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: AppColors.gray1,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.gray2),
+                    ),
+                    child: const Icon(
+                      Icons.chevron_left_rounded,
+                      color: AppColors.black1,
+                      size: 18,
+                    ),
+                  ),
+                  const Spacer(),
+                  ReText(
+                    _scheduleDateLabel,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() {
+                _isWeeklyRepeat = !_isWeeklyRepeat;
+                if (_isWeeklyRepeat) _isReminderEnabled = true;
+              });
+            },
+            child: Container(
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(34),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _CircleCheckbox(isChecked: _isWeeklyRepeat),
+                  const Spacer(),
+                  const ReText(
+                    'تکرار هفتگی',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReminderCardCompact() {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          _ReminderSwitch(
+            value: _isReminderEnabled,
+            onChanged: (value) {
+              setState(() {
+                _isReminderEnabled = value;
+                if (!_isReminderEnabled) _isWeeklyRepeat = false;
+              });
+            },
+          ),
+          const Spacer(),
+          const ReText(
+            'یادآوری',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black1,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key});
@@ -102,6 +993,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       _visibleCalendarMonth =
           Jalali(_selectedDate.year, _selectedDate.month, 1);
     });
+    _openCalendarModal();
   }
 
   void _selectWeeklyRepeatDirectly() {
@@ -151,6 +1043,27 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
   }
 
+  Future<void> _openCalendarModal() async {
+    final picked = await showModalBottomSheet<Jalali>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return _ThreeColumnJalaliDatePickerSheet(
+          initialDate: _selectedDate,
+          minDate: Jalali.now(),
+          monthNames: _persianMonths,
+        );
+      },
+    );
+
+    if (picked == null || !mounted) return;
+    setState(() {
+      _selectedDate = picked;
+      _visibleCalendarMonth = Jalali(picked.year, picked.month, 1);
+    });
+  }
+
   void _submitTask() {
     if (!_isFormValid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +1099,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -575,7 +1487,6 @@ class _ScheduleSelectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDateModeSelected = !isWeeklyRepeat;
-    final today = Jalali.now();
 
     return Container(
       decoration: BoxDecoration(
@@ -617,34 +1528,11 @@ class _ScheduleSelectionCard extends StatelessWidget {
             isEnabled: isDateModeSelected,
             onTap: onSelectDateMode,
           ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: isDateModeSelected
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _buildCalendar(today),
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: isDateModeSelected
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Divider(
-                      color: AppColors.gray2,
-                      thickness: 1,
-                      height: 1,
-                    ),
-                  )
-                : const SizedBox(
-                    key: ValueKey('date-divider-hidden'),
-                    width: double.infinity,
-                  ),
+          const SizedBox(height: 6),
+          const Divider(
+            color: AppColors.gray2,
+            thickness: 1,
+            height: 1,
           ),
           GestureDetector(
             onTap: onSelectWeeklyRepeat,
@@ -678,91 +1566,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendar(Jalali today) {
-    final dates = _monthGridDates();
-
-    return Container(
-      key: ValueKey('${visibleMonth.year}-${visibleMonth.month}'),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
-      child: Column(
-        children: [
-          Row(
-            textDirection: TextDirection.ltr,
-            children: [
-              _CalendarNavButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: onNextMonth,
-                isEnabled: true,
-              ),
-              const Spacer(),
-              ReText(
-                '${monthNames[visibleMonth.month - 1]} ${convertToPersianNumbers(visibleMonth.year.toString())}',
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.black1,
-              ),
-              const Spacer(),
-              _CalendarNavButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: onPreviousMonth,
-                isEnabled: canGoToPreviousMonth,
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Row(
-            children: [
-              for (final label in _weekDayLabels)
-                Expanded(
-                  child: Center(
-                    child: ReText(
-                      label,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gray,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: dates.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 5,
-              crossAxisSpacing: 5,
-              childAspectRatio: 1.22,
-            ),
-            itemBuilder: (context, index) {
-              final date = dates[index];
-              if (date == null) return const SizedBox.shrink();
-
-              final isSelected = _isSameDay(date, selectedDate);
-              final isToday = _isSameDay(date, today);
-              final isDisabled = _compareJalaliDate(date, today) < 0;
-
-              return _CalendarDayCell(
-                date: date,
-                isSelected: isSelected,
-                isToday: isToday,
-                isDisabled: isDisabled,
-                onTap: isDisabled ? null : () => onDateSelected(date),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Calendar UI now opens in a modal sheet to match the design.
 }
 
 class _SelectedDateSummary extends StatelessWidget {
@@ -779,7 +1583,7 @@ class _SelectedDateSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      ignoring: isEnabled,
+      ignoring: !isEnabled,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
@@ -968,6 +1772,519 @@ class _ActionButton extends StatelessWidget {
         textColor: textColor,
         isOutlined: borderColor != null,
         color: borderColor,
+      ),
+    );
+  }
+}
+
+class _CircleCheckbox extends StatelessWidget {
+  const _CircleCheckbox({required this.isChecked});
+
+  final bool isChecked;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isChecked
+            ? AppColors.primary.withOpacity(0.12)
+            : Colors.transparent,
+        border: Border.all(
+          color: isChecked ? AppColors.primary : AppColors.dark4Color,
+          width: 1.2,
+        ),
+      ),
+      child: isChecked
+          ? const Center(
+              child: Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: AppColors.primary,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _ReminderSwitch extends StatelessWidget {
+  const _ReminderSwitch({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Transform.flip(
+        flipX: true,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          width: 44,
+          height: 28,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color:
+                value ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: value ? AppColors.primary : AppColors.dark4Color,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThreeColumnJalaliDatePickerSheet extends StatefulWidget {
+  const _ThreeColumnJalaliDatePickerSheet({
+    required this.initialDate,
+    required this.minDate,
+    required this.monthNames,
+  });
+
+  final Jalali initialDate;
+  final Jalali minDate;
+  final List<String> monthNames;
+
+  @override
+  State<_ThreeColumnJalaliDatePickerSheet> createState() =>
+      _ThreeColumnJalaliDatePickerSheetState();
+}
+
+class _ThreeColumnJalaliDatePickerSheetState
+    extends State<_ThreeColumnJalaliDatePickerSheet> {
+  static const double _wheelItemExtent = 56.0;
+  static const double _dayChipSize = 46.0;
+  static const double _yearChipSize = 54.0;
+  static const double _monthChipWidth = 108.0;
+  static const double _monthChipHeight = 42.0;
+
+  late int _selectedYear;
+  late int _selectedMonth;
+  late int _selectedDay;
+
+  late List<int> _years;
+  late FixedExtentScrollController _yearController;
+  late FixedExtentScrollController _monthController;
+  FixedExtentScrollController? _dayController;
+
+  @override
+  void initState() {
+    super.initState();
+    final today = Jalali.now();
+    final baseYear = today.year;
+
+    _years = [for (var y = baseYear + 2; y >= baseYear - 4; y--) y];
+    if (!_years.contains(widget.initialDate.year)) {
+      _years = [
+        widget.initialDate.year,
+        ..._years.where((y) => y != widget.initialDate.year),
+      ];
+    }
+
+    _selectedYear = widget.initialDate.year;
+    _selectedMonth = widget.initialDate.month;
+    _selectedDay = widget.initialDate.day;
+
+    _yearController = FixedExtentScrollController(
+      initialItem: _years.indexOf(_selectedYear).clamp(0, _years.length - 1),
+    );
+    _monthController = FixedExtentScrollController(
+      initialItem: (_selectedMonth - 1).clamp(0, 11),
+    );
+    _resetDayController();
+  }
+
+  @override
+  void dispose() {
+    _yearController.dispose();
+    _monthController.dispose();
+    _dayController?.dispose();
+    super.dispose();
+  }
+
+  void _resetDayController() {
+    _dayController?.dispose();
+    final days = _daysInSelectedMonth;
+    _selectedDay = _selectedDay.clamp(1, days.length);
+    _dayController = FixedExtentScrollController(
+      initialItem: (_selectedDay - 1).clamp(0, days.length - 1),
+    );
+  }
+
+  List<int> get _daysInSelectedMonth {
+    final monthLength = Jalali(_selectedYear, _selectedMonth, 1).monthLength;
+    return [for (var d = 1; d <= monthLength; d++) d];
+  }
+
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
+  Jalali get _selectedDate =>
+      Jalali(_selectedYear, _selectedMonth, _selectedDay);
+
+  bool get _canSubmit => _compareJalaliDate(_selectedDate, widget.minDate) >= 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeHeight = MediaQuery.of(context).size.height;
+    final sheetHeight = (safeHeight * 0.58).clamp(380.0, 520.0);
+
+    return SafeArea(
+      child: Container(
+        height: sheetHeight,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(32),
+            topRight: Radius.circular(32),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const ReText(
+                      'تقویـــم',
+                      fontSize: 16,
+                      fontWeight: 1000,
+                      color: AppColors.black1,
+                    ),
+                    const SizedBox(height: 2),
+                    ReText(
+                      'انتخاب تاریخ',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 32, left: 16),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFEBECF0)),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      'روز',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      'ماه',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      'سال',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _PickerWheel(
+                          controller: _dayController!,
+                          itemCount: _daysInSelectedMonth.length,
+                          itemExtent: _wheelItemExtent,
+                          onSelected: (index) {
+                            setState(() {
+                              _selectedDay = index + 1;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final day = index + 1;
+                            return SizedBox(
+                              height: _wheelItemExtent,
+                              child: Center(
+                                child: ReText(
+                                  convertToPersianNumbers(day.toString()),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.gray,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        IgnorePointer(
+                          child: Container(
+                            width: 64,
+                            height: 48,
+                            decoration: BoxDecoration(
+                                color: AppColors.black1,
+                                borderRadius: BorderRadius.circular(100)),
+                            alignment: Alignment.center,
+                            child: ReText(
+                              convertToPersianNumbers(_selectedDay.toString()),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.white,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _PickerWheel(
+                          controller: _monthController,
+                          itemCount: widget.monthNames.length,
+                          itemExtent: _wheelItemExtent,
+                          onSelected: (index) {
+                            setState(() {
+                              _selectedMonth = index + 1;
+                              _resetDayController();
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final name = widget.monthNames[index];
+                            return SizedBox(
+                              height: _wheelItemExtent,
+                              child: Center(
+                                child: ReText(
+                                  name,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.gray,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        IgnorePointer(
+                          child: Container(
+                            height: 48,
+                            width: 90,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: AppColors.gray2),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: ReText(
+                                widget.monthNames[_selectedMonth - 1],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.black1,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _PickerWheel(
+                          controller: _yearController,
+                          itemCount: _years.length,
+                          itemExtent: _wheelItemExtent,
+                          onSelected: (index) {
+                            setState(() {
+                              _selectedYear = _years[index];
+                              _resetDayController();
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            final year = _years[index];
+                            return SizedBox(
+                              height: _wheelItemExtent,
+                              child: Center(
+                                child: ReText(
+                                  convertToPersianNumbers(year.toString()),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.gray,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        IgnorePointer(
+                          child: Container(
+                            width: 64,
+                            height: 48,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: AppColors.white,
+                              border: Border.all(color: AppColors.gray2),
+                            ),
+                            child: ReText(
+                              convertToPersianNumbers(_selectedYear.toString()),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.black1,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    text: 'لغو',
+                    icon: Icons.close,
+                    background: AppColors.white,
+                    textColor: AppColors.black1,
+                    borderColor: AppColors.gray2,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: Opacity(
+                    opacity: _canSubmit ? 1 : 0.45,
+                    child: IgnorePointer(
+                      ignoring: !_canSubmit,
+                      child: _ActionButton(
+                        text: 'برو به تاریخ',
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        background: AppColors.primary,
+                        textColor: AppColors.white,
+                        onTap: () => Navigator.of(context).pop(_selectedDate),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+typedef _PickerItemBuilder = Widget Function(BuildContext context, int index);
+
+class _PickerWheel extends StatelessWidget {
+  const _PickerWheel({
+    required this.controller,
+    required this.itemCount,
+    required this.itemExtent,
+    required this.onSelected,
+    required this.itemBuilder,
+  });
+
+  final FixedExtentScrollController controller;
+  final int itemCount;
+  final double itemExtent;
+  final ValueChanged<int> onSelected;
+  final _PickerItemBuilder itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListWheelScrollView.useDelegate(
+      controller: controller,
+      physics: const FixedExtentScrollPhysics(),
+      itemExtent: itemExtent,
+      diameterRatio: 2.4,
+      perspective: 0.004,
+      onSelectedItemChanged: onSelected,
+      childDelegate: ListWheelChildBuilderDelegate(
+        childCount: itemCount,
+        builder: (context, index) {
+          return Center(child: itemBuilder(context, index));
+        },
       ),
     );
   }

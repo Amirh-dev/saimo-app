@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () {
                                   context.to(const RegisterScreen());
                                 },
-                                fontSize: 15,
+                                fontSize: 16,
                                 text: 'ثبت نام',
                               ).tMargin(8),
                             ],
