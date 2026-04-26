@@ -1953,7 +1953,7 @@ class _ThreeColumnJalaliDatePickerSheetState
   @override
   Widget build(BuildContext context) {
     final safeHeight = MediaQuery.of(context).size.height;
-    final sheetHeight = (safeHeight * 0.58).clamp(380.0, 520.0);
+    final sheetHeight = (safeHeight * 0.58).clamp(300.0, 400.0);
 
     return SafeArea(
       child: Container(

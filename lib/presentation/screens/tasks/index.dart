@@ -573,32 +573,6 @@ class _TasksScreenState extends State<TasksScreen>
               children: [
                 Row(
                   children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _toggleChecklistTaskStatus(index),
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: isDone
-                              ? AppColors.done.withOpacity(0.15)
-                              : AppColors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color:
-                                isDone ? Colors.transparent : AppColors.gray2,
-                          ),
-                        ),
-                        child: isDone
-                            ? const Icon(
-                                CupertinoIcons.checkmark_alt,
-                                size: 18,
-                                color: AppColors.done,
-                              )
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: GestureDetector(
                         onTap: () => _toggleChecklistTaskActions(index),
@@ -773,21 +747,54 @@ class _TasksScreenState extends State<TasksScreen>
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
-        child: ListView.builder(
-          controller: _checklistCardsScrollController,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          itemCount: tasks.length,
-          itemBuilder: (_, index) => AnimatedContainer(
-            duration: _taskExpansionDuration,
-            curve: Curves.easeOutCubic,
-            height: _checklistRowHeightAt(index),
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: _buildTaskTile(
-              context,
-              tasks[index],
-              index,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Task cards
+            Expanded(
+              child: ListView.builder(
+                controller: _checklistCardsScrollController,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                itemCount: tasks.length,
+                itemBuilder: (_, index) => AnimatedContainer(
+                  duration: _taskExpansionDuration,
+                  curve: Curves.easeOutCubic,
+                  height: _checklistRowHeightAt(index),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: _buildTaskTile(
+                    context,
+                    tasks[index],
+                    index,
+                  ).lMargin(12),
+                ),
+              ),
             ),
-          ),
+
+            // Dots timeline
+            SizedBox(
+              width: 50,
+              child: ListView.builder(
+                controller: _checklistDotsScrollController,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                itemCount: tasks.length,
+                itemBuilder: (_, index) {
+                  final task = tasks[index];
+                  return AnimatedContainer(
+                    duration: _taskExpansionDuration,
+                    curve: Curves.easeOutCubic,
+                    height: _checklistRowHeightAt(index),
+                    child: _buildTaskDot(
+                      showTopLine: index != 0,
+                      showBottomLine: index != tasks.length - 1,
+                      isDone: task['status'] == 'done',
+                      height: _checklistRowHeightAt(index),
+                      onTap: () => _toggleChecklistTaskStatus(index),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
