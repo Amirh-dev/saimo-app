@@ -452,9 +452,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             children: [
               ReText(
                 'افزودن تسک زمان دار',
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
                 color: AppColors.black1,
+                fontSize: 20,
+                fontWeight: 1100,
               ),
               ReText(
                 'افزودن تسک زمان دار',
@@ -585,8 +585,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   Widget _buildDurationPicker() {
     const itemHeight = 44.0;
-    const pickerHeight = 56.0;
-    const highlightWidth = 76.0;
+    const pickerHeight = 48.0;
+    const highlightWidth = 64.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -617,7 +617,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
           ),
           const SizedBox(height: 12),
           Container(
-            height: pickerHeight,
+            height: 64,
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(100),
@@ -692,10 +692,10 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       height: 110,
       decoration: BoxDecoration(
         color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(32),
         border: isFocused
             ? Border.all(color: AppColors.primary, width: 1.4)
-            : Border.all(color: AppColors.gray2),
+            : Border.all(color: Colors.transparent),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Row(
@@ -864,10 +864,10 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   Widget _buildReminderCardCompact() {
     return Container(
-      height: 72,
+      height: 56,
       decoration: BoxDecoration(
         color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(color: AppColors.gray2),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1208,9 +1208,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             children: [
               ReText(
                 'افزودن چک لیست',
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
                 color: AppColors.black1,
+                fontSize: 20,
+                fontWeight: 1100,
               ),
               ReText(
                 'افزودن تسک چک لیست',
@@ -1353,7 +1353,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   Widget _buildReminderCard() {
     return Container(
-      height: 72,
+      height: 56,
       decoration: BoxDecoration(
         color: AppColors.gray1,
         borderRadius: BorderRadius.circular(26),
