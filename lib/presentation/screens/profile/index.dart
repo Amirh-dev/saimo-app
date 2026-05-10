@@ -244,28 +244,11 @@ class ProfileScreen extends StatelessWidget {
       ),
       bottomNavigationBar: AppBottomNavigationBar(
         currentIndex: 4,
-        onTap: (index) => _onBottomNavigationTap(context, index),
+        onTap: (index) => navigateToIndex(context, index),
       ),
     );
   }
-
-  void _onBottomNavigationTap(BuildContext context, int index) {
-    if (index == 4) return;
-    switch (index) {
-      case 0:
-        context.toOff(const HomeScreen());
-        break;
-      case 1:
-        context.toOff(const TrophiesScreen());
-        break;
-      case 2:
-        context.toOff(const TasksScreen());
-        break;
-      case 3:
-        context.toOff(const TimerScreen());
-        break;
-    }
-  }
+ 
 
   GestureDetector profileItem(
       String title, IconData icon, Color itemColor, Function onTap,

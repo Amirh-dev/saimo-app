@@ -18,7 +18,7 @@ Widget reAppHeader(String title, {Widget? suffixIcon, Widget? prefixIcon}) {
             fontWeight: 1100,
           ),
         ),
-      ),
+      ).tMargin(10),
       suffixIcon ?? const SizedBox(width: 48),
     ],
   ).tMargin(20).hMargin(32);

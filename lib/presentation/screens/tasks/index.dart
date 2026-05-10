@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
@@ -1394,7 +1395,7 @@ class _TasksScreenState extends State<TasksScreen>
     if (index == 2) return;
     switch (index) {
       case 0:
-        context.toOff(const HomeScreen());
+        context.toOff(const GoalScreen());
         break;
       case 1:
         context.toOff(const TrophiesScreen());

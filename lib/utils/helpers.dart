@@ -4,7 +4,13 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
+import 'package:simo_learn/utils/extentions.dart';
 import 'package:vibration/vibration.dart';
+
+import '../presentation/screens/tasks/index.dart';
 
 const Map<String, String> _englishToPersianNumbersMap = {
   '0': '۰',
@@ -351,3 +357,19 @@ String formatTime(int seconds) {
 //   } else {
 //     throw 'Could not launch $phoneUri';
 //   }
+  void  navigateToIndex(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.toOff(const GoalScreen());
+        break;
+      case 1:
+        context.toOff(const TrophiesScreen());
+        break;
+      case 2:
+        context.toOff(const TasksScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
+  }

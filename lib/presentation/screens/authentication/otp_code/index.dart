@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:pinput/pinput.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -99,7 +100,7 @@ class OTPCodeScreen extends StatelessWidget {
                               ).sizedBox(height: 52),
                               ReButton(
                                 onPressed: () {
-                                  context.to(const HomeScreen());
+                                  context.to(const GoalScreen());
                                 },
                                 text: 'ورود',
                               ).tMargin(24),

@@ -1,70 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBottomNavigationScaffold(
-      currentIndex: 0,
-      onTap: (index) {
-        if (index == 0) return;
-        _navigateToIndex(context, index);
-      },
-      body: const SafeArea(
-        child: Column(
-          children: [
-            SizedBox(height: 32),
-            Center(
-              child: ReText(
-                'خانه',
-                color: AppColors.black1,
-                fontSize: 20,
-                fontWeight: 1000,
-              ),
-            ),
-            SizedBox(height: 16),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28),
-              child: Center(
-                child: ReText(
-                  'این صفحه به عنوان صفحه اصلی شما طراحی شده است.',
-                  textAlign: TextAlign.center,
-                  color: AppColors.black1,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToIndex(BuildContext context, int index) {
-    switch (index) {
-      case 1:
-        context.toOff(const TrophiesScreen());
-        break;
-      case 2:
-        context.toOff(const TasksScreen());
-        break;
-      case 3:
-        context.toOff(const TimerScreen());
-        break;
-      case 4:
-        context.toOff(const ProfileScreen());
-        break;
-    }
-  }
-}
-
+import 'package:simo_learn/utils/helpers.dart';
+ 
 class TrophiesScreen extends StatelessWidget {
   const TrophiesScreen({super.key});
 
@@ -107,7 +50,7 @@ class TrophiesScreen extends StatelessWidget {
   void _navigateToIndex(BuildContext context, int index) {
     switch (index) {
       case 0:
-        context.toOff(const HomeScreen());
+        context.toOff(const GoalScreen());
         break;
       case 2:
         context.toOff(const TasksScreen());
@@ -131,7 +74,7 @@ class TimerScreen extends StatelessWidget {
       currentIndex: 3,
       onTap: (index) {
         if (index == 3) return;
-        _navigateToIndex(context, index);
+        navigateToIndex(context, index);
       },
       body: const SafeArea(
         child: Column(
@@ -163,20 +106,5 @@ class TimerScreen extends StatelessWidget {
     );
   }
 
-  void _navigateToIndex(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.toOff(const HomeScreen());
-        break;
-      case 1:
-        context.toOff(const TrophiesScreen());
-        break;
-      case 2:
-        context.toOff(const TasksScreen());
-        break;
-      case 4:
-        context.toOff(const ProfileScreen());
-        break;
-    }
-  }
+ 
 }
