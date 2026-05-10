@@ -1467,116 +1467,142 @@ class _TasksScreenState extends State<TasksScreen>
         horizontal: 10,
         vertical: 10,
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Container(
-            width: 44,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: const Icon(
-              SolarIconsOutline.calendar,
-              color: AppColors.black1,
-            ),
-          ),
-          const SizedBox(width: 0),
-          Expanded(
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _weekDaysList.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 0),
-              itemBuilder: (context, index) {
-                final date = _weekDaysList[index];
-                final isSelected = _isSameDay(
-                  date,
-                  _selectedDate,
-                );
-                return GestureDetector(
-                  onTap: () {
-                    if (_isSameDay(date, _selectedDate)) return;
-                    setState(() {
-                      _selectedDate = date;
-                      _animationController.forward(from: 0.0);
-                      _slideAnimationController.forward(from: 0.0);
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOutCubic,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.black1 : Colors.transparent,
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      vertical: isSelected ? 12 : 5,
-                      horizontal: isSelected ? 12 : 0,
-                    ),
-                    width: isSelected ? 135 : 35,
-                    child: Center(
-                      child: isSelected
-                          ? SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(-0.2, 0),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _slideAnimationController,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ),
-                              child: FadeTransition(
-                                opacity: Tween<double>(
-                                  begin: 0,
-                                  end: 1,
-                                ).animate(
-                                  CurvedAnimation(
-                                    parent: _slideAnimationController,
-                                    curve: Curves.easeInCubic,
-                                  ),
-                                ),
-                                child: ScaleTransition(
-                                  scale: Tween<double>(
-                                    begin: 0.8,
-                                    end: 1.0,
+          Row(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(right: 4),
+                width: 44,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Icon(
+                  SolarIconsOutline.calendar,
+                  color: AppColors.black1,
+                ),
+              ),
+              const SizedBox(width: 0),
+              Expanded(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _weekDaysList.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 0),
+                  itemBuilder: (context, index) {
+                    final date = _weekDaysList[index];
+                    final isSelected = _isSameDay(
+                      date,
+                      _selectedDate,
+                    );
+                    return GestureDetector(
+                      onTap: () {
+                        if (_isSameDay(date, _selectedDate)) return;
+                        setState(() {
+                          _selectedDate = date;
+                          _animationController.forward(from: 0.0);
+                          _slideAnimationController.forward(from: 0.0);
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubic,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.black1
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isSelected ? 12 : 5,
+                          horizontal: isSelected ? 12 : 0,
+                        ),
+                        child: Center(
+                          child: isSelected
+                              ? SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(-0.2, 0),
+                                    end: Offset.zero,
                                   ).animate(
                                     CurvedAnimation(
-                                      parent: _animationController,
-                                      curve: Curves.elasticOut,
+                                      parent: _slideAnimationController,
+                                      curve: Curves.easeOutCubic,
                                     ),
                                   ),
-                                  child: ReText(
-                                    '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                    fontSize: 11,
-                                    isBold: true,
-                                    color: AppColors.white,
+                                  child: FadeTransition(
+                                    opacity: Tween<double>(
+                                      begin: 0,
+                                      end: 1,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: _slideAnimationController,
+                                        curve: Curves.easeInCubic,
+                                      ),
+                                    ),
+                                    child: ScaleTransition(
+                                      scale: Tween<double>(
+                                        begin: 0.8,
+                                        end: 1.0,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: _animationController,
+                                          curve: Curves.elasticOut,
+                                        ),
+                                      ),
+                                      child: ReText(
+                                        '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        isBold: true,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 6),
-                                ReText(
-                                  convertToPersianNumbers(
-                                    date.day.toString(),
-                                  ),
-                                  fontSize: 15,
-                                  isBold: true,
-                                  color: AppColors.black1,
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(height: 6),
+                                    ReText(
+                                      convertToPersianNumbers(
+                                        date.day.toString(),
+                                      ),
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 13,
+                                      isBold: true,
+                                      color: AppColors.black1.withOpacity(0.5),
+                                    ),
+                                  ],
+                                ).hMargin(12),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
+          // Container(
+          //   margin: const EdgeInsets.only(left: 50),
+          //   alignment: Alignment.topRight,
+          //   width: 50,
+          //   height: 80,
+          //   decoration: BoxDecoration(
+          //       gradient: LinearGradient(
+          //           begin: Alignment.centerRight,
+          //           stops: const [0, 0.8],
+          //           end: Alignment.centerLeft,
+          //           colors: [
+          //             const Color(0xFFEBECF0).withOpacity(0.0),
+          //             const Color(0xFFEBECF0),
+          //           ]),
+          //       borderRadius: const BorderRadius.only(
+          //           topLeft: Radius.circular(100),
+          //           bottomLeft: Radius.circular(100))),
+          // )
         ],
       ),
     );

@@ -403,20 +403,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                       _buildDateCardCompact(),
                       SizedBox(height: sectionSpacing),
                       _buildReminderCardCompact(),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 24),
                       Row(
                         children: [
-                          Expanded(
-                            child: _ActionButton(
-                              text: 'لغو',
-                              icon: Icons.close,
-                              background: AppColors.white,
-                              textColor: AppColors.black1,
-                              borderColor: AppColors.gray2,
-                              onTap: () => Navigator.of(context).pop(),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
                           Expanded(
                             flex: 2,
                             child: _ActionButton(
@@ -425,6 +414,17 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                               background: AppColors.primary,
                               textColor: AppColors.white,
                               onTap: _submitTimedTask,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ActionButton(
+                              text: 'لغو',
+                              icon: Icons.close,
+                              background: AppColors.white,
+                              textColor: AppColors.black1,
+                              borderColor: AppColors.gray2,
+                              onTap: () => Navigator.of(context).pop(),
                             ),
                           ),
                         ],
@@ -453,7 +453,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ReText(
                 'افزودن تسک زمان دار',
                 color: AppColors.black1,
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: 1100,
               ),
               ReText(
@@ -464,7 +464,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
-          ).rMargin(10).tMargin(3),
+          ).rMargin(16).tMargin(3),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
@@ -475,7 +475,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.gray2),
-                  color: AppColors.gray1,
+                  color: AppColors.white,
                 ),
                 child: const Icon(
                   Icons.close,
@@ -623,7 +623,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               borderRadius: BorderRadius.circular(100),
               border: Border.all(color: AppColors.gray2),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -866,7 +866,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: AppColors.gray1,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: AppColors.gray2),
       ),
@@ -1157,22 +1157,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       _buildDateCard(),
                       SizedBox(height: sectionSpacing + 2),
                       _buildReminderCard(),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 24),
                       Row(
                         children: [
-                          Expanded(
-                            child: _ActionButton(
-                              text: 'لغو',
-                              icon: Icons.close,
-                              background: AppColors.gray1,
-                              textColor: AppColors.black1,
-                              borderColor: AppColors.gray2,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
                           Expanded(
                             flex: 2,
                             child: _ActionButton(
@@ -1181,6 +1168,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               background: AppColors.primary,
                               textColor: AppColors.white,
                               onTap: _submitTask,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ActionButton(
+                              text: 'لغو',
+                              icon: Icons.close,
+                              background: AppColors.white,
+                              textColor: AppColors.black1,
+                              borderColor: AppColors.gray2,
+                              onTap: () {
+                                Navigator.of(context).pop();
+                              },
                             ),
                           ),
                         ],
@@ -1204,13 +1204,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         children: [
           const Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ReText(
                 'افزودن چک لیست',
                 color: AppColors.black1,
-                fontSize: 20,
-                fontWeight: 1100,
+                fontSize: 16,
+                fontWeight: 1000,
               ),
               ReText(
                 'افزودن تسک چک لیست',
@@ -1220,7 +1220,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
-          ).rMargin(10).tMargin(3),
+          ).rMargin(16).tMargin(3),
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
@@ -1231,7 +1231,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.gray2),
-                  color: AppColors.gray1,
+                  color: AppColors.white,
                 ),
                 child: const Icon(
                   Icons.close,
@@ -1355,7 +1355,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: AppColors.gray1,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: AppColors.gray2),
       ),
@@ -1490,7 +1490,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.gray1,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: AppColors.gray2),
       ),
@@ -1528,7 +1528,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
             isEnabled: isDateModeSelected,
             onTap: onSelectDateMode,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           const Divider(
             color: AppColors.gray2,
             thickness: 1,
@@ -1542,12 +1542,12 @@ class _ScheduleSelectionCard extends StatelessWidget {
               curve: Curves.easeOut,
               opacity: isWeeklyRepeat ? 1 : 0.55,
               child: Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 4),
+                padding: const EdgeInsets.only(top: 16, bottom: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     ReText(
-                      'تکرار هفتگی',
+                      'تـکــــرار هفتگی',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isWeeklyRepeat
@@ -1555,7 +1555,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
                           : AppColors.dark7Color,
                     ),
                     const SizedBox(width: 8),
-                    _RadioDot(isSelected: isWeeklyRepeat),
+                    _RadioDot(isSelected: isWeeklyRepeat).bMargin(8),
                   ],
                 ),
               ),
@@ -1594,7 +1594,7 @@ class _SelectedDateSummary extends StatelessWidget {
           child: Container(
             height: 54,
             decoration: BoxDecoration(
-              color: AppColors.gray1,
+              color: AppColors.white,
               borderRadius: BorderRadius.circular(34),
               border: Border.all(color: AppColors.gray2),
             ),
@@ -1602,9 +1602,9 @@ class _SelectedDateSummary extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.calendar_month_rounded,
-                  color: AppColors.gray,
-                  size: 18,
+                  Icons.arrow_back_ios,
+                  color: AppColors.black,
+                  size: 12,
                 ),
                 const Spacer(),
                 ReText(
@@ -1758,21 +1758,18 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
-      child: ReButton(
-        onPressed: onTap,
-        text: text,
-        icon: icon,
-        fontSize: 16,
-        iconSize: 18,
-        fontWeight: FontWeight.w800,
-        background: background,
-        textDirection: TextDirection.ltr,
-        textColor: textColor,
-        isOutlined: borderColor != null,
-        color: borderColor,
-      ),
+    return ReButton(
+      onPressed: onTap,
+      text: text,
+      icon: icon,
+      fontSize: 16,
+      iconSize: 18,
+      fontWeight: FontWeight.w800,
+      background: background,
+      textDirection: TextDirection.ltr,
+      textColor: textColor,
+      isOutlined: borderColor != null,
+      color: borderColor,
     );
   }
 }
