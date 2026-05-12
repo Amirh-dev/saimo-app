@@ -37,6 +37,7 @@ class ReTextField extends StatefulWidget {
   final Color? textColor;
   final int? maxLength;
   final bool showClearButton;
+  final bool showFocusShadow;
   final double? height;
 
   const ReTextField({
@@ -65,6 +66,7 @@ class ReTextField extends StatefulWidget {
     this.borderRadius,
     this.maxLength,
     this.showClearButton = false,
+    this.showFocusShadow = true,
     this.height,
     this.textColor,
     this.fontSize,
@@ -169,7 +171,7 @@ class _ReTextFieldState extends State<ReTextField> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(resolvedRadius),
-        boxShadow: _hasFocus
+        boxShadow: widget.showFocusShadow && _hasFocus
             ? [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.20),

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
-import 'package:simo_learn/utils/colors.dart';
-import 'package:simo_learn/utils/extentions.dart';
-import 'package:simo_learn/utils/helpers.dart';
+import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 class GoalScreen extends StatefulWidget {
@@ -30,7 +28,8 @@ class _GoalScreenState extends State<GoalScreen> {
     'اسفند',
   ];
 
-  static const double _goalSheetItemExtent = 56;
+  static const double _goalSheetItemExtent = 48;
+  static const int _goalSheetVisibleWheelItems = 3;
 
   Future<void> _openAddGoalModal() async {
     final titleController = TextEditingController();
@@ -62,7 +61,6 @@ class _GoalScreenState extends State<GoalScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-            final sheetHeight = MediaQuery.of(context).size.height * 0.98;
             final maxDay = Jalali(selectedYear, selectedMonth, 1).monthLength;
             if (selectedDay > maxDay) {
               selectedDay = maxDay;
@@ -71,118 +69,84 @@ class _GoalScreenState extends State<GoalScreen> {
 
             return Directionality(
               textDirection: TextDirection.rtl,
-              child: Padding(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
                 padding: EdgeInsets.only(bottom: bottomInset),
-                child: SizedBox(
-                  height: sheetHeight,
-                  child: Stack(
-                    alignment: Alignment.topCenter,
-                    children: [
-                      Positioned(
-                        top: 0,
-                        child: Container(
-                          width: 156,
-                          height: 54,
-                          decoration: const BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(42),
-                              bottomRight: Radius.circular(42),
-                            ),
-                          ),
-                        ),
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(32, 28, 32, 32),
+                    decoration: const BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(32),
+                        topRight: Radius.circular(32),
                       ),
-                      Positioned(
-                        top: 30,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.fromLTRB(32, 112, 32, 32),
-                          decoration: const BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(52),
-                              topRight: Radius.circular(52),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildGoalSheetHeader(context),
-                              const SizedBox(height: 48),
-                              ReTextField(
-                                controller: titleController,
-                                placeholder: 'عنوان هدف',
-                                height: 56,
-                                borderRadius: 32,
-                                backgroundColor: AppColors.gray2,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                              const SizedBox(height: 42),
-                              _buildGoalDatePicker(
-                                years: years,
-                                selectedDay: selectedDay,
-                                selectedMonth: selectedMonth,
-                                selectedYear: selectedYear,
-                                dayController: dayController,
-                                monthController: monthController,
-                                yearController: yearController,
-                                onDayChanged: (value) {
-                                  setModalState(() => selectedDay = value);
-                                },
-                                onMonthChanged: (value) {
-                                  setModalState(() {
-                                    selectedMonth = value;
-                                    final nextMaxDay = Jalali(
-                                      selectedYear,
-                                      selectedMonth,
-                                      1,
-                                    ).monthLength;
-                                    selectedDay =
-                                        selectedDay.clamp(1, nextMaxDay);
-                                  });
-                                },
-                                onYearChanged: (value) {
-                                  setModalState(() {
-                                    selectedYear = value;
-                                    final nextMaxDay = Jalali(
-                                      selectedYear,
-                                      selectedMonth,
-                                      1,
-                                    ).monthLength;
-                                    selectedDay =
-                                        selectedDay.clamp(1, nextMaxDay);
-                                  });
-                                },
-                              ),
-                              const Spacer(),
-                              _buildGoalNoteField(
-                                controller: noteController,
-                                noteLength: noteLength,
-                                onChanged: (value) {
-                                  setModalState(
-                                      () => noteLength = value.length);
-                                },
-                              ),
-                              const SizedBox(height: 52),
-                              _buildGoalSheetActions(context),
-                            ],
-                          ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildGoalSheetHeader(context),
+                        const SizedBox(height: 25),
+                        ReTextField(
+                          controller: titleController,
+                          placeholder: 'عنوان هدف',
+                          height: 56,
+                          borderRadius: 32,
+                          backgroundColor: AppColors.gray.withOpacity(0.1),
+                          showFocusShadow: false,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                      Positioned(
-                        top: 29,
-                        child: Container(
-                          width: 100,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
+                        const SizedBox(height: 42),
+                        _buildGoalDatePicker(
+                          years: years,
+                          selectedDay: selectedDay,
+                          selectedMonth: selectedMonth,
+                          selectedYear: selectedYear,
+                          dayController: dayController,
+                          monthController: monthController,
+                          yearController: yearController,
+                          onDayChanged: (value) {
+                            setModalState(() => selectedDay = value);
+                          },
+                          onMonthChanged: (value) {
+                            setModalState(() {
+                              selectedMonth = value;
+                              final nextMaxDay = Jalali(
+                                selectedYear,
+                                selectedMonth,
+                                1,
+                              ).monthLength;
+                              selectedDay = selectedDay.clamp(1, nextMaxDay);
+                            });
+                          },
+                          onYearChanged: (value) {
+                            setModalState(() {
+                              selectedYear = value;
+                              final nextMaxDay = Jalali(
+                                selectedYear,
+                                selectedMonth,
+                                1,
+                              ).monthLength;
+                              selectedDay = selectedDay.clamp(1, nextMaxDay);
+                            });
+                          },
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 34),
+                        _buildGoalNoteField(
+                          controller: noteController,
+                          noteLength: noteLength,
+                          onChanged: (value) {
+                            setModalState(() => noteLength = value.length);
+                          },
+                        ),
+                        const SizedBox(height: 36),
+                        _buildGoalSheetActions(context),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -192,6 +156,7 @@ class _GoalScreenState extends State<GoalScreen> {
       },
     );
 
+    await Future<void>.delayed(const Duration(milliseconds: 350));
     titleController.dispose();
     noteController.dispose();
     dayController.dispose();
@@ -201,6 +166,8 @@ class _GoalScreenState extends State<GoalScreen> {
 
   Widget _buildGoalSheetHeader(BuildContext context) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         GestureDetector(
           onTap: () => Navigator.of(context).pop(),
@@ -218,26 +185,23 @@ class _GoalScreenState extends State<GoalScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 24),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ReText(
-                'افزودن هدف',
-                fontSize: 27,
-                fontWeight: 1100,
-                color: AppColors.black1,
-              ),
-              SizedBox(height: 6),
-              ReText(
-                'هدف جدیدی برای خود مشخص کنید.',
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.gray,
-              ),
-            ],
-          ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ReText(
+              'افزودن هدف',
+              fontSize: 16,
+              fontWeight: 1000,
+              color: AppColors.black1,
+            ),
+            ReText(
+              'هدف جدیدی برای خود مشخص کنید.',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.black1.withOpacity(0.5),
+            ),
+          ],
         ),
       ],
     );
@@ -263,27 +227,36 @@ class _GoalScreenState extends State<GoalScreen> {
     ];
 
     return SizedBox(
-      height: 252,
+      height: 184,
       child: Column(
         children: [
           const Row(
             textDirection: TextDirection.rtl,
             children: [
               Expanded(
-                  child: Center(
-                      child: ReText('روز',
-                          fontSize: 16, fontWeight: FontWeight.w900))),
+                child: Center(
+                  child: ReText(
+                    'روز',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
+                ),
+              ),
               Expanded(
-                  child: Center(
-                      child: ReText('ماه',
-                          fontSize: 16, fontWeight: FontWeight.w900))),
+                child: Center(
+                  child:
+                      ReText('ماه', fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
               Expanded(
-                  child: Center(
-                      child: ReText('سال',
-                          fontSize: 16, fontWeight: FontWeight.w900))),
+                child: Center(
+                  child:
+                      ReText('سال', fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 20),
           Expanded(
             child: Row(
               textDirection: TextDirection.rtl,
@@ -295,8 +268,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     onSelected: (index) => onDayChanged(index + 1),
                     selectedChild: ReText(
                       selectedDay.toString(),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.white,
                       textAlign: TextAlign.center,
                     ),
@@ -306,8 +279,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     ),
                     itemBuilder: (index) => ReText(
                       days[index].toString(),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                       color: _wheelItemColor(
                           (index + 1) == selectedDay, index, selectedDay - 1),
                       textAlign: TextAlign.center,
@@ -323,8 +296,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     onSelected: (index) => onMonthChanged(index + 1),
                     selectedChild: ReText(
                       _persianMonths[selectedMonth - 1],
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.black1,
                       textAlign: TextAlign.center,
                     ),
@@ -335,8 +308,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     ),
                     itemBuilder: (index) => ReText(
                       _persianMonths[index],
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                       color: _wheelItemColor((index + 1) == selectedMonth,
                           index, selectedMonth - 1),
                       textAlign: TextAlign.center,
@@ -351,8 +324,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     onSelected: (index) => onYearChanged(years[index]),
                     selectedChild: ReText(
                       selectedYear.toString(),
-                      fontSize: 22,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
                       color: AppColors.black1,
                       textAlign: TextAlign.center,
                     ),
@@ -363,8 +336,8 @@ class _GoalScreenState extends State<GoalScreen> {
                     ),
                     itemBuilder: (index) => ReText(
                       years[index].toString(),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                       color: _wheelItemColor(years[index] == selectedYear,
                           index, years.indexOf(selectedYear)),
                       textAlign: TextAlign.center,
@@ -388,34 +361,39 @@ class _GoalScreenState extends State<GoalScreen> {
     required BoxDecoration selectedDecoration,
     double selectedWidth = 66,
   }) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        ListWheelScrollView.useDelegate(
-          controller: controller,
-          physics: const FixedExtentScrollPhysics(),
-          itemExtent: _goalSheetItemExtent,
-          diameterRatio: 10,
-          perspective: 0.001,
-          overAndUnderCenterOpacity: 1,
-          onSelectedItemChanged: onSelected,
-          childDelegate: ListWheelChildBuilderDelegate(
-            childCount: itemCount,
-            builder: (context, index) {
-              return Center(child: itemBuilder(index));
-            },
-          ),
+    return Center(
+      child: SizedBox(
+        height: _goalSheetItemExtent * _goalSheetVisibleWheelItems,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ListWheelScrollView.useDelegate(
+              controller: controller,
+              physics: const FixedExtentScrollPhysics(),
+              itemExtent: _goalSheetItemExtent,
+              diameterRatio: 10,
+              perspective: 0.001,
+              overAndUnderCenterOpacity: 0.6,
+              onSelectedItemChanged: onSelected,
+              childDelegate: ListWheelChildBuilderDelegate(
+                childCount: itemCount,
+                builder: (context, index) {
+                  return Center(child: itemBuilder(index));
+                },
+              ),
+            ),
+            IgnorePointer(
+              child: Container(
+                width: selectedWidth,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: selectedDecoration,
+                child: selectedChild,
+              ),
+            ),
+          ],
         ),
-        IgnorePointer(
-          child: Container(
-            width: selectedWidth,
-            height: 50,
-            alignment: Alignment.center,
-            decoration: selectedDecoration,
-            child: selectedChild,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -449,18 +427,20 @@ class _GoalScreenState extends State<GoalScreen> {
           height: 96,
           borderRadius: 32,
           backgroundColor: AppColors.gray2,
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
+          textInputAction: TextInputAction.done,
+          showFocusShadow: false,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
           onChanged: onChanged,
         ),
         Positioned(
-          left: 34,
-          top: 28,
+          left: 16,
+          top: 16,
           child: ReText(
             '${noteLength.clamp(0, 200)}/200',
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: AppColors.gray,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black1.withOpacity(0.5),
             textDirection: TextDirection.ltr,
           ),
         ),
