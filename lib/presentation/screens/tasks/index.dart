@@ -9,7 +9,6 @@ import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
-import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -680,67 +679,9 @@ class _TasksScreenState extends State<TasksScreen>
     List<Map<String, dynamic>> tasks,
   ) {
     if (tasks.isEmpty) {
-      return LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const ReImage(
-                        'assets/images/empty_list.png',
-                        width: 180,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(right: 20),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 30,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: AppColors.white,
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              ReText(
-                                'چک لیستی ندارید!',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                              ),
-                              ReText(
-                                'برای امروز تسکی اضافه نکردید.',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.gray,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ).tMargin(22),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+      return const ReEmptyList(
+        title: 'چک لیستی ندارید!',
+        subtitle: 'برای امروز تسکی اضافه نکردید.',
       );
     }
 

@@ -10,15 +10,18 @@ Widget reAppHeader(String title, {Widget? suffixIcon, Widget? prefixIcon}) {
     children: [
       prefixIcon ?? const SizedBox(width: 48),
       Expanded(
-        child: Center(
-          child: ReText(
-            title,
-            color: AppColors.black1,
-            fontSize: 20,
-            fontWeight: 1100,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Center(
+            child: ReText(
+              title,
+              color: AppColors.black1,
+              fontSize: 20,
+              fontWeight: 1100,
+            ),
           ),
         ),
-      ).tMargin(10),
+      ),
       suffixIcon ?? const SizedBox(width: 48),
     ],
   ).tMargin(20).hMargin(32);
