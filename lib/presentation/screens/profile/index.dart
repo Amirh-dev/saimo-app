@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
@@ -248,7 +247,6 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
- 
 
   GestureDetector profileItem(
       String title, IconData icon, Color itemColor, Function onTap,

@@ -1382,7 +1382,7 @@ class _TasksScreenState extends State<TasksScreen>
                                       ),
                                       child: ReText(
                                         '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                        fontSize: 15,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         isBold: true,
                                         color: AppColors.white,

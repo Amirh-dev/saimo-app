@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' as intl;
@@ -39,6 +41,7 @@ class ReTextField extends StatefulWidget {
   final bool showClearButton;
   final bool showFocusShadow;
   final double? height;
+  final EdgeInsetsGeometry? contentPadding;
 
   const ReTextField({
     super.key,
@@ -68,6 +71,7 @@ class ReTextField extends StatefulWidget {
     this.showClearButton = false,
     this.showFocusShadow = true,
     this.height,
+    this.contentPadding,
     this.textColor,
     this.fontSize,
     this.fontWeight,
@@ -206,7 +210,6 @@ class _ReTextFieldState extends State<ReTextField> {
           ],
           cursorColor: widget.color ?? AppColors.primary,
           keyboardType: widget.keyboardType,
-          
           buildCounter: widget.maxLength == null
               ? null
               : (
@@ -217,15 +220,15 @@ class _ReTextFieldState extends State<ReTextField> {
                 }) =>
                   null,
           decoration: InputDecoration(
-            
             hintText: widget.placeholder,
             constraints: isMultiline
                 ? null
                 : BoxConstraints.tightFor(height: resolvedHeight),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: isMultiline ? 12 : 18,
-            ),
+            contentPadding: widget.contentPadding ??
+                EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: isMultiline ? 12 : 18,
+                ),
             hintStyle: TextStyle(
               fontFamily: AppFonts.iranSansVar,
               fontSize: widget.fontSize ?? 14,

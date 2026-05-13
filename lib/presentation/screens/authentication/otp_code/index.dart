@@ -120,7 +120,7 @@ class OTPCodeScreen extends StatelessWidget {
                     const ReText(
                       'سایمو لرن',
                       color: AppColors.black1,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ).bMargin(10)
                   ],

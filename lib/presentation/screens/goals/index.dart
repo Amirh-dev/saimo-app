@@ -525,9 +525,11 @@ class _GoalScreenState extends State<GoalScreen> {
           height: 96,
           borderRadius: 32,
           backgroundColor: AppColors.gray2,
+          contentPadding: const EdgeInsets.fromLTRB(0, 34, 16, 10),
           textInputAction: TextInputAction.done,
           showFocusShadow: false,
           fontSize: 13,
+          textColor: AppColors.black1.withOpacity(0.5),
           fontWeight: FontWeight.w600,
           onChanged: onChanged,
         ),
@@ -1002,8 +1004,9 @@ class _GoalScreenState extends State<GoalScreen> {
 
   Widget _buildGoalList() {
     if (_goals.isEmpty) {
-      return const ReEmptyList(
+      return ReEmptyList(
         imageWidth: 220,
+        onTap: _openAddGoalModal,
         title: 'هنوز هدفی مشخص نکردی!',
         subtitle: 'برای افزودن هدف روی + کلیک کنید.',
         imagePath: 'assets/images/empty_list_goal.png',
@@ -1052,7 +1055,7 @@ class _GoalScreenState extends State<GoalScreen> {
                       width: 56,
                       circleSize: 35,
                       innerCircleSize: 32,
-                      lineColor: AppColors.gray,
+                      lineColor: AppColors.black1.withOpacity(0.2),
                       activeBackgroundColor: color.withOpacity(0.12),
                       innerPadding: const EdgeInsets.all(5),
                       child: Icon(
@@ -1127,6 +1130,7 @@ class _GoalScreenState extends State<GoalScreen> {
                   textDirection: TextDirection.ltr,
                   icon: Icons.add,
                   iconColor: AppColors.primary,
+                  color: AppColors.gray2,
                   iconSize: 18,
                   isOutlined: true,
                   background: AppColors.gray1,
@@ -1141,7 +1145,7 @@ class _GoalScreenState extends State<GoalScreen> {
                   'اهداف شما',
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                )
+                ).tMargin(2)
               ],
             ).hMargin(32).tMargin(16).bMargin(8),
             Expanded(
