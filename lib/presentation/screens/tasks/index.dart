@@ -421,120 +421,6 @@ class _TasksScreenState extends State<TasksScreen>
     }
   }
 
-  Widget _buildTaskDot({
-    required bool showTopLine,
-    required bool showBottomLine,
-    required bool isDone,
-    required double height,
-    required VoidCallback onTap,
-  }) {
-    const circleSize = 32.0;
-    const segmentWidth = 2.0;
-    const segmentHeight = 2.8;
-    const targetSegmentGap = 3.0;
-    const dotConnectorGap = 3.0;
-    final lineAreaHeight = math.max(
-      0.0,
-      (height - circleSize - (dotConnectorGap * 2)) / 2,
-    );
-    final fittedSegmentCount = math.max(
-      1,
-      (lineAreaHeight / (segmentHeight + targetSegmentGap)).floor(),
-    );
-
-    Widget buildShortLine() => Container(
-          width: segmentWidth,
-          height: segmentHeight,
-          decoration: BoxDecoration(
-            color: AppColors.gray,
-            borderRadius: BorderRadius.circular(100),
-          ),
-        );
-
-    Widget buildShortLines(bool visible) {
-      if (!visible ||
-          lineAreaHeight < segmentHeight ||
-          fittedSegmentCount == 0) {
-        return SizedBox(height: lineAreaHeight);
-      }
-
-      final effectiveGap = math.max(
-        0.0,
-        (lineAreaHeight / fittedSegmentCount) - segmentHeight,
-      );
-      final edgeGap = effectiveGap / 2;
-
-      return SizedBox(
-        height: lineAreaHeight,
-        child: Stack(
-          children: List.generate(
-            fittedSegmentCount,
-            (index) {
-              final top = edgeGap + (index * (segmentHeight + effectiveGap));
-              return Positioned(
-                top: top,
-                left: 0,
-                right: 0,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: buildShortLine(),
-                ),
-              );
-            },
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: 34,
-      height: height,
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          buildShortLines(showTopLine),
-          const SizedBox(height: dotConnectorGap),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: Container(
-              width: circleSize,
-              height: circleSize,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Container(
-                width: 24,
-                height: 24,
-                margin: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: isDone
-                      ? AppColors.done.withOpacity(0.2)
-                      : AppColors.white,
-                  border: Border.all(
-                    width: 2,
-                    color: isDone ? Colors.transparent : AppColors.gray,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: isDone
-                    ? const Icon(
-                        CupertinoIcons.checkmark_alt,
-                        size: 16,
-                        color: AppColors.done,
-                      )
-                    : null,
-              ),
-            ),
-          ),
-          const SizedBox(height: dotConnectorGap),
-          buildShortLines(showBottomLine),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTaskTile(
     BuildContext context,
     Map<String, dynamic> task,
@@ -725,7 +611,7 @@ class _TasksScreenState extends State<TasksScreen>
                     duration: _taskExpansionDuration,
                     curve: Curves.easeOutCubic,
                     height: _checklistRowHeightAt(index),
-                    child: _buildTaskDot(
+                    child: ReTimelineDot(
                       showTopLine: index != 0,
                       showBottomLine: index != tasks.length - 1,
                       isDone: task['status'] == 'done',
@@ -908,8 +794,8 @@ class _TasksScreenState extends State<TasksScreen>
                   height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: color.withOpacity(0.12),
-                    border: Border.all(color: color.withOpacity(0.70)),
+                    color: color.withOpacity( 0.12),
+                    border: Border.all(color: color.withOpacity( 0.70)),
                   ),
                   child: Icon(
                     _timedTaskMarkerIcon(status),
@@ -966,7 +852,7 @@ class _TasksScreenState extends State<TasksScreen>
           border: Border.all(color: AppColors.gray2),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black1.withOpacity(0.05),
+              color: AppColors.black1.withOpacity( 0.05),
               blurRadius: 80,
               offset: const Offset(0, 6),
             ),
@@ -1515,7 +1401,9 @@ class _TasksScreenState extends State<TasksScreen>
                                       fontWeight: FontWeight.w400,
                                       fontSize: 13,
                                       isBold: true,
-                                      color: AppColors.black1.withOpacity(0.5),
+                                      color: AppColors.black1.withOpacity(
+                                         0.5,
+                                      ),
                                     ),
                                   ],
                                 ).hMargin(12),
