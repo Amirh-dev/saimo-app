@@ -17,6 +17,7 @@ class ReButton extends StatelessWidget {
   final double? borderRadius;
   final double? fontSize;
   final double? iconSize;
+  final Color? iconColor;
   final EdgeInsets? padding;
   final TextDirection textDirection;
   final bool? useGestureDetector;
@@ -39,6 +40,7 @@ class ReButton extends StatelessWidget {
     this.textDirection = TextDirection.rtl,
     this.padding,
     this.textColor,
+    this.iconColor,
     this.fontWeight,
     this.useGestureDetector,
     this.showOnlyIcon,
@@ -122,7 +124,7 @@ class ReButton extends StatelessWidget {
                     children: [
                       Icon(
                         icon!,
-                        color: resolvedContentColor,
+                        color: iconColor ?? resolvedContentColor,
                         size: iconSize ?? 22,
                       ),
                       ReText(
@@ -140,7 +142,7 @@ class ReButton extends StatelessWidget {
               : hasIcon
                   ? Icon(
                       icon!,
-                      color: resolvedContentColor,
+                      color: iconColor ?? resolvedContentColor,
                       size: iconSize ?? 22,
                     ).center
                   : hasText

@@ -18,7 +18,7 @@ class _GoalScreenState extends State<GoalScreen> {
   static const Duration _goalListAnimationDuration = Duration(
     milliseconds: 260,
   );
-  static const double _goalItemHeight = 102.0;
+  static const double _goalItemHeight = 90.0;
   static const List<String> _persianMonths = [
     'فروردین',
     'اردیبهشت',
@@ -147,7 +147,7 @@ class _GoalScreenState extends State<GoalScreen> {
                           height: 56,
                           borderRadius: 32,
                           backgroundColor: AppColors.gray.withOpacity(
-                             0.1,
+                            0.1,
                           ),
                           showFocusShadow: false,
                           fontSize: 13,
@@ -280,7 +280,7 @@ class _GoalScreenState extends State<GoalScreen> {
               'هدف جدیدی برای خود مشخص کنید.',
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.black1.withOpacity( 0.5),
+              color: AppColors.black1.withOpacity(0.5),
             ),
           ],
         ),
@@ -482,7 +482,7 @@ class _GoalScreenState extends State<GoalScreen> {
     return Container(
       width: 1,
       margin: const EdgeInsets.only(top: 2, bottom: 10),
-      color: AppColors.gray2.withOpacity( 0.45),
+      color: AppColors.gray2.withOpacity(0.45),
     );
   }
 
@@ -521,7 +521,7 @@ class _GoalScreenState extends State<GoalScreen> {
             '${noteLength.clamp(0, 200)}/200',
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.black1.withOpacity( 0.5),
+            color: AppColors.black1.withOpacity(0.5),
             textDirection: TextDirection.ltr,
           ),
         ),
@@ -640,13 +640,13 @@ class _GoalScreenState extends State<GoalScreen> {
     final remainingDays = _goalRemainingDays(dueDate);
 
     return Container(
-      height: 82,
+      height: 72,
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black1.withOpacity( 0.04),
+            color: AppColors.black1.withOpacity(0.04),
             blurRadius: 80,
             offset: const Offset(0, 8),
           ),
@@ -656,38 +656,38 @@ class _GoalScreenState extends State<GoalScreen> {
         children: [
           const Icon(
             Icons.arrow_back_ios,
-            size: 18,
+            size: 12,
             color: AppColors.gray,
-          ).lMargin(28),
+          ).lMargin(24),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(right: 28, left: 12),
+              padding: const EdgeInsets.only(right: 24, left: 12),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   ReText(
                     goal['title']?.toString() ?? '',
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                     color: AppColors.black1,
                     maxLines: 1,
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       const ReText(
                         'روز باقی مانده',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.gray,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 4),
                       ReText(
                         remainingDays.toString(),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                         color: color,
                         textDirection: TextDirection.ltr,
                       ),
@@ -722,7 +722,7 @@ class _GoalScreenState extends State<GoalScreen> {
             Expanded(
               child: ListView.builder(
                 controller: _goalCardsScrollController,
-                padding: const EdgeInsets.fromLTRB(32, 12, 4, 24),
+                padding: const EdgeInsets.fromLTRB(32, 0, 0, 24),
                 itemCount: _goals.length,
                 itemBuilder: (_, index) => AnimatedContainer(
                   duration: _goalListAnimationDuration,
@@ -737,7 +737,7 @@ class _GoalScreenState extends State<GoalScreen> {
               width: 68,
               child: ListView.builder(
                 controller: _goalDotsScrollController,
-                padding: const EdgeInsets.only(top: 12, bottom: 24, right: 8),
+                padding: const EdgeInsets.only(top: 0, bottom: 24, right: 8),
                 itemCount: _goals.length,
                 itemBuilder: (_, index) {
                   final color =
@@ -752,25 +752,15 @@ class _GoalScreenState extends State<GoalScreen> {
                       isDone: true,
                       height: _goalItemHeight,
                       width: 56,
-                      circleSize: 42,
+                      circleSize: 35,
                       innerCircleSize: 32,
-                      lineColor: AppColors.gray.withOpacity( 0.45),
-                      activeBackgroundColor: color.withOpacity( 0.12),
+                      lineColor: AppColors.gray,
+                      activeBackgroundColor: color.withOpacity(0.12),
                       innerPadding: const EdgeInsets.all(5),
-                      dotConnectorGap: 0,
-                      segmentHeight: 8,
-                      segmentGap: 8,
-                      child: Container(
-                        margin: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: AppColors.white,
-                          size: 20,
-                        ),
+                      child: Icon(
+                        SolarIconsBold.target,
+                        color: color,
+                        size: 16,
                       ),
                     ),
                   );
@@ -838,12 +828,13 @@ class _GoalScreenState extends State<GoalScreen> {
                   text: 'افزودن هدف',
                   textDirection: TextDirection.ltr,
                   icon: Icons.add,
+                  iconColor: AppColors.primary,
                   iconSize: 18,
                   isOutlined: true,
                   background: AppColors.gray1,
                   textColor: AppColors.black1,
                   fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w600,
                 ).sizedBox(
                   height: 40,
                   width: 132,
@@ -854,7 +845,7 @@ class _GoalScreenState extends State<GoalScreen> {
                   fontWeight: FontWeight.w900,
                 )
               ],
-            ).hMargin(32).vMargin(16),
+            ).hMargin(32).tMargin(16).bMargin(8),
             Expanded(
               child: _buildGoalList(),
             ),

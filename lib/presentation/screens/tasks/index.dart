@@ -794,8 +794,8 @@ class _TasksScreenState extends State<TasksScreen>
                   height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: color.withOpacity( 0.12),
-                    border: Border.all(color: color.withOpacity( 0.70)),
+                    color: color.withOpacity(0.12),
+                    border: Border.all(color: color.withOpacity(0.70)),
                   ),
                   child: Icon(
                     _timedTaskMarkerIcon(status),
@@ -852,7 +852,7 @@ class _TasksScreenState extends State<TasksScreen>
           border: Border.all(color: AppColors.gray2),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black1.withOpacity( 0.05),
+              color: AppColors.black1.withOpacity(0.05),
               blurRadius: 80,
               offset: const Offset(0, 6),
             ),
@@ -1402,7 +1402,7 @@ class _TasksScreenState extends State<TasksScreen>
                                       fontSize: 13,
                                       isBold: true,
                                       color: AppColors.black1.withOpacity(
-                                         0.5,
+                                        0.5,
                                       ),
                                     ),
                                   ],
