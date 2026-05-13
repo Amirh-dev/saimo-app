@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -82,14 +84,21 @@ class _GoalScreenState extends State<GoalScreen> {
     super.dispose();
   }
 
-  Future<void> _openAddGoalModal() async {
-    final titleController = TextEditingController();
-    final noteController = TextEditingController();
-    final initialDate = Jalali.now();
+  Future<void> _openAddGoalModal({
+    int? editIndex,
+    Map<String, dynamic>? initialGoal,
+  }) async {
+    final initialDate = initialGoal?['dueDate'] as Jalali? ?? Jalali.now();
+    final titleController = TextEditingController(
+      text: initialGoal?['title']?.toString() ?? '',
+    );
+    final noteController = TextEditingController(
+      text: initialGoal?['note']?.toString() ?? '',
+    );
     var selectedDay = initialDate.day;
     var selectedMonth = initialDate.month;
     var selectedYear = initialDate.year;
-    var noteLength = 0;
+    var noteLength = noteController.text.length;
     final years = [
       for (var year = initialDate.year + 2;
           year >= initialDate.year - 4;
@@ -204,6 +213,7 @@ class _GoalScreenState extends State<GoalScreen> {
                           selectedDay: selectedDay,
                           selectedMonth: selectedMonth,
                           selectedYear: selectedYear,
+                          existingGoal: initialGoal,
                         ),
                       ],
                     ),
@@ -226,7 +236,14 @@ class _GoalScreenState extends State<GoalScreen> {
     if (newGoal == null || !mounted) return;
 
     setState(() {
-      _goals.insert(0, newGoal);
+      if (editIndex != null &&
+          editIndex >= 0 &&
+          editIndex < _goals.length &&
+          initialGoal != null) {
+        _goals[editIndex] = newGoal;
+      } else {
+        _goals.insert(0, newGoal);
+      }
     });
 
     if (_goalCardsScrollController.hasClients) {
@@ -536,6 +553,7 @@ class _GoalScreenState extends State<GoalScreen> {
     required int selectedDay,
     required int selectedMonth,
     required int selectedYear,
+    Map<String, dynamic>? existingGoal,
   }) {
     final title = titleController.text.trim();
     if (title.isEmpty) {
@@ -553,12 +571,17 @@ class _GoalScreenState extends State<GoalScreen> {
     }
 
     final dueDate = Jalali(selectedYear, selectedMonth, selectedDay);
+    final createdDate = existingGoal?['createdDate'] as Jalali? ?? Jalali.now();
+    final totalDays = _goalDaysBetween(createdDate, dueDate);
     Navigator.of(context).pop(
       <String, dynamic>{
         'title': title,
         'note': noteController.text.trim(),
         'dueDate': dueDate,
-        'color': _goals.length.isEven ? AppColors.primary : AppColors.secondary,
+        'createdDate': createdDate,
+        'totalDays': math.max(1, totalDays),
+        'color': existingGoal?['color'] as Color? ??
+            (_goals.length.isEven ? AppColors.primary : AppColors.secondary),
       },
     );
   }
@@ -570,6 +593,7 @@ class _GoalScreenState extends State<GoalScreen> {
     required int selectedDay,
     required int selectedMonth,
     required int selectedYear,
+    Map<String, dynamic>? existingGoal,
   }) {
     return Row(
       textDirection: TextDirection.rtl,
@@ -587,9 +611,9 @@ class _GoalScreenState extends State<GoalScreen> {
             color: AppColors.gray2,
             textColor: AppColors.black1,
             borderRadius: 32,
-            fontSize: 17,
-            iconSize: 18,
-            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            iconSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(width: 16),
@@ -604,6 +628,7 @@ class _GoalScreenState extends State<GoalScreen> {
                 selectedDay: selectedDay,
                 selectedMonth: selectedMonth,
                 selectedYear: selectedYear,
+                existingGoal: existingGoal,
               ),
               text: 'افزودن',
               icon: Icons.add,
@@ -611,9 +636,9 @@ class _GoalScreenState extends State<GoalScreen> {
               background: AppColors.primary,
               textColor: AppColors.white,
               borderRadius: 32,
-              fontSize: 20,
-              iconSize: 24,
-              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              iconSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -634,70 +659,343 @@ class _GoalScreenState extends State<GoalScreen> {
     return math.max(0, dueDay.difference(today).inDays);
   }
 
-  Widget _buildGoalTile(Map<String, dynamic> goal) {
+  int _goalDaysBetween(Jalali startDate, Jalali endDate) {
+    final startDateTime = startDate.toDateTime();
+    final endDateTime = endDate.toDateTime();
+    final startDay = DateTime(
+      startDateTime.year,
+      startDateTime.month,
+      startDateTime.day,
+    );
+    final endDay = DateTime(
+      endDateTime.year,
+      endDateTime.month,
+      endDateTime.day,
+    );
+
+    return math.max(0, endDay.difference(startDay).inDays);
+  }
+
+  String _formatGoalDate(Jalali date) {
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+
+  double _goalProgress(Map<String, dynamic> goal) {
+    final dueDate = goal['dueDate'] as Jalali;
+    final totalDays = goal['totalDays'] as int? ??
+        _goalDaysBetween(
+          goal['createdDate'] as Jalali? ?? Jalali.now(),
+          dueDate,
+        );
+    final remainingDays = _goalRemainingDays(dueDate);
+
+    if (totalDays <= 0) return 1;
+    return ((totalDays - remainingDays) / totalDays).clamp(0.0, 1.0);
+  }
+
+  void _deleteGoal(int index) {
+    if (index < 0 || index >= _goals.length) return;
+
+    setState(() {
+      _goals.removeAt(index);
+    });
+  }
+
+  Future<void> _openGoalDetailsModal(int index) async {
+    if (index < 0 || index >= _goals.length) return;
+
+    await showReModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            if (index >= _goals.length) return const SizedBox.shrink();
+
+            final goal = _goals[index];
+            final dueDate = goal['dueDate'] as Jalali;
+            final remainingDays = _goalRemainingDays(dueDate);
+            final progress = _goalProgress(goal);
+            final note = (goal['note']?.toString().trim().isNotEmpty ?? false)
+                ? goal['note'].toString().trim()
+                : 'برای این هدف هنوز یادداشتی ثبت نشده است.';
+
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(44, 32, 44, 48),
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => Navigator.of(sheetContext).pop(),
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.gray2,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: AppColors.gray,
+                              size: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ReText(
+                              goal['title']?.toString() ?? '',
+                              fontSize: 16,
+                              fontWeight: 1000,
+                              color: AppColors.black1,
+                              maxLines: 2,
+                            ),
+                            const SizedBox(height: 4),
+                            ReText(
+                              _formatGoalDate(dueDate),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.gray,
+                              textDirection: TextDirection.ltr,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: 1,
+                      color: AppColors.gray2,
+                      margin: const EdgeInsets.only(top: 25, bottom: 25),
+                    ),
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: ReText(
+                        note,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gray,
+                        lineHeight: 1.85,
+                        maxLines: 3,
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 3,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      height: 1,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.gray2,
+                                        borderRadius:
+                                            BorderRadius.circular(100),
+                                      ),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Container(
+                                        width: constraints.maxWidth * progress,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius:
+                                              BorderRadius.circular(100),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        ReText(
+                          remainingDays.toString(),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.black1,
+                          textDirection: TextDirection.ltr,
+                        ),
+                        const SizedBox(width: 4),
+                        const ReText(
+                          'روز باقی مانده',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.gray,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 25),
+                    Row(
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            _deleteGoal(index);
+                            Navigator.of(sheetContext).pop();
+                          },
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.gray2,
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              SolarIconsOutline.trashBinMinimalistic,
+                              color: AppColors.black1,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SizedBox(
+                            width: 118,
+                            height: 58,
+                            child: ReButton(
+                              onPressed: () {
+                                final goalToEdit =
+                                    Map<String, dynamic>.from(goal);
+                                Navigator.of(sheetContext).pop();
+                                Future<void>.delayed(
+                                  const Duration(milliseconds: 250),
+                                  () {
+                                    if (!mounted) return;
+                                    _openAddGoalModal(
+                                      editIndex: index,
+                                      initialGoal: goalToEdit,
+                                    );
+                                  },
+                                );
+                              },
+                              text: 'ویرایش',
+                              icon: SolarIconsOutline.penNewSquare,
+                              textDirection: TextDirection.ltr,
+                              isOutlined: true,
+                              background: AppColors.white,
+                              color: AppColors.gray2,
+                              textColor: AppColors.black1,
+                              borderRadius: 32,
+                              fontSize: 16,
+                              iconSize: 18,
+                              iconColor: AppColors.black1,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGoalTile(Map<String, dynamic> goal, int index) {
     final dueDate = goal['dueDate'] as Jalali;
     final color = goal['color'] as Color? ?? AppColors.primary;
     final remainingDays = _goalRemainingDays(dueDate);
 
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(100),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black1.withOpacity(0.04),
-            blurRadius: 80,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.arrow_back_ios,
-            size: 12,
-            color: AppColors.gray,
-          ).lMargin(24),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 24, left: 12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  ReText(
-                    goal['title']?.toString() ?? '',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.black1,
-                    maxLines: 1,
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const ReText(
-                        'روز باقی مانده',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gray,
-                      ),
-                      const SizedBox(width: 4),
-                      ReText(
-                        remainingDays.toString(),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                        textDirection: TextDirection.ltr,
-                      ),
-                    ],
-                  ),
-                ],
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openGoalDetailsModal(index),
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black1.withOpacity(0.04),
+              blurRadius: 80,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_ios,
+              size: 12,
+              color: AppColors.gray,
+            ).lMargin(24),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 24, left: 12),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    ReText(
+                      goal['title']?.toString() ?? '',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.black1,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const ReText(
+                          'روز باقی مانده',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray,
+                        ),
+                        const SizedBox(width: 4),
+                        ReText(
+                          remainingDays.toString(),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                          textDirection: TextDirection.ltr,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -729,7 +1027,7 @@ class _GoalScreenState extends State<GoalScreen> {
                   curve: Curves.easeOutCubic,
                   height: _goalItemHeight,
                   alignment: Alignment.center,
-                  child: _buildGoalTile(_goals[index]),
+                  child: _buildGoalTile(_goals[index], index),
                 ),
               ),
             ),

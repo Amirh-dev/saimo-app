@@ -15,6 +15,7 @@ class ReButton extends StatelessWidget {
   final Color? background;
   final Color? textColor;
   final double? borderRadius;
+  final double? height;
   final double? fontSize;
   final double? iconSize;
   final Color? iconColor;
@@ -22,6 +23,7 @@ class ReButton extends StatelessWidget {
   final TextDirection textDirection;
   final bool? useGestureDetector;
   final bool? showOnlyIcon;
+  final bool reverseIconPosition;
   final bool? isEnabled;
   final bool? isPersianText;
 
@@ -35,6 +37,7 @@ class ReButton extends StatelessWidget {
     this.color,
     this.background,
     this.borderRadius,
+    this.height,
     this.fontSize,
     this.iconSize,
     this.textDirection = TextDirection.rtl,
@@ -44,6 +47,7 @@ class ReButton extends StatelessWidget {
     this.fontWeight,
     this.useGestureDetector,
     this.showOnlyIcon,
+    this.reverseIconPosition = false,
     this.isEnabled,
     this.isPersianText,
   });
@@ -62,7 +66,7 @@ class ReButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 55,
+      height: height ?? 55,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? () => onPressedFunc(context) : null,
@@ -107,6 +111,21 @@ class ReButton extends StatelessWidget {
       return ReDotsLoader(color: resolvedContentColor);
     }
 
+    final iconWidget = Icon(
+      icon,
+      color: iconColor ?? resolvedContentColor,
+      size: iconSize ?? 22,
+    );
+    final textWidget = ReText(
+      text ?? '',
+      isPersian: isPersianText ?? true,
+      color: resolvedContentColor,
+      fontSize: fontSize ?? 16,
+      textAlign: TextAlign.center,
+      fontWeight: resolvedFontWeight,
+      maxLines: 2,
+    );
+
     return Directionality(
       textDirection: textDirection,
       child: shouldShowOnlyIcon
@@ -121,22 +140,9 @@ class ReButton extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(
-                        icon!,
-                        color: iconColor ?? resolvedContentColor,
-                        size: iconSize ?? 22,
-                      ),
-                      ReText(
-                        text!,
-                        isPersian: isPersianText ?? true,
-                        color: resolvedContentColor,
-                        fontSize: fontSize ?? 16,
-                        textAlign: TextAlign.center,
-                        fontWeight: resolvedFontWeight,
-                        maxLines: 2,
-                      ),
-                    ],
+                    children: reverseIconPosition
+                        ? [textWidget, iconWidget]
+                        : [iconWidget, textWidget],
                   ),
                 )
               : hasIcon

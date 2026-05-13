@@ -206,6 +206,7 @@ class _ReTextFieldState extends State<ReTextField> {
           ],
           cursorColor: widget.color ?? AppColors.primary,
           keyboardType: widget.keyboardType,
+          
           buildCounter: widget.maxLength == null
               ? null
               : (
@@ -216,6 +217,7 @@ class _ReTextFieldState extends State<ReTextField> {
                 }) =>
                   null,
           decoration: InputDecoration(
+            
             hintText: widget.placeholder,
             constraints: isMultiline
                 ? null
