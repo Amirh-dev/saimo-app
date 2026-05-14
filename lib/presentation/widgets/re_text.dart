@@ -44,8 +44,8 @@ class ReText extends StatelessWidget {
         decoration: decoration,
         height: lineHeight,
         fontSize: fontSize,
-        decorationColor: color,
-        decorationThickness: 2,
+        decorationColor: decoration != null ? color : null,
+        decorationThickness: decoration != null ? 2 : null,
         fontVariations: AppFonts.fontVariations(
           isBold ? FontWeight.bold : fontWeight,
         ),
