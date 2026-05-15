@@ -16,8 +16,8 @@ Widget reAppHeader(String title, {Widget? suffixIcon, Widget? prefixIcon}) {
             child: ReText(
               title,
               color: AppColors.black1,
-              fontSize: 20,
-              fontWeight: 1100,
+              fontSize: 16,
+              fontWeight: 1000,
             ),
           ),
         ),
