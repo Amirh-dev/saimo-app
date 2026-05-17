@@ -114,6 +114,14 @@ class _GoalScreenState extends State<GoalScreen> {
     final yearController = FixedExtentScrollController(
       initialItem: years.indexOf(selectedYear),
     );
+    var isPickerDisposed = false;
+
+    void jumpToWheelItem(FixedExtentScrollController controller, int item) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || isPickerDisposed || !controller.hasClients) return;
+        controller.jumpToItem(item);
+      });
+    }
 
     void clampSelectedDateToToday() {
       final selectedDate = Jalali(selectedYear, selectedMonth, selectedDay);
@@ -122,11 +130,11 @@ class _GoalScreenState extends State<GoalScreen> {
       selectedDay = today.day;
       selectedMonth = today.month;
       selectedYear = today.year;
-      dayController.jumpToItem(selectedDay - 1);
-      monthController.jumpToItem(selectedMonth - 1);
+      jumpToWheelItem(dayController, selectedDay - 1);
+      jumpToWheelItem(monthController, selectedMonth - 1);
       final yearIndex = years.indexOf(selectedYear);
       if (yearIndex >= 0) {
-        yearController.jumpToItem(yearIndex);
+        jumpToWheelItem(yearController, yearIndex);
       }
     }
 
@@ -139,7 +147,7 @@ class _GoalScreenState extends State<GoalScreen> {
             final maxDay = Jalali(selectedYear, selectedMonth, 1).monthLength;
             if (selectedDay > maxDay) {
               selectedDay = maxDay;
-              dayController.jumpToItem(selectedDay - 1);
+              jumpToWheelItem(dayController, selectedDay - 1);
             }
 
             return Directionality(
@@ -249,6 +257,7 @@ class _GoalScreenState extends State<GoalScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 350));
     titleController.dispose();
     noteController.dispose();
+    isPickerDisposed = true;
     dayController.dispose();
     monthController.dispose();
     yearController.dispose();
@@ -491,7 +500,7 @@ class _GoalScreenState extends State<GoalScreen> {
               itemExtent: _goalSheetItemExtent,
               diameterRatio: 10,
               perspective: 0.001,
-              overAndUnderCenterOpacity: 0.6,
+              overAndUnderCenterOpacity: 1,
               onSelectedItemChanged: onSelected,
               childDelegate: ListWheelChildBuilderDelegate(
                 childCount: itemCount,
@@ -545,7 +554,7 @@ class _GoalScreenState extends State<GoalScreen> {
           height: 96,
           borderRadius: 32,
           backgroundColor: AppColors.gray2,
-          contentPadding: const EdgeInsets.fromLTRB(0, 34, 16, 10),
+          contentPadding: const EdgeInsets.fromLTRB(52, 20, 16, 30),
           textInputAction: TextInputAction.done,
           showFocusShadow: false,
           fontSize: 13,
@@ -555,7 +564,7 @@ class _GoalScreenState extends State<GoalScreen> {
         ),
         Positioned(
           left: 16,
-          top: 16,
+          bottom: 14,
           child: ReText(
             '${noteLength.clamp(0, 200)}/200',
             fontSize: 13,
