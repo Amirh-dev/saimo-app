@@ -88,7 +88,10 @@ class _GoalScreenState extends State<GoalScreen> {
     int? editIndex,
     Map<String, dynamic>? initialGoal,
   }) async {
-    final initialDate = initialGoal?['dueDate'] as Jalali? ?? Jalali.now();
+    final today = Jalali.now();
+    final rawInitialDate = initialGoal?['dueDate'] as Jalali? ?? today;
+    final initialDate =
+        _compareJalaliDate(rawInitialDate, today) < 0 ? today : rawInitialDate;
     final titleController = TextEditingController(
       text: initialGoal?['title']?.toString() ?? '',
     );
@@ -100,10 +103,7 @@ class _GoalScreenState extends State<GoalScreen> {
     var selectedYear = initialDate.year;
     var noteLength = noteController.text.length;
     final years = [
-      for (var year = initialDate.year + 2;
-          year >= initialDate.year - 4;
-          year--)
-        year
+      for (var year = initialDate.year - 4; year <= 1500; year++) year
     ];
     final dayController = FixedExtentScrollController(
       initialItem: selectedDay - 1,
@@ -114,6 +114,21 @@ class _GoalScreenState extends State<GoalScreen> {
     final yearController = FixedExtentScrollController(
       initialItem: years.indexOf(selectedYear),
     );
+
+    void clampSelectedDateToToday() {
+      final selectedDate = Jalali(selectedYear, selectedMonth, selectedDay);
+      if (_compareJalaliDate(selectedDate, today) >= 0) return;
+
+      selectedDay = today.day;
+      selectedMonth = today.month;
+      selectedYear = today.year;
+      dayController.jumpToItem(selectedDay - 1);
+      monthController.jumpToItem(selectedMonth - 1);
+      final yearIndex = years.indexOf(selectedYear);
+      if (yearIndex >= 0) {
+        yearController.jumpToItem(yearIndex);
+      }
+    }
 
     final newGoal = await showReModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -172,7 +187,10 @@ class _GoalScreenState extends State<GoalScreen> {
                           monthController: monthController,
                           yearController: yearController,
                           onDayChanged: (value) {
-                            setModalState(() => selectedDay = value);
+                            setModalState(() {
+                              selectedDay = value;
+                              clampSelectedDateToToday();
+                            });
                           },
                           onMonthChanged: (value) {
                             setModalState(() {
@@ -183,6 +201,7 @@ class _GoalScreenState extends State<GoalScreen> {
                                 1,
                               ).monthLength;
                               selectedDay = selectedDay.clamp(1, nextMaxDay);
+                              clampSelectedDateToToday();
                             });
                           },
                           onYearChanged: (value) {
@@ -194,6 +213,7 @@ class _GoalScreenState extends State<GoalScreen> {
                                 1,
                               ).monthLength;
                               selectedDay = selectedDay.clamp(1, nextMaxDay);
+                              clampSelectedDateToToday();
                             });
                           },
                         ),
@@ -548,6 +568,68 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
+  Widget _buildRemainingTimeText({
+    required Jalali dueDate,
+    required Color valueColor,
+    required double valueFontSize,
+    required double unitFontSize,
+    FontWeight valueFontWeight = FontWeight.w600,
+    FontWeight unitFontWeight = FontWeight.w600,
+    bool valueFirst = false,
+  }) {
+    final remaining = _goalRemainingTime(dueDate);
+    final value = ReText(
+      remaining.value.toString(),
+      fontSize: valueFontSize,
+      fontWeight: valueFontWeight,
+      color: valueColor,
+      textDirection: TextDirection.ltr,
+    );
+    final unit = ReText(
+      remaining.unit,
+      fontSize: unitFontSize,
+      fontWeight: unitFontWeight,
+      color: AppColors.gray,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: valueFirst
+          ? [value, const SizedBox(width: 4), unit]
+          : [unit, const SizedBox(width: 4), value],
+    );
+  }
+
+  _GoalRemainingTime _goalRemainingTime(Jalali dueDate) {
+    final remainingDays = _goalRemainingDays(dueDate);
+    if (remainingDays == 1) {
+      final now = DateTime.now();
+      final dueDateTime = dueDate.toDateTime();
+      final dueDay = DateTime(
+        dueDateTime.year,
+        dueDateTime.month,
+        dueDateTime.day,
+      );
+      final remainingHours = dueDay.difference(now).inHours;
+
+      return _GoalRemainingTime(
+        value: math.max(1, remainingHours),
+        unit: 'ساعت باقی مانده',
+      );
+    }
+
+    return _GoalRemainingTime(
+      value: remainingDays,
+      unit: 'روز باقی مانده',
+    );
+  }
+
   void _submitGoal(
     BuildContext context, {
     required TextEditingController titleController,
@@ -715,7 +797,6 @@ class _GoalScreenState extends State<GoalScreen> {
 
             final goal = _goals[index];
             final dueDate = goal['dueDate'] as Jalali;
-            final remainingDays = _goalRemainingDays(dueDate);
             final progress = _goalProgress(goal);
             final note = (goal['note']?.toString().trim().isNotEmpty ?? false)
                 ? goal['note'].toString().trim()
@@ -838,19 +919,14 @@ class _GoalScreenState extends State<GoalScreen> {
                           ),
                         ),
                         const SizedBox(width: 18),
-                        ReText(
-                          remainingDays.toString(),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.black1,
-                          textDirection: TextDirection.ltr,
-                        ),
-                        const SizedBox(width: 4),
-                        const ReText(
-                          'روز باقی مانده',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.gray,
+                        _buildRemainingTimeText(
+                          dueDate: dueDate,
+                          valueColor: AppColors.black1,
+                          valueFontSize: 13,
+                          unitFontSize: 13,
+                          valueFontWeight: FontWeight.w700,
+                          unitFontWeight: FontWeight.w400,
+                          valueFirst: true,
                         ),
                       ],
                     ),
@@ -933,7 +1009,6 @@ class _GoalScreenState extends State<GoalScreen> {
   Widget _buildGoalTile(Map<String, dynamic> goal, int index) {
     final dueDate = goal['dueDate'] as Jalali;
     final color = goal['color'] as Color? ?? AppColors.primary;
-    final remainingDays = _goalRemainingDays(dueDate);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -973,24 +1048,11 @@ class _GoalScreenState extends State<GoalScreen> {
                       maxLines: 1,
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const ReText(
-                          'روز باقی مانده',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.gray,
-                        ),
-                        const SizedBox(width: 4),
-                        ReText(
-                          remainingDays.toString(),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                          textDirection: TextDirection.ltr,
-                        ),
-                      ],
+                    _buildRemainingTimeText(
+                      dueDate: dueDate,
+                      valueColor: color,
+                      valueFontSize: 13,
+                      unitFontSize: 10,
                     ),
                   ],
                 ),
@@ -1156,4 +1218,14 @@ class _GoalScreenState extends State<GoalScreen> {
       ),
     );
   }
+}
+
+class _GoalRemainingTime {
+  const _GoalRemainingTime({
+    required this.value,
+    required this.unit,
+  });
+
+  final int value;
+  final String unit;
 }
