@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
+import 'package:simo_learn/presentation/screens/test.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 class MyApp extends StatelessWidget {
@@ -7,6 +10,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
+    
+    context.read<ProfileCubit>().getMe();
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
@@ -15,7 +21,7 @@ class MyApp extends StatelessWidget {
         fontFamily: AppFonts.iranSansVar,
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const FerryTestView(),
     );
   }
 }
