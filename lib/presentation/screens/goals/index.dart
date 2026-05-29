@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
@@ -961,7 +962,7 @@ class _GoalScreenState extends State<GoalScreen> {
                               ),
                             ),
                             child: const Icon(
-                              SolarIconsOutline.trashBinMinimalistic,
+                              IconsaxPlusBroken.trash,
                               color: AppColors.black1,
                               size: 18,
                             ),
