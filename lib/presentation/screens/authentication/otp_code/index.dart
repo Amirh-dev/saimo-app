@@ -41,19 +41,20 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthAuthenticated) {
+        if (state is AuthAuthenticated && state.action == AuthAction.login) {
           showReToast(
             context,
             'ورود با موفقیت انجام شد',
             ReToastType.success,
           );
           context.toOffAll(const GoalScreen());
-        } else if (state is AuthFailure) {
+        } else if (state is AuthFailure && state.action == AuthAction.login) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
-        final isLoading = state is AuthLoading;
+        final isLoading =
+            state is AuthLoading && state.action == AuthAction.login;
 
         return Scaffold(
           backgroundColor: AppColors.gray1,

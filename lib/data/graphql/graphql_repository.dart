@@ -46,6 +46,10 @@ class GraphQLRepository {
     return _loggedRequest(request).first;
   }
 
+  void clearCache() {
+    _client.cache.clear();
+  }
+
   Future<void> _refreshBeforeRequestIfNeeded<TData, TVars>(
     OperationRequest<TData, TVars> request,
   ) async {

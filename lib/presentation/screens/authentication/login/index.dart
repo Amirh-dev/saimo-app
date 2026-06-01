@@ -28,12 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
               isRegistered: state.isRegistered,
             ),
           );
-        } else if (state is AuthFailure) {
+        } else if (state is AuthFailure && state.action == AuthAction.sendOtp) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
-        final isLoading = state is AuthLoading;
+        final isLoading =
+            state is AuthLoading && state.action == AuthAction.sendOtp;
 
         return Scaffold(
           backgroundColor: AppColors.gray1,

@@ -383,7 +383,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is AuthAuthenticated) {
+        if (state is AuthAuthenticated && state.action == AuthAction.register) {
           showReToast(
             context,
             'ثبت نام با موفقیت انجام شد',
@@ -397,12 +397,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               isRegistered: state.isRegistered,
             ),
           );
-        } else if (state is AuthFailure) {
+        } else if (state is AuthFailure &&
+            (state.action == AuthAction.register ||
+                state.action == AuthAction.sendOtp)) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
-        final isLoading = state is AuthLoading;
+        final isLoading = state is AuthLoading &&
+            (state.action == AuthAction.register ||
+                state.action == AuthAction.sendOtp);
 
         return Scaffold(
           backgroundColor: AppColors.gray1,

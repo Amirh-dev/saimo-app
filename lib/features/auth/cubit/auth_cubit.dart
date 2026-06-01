@@ -22,7 +22,7 @@ class AuthCubit extends Cubit<AuthState> {
   final TokenStorage _tokenStorage;
 
   Future<void> sendOtp(String phoneNumber) async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthAction.sendOtp));
 
     try {
       final response = await _graphql.requestOnce(
@@ -32,13 +32,26 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       if (response.hasErrors) {
-        emit(AuthFailure(graphQLResponseErrorMessage(response)));
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Sending OTP failed',
+            ),
+            action: AuthAction.sendOtp,
+          ),
+        );
         return;
       }
 
       final payload = response.data?.sendOTP;
       if (payload == null || !payload.success) {
-        emit(AuthFailure(payload?.message ?? 'Sending OTP failed'));
+        emit(
+          AuthFailure(
+            payload?.message ?? 'Sending OTP failed',
+            action: AuthAction.sendOtp,
+          ),
+        );
         return;
       }
 
@@ -51,7 +64,12 @@ class AuthCubit extends Cubit<AuthState> {
         ),
       );
     } catch (error) {
-      emit(AuthFailure(_friendlyError(error)));
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Sending OTP failed'),
+          action: AuthAction.sendOtp,
+        ),
+      );
     }
   }
 
@@ -59,7 +77,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String phoneNumber,
     required String code,
   }) async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthAction.login));
 
     try {
       final response = await _graphql.requestOnce(
@@ -71,13 +89,26 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       if (response.hasErrors) {
-        emit(AuthFailure(graphQLResponseErrorMessage(response)));
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Invalid verification code',
+            ),
+            action: AuthAction.login,
+          ),
+        );
         return;
       }
 
       final payload = response.data?.verifyOTPAndLogin;
       if (payload == null || payload.accessToken.isEmpty) {
-        emit(const AuthFailure('Login failed'));
+        emit(
+          const AuthFailure(
+            'Invalid verification code',
+            action: AuthAction.login,
+          ),
+        );
         return;
       }
 
@@ -85,11 +116,17 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
+          action: AuthAction.login,
           accessToken: payload.accessToken,
         ),
       );
     } catch (error) {
-      emit(AuthFailure(_friendlyError(error)));
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          action: AuthAction.login,
+        ),
+      );
     }
   }
 
@@ -100,7 +137,7 @@ class AuthCubit extends Cubit<AuthState> {
     required DateTime birthDate,
     required dynamic studyTime,
   }) async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthAction.register));
 
     try {
       final resolvedStudyTime = _resolveStudyTime(studyTime);
@@ -116,13 +153,26 @@ class AuthCubit extends Cubit<AuthState> {
       );
 
       if (response.hasErrors) {
-        emit(AuthFailure(graphQLResponseErrorMessage(response)));
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Invalid verification code',
+            ),
+            action: AuthAction.register,
+          ),
+        );
         return;
       }
 
       final payload = response.data?.verifyOTPAndRegister;
       if (payload == null || payload.accessToken.isEmpty) {
-        emit(const AuthFailure('Registration failed'));
+        emit(
+          const AuthFailure(
+            'Invalid verification code',
+            action: AuthAction.register,
+          ),
+        );
         return;
       }
 
@@ -130,22 +180,36 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
+          action: AuthAction.register,
           accessToken: payload.accessToken,
         ),
       );
     } catch (error) {
-      emit(AuthFailure(_friendlyError(error)));
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          action: AuthAction.register,
+        ),
+      );
     }
   }
 
   Future<void> refreshToken() async {
-    emit(const AuthLoading());
+    emit(const AuthLoading(AuthAction.refresh));
 
     try {
       final response = await _graphql.requestOnce(GRefreshTokenReq());
       if (response.hasErrors) {
         await _tokenStorage.clear();
-        emit(AuthFailure(graphQLResponseErrorMessage(response)));
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Authentication expired',
+            ),
+            action: AuthAction.refresh,
+          ),
+        );
         return;
       }
 
@@ -160,12 +224,18 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
+          action: AuthAction.refresh,
           accessToken: payload.accessToken,
         ),
       );
     } catch (error) {
       await _tokenStorage.clear();
-      emit(AuthFailure(_friendlyError(error)));
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Authentication expired'),
+          action: AuthAction.refresh,
+        ),
+      );
     }
   }
 
@@ -179,8 +249,12 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final response = await _graphql.requestOnce(GGetMeReq());
       if (response.hasErrors) {
+        final message = _extractGraphQLErrorMessage(
+          response,
+          fallbackMessage: 'Authentication expired',
+        );
         await _tokenStorage.clear();
-        emit(const AuthUnauthenticated());
+        emit(AuthFailure(message, action: AuthAction.checkStatus));
         return;
       }
 
@@ -191,15 +265,26 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      emit(AuthAuthenticated(userId: user.id));
-    } catch (_) {
+      emit(
+        AuthAuthenticated(
+          userId: user.id,
+          action: AuthAction.checkStatus,
+        ),
+      );
+    } catch (error) {
       await _tokenStorage.clear();
-      emit(const AuthUnauthenticated());
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Authentication expired'),
+          action: AuthAction.checkStatus,
+        ),
+      );
     }
   }
 
   Future<void> logout() async {
     await _tokenStorage.clear();
+    _graphql.clearCache();
     emit(const AuthUnauthenticated());
   }
 
@@ -217,7 +302,21 @@ class AuthCubit extends Cubit<AuthState> {
     throw ArgumentError('Invalid study time option');
   }
 
-  String _friendlyError(Object error) {
+  String _extractGraphQLErrorMessage(
+    dynamic response, {
+    required String fallbackMessage,
+  }) {
+    final message = graphQLResponseErrorMessage(response);
+    if (message == 'Unknown GraphQL error' || message.trim().isEmpty) {
+      return fallbackMessage;
+    }
+    return message;
+  }
+
+  String _friendlyError(
+    Object error, {
+    required String fallbackMessage,
+  }) {
     final message = error.toString();
     if (message.contains('Failed host lookup')) {
       return 'Network connection failed';
@@ -226,6 +325,7 @@ class AuthCubit extends Cubit<AuthState> {
         message.toLowerCase().contains('unauthorized')) {
       return 'Authentication expired';
     }
+    if (message.trim().isEmpty) return fallbackMessage;
     return message;
   }
 }
