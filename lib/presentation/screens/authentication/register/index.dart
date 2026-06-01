@@ -12,6 +12,7 @@ import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/re_text_field.dart';
+import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
@@ -383,6 +384,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          showReToast(
+            context,
+            'ثبت نام با موفقیت انجام شد',
+            ReToastType.success,
+          );
           context.toOffAll(const GoalScreen());
         } else if (state is OtpSent) {
           context.to(
@@ -392,9 +398,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {

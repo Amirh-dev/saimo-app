@@ -29,9 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {

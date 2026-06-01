@@ -7,6 +7,7 @@ import 'package:simo_learn/presentation/screens/authentication/register/index.da
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
+import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 import '../../../widgets/re_text.dart';
@@ -41,11 +42,14 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          showReToast(
+            context,
+            'ورود با موفقیت انجام شد',
+            ReToastType.success,
+          );
           context.toOffAll(const GoalScreen());
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
