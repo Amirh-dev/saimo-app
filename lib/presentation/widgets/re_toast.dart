@@ -85,7 +85,11 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
             },
             child: Container(
               height: 68,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              margin: const EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: widget.backgroundColor,

@@ -29,6 +29,7 @@ class AuthCubit extends Cubit<AuthState> {
         GSendOTPReq(
           (request) => request.vars.input.phoneNumber = phoneNumber,
         ),
+        requiresAuth: false,
       );
 
       if (response.hasErrors) {
@@ -86,6 +87,7 @@ class AuthCubit extends Cubit<AuthState> {
             ..phoneNumber = phoneNumber
             ..code = code,
         ),
+        requiresAuth: false,
       );
 
       if (response.hasErrors) {
@@ -150,6 +152,7 @@ class AuthCubit extends Cubit<AuthState> {
             ..birthDate.value = birthDate.toUtc().toIso8601String()
             ..studyTime = resolvedStudyTime,
         ),
+        requiresAuth: false,
       );
 
       if (response.hasErrors) {
@@ -198,18 +201,14 @@ class AuthCubit extends Cubit<AuthState> {
     emit(const AuthLoading(AuthAction.refresh));
 
     try {
-      final response = await _graphql.requestOnce(GRefreshTokenReq());
+      final response = await _graphql.requestOnce(
+        GRefreshTokenReq(),
+        requiresAuth: false,
+        skipAuthRefresh: true,
+      );
       if (response.hasErrors) {
         await _tokenStorage.clear();
-        emit(
-          AuthFailure(
-            _extractGraphQLErrorMessage(
-              response,
-              fallbackMessage: 'Authentication expired',
-            ),
-            action: AuthAction.refresh,
-          ),
-        );
+        emit(const AuthUnauthenticated());
         return;
       }
 
@@ -228,14 +227,9 @@ class AuthCubit extends Cubit<AuthState> {
           accessToken: payload.accessToken,
         ),
       );
-    } catch (error) {
+    } catch (_) {
       await _tokenStorage.clear();
-      emit(
-        AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Authentication expired'),
-          action: AuthAction.refresh,
-        ),
-      );
+      emit(const AuthUnauthenticated());
     }
   }
 
@@ -249,12 +243,8 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final response = await _graphql.requestOnce(GGetMeReq());
       if (response.hasErrors) {
-        final message = _extractGraphQLErrorMessage(
-          response,
-          fallbackMessage: 'Authentication expired',
-        );
         await _tokenStorage.clear();
-        emit(AuthFailure(message, action: AuthAction.checkStatus));
+        emit(const AuthUnauthenticated());
         return;
       }
 
@@ -271,14 +261,9 @@ class AuthCubit extends Cubit<AuthState> {
           action: AuthAction.checkStatus,
         ),
       );
-    } catch (error) {
+    } catch (_) {
       await _tokenStorage.clear();
-      emit(
-        AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Authentication expired'),
-          action: AuthAction.checkStatus,
-        ),
-      );
+      emit(const AuthUnauthenticated());
     }
   }
 
