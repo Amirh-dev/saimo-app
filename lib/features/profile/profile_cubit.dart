@@ -18,15 +18,25 @@ class ProfileCubit extends Cubit<ProfileState> {
         GGetMeReq(),
       );
 
-      if (response.hasErrors) {
-        emit(
-          ProfileFailure(
-            response.graphqlErrors?.first.message ??
-                'Something went wrong',
-          ),
-        );
-        return;
-      }
+  if (response.hasErrors) {
+  final graphqlMessage = response.graphqlErrors
+          ?.map((e) => e.message)
+          .join(', ') ??
+      '';
+
+  final linkMessage = response.linkException?.toString() ?? '';
+
+  emit(
+    ProfileFailure(
+      graphqlMessage.isNotEmpty
+          ? graphqlMessage
+          : linkMessage.isNotEmpty
+              ? linkMessage
+              : 'Unknown GraphQL error',
+    ),
+  );
+  return;
+}
 
       final user = response.data?.getMe;
 
