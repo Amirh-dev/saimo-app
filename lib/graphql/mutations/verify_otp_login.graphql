@@ -1,0 +1,8 @@
+mutation VerifyOTPAndLogin($input: VerifyOTPAndLoginInput!) {
+  verifyOTPAndLogin(input: $input) {
+    accessToken
+    user {
+      id
+    }
+  }
+}

@@ -5,8 +5,7 @@ import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart';
 part 'profile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
-  ProfileCubit(this._graphql)
-      : super(ProfileInitial());
+  ProfileCubit(this._graphql) : super(ProfileInitial());
 
   final GraphQLRepository _graphql;
 
@@ -18,25 +17,10 @@ class ProfileCubit extends Cubit<ProfileState> {
         GGetMeReq(),
       );
 
-  if (response.hasErrors) {
-  final graphqlMessage = response.graphqlErrors
-          ?.map((e) => e.message)
-          .join(', ') ??
-      '';
-
-  final linkMessage = response.linkException?.toString() ?? '';
-
-  emit(
-    ProfileFailure(
-      graphqlMessage.isNotEmpty
-          ? graphqlMessage
-          : linkMessage.isNotEmpty
-              ? linkMessage
-              : 'Unknown GraphQL error',
-    ),
-  );
-  return;
-}
+      if (response.hasErrors) {
+        emit(ProfileFailure(graphQLResponseErrorMessage(response)));
+        return;
+      }
 
       final user = response.data?.getMe;
 

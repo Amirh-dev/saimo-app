@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
+import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -13,7 +18,14 @@ import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/fonts.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({
+    super.key,
+    this.phoneNumber,
+    this.code,
+  });
+
+  final String? phoneNumber;
+  final String? code;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -40,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _fullNameController = TextEditingController();
-    _phoneController = TextEditingController();
+    _phoneController = TextEditingController(text: widget.phoneNumber);
     _fullNameFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
   }
 
@@ -214,6 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: TextFormField(
                   focusNode: _fullNameFocusNode,
                   controller: _fullNameController,
+                  onChanged: (_) => setState(() {}),
                   onTapOutside: (_) =>
                       FocusManager.instance.primaryFocus?.unfocus(),
                   textAlign: TextAlign.right,
@@ -250,7 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return ReTextField(
       controller: _phoneController,
       keyboardType: TextInputType.number,
-      maxLength: 10,
+      maxLength: 11,
       placeholderAlign: TextAlign.right,
       placeholder: 'شماره تماس',
       backgroundColor: AppColors.gray1,
@@ -367,68 +380,142 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.gray1,
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          context.toOffAll(const GoalScreen());
+        } else if (state is OtpSent) {
+          context.to(
+            OTPCodeScreen(
+              phoneNumber: state.phoneNumber,
+              isRegistered: state.isRegistered,
+            ),
+          );
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+
+        return Scaffold(
+          backgroundColor: AppColors.gray1,
+          body: SafeArea(
+            top: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        authHeaderWidget(context, authType: AuthMode.register),
-                        Container(
-                          margin: const EdgeInsets.only(top: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(40),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildNameAndDateRow(),
-                              _buildPhoneField().tMargin(8),
-                              _buildStudyHeader().tMargin(8),
-                              ReButton(
-                                onPressed: () {
-                                  _closeStudyMenu();
-                                  context.to(OTPCodeScreen());
-                                },
-                                text: 'ثبت نام',
-                              ).tMargin(16),
-                              ReButton(
-                                isOutlined: true,
-                                color: AppColors.gray2,
-                                textColor: AppColors.black1,
-                                background: AppColors.white,
-                                onPressed: () {
-                                  _closeStudyMenu();
-                                  context.to(const RegisterScreen());
-                                },
-                                text: 'ورود به حساب',
-                              ).tMargin(8),
-                            ],
-                          ).hMargin(16).vMargin(18),
-                        ),
+                        Column(
+                          children: [
+                            authHeaderWidget(
+                              context,
+                              authType: AuthMode.register,
+                            ),
+                            Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              child: Column(
+                                children: [
+                                  _buildNameAndDateRow(),
+                                  _buildPhoneField().tMargin(8),
+                                  _buildStudyHeader().tMargin(8),
+                                  ReButton(
+                                    isLoading: isLoading,
+                                    isEnabled: _canSubmitRegistration,
+                                    onPressed: _submitRegistration,
+                                    text: 'ثبت نام',
+                                  ).tMargin(16),
+                                  ReButton(
+                                    isOutlined: true,
+                                    color: AppColors.gray2,
+                                    textColor: AppColors.black1,
+                                    background: AppColors.white,
+                                    onPressed: () {
+                                      _closeStudyMenu();
+                                      context.toOff(const LoginScreen());
+                                    },
+                                    text: 'ورود به حساب',
+                                  ).tMargin(8),
+                                ],
+                              ).hMargin(16).vMargin(18),
+                            ),
+                          ],
+                        ).tMargin(130),
+                        const ReText(
+                          'سایمو لرن',
+                          color: AppColors.black1,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ).bMargin(10)
                       ],
-                    ).tMargin(130),
-                    const ReText(
-                      'سایمو لرن',
-                      color: AppColors.black1,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ).bMargin(10)
-                  ],
-                ).hMargin(30),
+                    ).hMargin(30),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  bool get _canSubmitRegistration {
+    return _fullNameController.text.trim().isNotEmpty &&
+        _normalizeDigits(_phoneController.text).length == 11 &&
+        _birthDate != null &&
+        _selectedStudyIndex != null;
+  }
+
+  void _submitRegistration() {
+    _closeStudyMenu();
+
+    final phoneNumber = _normalizeDigits(_phoneController.text);
+    final code = widget.code;
+    if (code == null || code.isEmpty) {
+      context.read<AuthCubit>().sendOtp(phoneNumber);
+      return;
+    }
+
+    final birthDate = _birthDate!.toGregorian();
+    context.read<AuthCubit>().verifyRegister(
+          phoneNumber: phoneNumber,
+          code: code,
+          fullName: _fullNameController.text.trim(),
+          birthDate: DateTime(
+            birthDate.year,
+            birthDate.month,
+            birthDate.day,
+          ),
+          studyTime: _studyTime,
+        );
+  }
+
+  GUserStudyTime get _studyTime {
+    return switch (_selectedStudyIndex) {
+      0 => GUserStudyTime.UNDER_4_HOURS,
+      1 => GUserStudyTime.BETWEEN_4_AND_7,
+      2 => GUserStudyTime.OVER_7_HOURS,
+      _ => throw StateError('Study time is not selected'),
+    };
+  }
+
+  String _normalizeDigits(String value) {
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    var result = value;
+    for (var i = 0; i < 10; i++) {
+      result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
+    }
+    return result;
   }
 }

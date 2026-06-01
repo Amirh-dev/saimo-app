@@ -1,0 +1,8 @@
+mutation SendOTP($input: SendOTPInput!) {
+  sendOTP(input: $input) {
+    success
+    message
+    expiresInSeconds
+    isRegistered
+  }
+}

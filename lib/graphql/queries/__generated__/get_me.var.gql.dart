@@ -11,8 +11,7 @@ part 'get_me.var.gql.g.dart';
 abstract class GGetMeVars implements Built<GGetMeVars, GGetMeVarsBuilder> {
   GGetMeVars._();
 
-  factory GGetMeVars([void Function(GGetMeVarsBuilder b) updates]) =
-      _$GGetMeVars;
+  factory GGetMeVars([Function(GGetMeVarsBuilder b) updates]) = _$GGetMeVars;
 
   static Serializer<GGetMeVars> get serializer => _$gGetMeVarsSerializer;
 

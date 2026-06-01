@@ -7,32 +7,32 @@ import 'package:built_value/serializer.dart';
 import 'package:ferry_exec/ferry_exec.dart' as _i1;
 import 'package:gql_exec/gql_exec.dart' as _i4;
 import 'package:simo_learn/graphql/__generated__/serializers.gql.dart' as _i6;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.ast.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.ast.gql.dart'
     as _i5;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.data.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.data.gql.dart'
     as _i2;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.var.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.var.gql.dart'
     as _i3;
 
-part 'get_me.req.gql.g.dart';
+part 'send_otp.req.gql.g.dart';
 
-abstract class GGetMeReq
+abstract class GSendOTPReq
     implements
-        Built<GGetMeReq, GGetMeReqBuilder>,
-        _i1.OperationRequest<_i2.GGetMeData, _i3.GGetMeVars> {
-  GGetMeReq._();
+        Built<GSendOTPReq, GSendOTPReqBuilder>,
+        _i1.OperationRequest<_i2.GSendOTPData, _i3.GSendOTPVars> {
+  GSendOTPReq._();
 
-  factory GGetMeReq([Function(GGetMeReqBuilder b) updates]) = _$GGetMeReq;
+  factory GSendOTPReq([Function(GSendOTPReqBuilder b) updates]) = _$GSendOTPReq;
 
-  static void _initializeBuilder(GGetMeReqBuilder b) => b
+  static void _initializeBuilder(GSendOTPReqBuilder b) => b
     ..operation = _i4.Operation(
       document: _i5.document,
-      operationName: 'GetMe',
+      operationName: 'SendOTP',
     )
     ..executeOnListen = true;
 
   @override
-  _i3.GGetMeVars get vars;
+  _i3.GSendOTPVars get vars;
   @override
   _i4.Operation get operation;
   @override
@@ -45,12 +45,12 @@ abstract class GGetMeReq
   String? get requestId;
   @override
   @BuiltValueField(serialize: false)
-  _i2.GGetMeData? Function(
-    _i2.GGetMeData?,
-    _i2.GGetMeData?,
+  _i2.GSendOTPData? Function(
+    _i2.GSendOTPData?,
+    _i2.GSendOTPData?,
   )? get updateResult;
   @override
-  _i2.GGetMeData? get optimisticResponse;
+  _i2.GSendOTPData? get optimisticResponse;
   @override
   String? get updateCacheHandlerKey;
   @override
@@ -60,19 +60,19 @@ abstract class GGetMeReq
   @override
   bool get executeOnListen;
   @override
-  _i2.GGetMeData? parseData(Map<String, dynamic> json) =>
-      _i2.GGetMeData.fromJson(json);
+  _i2.GSendOTPData? parseData(Map<String, dynamic> json) =>
+      _i2.GSendOTPData.fromJson(json);
 
-  static Serializer<GGetMeReq> get serializer => _$gGetMeReqSerializer;
+  static Serializer<GSendOTPReq> get serializer => _$gSendOTPReqSerializer;
 
   Map<String, dynamic> toJson() => (_i6.serializers.serializeWith(
-        GGetMeReq.serializer,
+        GSendOTPReq.serializer,
         this,
       ) as Map<String, dynamic>);
 
-  static GGetMeReq? fromJson(Map<String, dynamic> json) =>
+  static GSendOTPReq? fromJson(Map<String, dynamic> json) =>
       _i6.serializers.deserializeWith(
-        GGetMeReq.serializer,
+        GSendOTPReq.serializer,
         json,
       );
 }

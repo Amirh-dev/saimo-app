@@ -1,26 +1,32 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'get_me.req.gql.dart';
+part of 'verify_otp_login.req.gql.dart';
 
 // **************************************************************************
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GGetMeReq> _$gGetMeReqSerializer = new _$GGetMeReqSerializer();
+Serializer<GVerifyOTPAndLoginReq> _$gVerifyOTPAndLoginReqSerializer =
+    new _$GVerifyOTPAndLoginReqSerializer();
 
-class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
+class _$GVerifyOTPAndLoginReqSerializer
+    implements StructuredSerializer<GVerifyOTPAndLoginReq> {
   @override
-  final Iterable<Type> types = const [GGetMeReq, _$GGetMeReq];
+  final Iterable<Type> types = const [
+    GVerifyOTPAndLoginReq,
+    _$GVerifyOTPAndLoginReq
+  ];
   @override
-  final String wireName = 'GGetMeReq';
+  final String wireName = 'GVerifyOTPAndLoginReq';
 
   @override
-  Iterable<Object?> serialize(Serializers serializers, GGetMeReq object,
+  Iterable<Object?> serialize(
+      Serializers serializers, GVerifyOTPAndLoginReq object,
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[
       'vars',
       serializers.serialize(object.vars,
-          specifiedType: const FullType(_i3.GGetMeVars)),
+          specifiedType: const FullType(_i3.GVerifyOTPAndLoginVars)),
       'operation',
       serializers.serialize(object.operation,
           specifiedType: const FullType(_i4.Operation)),
@@ -41,7 +47,7 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
       result
         ..add('optimisticResponse')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(_i2.GGetMeData)));
+            specifiedType: const FullType(_i2.GVerifyOTPAndLoginData)));
     }
     value = object.updateCacheHandlerKey;
     if (value != null) {
@@ -69,9 +75,10 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
   }
 
   @override
-  GGetMeReq deserialize(Serializers serializers, Iterable<Object?> serialized,
+  GVerifyOTPAndLoginReq deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetMeReqBuilder();
+    final result = new GVerifyOTPAndLoginReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -81,8 +88,8 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
       switch (key) {
         case 'vars':
           result.vars.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i3.GGetMeVars))!
-              as _i3.GGetMeVars);
+                  specifiedType: const FullType(_i3.GVerifyOTPAndLoginVars))!
+              as _i3.GVerifyOTPAndLoginVars);
           break;
         case 'operation':
           result.operation = serializers.deserialize(value,
@@ -94,8 +101,8 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
           break;
         case 'optimisticResponse':
           result.optimisticResponse.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i2.GGetMeData))!
-              as _i2.GGetMeData);
+                  specifiedType: const FullType(_i2.GVerifyOTPAndLoginData))!
+              as _i2.GVerifyOTPAndLoginData);
           break;
         case 'updateCacheHandlerKey':
           result.updateCacheHandlerKey = serializers.deserialize(value,
@@ -124,18 +131,18 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
   }
 }
 
-class _$GGetMeReq extends GGetMeReq {
+class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
   @override
-  final _i3.GGetMeVars vars;
+  final _i3.GVerifyOTPAndLoginVars vars;
   @override
   final _i4.Operation operation;
   @override
   final String? requestId;
   @override
-  final _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
-      updateResult;
+  final _i2.GVerifyOTPAndLoginData? Function(
+      _i2.GVerifyOTPAndLoginData?, _i2.GVerifyOTPAndLoginData?)? updateResult;
   @override
-  final _i2.GGetMeData? optimisticResponse;
+  final _i2.GVerifyOTPAndLoginData? optimisticResponse;
   @override
   final String? updateCacheHandlerKey;
   @override
@@ -145,10 +152,11 @@ class _$GGetMeReq extends GGetMeReq {
   @override
   final bool executeOnListen;
 
-  factory _$GGetMeReq([void Function(GGetMeReqBuilder)? updates]) =>
-      (new GGetMeReqBuilder()..update(updates))._build();
+  factory _$GVerifyOTPAndLoginReq(
+          [void Function(GVerifyOTPAndLoginReqBuilder)? updates]) =>
+      (new GVerifyOTPAndLoginReqBuilder()..update(updates))._build();
 
-  _$GGetMeReq._(
+  _$GVerifyOTPAndLoginReq._(
       {required this.vars,
       required this.operation,
       this.requestId,
@@ -159,24 +167,28 @@ class _$GGetMeReq extends GGetMeReq {
       this.fetchPolicy,
       required this.executeOnListen})
       : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GGetMeReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(operation, r'GGetMeReq', 'operation');
     BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GGetMeReq', 'executeOnListen');
+        vars, r'GVerifyOTPAndLoginReq', 'vars');
+    BuiltValueNullFieldError.checkNotNull(
+        operation, r'GVerifyOTPAndLoginReq', 'operation');
+    BuiltValueNullFieldError.checkNotNull(
+        executeOnListen, r'GVerifyOTPAndLoginReq', 'executeOnListen');
   }
 
   @override
-  GGetMeReq rebuild(void Function(GGetMeReqBuilder) updates) =>
+  GVerifyOTPAndLoginReq rebuild(
+          void Function(GVerifyOTPAndLoginReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetMeReqBuilder toBuilder() => new GGetMeReqBuilder()..replace(this);
+  GVerifyOTPAndLoginReqBuilder toBuilder() =>
+      new GVerifyOTPAndLoginReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     final dynamic _$dynamicOther = other;
-    return other is GGetMeReq &&
+    return other is GVerifyOTPAndLoginReq &&
         vars == other.vars &&
         operation == other.operation &&
         requestId == other.requestId &&
@@ -206,7 +218,7 @@ class _$GGetMeReq extends GGetMeReq {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'GGetMeReq')
+    return (newBuiltValueToStringHelper(r'GVerifyOTPAndLoginReq')
           ..add('vars', vars)
           ..add('operation', operation)
           ..add('requestId', requestId)
@@ -220,13 +232,14 @@ class _$GGetMeReq extends GGetMeReq {
   }
 }
 
-class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
-  _$GGetMeReq? _$v;
+class GVerifyOTPAndLoginReqBuilder
+    implements Builder<GVerifyOTPAndLoginReq, GVerifyOTPAndLoginReqBuilder> {
+  _$GVerifyOTPAndLoginReq? _$v;
 
-  _i3.GGetMeVarsBuilder? _vars;
-  _i3.GGetMeVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GGetMeVarsBuilder();
-  set vars(_i3.GGetMeVarsBuilder? vars) => _$this._vars = vars;
+  _i3.GVerifyOTPAndLoginVarsBuilder? _vars;
+  _i3.GVerifyOTPAndLoginVarsBuilder get vars =>
+      _$this._vars ??= new _i3.GVerifyOTPAndLoginVarsBuilder();
+  set vars(_i3.GVerifyOTPAndLoginVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
   _i4.Operation? get operation => _$this._operation;
@@ -236,18 +249,22 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   String? get requestId => _$this._requestId;
   set requestId(String? requestId) => _$this._requestId = requestId;
 
-  _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)? _updateResult;
-  _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
+  _i2.GVerifyOTPAndLoginData? Function(
+      _i2.GVerifyOTPAndLoginData?, _i2.GVerifyOTPAndLoginData?)? _updateResult;
+  _i2.GVerifyOTPAndLoginData? Function(
+          _i2.GVerifyOTPAndLoginData?, _i2.GVerifyOTPAndLoginData?)?
       get updateResult => _$this._updateResult;
   set updateResult(
-          _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
+          _i2.GVerifyOTPAndLoginData? Function(
+                  _i2.GVerifyOTPAndLoginData?, _i2.GVerifyOTPAndLoginData?)?
               updateResult) =>
       _$this._updateResult = updateResult;
 
-  _i2.GGetMeDataBuilder? _optimisticResponse;
-  _i2.GGetMeDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GGetMeDataBuilder();
-  set optimisticResponse(_i2.GGetMeDataBuilder? optimisticResponse) =>
+  _i2.GVerifyOTPAndLoginDataBuilder? _optimisticResponse;
+  _i2.GVerifyOTPAndLoginDataBuilder get optimisticResponse =>
+      _$this._optimisticResponse ??= new _i2.GVerifyOTPAndLoginDataBuilder();
+  set optimisticResponse(
+          _i2.GVerifyOTPAndLoginDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
   String? _updateCacheHandlerKey;
@@ -272,11 +289,11 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
-  GGetMeReqBuilder() {
-    GGetMeReq._initializeBuilder(this);
+  GVerifyOTPAndLoginReqBuilder() {
+    GVerifyOTPAndLoginReq._initializeBuilder(this);
   }
 
-  GGetMeReqBuilder get _$this {
+  GVerifyOTPAndLoginReqBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _vars = $v.vars.toBuilder();
@@ -294,27 +311,27 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   }
 
   @override
-  void replace(GGetMeReq other) {
+  void replace(GVerifyOTPAndLoginReq other) {
     ArgumentError.checkNotNull(other, 'other');
-    _$v = other as _$GGetMeReq;
+    _$v = other as _$GVerifyOTPAndLoginReq;
   }
 
   @override
-  void update(void Function(GGetMeReqBuilder)? updates) {
+  void update(void Function(GVerifyOTPAndLoginReqBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  GGetMeReq build() => _build();
+  GVerifyOTPAndLoginReq build() => _build();
 
-  _$GGetMeReq _build() {
-    _$GGetMeReq _$result;
+  _$GVerifyOTPAndLoginReq _build() {
+    _$GVerifyOTPAndLoginReq _$result;
     try {
       _$result = _$v ??
-          new _$GGetMeReq._(
+          new _$GVerifyOTPAndLoginReq._(
               vars: vars.build(),
               operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GGetMeReq', 'operation'),
+                  operation, r'GVerifyOTPAndLoginReq', 'operation'),
               requestId: requestId,
               updateResult: updateResult,
               optimisticResponse: _optimisticResponse?.build(),
@@ -322,7 +339,9 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
               updateCacheHandlerContext: updateCacheHandlerContext,
               fetchPolicy: fetchPolicy,
               executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GGetMeReq', 'executeOnListen'));
+                  executeOnListen,
+                  r'GVerifyOTPAndLoginReq',
+                  'executeOnListen'));
     } catch (_) {
       late String _$failedField;
       try {
@@ -333,7 +352,7 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
         _optimisticResponse?.build();
       } catch (e) {
         throw new BuiltValueNestedFieldError(
-            r'GGetMeReq', _$failedField, e.toString());
+            r'GVerifyOTPAndLoginReq', _$failedField, e.toString());
       }
       rethrow;
     }

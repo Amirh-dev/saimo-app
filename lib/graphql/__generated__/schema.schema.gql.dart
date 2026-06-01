@@ -5,7 +5,7 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
-import 'package:gql_code_builder_serializers/gql_code_builder_serializers.dart'
+import 'package:gql_code_builder/src/serializers/default_scalar_serializer.dart'
     as _i1;
 import 'package:simo_learn/graphql/__generated__/serializers.gql.dart' as _i2;
 
@@ -183,7 +183,7 @@ abstract class GCreateGoalInput
     implements Built<GCreateGoalInput, GCreateGoalInputBuilder> {
   GCreateGoalInput._();
 
-  factory GCreateGoalInput([void Function(GCreateGoalInputBuilder b) updates]) =
+  factory GCreateGoalInput([Function(GCreateGoalInputBuilder b) updates]) =
       _$GCreateGoalInput;
 
   String get title;
@@ -208,7 +208,7 @@ abstract class GCreateTaskInput
     implements Built<GCreateTaskInput, GCreateTaskInputBuilder> {
   GCreateTaskInput._();
 
-  factory GCreateTaskInput([void Function(GCreateTaskInputBuilder b) updates]) =
+  factory GCreateTaskInput([Function(GCreateTaskInputBuilder b) updates]) =
       _$GCreateTaskInput;
 
   String get title;
@@ -240,8 +240,7 @@ abstract class GCreateTaskInput
 abstract class GGoalOrder implements Built<GGoalOrder, GGoalOrderBuilder> {
   GGoalOrder._();
 
-  factory GGoalOrder([void Function(GGoalOrderBuilder b) updates]) =
-      _$GGoalOrder;
+  factory GGoalOrder([Function(GGoalOrderBuilder b) updates]) = _$GGoalOrder;
 
   GOrderDirection get direction;
   GGoalOrderField get field;
@@ -263,7 +262,7 @@ abstract class GGoalWhereInput
     implements Built<GGoalWhereInput, GGoalWhereInputBuilder> {
   GGoalWhereInput._();
 
-  factory GGoalWhereInput([void Function(GGoalWhereInputBuilder b) updates]) =
+  factory GGoalWhereInput([Function(GGoalWhereInputBuilder b) updates]) =
       _$GGoalWhereInput;
 
   GGoalWhereInput? get not;
@@ -359,8 +358,7 @@ abstract class GInterestWhereInput
   GInterestWhereInput._();
 
   factory GInterestWhereInput(
-          [void Function(GInterestWhereInputBuilder b) updates]) =
-      _$GInterestWhereInput;
+      [Function(GInterestWhereInputBuilder b) updates]) = _$GInterestWhereInput;
 
   GInterestWhereInput? get not;
   BuiltList<GInterestWhereInput>? get and;
@@ -407,7 +405,7 @@ abstract class GSendOTPInput
     implements Built<GSendOTPInput, GSendOTPInputBuilder> {
   GSendOTPInput._();
 
-  factory GSendOTPInput([void Function(GSendOTPInputBuilder b) updates]) =
+  factory GSendOTPInput([Function(GSendOTPInputBuilder b) updates]) =
       _$GSendOTPInput;
 
   String get phoneNumber;
@@ -429,7 +427,7 @@ abstract class GTagWhereInput
     implements Built<GTagWhereInput, GTagWhereInputBuilder> {
   GTagWhereInput._();
 
-  factory GTagWhereInput([void Function(GTagWhereInputBuilder b) updates]) =
+  factory GTagWhereInput([Function(GTagWhereInputBuilder b) updates]) =
       _$GTagWhereInput;
 
   GTagWhereInput? get not;
@@ -476,8 +474,7 @@ abstract class GTagWhereInput
 abstract class GTaskOrder implements Built<GTaskOrder, GTaskOrderBuilder> {
   GTaskOrder._();
 
-  factory GTaskOrder([void Function(GTaskOrderBuilder b) updates]) =
-      _$GTaskOrder;
+  factory GTaskOrder([Function(GTaskOrderBuilder b) updates]) = _$GTaskOrder;
 
   GOrderDirection get direction;
   GTaskOrderField get field;
@@ -499,7 +496,7 @@ abstract class GTaskWhereInput
     implements Built<GTaskWhereInput, GTaskWhereInputBuilder> {
   GTaskWhereInput._();
 
-  factory GTaskWhereInput([void Function(GTaskWhereInputBuilder b) updates]) =
+  factory GTaskWhereInput([Function(GTaskWhereInputBuilder b) updates]) =
       _$GTaskWhereInput;
 
   GTaskWhereInput? get not;
@@ -650,7 +647,7 @@ abstract class GUpdateGoalInput
     implements Built<GUpdateGoalInput, GUpdateGoalInputBuilder> {
   GUpdateGoalInput._();
 
-  factory GUpdateGoalInput([void Function(GUpdateGoalInputBuilder b) updates]) =
+  factory GUpdateGoalInput([Function(GUpdateGoalInputBuilder b) updates]) =
       _$GUpdateGoalInput;
 
   String? get title;
@@ -677,8 +674,7 @@ abstract class GUpdateProfileInput
   GUpdateProfileInput._();
 
   factory GUpdateProfileInput(
-          [void Function(GUpdateProfileInputBuilder b) updates]) =
-      _$GUpdateProfileInput;
+      [Function(GUpdateProfileInputBuilder b) updates]) = _$GUpdateProfileInput;
 
   String? get fullName;
   GTime? get birthDate;
@@ -704,7 +700,7 @@ abstract class GUpdateTaskInput
     implements Built<GUpdateTaskInput, GUpdateTaskInputBuilder> {
   GUpdateTaskInput._();
 
-  factory GUpdateTaskInput([void Function(GUpdateTaskInputBuilder b) updates]) =
+  factory GUpdateTaskInput([Function(GUpdateTaskInputBuilder b) updates]) =
       _$GUpdateTaskInput;
 
   String? get title;
@@ -737,8 +733,7 @@ abstract class GUpdateTaskInput
 abstract class GUserOrder implements Built<GUserOrder, GUserOrderBuilder> {
   GUserOrder._();
 
-  factory GUserOrder([void Function(GUserOrderBuilder b) updates]) =
-      _$GUserOrder;
+  factory GUserOrder([Function(GUserOrderBuilder b) updates]) = _$GUserOrder;
 
   GOrderDirection get direction;
   GUserOrderField get field;
@@ -760,7 +755,7 @@ abstract class GUserWhereInput
     implements Built<GUserWhereInput, GUserWhereInputBuilder> {
   GUserWhereInput._();
 
-  factory GUserWhereInput([void Function(GUserWhereInputBuilder b) updates]) =
+  factory GUserWhereInput([Function(GUserWhereInputBuilder b) updates]) =
       _$GUserWhereInput;
 
   GUserWhereInput? get not;
@@ -912,7 +907,7 @@ abstract class GVerifyOTPAndLoginInput
   GVerifyOTPAndLoginInput._();
 
   factory GVerifyOTPAndLoginInput(
-          [void Function(GVerifyOTPAndLoginInputBuilder b) updates]) =
+          [Function(GVerifyOTPAndLoginInputBuilder b) updates]) =
       _$GVerifyOTPAndLoginInput;
 
   String get phoneNumber;
@@ -938,7 +933,7 @@ abstract class GVerifyOTPAndRegisterInput
   GVerifyOTPAndRegisterInput._();
 
   factory GVerifyOTPAndRegisterInput(
-          [void Function(GVerifyOTPAndRegisterInputBuilder b) updates]) =
+          [Function(GVerifyOTPAndRegisterInputBuilder b) updates]) =
       _$GVerifyOTPAndRegisterInput;
 
   String get phoneNumber;

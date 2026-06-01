@@ -1,26 +1,28 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'get_me.req.gql.dart';
+part of 'refresh_token.req.gql.dart';
 
 // **************************************************************************
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GGetMeReq> _$gGetMeReqSerializer = new _$GGetMeReqSerializer();
+Serializer<GRefreshTokenReq> _$gRefreshTokenReqSerializer =
+    new _$GRefreshTokenReqSerializer();
 
-class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
+class _$GRefreshTokenReqSerializer
+    implements StructuredSerializer<GRefreshTokenReq> {
   @override
-  final Iterable<Type> types = const [GGetMeReq, _$GGetMeReq];
+  final Iterable<Type> types = const [GRefreshTokenReq, _$GRefreshTokenReq];
   @override
-  final String wireName = 'GGetMeReq';
+  final String wireName = 'GRefreshTokenReq';
 
   @override
-  Iterable<Object?> serialize(Serializers serializers, GGetMeReq object,
+  Iterable<Object?> serialize(Serializers serializers, GRefreshTokenReq object,
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[
       'vars',
       serializers.serialize(object.vars,
-          specifiedType: const FullType(_i3.GGetMeVars)),
+          specifiedType: const FullType(_i3.GRefreshTokenVars)),
       'operation',
       serializers.serialize(object.operation,
           specifiedType: const FullType(_i4.Operation)),
@@ -41,7 +43,7 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
       result
         ..add('optimisticResponse')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(_i2.GGetMeData)));
+            specifiedType: const FullType(_i2.GRefreshTokenData)));
     }
     value = object.updateCacheHandlerKey;
     if (value != null) {
@@ -69,9 +71,10 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
   }
 
   @override
-  GGetMeReq deserialize(Serializers serializers, Iterable<Object?> serialized,
+  GRefreshTokenReq deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetMeReqBuilder();
+    final result = new GRefreshTokenReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -81,8 +84,8 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
       switch (key) {
         case 'vars':
           result.vars.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i3.GGetMeVars))!
-              as _i3.GGetMeVars);
+                  specifiedType: const FullType(_i3.GRefreshTokenVars))!
+              as _i3.GRefreshTokenVars);
           break;
         case 'operation':
           result.operation = serializers.deserialize(value,
@@ -94,8 +97,8 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
           break;
         case 'optimisticResponse':
           result.optimisticResponse.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i2.GGetMeData))!
-              as _i2.GGetMeData);
+                  specifiedType: const FullType(_i2.GRefreshTokenData))!
+              as _i2.GRefreshTokenData);
           break;
         case 'updateCacheHandlerKey':
           result.updateCacheHandlerKey = serializers.deserialize(value,
@@ -124,18 +127,18 @@ class _$GGetMeReqSerializer implements StructuredSerializer<GGetMeReq> {
   }
 }
 
-class _$GGetMeReq extends GGetMeReq {
+class _$GRefreshTokenReq extends GRefreshTokenReq {
   @override
-  final _i3.GGetMeVars vars;
+  final _i3.GRefreshTokenVars vars;
   @override
   final _i4.Operation operation;
   @override
   final String? requestId;
   @override
-  final _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
-      updateResult;
+  final _i2.GRefreshTokenData? Function(
+      _i2.GRefreshTokenData?, _i2.GRefreshTokenData?)? updateResult;
   @override
-  final _i2.GGetMeData? optimisticResponse;
+  final _i2.GRefreshTokenData? optimisticResponse;
   @override
   final String? updateCacheHandlerKey;
   @override
@@ -145,10 +148,11 @@ class _$GGetMeReq extends GGetMeReq {
   @override
   final bool executeOnListen;
 
-  factory _$GGetMeReq([void Function(GGetMeReqBuilder)? updates]) =>
-      (new GGetMeReqBuilder()..update(updates))._build();
+  factory _$GRefreshTokenReq(
+          [void Function(GRefreshTokenReqBuilder)? updates]) =>
+      (new GRefreshTokenReqBuilder()..update(updates))._build();
 
-  _$GGetMeReq._(
+  _$GRefreshTokenReq._(
       {required this.vars,
       required this.operation,
       this.requestId,
@@ -159,24 +163,26 @@ class _$GGetMeReq extends GGetMeReq {
       this.fetchPolicy,
       required this.executeOnListen})
       : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GGetMeReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(operation, r'GGetMeReq', 'operation');
+    BuiltValueNullFieldError.checkNotNull(vars, r'GRefreshTokenReq', 'vars');
     BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GGetMeReq', 'executeOnListen');
+        operation, r'GRefreshTokenReq', 'operation');
+    BuiltValueNullFieldError.checkNotNull(
+        executeOnListen, r'GRefreshTokenReq', 'executeOnListen');
   }
 
   @override
-  GGetMeReq rebuild(void Function(GGetMeReqBuilder) updates) =>
+  GRefreshTokenReq rebuild(void Function(GRefreshTokenReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetMeReqBuilder toBuilder() => new GGetMeReqBuilder()..replace(this);
+  GRefreshTokenReqBuilder toBuilder() =>
+      new GRefreshTokenReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     final dynamic _$dynamicOther = other;
-    return other is GGetMeReq &&
+    return other is GRefreshTokenReq &&
         vars == other.vars &&
         operation == other.operation &&
         requestId == other.requestId &&
@@ -206,7 +212,7 @@ class _$GGetMeReq extends GGetMeReq {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'GGetMeReq')
+    return (newBuiltValueToStringHelper(r'GRefreshTokenReq')
           ..add('vars', vars)
           ..add('operation', operation)
           ..add('requestId', requestId)
@@ -220,13 +226,14 @@ class _$GGetMeReq extends GGetMeReq {
   }
 }
 
-class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
-  _$GGetMeReq? _$v;
+class GRefreshTokenReqBuilder
+    implements Builder<GRefreshTokenReq, GRefreshTokenReqBuilder> {
+  _$GRefreshTokenReq? _$v;
 
-  _i3.GGetMeVarsBuilder? _vars;
-  _i3.GGetMeVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GGetMeVarsBuilder();
-  set vars(_i3.GGetMeVarsBuilder? vars) => _$this._vars = vars;
+  _i3.GRefreshTokenVarsBuilder? _vars;
+  _i3.GRefreshTokenVarsBuilder get vars =>
+      _$this._vars ??= new _i3.GRefreshTokenVarsBuilder();
+  set vars(_i3.GRefreshTokenVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
   _i4.Operation? get operation => _$this._operation;
@@ -236,18 +243,21 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   String? get requestId => _$this._requestId;
   set requestId(String? requestId) => _$this._requestId = requestId;
 
-  _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)? _updateResult;
-  _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
+  _i2.GRefreshTokenData? Function(
+      _i2.GRefreshTokenData?, _i2.GRefreshTokenData?)? _updateResult;
+  _i2.GRefreshTokenData? Function(
+          _i2.GRefreshTokenData?, _i2.GRefreshTokenData?)?
       get updateResult => _$this._updateResult;
   set updateResult(
-          _i2.GGetMeData? Function(_i2.GGetMeData?, _i2.GGetMeData?)?
+          _i2.GRefreshTokenData? Function(
+                  _i2.GRefreshTokenData?, _i2.GRefreshTokenData?)?
               updateResult) =>
       _$this._updateResult = updateResult;
 
-  _i2.GGetMeDataBuilder? _optimisticResponse;
-  _i2.GGetMeDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GGetMeDataBuilder();
-  set optimisticResponse(_i2.GGetMeDataBuilder? optimisticResponse) =>
+  _i2.GRefreshTokenDataBuilder? _optimisticResponse;
+  _i2.GRefreshTokenDataBuilder get optimisticResponse =>
+      _$this._optimisticResponse ??= new _i2.GRefreshTokenDataBuilder();
+  set optimisticResponse(_i2.GRefreshTokenDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
   String? _updateCacheHandlerKey;
@@ -272,11 +282,11 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
-  GGetMeReqBuilder() {
-    GGetMeReq._initializeBuilder(this);
+  GRefreshTokenReqBuilder() {
+    GRefreshTokenReq._initializeBuilder(this);
   }
 
-  GGetMeReqBuilder get _$this {
+  GRefreshTokenReqBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _vars = $v.vars.toBuilder();
@@ -294,27 +304,27 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
   }
 
   @override
-  void replace(GGetMeReq other) {
+  void replace(GRefreshTokenReq other) {
     ArgumentError.checkNotNull(other, 'other');
-    _$v = other as _$GGetMeReq;
+    _$v = other as _$GRefreshTokenReq;
   }
 
   @override
-  void update(void Function(GGetMeReqBuilder)? updates) {
+  void update(void Function(GRefreshTokenReqBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  GGetMeReq build() => _build();
+  GRefreshTokenReq build() => _build();
 
-  _$GGetMeReq _build() {
-    _$GGetMeReq _$result;
+  _$GRefreshTokenReq _build() {
+    _$GRefreshTokenReq _$result;
     try {
       _$result = _$v ??
-          new _$GGetMeReq._(
+          new _$GRefreshTokenReq._(
               vars: vars.build(),
               operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GGetMeReq', 'operation'),
+                  operation, r'GRefreshTokenReq', 'operation'),
               requestId: requestId,
               updateResult: updateResult,
               optimisticResponse: _optimisticResponse?.build(),
@@ -322,7 +332,7 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
               updateCacheHandlerContext: updateCacheHandlerContext,
               fetchPolicy: fetchPolicy,
               executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GGetMeReq', 'executeOnListen'));
+                  executeOnListen, r'GRefreshTokenReq', 'executeOnListen'));
     } catch (_) {
       late String _$failedField;
       try {
@@ -333,7 +343,7 @@ class GGetMeReqBuilder implements Builder<GGetMeReq, GGetMeReqBuilder> {
         _optimisticResponse?.build();
       } catch (e) {
         throw new BuiltValueNestedFieldError(
-            r'GGetMeReq', _$failedField, e.toString());
+            r'GRefreshTokenReq', _$failedField, e.toString());
       }
       rethrow;
     }

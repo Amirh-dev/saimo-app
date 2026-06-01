@@ -5,7 +5,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:built_value/serializer.dart';
 import 'package:built_value/standard_json_plugin.dart' show StandardJsonPlugin;
 import 'package:ferry_exec/ferry_exec.dart';
-import 'package:gql_code_builder_serializers/gql_code_builder_serializers.dart'
+import 'package:gql_code_builder/src/serializers/operation_serializer.dart'
     show OperationSerializer;
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
     show
@@ -36,6 +36,39 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GUserWhereInput,
         GVerifyOTPAndLoginInput,
         GVerifyOTPAndRegisterInput;
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.data.gql.dart'
+    show
+        GRefreshTokenData,
+        GRefreshTokenData_refreshToken,
+        GRefreshTokenData_refreshToken_user;
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql.dart'
+    show GRefreshTokenReq;
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.var.gql.dart'
+    show GRefreshTokenVars;
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.data.gql.dart'
+    show GSendOTPData, GSendOTPData_sendOTP;
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart'
+    show GSendOTPReq;
+import 'package:simo_learn/graphql/mutations/__generated__/send_otp.var.gql.dart'
+    show GSendOTPVars;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.data.gql.dart'
+    show
+        GVerifyOTPAndLoginData,
+        GVerifyOTPAndLoginData_verifyOTPAndLogin,
+        GVerifyOTPAndLoginData_verifyOTPAndLogin_user;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.gql.dart'
+    show GVerifyOTPAndLoginReq;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.var.gql.dart'
+    show GVerifyOTPAndLoginVars;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.data.gql.dart'
+    show
+        GVerifyOTPAndRegisterData,
+        GVerifyOTPAndRegisterData_verifyOTPAndRegister,
+        GVerifyOTPAndRegisterData_verifyOTPAndRegister_user;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.req.gql.dart'
+    show GVerifyOTPAndRegisterReq;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.var.gql.dart'
+    show GVerifyOTPAndRegisterVars;
 import 'package:simo_learn/graphql/queries/__generated__/get_me.data.gql.dart'
     show GGetMeData, GGetMeData_getMe;
 import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart'
@@ -62,7 +95,16 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GGoalWhereInput,
   GInterestWhereInput,
   GOrderDirection,
+  GRefreshTokenData,
+  GRefreshTokenData_refreshToken,
+  GRefreshTokenData_refreshToken_user,
+  GRefreshTokenReq,
+  GRefreshTokenVars,
+  GSendOTPData,
+  GSendOTPData_sendOTP,
   GSendOTPInput,
+  GSendOTPReq,
+  GSendOTPVars,
   GTagWhereInput,
   GTaskOrder,
   GTaskOrderField,
@@ -78,7 +120,17 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GUserRole,
   GUserStudyTime,
   GUserWhereInput,
+  GVerifyOTPAndLoginData,
+  GVerifyOTPAndLoginData_verifyOTPAndLogin,
+  GVerifyOTPAndLoginData_verifyOTPAndLogin_user,
   GVerifyOTPAndLoginInput,
+  GVerifyOTPAndLoginReq,
+  GVerifyOTPAndLoginVars,
+  GVerifyOTPAndRegisterData,
+  GVerifyOTPAndRegisterData_verifyOTPAndRegister,
+  GVerifyOTPAndRegisterData_verifyOTPAndRegister_user,
   GVerifyOTPAndRegisterInput,
+  GVerifyOTPAndRegisterReq,
+  GVerifyOTPAndRegisterVars,
 ])
 final Serializers serializers = _serializersBuilder.build();

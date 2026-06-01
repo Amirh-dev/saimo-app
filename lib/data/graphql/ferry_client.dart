@@ -1,14 +1,16 @@
 import 'package:ferry/ferry.dart';
 import 'package:gql_http_link/gql_http_link.dart';
- 
+import 'package:simo_learn/data/auth/token_storage.dart';
+
 import '../../graphql/__generated__/schema.schema.gql.dart'
     show possibleTypesMap;
 
 Client createFerryClient({
   required String endpoint,
-  String? token,
+  required TokenStorage tokenStorage,
 }) {
   final authLink = Link.function((request, [forward]) {
+    final token = tokenStorage.currentAccessToken;
     final updatedRequest = request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(
         headers: {

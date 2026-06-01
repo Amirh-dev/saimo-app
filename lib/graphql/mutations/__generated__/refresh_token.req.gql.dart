@@ -7,32 +7,33 @@ import 'package:built_value/serializer.dart';
 import 'package:ferry_exec/ferry_exec.dart' as _i1;
 import 'package:gql_exec/gql_exec.dart' as _i4;
 import 'package:simo_learn/graphql/__generated__/serializers.gql.dart' as _i6;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.ast.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.ast.gql.dart'
     as _i5;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.data.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.data.gql.dart'
     as _i2;
-import 'package:simo_learn/graphql/queries/__generated__/get_me.var.gql.dart'
+import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.var.gql.dart'
     as _i3;
 
-part 'get_me.req.gql.g.dart';
+part 'refresh_token.req.gql.g.dart';
 
-abstract class GGetMeReq
+abstract class GRefreshTokenReq
     implements
-        Built<GGetMeReq, GGetMeReqBuilder>,
-        _i1.OperationRequest<_i2.GGetMeData, _i3.GGetMeVars> {
-  GGetMeReq._();
+        Built<GRefreshTokenReq, GRefreshTokenReqBuilder>,
+        _i1.OperationRequest<_i2.GRefreshTokenData, _i3.GRefreshTokenVars> {
+  GRefreshTokenReq._();
 
-  factory GGetMeReq([Function(GGetMeReqBuilder b) updates]) = _$GGetMeReq;
+  factory GRefreshTokenReq([Function(GRefreshTokenReqBuilder b) updates]) =
+      _$GRefreshTokenReq;
 
-  static void _initializeBuilder(GGetMeReqBuilder b) => b
+  static void _initializeBuilder(GRefreshTokenReqBuilder b) => b
     ..operation = _i4.Operation(
       document: _i5.document,
-      operationName: 'GetMe',
+      operationName: 'RefreshToken',
     )
     ..executeOnListen = true;
 
   @override
-  _i3.GGetMeVars get vars;
+  _i3.GRefreshTokenVars get vars;
   @override
   _i4.Operation get operation;
   @override
@@ -45,12 +46,12 @@ abstract class GGetMeReq
   String? get requestId;
   @override
   @BuiltValueField(serialize: false)
-  _i2.GGetMeData? Function(
-    _i2.GGetMeData?,
-    _i2.GGetMeData?,
+  _i2.GRefreshTokenData? Function(
+    _i2.GRefreshTokenData?,
+    _i2.GRefreshTokenData?,
   )? get updateResult;
   @override
-  _i2.GGetMeData? get optimisticResponse;
+  _i2.GRefreshTokenData? get optimisticResponse;
   @override
   String? get updateCacheHandlerKey;
   @override
@@ -60,19 +61,20 @@ abstract class GGetMeReq
   @override
   bool get executeOnListen;
   @override
-  _i2.GGetMeData? parseData(Map<String, dynamic> json) =>
-      _i2.GGetMeData.fromJson(json);
+  _i2.GRefreshTokenData? parseData(Map<String, dynamic> json) =>
+      _i2.GRefreshTokenData.fromJson(json);
 
-  static Serializer<GGetMeReq> get serializer => _$gGetMeReqSerializer;
+  static Serializer<GRefreshTokenReq> get serializer =>
+      _$gRefreshTokenReqSerializer;
 
   Map<String, dynamic> toJson() => (_i6.serializers.serializeWith(
-        GGetMeReq.serializer,
+        GRefreshTokenReq.serializer,
         this,
       ) as Map<String, dynamic>);
 
-  static GGetMeReq? fromJson(Map<String, dynamic> json) =>
+  static GRefreshTokenReq? fromJson(Map<String, dynamic> json) =>
       _i6.serializers.deserializeWith(
-        GGetMeReq.serializer,
+        GRefreshTokenReq.serializer,
         json,
       );
 }
