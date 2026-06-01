@@ -9,7 +9,6 @@ import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
-
 import '../../../widgets/re_text.dart';
 
 class OTPCodeScreen extends StatefulWidget {
