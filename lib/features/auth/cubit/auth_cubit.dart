@@ -132,6 +132,75 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> verifyOtpForNextStep({
+    required String phoneNumber,
+    required String code,
+    required bool isRegistered,
+  }) async {
+    if (isRegistered) {
+      await verifyLogin(
+        phoneNumber: phoneNumber,
+        code: code,
+      );
+      return;
+    }
+
+    emit(const AuthLoading(AuthAction.verifyOtp));
+
+    try {
+      final response = await _graphql.requestOnce(
+        GVerifyOTPAndRegisterReq(
+          (request) => request.vars.input
+            ..phoneNumber = phoneNumber
+            ..code = code
+            ..fullName = 'Simo User'
+            ..birthDate.value = DateTime.utc(2000).toIso8601String()
+            ..studyTime = GUserStudyTime.UNDER_4_HOURS,
+        ),
+        requiresAuth: false,
+      );
+
+      if (response.hasErrors) {
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Invalid verification code',
+            ),
+            action: AuthAction.verifyOtp,
+          ),
+        );
+        return;
+      }
+
+      final payload = response.data?.verifyOTPAndRegister;
+      if (payload == null || payload.accessToken.isEmpty) {
+        emit(
+          const AuthFailure(
+            'Invalid verification code',
+            action: AuthAction.verifyOtp,
+          ),
+        );
+        return;
+      }
+
+      await _tokenStorage.saveAccessToken(payload.accessToken);
+      emit(
+        AuthNeedsRegistration(
+          phoneNumber: phoneNumber,
+          completeProfileOnly: true,
+        ),
+      );
+    } catch (error) {
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          action: AuthAction.verifyOtp,
+        ),
+      );
+    }
+  }
+
   Future<void> verifyRegister({
     required String phoneNumber,
     required String code,
@@ -191,6 +260,63 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthFailure(
           _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          action: AuthAction.register,
+        ),
+      );
+    }
+  }
+
+  Future<void> completeRegistrationProfile({
+    required String fullName,
+    required DateTime birthDate,
+    required dynamic studyTime,
+  }) async {
+    emit(const AuthLoading(AuthAction.register));
+
+    try {
+      final resolvedStudyTime = _resolveStudyTime(studyTime);
+      final data = await _graphql.rawRequest(
+        query: r'''
+mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+  }
+}
+''',
+        variables: {
+          'input': {
+            'fullName': fullName,
+            'birthDate': birthDate.toUtc().toIso8601String(),
+            'studyTime': resolvedStudyTime.name,
+          },
+        },
+      );
+
+      final updateProfile = data['updateProfile'];
+      final userId = updateProfile is Map<String, dynamic>
+          ? updateProfile['id']?.toString()
+          : null;
+
+      if (userId == null || userId.isEmpty) {
+        emit(
+          const AuthFailure(
+            'Updating profile failed',
+            action: AuthAction.register,
+          ),
+        );
+        return;
+      }
+
+      emit(
+        AuthAuthenticated(
+          userId: userId,
+          action: AuthAction.register,
+        ),
+      );
+    } catch (error) {
+      emit(
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Updating profile failed'),
           action: AuthAction.register,
         ),
       );

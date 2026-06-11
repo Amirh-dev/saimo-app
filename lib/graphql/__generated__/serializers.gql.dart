@@ -36,6 +36,15 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GUserWhereInput,
         GVerifyOTPAndLoginInput,
         GVerifyOTPAndRegisterInput;
+import 'package:simo_learn/graphql/mutations/__generated__/create_task.data.gql.dart'
+    show
+        GCreateTaskData,
+        GCreateTaskData_createTask,
+        GCreateTaskData_createTask_tags;
+import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart'
+    show GCreateTaskReq;
+import 'package:simo_learn/graphql/mutations/__generated__/create_task.var.gql.dart'
+    show GCreateTaskVars;
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.data.gql.dart'
     show
         GRefreshTokenData,
@@ -75,6 +84,16 @@ import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart'
     show GGetMeReq;
 import 'package:simo_learn/graphql/queries/__generated__/get_me.var.gql.dart'
     show GGetMeVars;
+import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart'
+    show
+        GGetTasksData,
+        GGetTasksData_getTasks,
+        GGetTasksData_getTasks_goal,
+        GGetTasksData_getTasks_tags;
+import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart'
+    show GGetTasksReq;
+import 'package:simo_learn/graphql/queries/__generated__/get_tasks.var.gql.dart'
+    show GGetTasksVars;
 
 part 'serializers.gql.g.dart';
 
@@ -83,12 +102,23 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   ..addPlugin(StandardJsonPlugin());
 @SerializersFor([
   GCreateGoalInput,
+  GCreateTaskData,
+  GCreateTaskData_createTask,
+  GCreateTaskData_createTask_tags,
   GCreateTaskInput,
+  GCreateTaskReq,
+  GCreateTaskVars,
   GCursor,
   GGetMeData,
   GGetMeData_getMe,
   GGetMeReq,
   GGetMeVars,
+  GGetTasksData,
+  GGetTasksData_getTasks,
+  GGetTasksData_getTasks_goal,
+  GGetTasksData_getTasks_tags,
+  GGetTasksReq,
+  GGetTasksVars,
   GGoalOrder,
   GGoalOrderField,
   GGoalStatus,

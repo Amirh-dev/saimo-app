@@ -6,6 +6,7 @@ sealed class AuthState {
 
 enum AuthAction {
   sendOtp,
+  verifyOtp,
   login,
   register,
   refresh,
@@ -41,10 +42,12 @@ final class AuthNeedsRegistration extends AuthState {
   const AuthNeedsRegistration({
     required this.phoneNumber,
     this.code,
+    this.completeProfileOnly = false,
   });
 
   final String phoneNumber;
   final String? code;
+  final bool completeProfileOnly;
 }
 
 final class AuthAuthenticated extends AuthState {

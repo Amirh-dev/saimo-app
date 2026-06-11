@@ -1,12 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
+DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
+  final gregorian = date.toGregorian();
+  return DateTime(
+    gregorian.year,
+    gregorian.month,
+    gregorian.day,
+    time?.hour ?? 0,
+    time?.minute ?? 0,
+  );
+}
+
+List<String> _parseTagNames(String value) {
+  return value
+      .split(RegExp(r'[,\u060C]'))
+      .map((tag) => tag.trim())
+      .where((tag) => tag.isNotEmpty)
+      .take(2)
+      .toList();
+}
+
+String? _emptyToNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+String? _recurringDay(Jalali date, bool isWeeklyRepeat) {
+  if (!isWeeklyRepeat) return null;
+  return switch (date.weekDay) {
+    1 => 'SAT',
+    2 => 'SUN',
+    3 => 'MON',
+    4 => 'TUE',
+    5 => 'WED',
+    6 => 'THU',
+    _ => 'FRI',
+  };
+}
+
 class AddTimedTaskScreen extends StatefulWidget {
-  const AddTimedTaskScreen({super.key});
+  const AddTimedTaskScreen({super.key, this.goalId});
+
+  final String? goalId;
 
   @override
   State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
@@ -32,6 +76,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
+  bool _isSubmitting = false;
 
   late Jalali _selectedDate;
   late Jalali _visibleCalendarMonth;
@@ -297,49 +342,95 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     });
   }
 
-  void _submitTimedTask() {
+  Future<void> _submitTimedTask() async {
     if (!_isFormValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: ReText(
-            'عنوان تسک را وارد کنید',
-            color: AppColors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
+      showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
       return;
     }
 
     final description = _descriptionController.text.trim();
     final tags = _tagController.text.trim();
     final note = _noteController.text.trim();
-    final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
 
-    final subtitle = description.isNotEmpty
-        ? description
-        : (note.isNotEmpty
-            ? note
-            : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
+    setState(() {
+      _isSubmitting = true;
+    });
 
-    final durationSeconds = _selectedMinutes * 60;
+    try {
+      final taskDate = _toDateTime(_selectedDate);
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GCreateTaskReq(
+          (request) {
+            request.vars.input
+              ..title = _titleController.text.trim()
+              ..shortDescription = _emptyToNull(description)
+              ..type = GTaskType.TIMED
+              ..note = _emptyToNull(note)
+              ..date.value = taskDate.toUtc().toIso8601String()
+              ..durationM = _selectedMinutes
+              ..hasReminder = _isReminderEnabled
+              ..recurringDays = _recurringDay(_selectedDate, _isWeeklyRepeat)
+              ..tagNames.addAll(_parseTagNames(tags));
 
-    Navigator.of(context).pop(
-      <String, dynamic>{
-        'title': _titleController.text.trim(),
-        'subtitle': subtitle,
-        'durationSeconds': durationSeconds,
-        'remainingSeconds': durationSeconds,
-        'status': 'pending',
-        'label': '$minutesLabel دقیقه',
-        'date': _selectedDate,
-        'tags': tags,
-        'note': note,
-        'repeatWeekly': _isWeeklyRepeat,
-        'reminder': _isReminderEnabled,
-      },
-    );
+            final goalId = _emptyToNull(widget.goalId ?? '');
+            if (goalId != null) {
+              request.vars.input.goalID = goalId;
+            }
+
+            if (_isReminderEnabled) {
+              request.vars.input.reminderTime.value =
+                  taskDate.toUtc().toIso8601String();
+            }
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.createTask == null) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      final task = response.data!.createTask;
+      final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
+      final subtitle = task.shortDescription?.trim().isNotEmpty == true
+          ? task.shortDescription!.trim()
+          : (task.note?.trim().isNotEmpty == true
+              ? task.note!.trim()
+              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
+      final durationSeconds = (task.durationM ?? _selectedMinutes) * 60;
+
+      Navigator.of(context).pop(
+        <String, dynamic>{
+          'id': task.id,
+          'title': task.title,
+          'subtitle': subtitle,
+          'durationSeconds': durationSeconds,
+          'remainingSeconds': durationSeconds,
+          'status': 'pending',
+          'label': '$minutesLabel دقیقه',
+          'date': _selectedDate,
+          'tags': tags,
+          'note': task.note ?? note,
+          'repeatWeekly': _isWeeklyRepeat,
+          'reminder': task.hasReminder,
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, error.toString(), ReToastType.failed);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -413,6 +504,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                               icon: Icons.add,
                               background: AppColors.primary,
                               textColor: AppColors.white,
+                              isLoading: _isSubmitting,
                               onTap: _submitTimedTask,
                             ),
                           ),
@@ -424,7 +516,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                               background: AppColors.white,
                               textColor: AppColors.black1,
                               borderColor: AppColors.gray2,
-                              onTap: () => Navigator.of(context).pop(),
+                              onTap: _isSubmitting
+                                  ? () {}
+                                  : () => Navigator.of(context).pop(),
                             ),
                           ),
                         ],
@@ -896,7 +990,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 }
 
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key});
+  const AddTaskScreen({super.key, this.goalId});
+
+  final String? goalId;
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -905,6 +1001,7 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
+  bool _isSubmitting = false;
   late Jalali _selectedDate;
   late Jalali _visibleCalendarMonth;
   late TimeOfDay _selectedTime;
@@ -1064,18 +1161,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
   }
 
-  void _submitTask() {
+  Future<void> _submitTask() async {
     if (!_isFormValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: ReText(
-            'عنوان تسک را وارد کنید',
-            color: AppColors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
+      showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
       return;
     }
 
@@ -1084,20 +1172,74 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final time =
         '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
-    Navigator.of(context).pop(
-      <String, dynamic>{
-        'title': _titleController.text.trim(),
-        'subtitle': description.isNotEmpty
-            ? description
-            : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
-        'time': time,
-        'status': 'pending',
-        'date': _selectedDate,
-        'tags': tags,
-        'repeatWeekly': _isWeeklyRepeat,
-        'reminder': _isReminderEnabled,
-      },
-    );
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GCreateTaskReq(
+          (request) {
+            request.vars.input
+              ..title = _titleController.text.trim()
+              ..shortDescription = _emptyToNull(description)
+              ..type = GTaskType.NORMAL
+              ..date.value = taskDate.toUtc().toIso8601String()
+              ..hasReminder = _isReminderEnabled
+              ..recurringDays = _recurringDay(_selectedDate, _isWeeklyRepeat)
+              ..tagNames.addAll(_parseTagNames(tags));
+
+            final goalId = _emptyToNull(widget.goalId ?? '');
+            if (goalId != null) {
+              request.vars.input.goalID = goalId;
+            }
+
+            if (_isReminderEnabled) {
+              request.vars.input.reminderTime.value =
+                  taskDate.toUtc().toIso8601String();
+            }
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.createTask == null) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      final task = response.data!.createTask;
+      Navigator.of(context).pop(
+        <String, dynamic>{
+          'id': task.id,
+          'title': task.title,
+          'subtitle': task.shortDescription?.trim().isNotEmpty == true
+              ? task.shortDescription!.trim()
+              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
+          'time': time,
+          'status': 'pending',
+          'date': _selectedDate,
+          'tags': tags,
+          'repeatWeekly': _isWeeklyRepeat,
+          'reminder': task.hasReminder,
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, error.toString(), ReToastType.failed);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -1167,6 +1309,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               icon: Icons.add,
                               background: AppColors.primary,
                               textColor: AppColors.white,
+                              isLoading: _isSubmitting,
                               onTap: _submitTask,
                             ),
                           ),
@@ -1178,9 +1321,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                               background: AppColors.white,
                               textColor: AppColors.black1,
                               borderColor: AppColors.gray2,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                              },
+                              onTap: _isSubmitting
+                                  ? () {}
+                                  : () {
+                                      Navigator.of(context).pop();
+                                    },
                             ),
                           ),
                         ],
@@ -1747,6 +1892,7 @@ class _ActionButton extends StatelessWidget {
     required this.textColor,
     required this.onTap,
     this.borderColor,
+    this.isLoading = false,
   });
 
   final String text;
@@ -1755,6 +1901,7 @@ class _ActionButton extends StatelessWidget {
   final Color textColor;
   final Color? borderColor;
   final VoidCallback onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -1766,6 +1913,7 @@ class _ActionButton extends StatelessWidget {
       iconSize: 18,
       fontWeight: FontWeight.w800,
       background: background,
+      isLoading: isLoading,
       textDirection: TextDirection.ltr,
       textColor: textColor,
       isOutlined: borderColor != null,

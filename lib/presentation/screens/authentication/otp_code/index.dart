@@ -40,6 +40,8 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
+        if (!_isCurrentRoute(context)) return;
+
         if (state is AuthAuthenticated && state.action == AuthAction.login) {
           showReToast(
             context,
@@ -47,13 +49,24 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
             ReToastType.success,
           );
           context.toOffAll(const GoalScreen());
-        } else if (state is AuthFailure && state.action == AuthAction.login) {
+        } else if (state is AuthNeedsRegistration) {
+          context.to(
+            RegisterScreen(
+              phoneNumber: state.phoneNumber,
+              code: state.code,
+              completeProfileOnly: state.completeProfileOnly,
+            ),
+          );
+        } else if (state is AuthFailure &&
+            (state.action == AuthAction.login ||
+                state.action == AuthAction.verifyOtp)) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
-        final isLoading =
-            state is AuthLoading && state.action == AuthAction.login;
+        final isLoading = state is AuthLoading &&
+            (state.action == AuthAction.login ||
+                state.action == AuthAction.verifyOtp);
 
         return Scaffold(
           backgroundColor: AppColors.gray1,
@@ -179,23 +192,21 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
   }
 
   void _submitCode() {
-    final code = _normalizeDigits(codeController.text);
-    if (code.length != 5) return;
-
-    if (widget.isRegistered) {
-      context.read<AuthCubit>().verifyLogin(
-            phoneNumber: widget.phoneNumber,
-            code: code,
-          );
+    final state = context.read<AuthCubit>().state;
+    if (state is AuthLoading &&
+        (state.action == AuthAction.login ||
+            state.action == AuthAction.verifyOtp)) {
       return;
     }
 
-    context.to(
-      RegisterScreen(
-        phoneNumber: widget.phoneNumber,
-        code: code,
-      ),
-    );
+    final code = _normalizeDigits(codeController.text);
+    if (code.length != 5) return;
+
+    context.read<AuthCubit>().verifyOtpForNextStep(
+          phoneNumber: widget.phoneNumber,
+          code: code,
+          isRegistered: widget.isRegistered,
+        );
   }
 
   String _normalizeDigits(String value) {
@@ -206,5 +217,9 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
       result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
     }
     return result;
+  }
+
+  bool _isCurrentRoute(BuildContext context) {
+    return ModalRoute.of(context)?.isCurrent ?? false;
   }
 }

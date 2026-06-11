@@ -14,7 +14,7 @@ import 'features/profile/profile_cubit.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const graphQLEndpoint = 'https://simo.api.bennito.ir/query';
+  const graphQLEndpoint = 'https://simo.raa-vi.ir/query';
   final tokenStorage = await TokenStorage.create();
   final ferryClient = createFerryClient(
     endpoint: graphQLEndpoint,

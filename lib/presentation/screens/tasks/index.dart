@@ -3,6 +3,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
+import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
+import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
@@ -27,8 +32,8 @@ class _TasksScreenState extends State<TasksScreen>
   late AnimationController _animationController;
   late AnimationController _slideAnimationController;
 
-  late List<Map<String, dynamic>> _checklistTasks;
-  late List<Map<String, dynamic>> _timedTasks;
+  List<Map<String, dynamic>> _checklistTasks = [];
+  List<Map<String, dynamic>> _timedTasks = [];
   Timer? _timedTaskTicker;
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
@@ -38,74 +43,6 @@ class _TasksScreenState extends State<TasksScreen>
   static const double _checklistItemCollapsedHeight = 90.0;
   static const double _checklistItemExpandedHeight = 140.0;
   static const Duration _taskExpansionDuration = Duration(milliseconds: 260);
-
-  void _initChecklistTasks() {
-    _checklistTasks = [
-      {
-        'title': 'مطالعه فارسی',
-        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
-        'time': '۰۹:۳۰',
-        'status': 'pending',
-      },
-      {
-        'title': 'مطالعـــه فارسی',
-        'subtitle': 'حل تمرین کتاب درسی',
-        'time': '۱۲:۱۵',
-        'status': 'pending',
-      },
-      {
-        'title': 'یادگیری لغات',
-        'subtitle': '۵ لغت جدید انگلیسی',
-        'time': '۱۷:۰۰',
-        'status': 'pending',
-      },
-    ];
-  }
-
-  void _initTimedTasks() {
-    _timedTasks = [
-      {
-        'title': 'مطالعه فارسی',
-        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
-        'elapsed': '۴۳:۵۲',
-        'duration': '۴۵:۰۰',
-        'durationSeconds': 2700,
-        'remainingSeconds': 2632,
-        'status': 'running',
-        'label': '۴۵ دقیقه',
-      },
-      {
-        'title': 'مطالعه فارسی',
-        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
-        'elapsed': '۴۳:۵۲',
-        'duration': '۴۵:۰۰',
-        'durationSeconds': 2700,
-        'remainingSeconds': 1215,
-        'status': 'paused',
-        'label': '۴۵ دقیقه',
-      },
-      {
-        'title': 'مطالعه فارسی',
-        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
-        'elapsed': '۰۰:۰۰',
-        'duration': '۴۵:۰۰',
-        'durationSeconds': 2700,
-        'remainingSeconds': 2700,
-        'status': 'pending',
-        'label': '۴۵ دقیقه',
-      },
-      {
-        'title': 'مطالعه فارسی',
-        'subtitle': 'مطالعه فصل ۴ و ۵ علوم',
-        'elapsed': '۴۳:۵۲',
-        'duration': '۴۵:۰۰',
-        'durationSeconds': 2700,
-        'remainingSeconds': 0,
-        'status': 'done',
-        'label': '۴۵ دقیقه',
-      },
-    ];
-  }
 
   final List<String> _persianMonths = [
     'فروردین',
@@ -125,8 +62,6 @@ class _TasksScreenState extends State<TasksScreen>
   @override
   void initState() {
     super.initState();
-    _initChecklistTasks();
-    _initTimedTasks();
     _today = Jalali.now();
     _selectedDate = _today;
     _animationController = AnimationController(
@@ -172,6 +107,9 @@ class _TasksScreenState extends State<TasksScreen>
     });
 
     _ensureTimedTaskTicker();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTasksForSelectedDate();
+    });
   }
 
   @override
@@ -190,6 +128,129 @@ class _TasksScreenState extends State<TasksScreen>
 
   bool _isSameDay(Jalali a, Jalali b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  DateTime _toDateTime(Jalali date) {
+    final gregorian = date.toGregorian();
+    return DateTime(gregorian.year, gregorian.month, gregorian.day);
+  }
+
+  Jalali? _jalaliFromIso(String value) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return null;
+    return Jalali.fromDateTime(parsed.toLocal());
+  }
+
+  String _timeFromIso(String value) {
+    final parsed = DateTime.tryParse(value)?.toLocal();
+    if (parsed == null) return '';
+    final formatted =
+        '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+    return convertToPersianNumbers(formatted);
+  }
+
+  String _taskStatus(GTaskStatus status) {
+    return switch (status) {
+      GTaskStatus.COMPLETED => 'done',
+      GTaskStatus.IN_PROGRESS => 'running',
+      GTaskStatus.CANCELED => 'done',
+      _ => 'pending',
+    };
+  }
+
+  String _taskSubtitle(GGetTasksData_getTasks task) {
+    final description = task.shortDescription?.trim();
+    if (description != null && description.isNotEmpty) return description;
+
+    final note = task.note?.trim();
+    if (note != null && note.isNotEmpty) return note;
+
+    final tags = task.tags?.map((tag) => tag.name).join('، ').trim();
+    if (tags != null && tags.isNotEmpty) return tags;
+
+    return 'توضیحی ثبت نشده';
+  }
+
+  Map<String, dynamic> _checklistTaskFromApi(GGetTasksData_getTasks task) {
+    return {
+      'id': task.id,
+      'title': task.title,
+      'subtitle': _taskSubtitle(task),
+      'time': _timeFromIso(task.date.value),
+      'status': _taskStatus(task.status),
+      'date': _jalaliFromIso(task.date.value),
+      'goalId': task.goal?.id,
+      'goalTitle': task.goal?.title,
+      'reminder': task.hasReminder,
+    };
+  }
+
+  Map<String, dynamic> _timedTaskFromApi(GGetTasksData_getTasks task) {
+    final minutes = task.durationM ?? 45;
+    final durationSeconds = minutes * 60;
+    final status = _taskStatus(task.status);
+
+    return {
+      'id': task.id,
+      'title': task.title,
+      'subtitle': _taskSubtitle(task),
+      'elapsed': '۰۰:۰۰',
+      'duration': _formatTimedTaskSeconds(durationSeconds),
+      'durationSeconds': durationSeconds,
+      'remainingSeconds': status == 'done' ? 0 : durationSeconds,
+      'status': status,
+      'label': '${convertToPersianNumbers(minutes.toString())} دقیقه',
+      'date': _jalaliFromIso(task.date.value),
+      'goalId': task.goal?.id,
+      'goalTitle': task.goal?.title,
+      'reminder': task.hasReminder,
+    };
+  }
+
+  Future<void> _loadTasksForSelectedDate() async {
+    try {
+      final selectedDate = _selectedDate;
+      final taskDate = _toDateTime(selectedDate);
+      final response = await context.read<GraphQLRepository>().requestOnce(
+            GGetTasksReq(
+              (request) => request.vars
+                ..date.value = taskDate.toUtc().toIso8601String()
+                ..limit = 100
+                ..offset = 0,
+            ),
+          );
+
+      if (!mounted || !_isSameDay(selectedDate, _selectedDate)) return;
+      if (response.hasErrors || response.data == null) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      final checklistTasks = <Map<String, dynamic>>[];
+      final timedTasks = <Map<String, dynamic>>[];
+      for (final task in response.data!.getTasks) {
+        if (task.type == GTaskType.TIMED) {
+          timedTasks.add(_timedTaskFromApi(task));
+        } else {
+          checklistTasks.add(_checklistTaskFromApi(task));
+        }
+      }
+
+      setState(() {
+        _checklistTasks = checklistTasks;
+        _timedTasks = timedTasks;
+        _expandedChecklistTaskIndex = null;
+        _expandedTimedTaskIndex = null;
+      });
+      _ensureTimedTaskTicker();
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, error.toString(), ReToastType.failed);
+    }
   }
 
   double _checklistRowHeightAt(int index) {
@@ -1242,13 +1303,19 @@ class _TasksScreenState extends State<TasksScreen>
     );
 
     if (newTask == null) return;
+    if (!mounted) return;
 
-    setState(() {
-      _checklistTasks.insert(0, newTask);
-      if (_expandedChecklistTaskIndex != null) {
-        _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! + 1;
-      }
-    });
+    final taskDate = newTask['date'] as Jalali?;
+    if (taskDate == null || _isSameDay(taskDate, _selectedDate)) {
+      setState(() {
+        _checklistTasks.insert(0, newTask);
+        if (_expandedChecklistTaskIndex != null) {
+          _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! + 1;
+        }
+      });
+    }
+    showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
+    unawaited(_loadTasksForSelectedDate());
 
     if (_checklistCardsScrollController.hasClients) {
       _checklistCardsScrollController.animateTo(
@@ -1272,10 +1339,16 @@ class _TasksScreenState extends State<TasksScreen>
     );
 
     if (newTask == null) return;
+    if (!mounted) return;
 
-    setState(() {
-      _timedTasks.insert(0, newTask);
-    });
+    final taskDate = newTask['date'] as Jalali?;
+    if (taskDate == null || _isSameDay(taskDate, _selectedDate)) {
+      setState(() {
+        _timedTasks.insert(0, newTask);
+      });
+    }
+    showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
+    unawaited(_loadTasksForSelectedDate());
 
     _ensureTimedTaskTicker();
   }
@@ -1333,6 +1406,7 @@ class _TasksScreenState extends State<TasksScreen>
                           _animationController.forward(from: 0.0);
                           _slideAnimationController.forward(from: 0.0);
                         });
+                        unawaited(_loadTasksForSelectedDate());
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),

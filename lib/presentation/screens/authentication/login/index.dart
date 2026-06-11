@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is OtpSent) {
+        if (state is OtpSent && _isCurrentRoute(context)) {
           context.to(
             OTPCodeScreen(
               phoneNumber: state.phoneNumber,
@@ -148,5 +148,9 @@ class _LoginScreenState extends State<LoginScreen> {
       result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
     }
     return result;
+  }
+
+  bool _isCurrentRoute(BuildContext context) {
+    return ModalRoute.of(context)?.isCurrent ?? false;
   }
 }

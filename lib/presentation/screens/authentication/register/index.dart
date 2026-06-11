@@ -23,10 +23,12 @@ class RegisterScreen extends StatefulWidget {
     super.key,
     this.phoneNumber,
     this.code,
+    this.completeProfileOnly = false,
   });
 
   final String? phoneNumber;
   final String? code;
+  final bool completeProfileOnly;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -390,7 +392,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ReToastType.success,
           );
           context.toOffAll(const GoalScreen());
-        } else if (state is OtpSent) {
+        } else if (state is OtpSent && _isCurrentRoute(context)) {
           context.to(
             OTPCodeScreen(
               phoneNumber: state.phoneNumber,
@@ -488,6 +490,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _closeStudyMenu();
 
     final phoneNumber = _normalizeDigits(_phoneController.text);
+    if (widget.completeProfileOnly) {
+      final birthDate = _birthDate!.toGregorian();
+      context.read<AuthCubit>().completeRegistrationProfile(
+            fullName: _fullNameController.text.trim(),
+            birthDate: DateTime(
+              birthDate.year,
+              birthDate.month,
+              birthDate.day,
+            ),
+            studyTime: _studyTime,
+          );
+      return;
+    }
+
     final code = widget.code;
     if (code == null || code.isEmpty) {
       context.read<AuthCubit>().sendOtp(phoneNumber);
@@ -525,5 +541,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
     }
     return result;
+  }
+
+  bool _isCurrentRoute(BuildContext context) {
+    return ModalRoute.of(context)?.isCurrent ?? false;
   }
 }

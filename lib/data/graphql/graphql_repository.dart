@@ -1,10 +1,22 @@
+import 'dart:convert';
+
 import 'package:ferry/ferry.dart';
+import 'package:http/http.dart' as http;
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql.dart';
 
 class UnauthorizedException implements Exception {
   const UnauthorizedException([this.message = 'Authentication is required']);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class GraphQLRawException implements Exception {
+  const GraphQLRawException(this.message);
 
   final String message;
 
@@ -49,6 +61,60 @@ class GraphQLRepository {
 
   void clearCache() {
     _client.cache.clear();
+  }
+
+  Future<Map<String, dynamic>> rawRequest({
+    required String query,
+    Map<String, dynamic> variables = const {},
+    bool requiresAuth = true,
+  }) async {
+    if (requiresAuth) {
+      await ensureFreshToken();
+    }
+
+    final token = _tokenStorage.currentAccessToken;
+    final response = await http.post(
+      Uri.parse(_logger.endpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'query': query,
+        'variables': variables,
+      }),
+    );
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const GraphQLRawException('Invalid GraphQL response');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw GraphQLRawException(
+        decoded['message']?.toString() ?? 'GraphQL request failed',
+      );
+    }
+
+    final errors = decoded['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      final message = errors
+          .map((error) {
+            if (error is Map<String, dynamic>) return error['message'];
+            return error;
+          })
+          .whereType<Object>()
+          .map((error) => error.toString())
+          .where((message) => message.isNotEmpty)
+          .join(', ');
+      throw GraphQLRawException(
+        message.isEmpty ? 'GraphQL request failed' : message,
+      );
+    }
+
+    final data = decoded['data'];
+    if (data is Map<String, dynamic>) return data;
+    return const {};
   }
 
   Future<void> ensureFreshToken() async {

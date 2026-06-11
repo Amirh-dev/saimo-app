@@ -9,12 +9,23 @@ part of 'serializers.gql.dart';
 Serializers _$serializers = (new Serializers().toBuilder()
       ..add(FetchPolicy.serializer)
       ..add(GCreateGoalInput.serializer)
+      ..add(GCreateTaskData.serializer)
+      ..add(GCreateTaskData_createTask.serializer)
+      ..add(GCreateTaskData_createTask_tags.serializer)
       ..add(GCreateTaskInput.serializer)
+      ..add(GCreateTaskReq.serializer)
+      ..add(GCreateTaskVars.serializer)
       ..add(GCursor.serializer)
       ..add(GGetMeData.serializer)
       ..add(GGetMeData_getMe.serializer)
       ..add(GGetMeReq.serializer)
       ..add(GGetMeVars.serializer)
+      ..add(GGetTasksData.serializer)
+      ..add(GGetTasksData_getTasks.serializer)
+      ..add(GGetTasksData_getTasks_goal.serializer)
+      ..add(GGetTasksData_getTasks_tags.serializer)
+      ..add(GGetTasksReq.serializer)
+      ..add(GGetTasksVars.serializer)
       ..add(GGoalOrder.serializer)
       ..add(GGoalOrderField.serializer)
       ..add(GGoalStatus.serializer)
@@ -58,6 +69,18 @@ Serializers _$serializers = (new Serializers().toBuilder()
       ..add(GVerifyOTPAndRegisterInput.serializer)
       ..add(GVerifyOTPAndRegisterReq.serializer)
       ..add(GVerifyOTPAndRegisterVars.serializer)
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCreateTaskData_createTask_tags)]),
+          () => new ListBuilder<GCreateTaskData_createTask_tags>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GGetTasksData_getTasks)]),
+          () => new ListBuilder<GGetTasksData_getTasks>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GGetTasksData_getTasks_tags)]),
+          () => new ListBuilder<GGetTasksData_getTasks_tags>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
           () => new ListBuilder<GGoalWhereInput>())

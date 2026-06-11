@@ -1,0 +1,29 @@
+query GetTasks($date: Time, $status: TaskStatus, $goalID: ID, $limit: Int, $offset: Int) {
+  getTasks(
+    date: $date
+    status: $status
+    goalID: $goalID
+    limit: $limit
+    offset: $offset
+  ) {
+    id
+    title
+    shortDescription
+    note
+    type
+    date
+    durationM
+    hasReminder
+    reminderTime
+    recurringDays
+    status
+    goal {
+      id
+      title
+    }
+    tags {
+      id
+      name
+    }
+  }
+}
