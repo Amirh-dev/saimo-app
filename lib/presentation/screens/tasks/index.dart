@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ferry/ferry.dart' show FetchPolicy;
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
@@ -130,11 +131,6 @@ class _TasksScreenState extends State<TasksScreen>
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  DateTime _toDateTime(Jalali date) {
-    final gregorian = date.toGregorian();
-    return DateTime(gregorian.year, gregorian.month, gregorian.day);
-  }
-
   Jalali? _jalaliFromIso(String value) {
     final parsed = DateTime.tryParse(value);
     if (parsed == null) return null;
@@ -210,13 +206,13 @@ class _TasksScreenState extends State<TasksScreen>
   Future<void> _loadTasksForSelectedDate() async {
     try {
       final selectedDate = _selectedDate;
-      final taskDate = _toDateTime(selectedDate);
       final response = await context.read<GraphQLRepository>().requestOnce(
             GGetTasksReq(
               (request) => request.vars
-                ..date.value = taskDate.toUtc().toIso8601String()
                 ..limit = 100
                 ..offset = 0,
+            ).rebuild(
+              (request) => request.fetchPolicy = FetchPolicy.NetworkOnly,
             ),
           );
 
@@ -233,6 +229,11 @@ class _TasksScreenState extends State<TasksScreen>
       final checklistTasks = <Map<String, dynamic>>[];
       final timedTasks = <Map<String, dynamic>>[];
       for (final task in response.data!.getTasks) {
+        final taskDate = _jalaliFromIso(task.date.value);
+        if (taskDate == null || !_isSameDay(taskDate, selectedDate)) {
+          continue;
+        }
+
         if (task.type == GTaskType.TIMED) {
           timedTasks.add(_timedTaskFromApi(task));
         } else {
@@ -1315,7 +1316,8 @@ class _TasksScreenState extends State<TasksScreen>
       });
     }
     showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
-    unawaited(_loadTasksForSelectedDate());
+    await _loadTasksForSelectedDate();
+    if (!mounted) return;
 
     if (_checklistCardsScrollController.hasClients) {
       _checklistCardsScrollController.animateTo(
@@ -1348,7 +1350,8 @@ class _TasksScreenState extends State<TasksScreen>
       });
     }
     showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
-    unawaited(_loadTasksForSelectedDate());
+    await _loadTasksForSelectedDate();
+    if (!mounted) return;
 
     _ensureTimedTaskTicker();
   }
