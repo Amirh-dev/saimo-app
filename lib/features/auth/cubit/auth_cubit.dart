@@ -6,7 +6,6 @@ import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.req.gql.dart';
-import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart';
 
 part 'auth_state.dart';
 
@@ -20,11 +19,13 @@ class AuthCubit extends Cubit<AuthState> {
 
   final GraphQLRepository _graphql;
   final TokenStorage _tokenStorage;
+  static const _temporaryFullName = 'Simo User';
 
   Future<void> sendOtp(String phoneNumber) async {
     emit(const AuthLoading(AuthAction.sendOtp));
 
     try {
+      await _tokenStorage.clear();
       final response = await _graphql.requestOnce(
         GSendOTPReq(
           (request) => request.vars.input.phoneNumber = phoneNumber,
@@ -81,46 +82,10 @@ class AuthCubit extends Cubit<AuthState> {
     emit(const AuthLoading(AuthAction.login));
 
     try {
-      final response = await _graphql.requestOnce(
-        GVerifyOTPAndLoginReq(
-          (request) => request.vars.input
-            ..phoneNumber = phoneNumber
-            ..code = code,
-        ),
-        requiresAuth: false,
-      );
-
-      if (response.hasErrors) {
-        emit(
-          AuthFailure(
-            _extractGraphQLErrorMessage(
-              response,
-              fallbackMessage: 'Invalid verification code',
-            ),
-            action: AuthAction.login,
-          ),
-        );
-        return;
-      }
-
-      final payload = response.data?.verifyOTPAndLogin;
-      if (payload == null || payload.accessToken.isEmpty) {
-        emit(
-          const AuthFailure(
-            'Invalid verification code',
-            action: AuthAction.login,
-          ),
-        );
-        return;
-      }
-
-      await _tokenStorage.saveAccessToken(payload.accessToken);
-      emit(
-        AuthAuthenticated(
-          userId: payload.user.id,
-          action: AuthAction.login,
-          accessToken: payload.accessToken,
-        ),
+      await _tryCompleteLogin(
+        phoneNumber: phoneNumber,
+        code: code,
+        emitFailure: true,
       );
     } catch (error) {
       emit(
@@ -137,23 +102,22 @@ class AuthCubit extends Cubit<AuthState> {
     required String code,
     required bool isRegistered,
   }) async {
-    if (isRegistered) {
-      await verifyLogin(
-        phoneNumber: phoneNumber,
-        code: code,
-      );
-      return;
-    }
-
-    emit(const AuthLoading(AuthAction.verifyOtp));
+    emit(AuthLoading(isRegistered ? AuthAction.login : AuthAction.verifyOtp));
 
     try {
+      final loggedIn = await _tryCompleteLogin(
+        phoneNumber: phoneNumber,
+        code: code,
+        emitFailure: isRegistered,
+      );
+      if (loggedIn || isRegistered) return;
+
       final response = await _graphql.requestOnce(
         GVerifyOTPAndRegisterReq(
           (request) => request.vars.input
             ..phoneNumber = phoneNumber
             ..code = code
-            ..fullName = 'Simo User'
+            ..fullName = _temporaryFullName
             ..birthDate.value = DateTime.utc(2000).toIso8601String()
             ..studyTime = GUserStudyTime.UNDER_4_HOURS,
         ),
@@ -367,25 +331,10 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     }
 
     try {
-      final response = await _graphql.requestOnce(GGetMeReq());
-      if (response.hasErrors) {
-        await _tokenStorage.clear();
-        emit(const AuthUnauthenticated());
-        return;
-      }
-
-      final user = response.data?.getMe;
-      if (user == null) {
-        await _tokenStorage.clear();
-        emit(const AuthUnauthenticated());
-        return;
-      }
-
-      emit(
-        AuthAuthenticated(
-          userId: user.id,
-          action: AuthAction.checkStatus,
-        ),
+      final profile = await _loadCurrentAuthProfile();
+      _emitProfileAwareAuthState(
+        profile: profile,
+        action: AuthAction.checkStatus,
       );
     } catch (_) {
       await _tokenStorage.clear();
@@ -411,6 +360,122 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     }
     if (studyTime is String) return GUserStudyTime.valueOf(studyTime);
     throw ArgumentError('Invalid study time option');
+  }
+
+  Future<bool> _tryCompleteLogin({
+    required String phoneNumber,
+    required String code,
+    required bool emitFailure,
+  }) async {
+    final response = await _graphql.requestOnce(
+      GVerifyOTPAndLoginReq(
+        (request) => request.vars.input
+          ..phoneNumber = phoneNumber
+          ..code = code,
+      ),
+      requiresAuth: false,
+    );
+
+    if (response.hasErrors) {
+      if (response.linkException != null) throw response.linkException!;
+      if (emitFailure) {
+        emit(
+          AuthFailure(
+            _extractGraphQLErrorMessage(
+              response,
+              fallbackMessage: 'Invalid verification code',
+            ),
+            action: AuthAction.login,
+          ),
+        );
+      }
+      return false;
+    }
+
+    final payload = response.data?.verifyOTPAndLogin;
+    if (payload == null || payload.accessToken.isEmpty) {
+      if (emitFailure) {
+        emit(
+          const AuthFailure(
+            'Invalid verification code',
+            action: AuthAction.login,
+          ),
+        );
+      }
+      return false;
+    }
+
+    await _tokenStorage.saveAccessToken(payload.accessToken);
+    final profile = await _loadCurrentAuthProfile(
+      fallbackUserId: payload.user.id,
+      fallbackPhoneNumber: phoneNumber,
+    );
+    _emitProfileAwareAuthState(
+      profile: profile,
+      action: AuthAction.login,
+      accessToken: payload.accessToken,
+    );
+    return true;
+  }
+
+  Future<_AuthProfile> _loadCurrentAuthProfile({
+    String? fallbackUserId,
+    String? fallbackPhoneNumber,
+  }) async {
+    final data = await _graphql.rawRequest(
+      query: r'''
+query GetMeForAuthCompletion {
+  getMe {
+    id
+    phoneNumber
+    fullName
+    birthDate
+    studyTime
+  }
+}
+''',
+    );
+    final user = data['getMe'];
+    if (user is! Map<String, dynamic>) {
+      throw const GraphQLRawException('User not found');
+    }
+
+    final fullName = user['fullName']?.toString().trim() ?? '';
+    final birthDate = user['birthDate']?.toString().trim() ?? '';
+    final studyTime = user['studyTime']?.toString().trim() ?? '';
+
+    return _AuthProfile(
+      userId: user['id']?.toString() ?? fallbackUserId ?? '',
+      phoneNumber: user['phoneNumber']?.toString() ?? fallbackPhoneNumber ?? '',
+      isComplete: fullName.isNotEmpty &&
+          fullName != _temporaryFullName &&
+          birthDate.isNotEmpty &&
+          studyTime.isNotEmpty,
+    );
+  }
+
+  void _emitProfileAwareAuthState({
+    required _AuthProfile profile,
+    required AuthAction action,
+    String? accessToken,
+  }) {
+    if (!profile.isComplete) {
+      emit(
+        AuthNeedsRegistration(
+          phoneNumber: profile.phoneNumber,
+          completeProfileOnly: true,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      AuthAuthenticated(
+        userId: profile.userId,
+        action: action,
+        accessToken: accessToken,
+      ),
+    );
   }
 
   String _extractGraphQLErrorMessage(
@@ -439,4 +504,16 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     if (message.trim().isEmpty) return fallbackMessage;
     return message;
   }
+}
+
+class _AuthProfile {
+  const _AuthProfile({
+    required this.userId,
+    required this.phoneNumber,
+    required this.isComplete,
+  });
+
+  final String userId;
+  final String phoneNumber;
+  final bool isComplete;
 }

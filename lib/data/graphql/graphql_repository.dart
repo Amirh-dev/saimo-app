@@ -56,7 +56,7 @@ class GraphQLRepository {
     if (requiresAuth && !skipAuthRefresh) {
       await ensureFreshToken();
     }
-    return _loggedRequest(request).first;
+    return _loggedRequest(request).firstWhere(_isResolvedResponse);
   }
 
   void clearCache() {
@@ -171,6 +171,12 @@ class GraphQLRepository {
       _logger.logException(request, error, stackTrace);
       rethrow;
     }
+  }
+
+  bool _isResolvedResponse<TData, TVars>(
+    OperationResponse<TData, TVars> response,
+  ) {
+    return response.data != null || response.hasErrors;
   }
 }
 

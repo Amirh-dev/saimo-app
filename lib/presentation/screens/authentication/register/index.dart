@@ -3,11 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
-import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
-import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
-import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -391,14 +388,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'ثبت نام با موفقیت انجام شد',
             ReToastType.success,
           );
-          context.toOffAll(const GoalScreen());
-        } else if (state is OtpSent && _isCurrentRoute(context)) {
-          context.to(
-            OTPCodeScreen(
-              phoneNumber: state.phoneNumber,
-              isRegistered: state.isRegistered,
-            ),
-          );
         } else if (state is AuthFailure &&
             (state.action == AuthAction.register ||
                 state.action == AuthAction.sendOtp)) {
@@ -452,7 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     background: AppColors.white,
                                     onPressed: () {
                                       _closeStudyMenu();
-                                      context.toOff(const LoginScreen());
+                                      context.read<AuthCubit>().logout();
                                     },
                                     text: 'ورود به حساب',
                                   ).tMargin(8),
@@ -541,9 +530,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
       result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
     }
     return result;
-  }
-
-  bool _isCurrentRoute(BuildContext context) {
-    return ModalRoute.of(context)?.isCurrent ?? false;
   }
 }

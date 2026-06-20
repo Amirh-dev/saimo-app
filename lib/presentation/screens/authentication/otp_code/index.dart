@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
-import 'package:simo_learn/presentation/screens/authentication/register/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
-import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -42,22 +40,7 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
       listener: (context, state) {
         if (!_isCurrentRoute(context)) return;
 
-        if (state is AuthAuthenticated && state.action == AuthAction.login) {
-          showReToast(
-            context,
-            'ورود با موفقیت انجام شد',
-            ReToastType.success,
-          );
-          context.toOffAll(const GoalScreen());
-        } else if (state is AuthNeedsRegistration) {
-          context.to(
-            RegisterScreen(
-              phoneNumber: state.phoneNumber,
-              code: state.code,
-              completeProfileOnly: state.completeProfileOnly,
-            ),
-          );
-        } else if (state is AuthFailure &&
+        if (state is AuthFailure &&
             (state.action == AuthAction.login ||
                 state.action == AuthAction.verifyOtp)) {
           showReToast(context, state.message, ReToastType.failed);

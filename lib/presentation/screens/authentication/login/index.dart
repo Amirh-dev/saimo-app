@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
-import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
@@ -18,17 +17,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController phoneController = TextEditingController();
 
   @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
-        if (state is OtpSent && _isCurrentRoute(context)) {
-          context.to(
-            OTPCodeScreen(
-              phoneNumber: state.phoneNumber,
-              isRegistered: state.isRegistered,
-            ),
-          );
-        } else if (state is AuthFailure && state.action == AuthAction.sendOtp) {
+        if (state is AuthFailure && state.action == AuthAction.sendOtp) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
@@ -90,13 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     isEnabled:
                                         phoneController.text.length == 11,
                                     isLoading: isLoading,
-                                    onPressed: () {
-                                      context.read<AuthCubit>().sendOtp(
-                                            _normalizeDigits(
-                                              phoneController.text,
-                                            ),
-                                          );
-                                    },
+                                    onPressed: _sendOtp,
                                     fontSize: 16,
                                     text: 'ورود',
                                   ).tMargin(16),
@@ -107,13 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     background: AppColors.white,
                                     isEnabled:
                                         phoneController.text.length == 11,
-                                    onPressed: () {
-                                      context.read<AuthCubit>().sendOtp(
-                                            _normalizeDigits(
-                                              phoneController.text,
-                                            ),
-                                          );
-                                    },
+                                    onPressed: _sendOtp,
                                     fontSize: 16,
                                     text: 'ثبت نام',
                                   ).tMargin(8),
@@ -150,7 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return result;
   }
 
-  bool _isCurrentRoute(BuildContext context) {
-    return ModalRoute.of(context)?.isCurrent ?? false;
+  void _sendOtp() {
+    context.read<AuthCubit>().sendOtp(
+          _normalizeDigits(phoneController.text),
+        );
   }
 }
