@@ -5,5 +5,6 @@ export 're_text_field.dart';
 export 're_date_picker.dart';
 export 're_timeline_dot.dart';
 export 're_toast.dart';
+export 're_search_pill.dart';
 export 'app_bottom_navigation_bar.dart';
 export 're_modal_bottom_sheet.dart';

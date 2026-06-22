@@ -7,7 +7,7 @@ import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/helpers.dart';
- 
+
 class TrophiesScreen extends StatelessWidget {
   const TrophiesScreen({super.key});
 
@@ -105,6 +105,4 @@ class TimerScreen extends StatelessWidget {
       ),
     );
   }
-
- 
 }
