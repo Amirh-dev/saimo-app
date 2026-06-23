@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
-import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
@@ -47,10 +46,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _chatRepository = ChatRepository(context.read<GraphQLRepository>());
-    _inboxClient = InboxSubscriptionClient(
-      graphqlRepository: context.read<GraphQLRepository>(),
-      tokenStorage: context.read<TokenStorage>(),
-    );
+    _inboxClient = context.read<InboxSubscriptionClient>();
+    _connectionStatus = _inboxClient.currentStatus;
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadContacts());
   }
@@ -60,7 +57,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
-    _inboxClient.dispose();
     super.dispose();
   }
 
@@ -95,9 +91,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       setState(() {
         _currentUserID = currentUserID;
         _contacts = contacts;
-        final contactIDs = contacts
-            .map((contact) => contact.targetUserID)
-            .toSet();
+        final contactIDs =
+            contacts.map((contact) => contact.targetUserID).toSet();
         _latestMessageByUserID.removeWhere(
           (userID, _) => !contactIDs.contains(userID),
         );
@@ -336,16 +331,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _chatRepository = ChatRepository(context.read<GraphQLRepository>());
-    _inboxClient = InboxSubscriptionClient(
-      graphqlRepository: context.read<GraphQLRepository>(),
-      tokenStorage: context.read<TokenStorage>(),
-    );
+    _inboxClient = context.read<InboxSubscriptionClient>();
+    _connectionStatus = _inboxClient.currentStatus;
     _scrollController = ScrollController()..addListener(_handleScroll);
     _messageController = TextEditingController();
     _currentUserID = widget.currentUserID;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitial();
       _startInboxSubscription();
+      _loadInitial();
     });
   }
 
@@ -354,7 +347,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
-    _inboxClient.dispose();
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -381,11 +373,16 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         offset: 0,
       );
       if (!mounted) return;
+      final initialLoad = applyInitialMessagesToRoom(
+        messages: _messages,
+        fetchedMessages: messages,
+        pageSize: _pageSize,
+      );
       setState(() {
         _currentUserID = userID;
-        _messages = upsertMessages(const [], messages);
-        _offset = messages.length;
-        _hasMore = messages.length == _pageSize;
+        _messages = initialLoad.messages;
+        _offset = initialLoad.offset;
+        _hasMore = initialLoad.hasMore;
         _isLoading = false;
       });
       _scrollToBottomSoon();
@@ -431,8 +428,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         chatID: widget.chatID,
       );
       if (!mounted) return;
-      final shouldScroll =
-          event is NewMessageInboxEvent &&
+      final shouldScroll = event is NewMessageInboxEvent &&
           event.message.chatID == widget.chatID &&
           _isNearBottom;
       setState(() {
@@ -443,8 +439,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     });
     _statusSubscription = _inboxClient.status.listen((status) {
       if (!mounted) return;
-      final shouldSync =
-          status == InboxConnectionStatus.connected &&
+      final shouldSync = status == InboxConnectionStatus.connected &&
           _connectionStatus != InboxConnectionStatus.connected;
       setState(() => _connectionStatus = status);
       if (shouldSync) _syncLatestMessages();
@@ -469,8 +464,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         retryMessage?.id ?? 'local-${DateTime.now().microsecondsSinceEpoch}';
     final composingReply = _replyingTo;
     final replyToID = retryMessage?.replyToID ?? composingReply?.id;
-    final replyPreview =
-        retryMessage?.replyTo ??
+    final replyPreview = retryMessage?.replyTo ??
         (composingReply == null
             ? null
             : ChatReplyMessage(
@@ -479,8 +473,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                 senderID: composingReply.senderID,
                 createdAt: composingReply.createdAt,
               ));
-    final localMessage =
-        retryMessage ??
+    final localMessage = retryMessage ??
         ChatMessage(
           id: localID,
           content: content,
@@ -704,8 +697,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   bool get _isNearBottom {
     if (!_scrollController.hasClients) return true;
-    final distance =
-        _scrollController.position.maxScrollExtent -
+    final distance = _scrollController.position.maxScrollExtent -
         _scrollController.position.pixels;
     return distance < 120;
   }
@@ -929,16 +921,16 @@ class _ContactTile extends StatelessWidget {
               child: isOpening
                   ? const CircularProgressIndicator.adaptive()
                   : unreadCount > 0
-                  ? _UnreadBadge(count: unreadCount)
-                  : Icon(
-                      contact.isPending
-                          ? SolarIconsOutline.clockCircle
-                          : SolarIconsBold.chatRound,
-                      color: contact.isPending
-                          ? AppColors.simoCoin
-                          : AppColors.primary,
-                      size: 22,
-                    ),
+                      ? _UnreadBadge(count: unreadCount)
+                      : Icon(
+                          contact.isPending
+                              ? SolarIconsOutline.clockCircle
+                              : SolarIconsBold.chatRound,
+                          color: contact.isPending
+                              ? AppColors.simoCoin
+                              : AppColors.primary,
+                          size: 22,
+                        ),
             ),
             const Spacer(),
             Column(
@@ -1078,8 +1070,8 @@ class _ChatRoomHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasConnectionWarning =
         connectionStatus == InboxConnectionStatus.reconnecting ||
-        connectionStatus == InboxConnectionStatus.error ||
-        connectionStatus == InboxConnectionStatus.disconnected;
+            connectionStatus == InboxConnectionStatus.error ||
+            connectionStatus == InboxConnectionStatus.disconnected;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
@@ -1129,8 +1121,8 @@ class _ChatRoomHeader extends StatelessWidget {
                                 color: hasConnectionWarning
                                     ? AppColors.simoCoin
                                     : isOnline
-                                    ? AppColors.done
-                                    : AppColors.gray,
+                                        ? AppColors.done
+                                        : AppColors.gray,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1248,9 +1240,8 @@ class _MessageBubble extends StatelessWidget {
                       ? AppColors.gray
                       : AppColors.black1.withOpacity(0.92),
                   fontSize: 12,
-                  fontWeight: message.isDeleted
-                      ? FontWeight.w600
-                      : FontWeight.w700,
+                  fontWeight:
+                      message.isDeleted ? FontWeight.w600 : FontWeight.w700,
                   lineHeight: 1.55,
                   maxLines: 20,
                   overflow: TextOverflow.fade,
@@ -2154,8 +2145,7 @@ bool _isCommittedTransactionError(Object error) {
   final text = error.toString().toLowerCase();
   final isTransactionError =
       text.contains('transaction') && text.contains('already');
-  final mentionsCommittedOrRolledBack =
-      text.contains('committed') ||
+  final mentionsCommittedOrRolledBack = text.contains('committed') ||
       text.contains('rolled back') ||
       text.contains('rollback');
   return isTransactionError && mentionsCommittedOrRolledBack;

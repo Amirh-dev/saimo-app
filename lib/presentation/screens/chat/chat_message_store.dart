@@ -100,10 +100,10 @@ ChatRoomEventResult applyInboxEventToRoom({
       }
       break;
     case UserActivityInboxEvent(
-      :final userID,
-      :final isOnline,
-      :final currentTaskName,
-    ):
+        :final userID,
+        :final isOnline,
+        :final currentTaskName,
+      ):
       if (userID.isNotEmpty) {
         nextActivity[userID] = UserActivity(
           isOnline: isOnline,
@@ -118,6 +118,19 @@ ChatRoomEventResult applyInboxEventToRoom({
   return ChatRoomEventResult(
     messages: nextMessages,
     activityByUserID: nextActivity,
+  );
+}
+
+ChatRoomInitialLoadResult applyInitialMessagesToRoom({
+  required List<ChatMessage> messages,
+  required Iterable<ChatMessage> fetchedMessages,
+  required int pageSize,
+}) {
+  final fetched = fetchedMessages.toList();
+  return ChatRoomInitialLoadResult(
+    messages: upsertMessages(messages, fetched),
+    offset: fetched.length,
+    hasMore: fetched.length == pageSize,
   );
 }
 
@@ -158,4 +171,16 @@ class ChatRoomEventResult {
 
   final List<ChatMessage> messages;
   final Map<String, UserActivity> activityByUserID;
+}
+
+class ChatRoomInitialLoadResult {
+  const ChatRoomInitialLoadResult({
+    required this.messages,
+    required this.offset,
+    required this.hasMore,
+  });
+
+  final List<ChatMessage> messages;
+  final int offset;
+  final bool hasMore;
 }

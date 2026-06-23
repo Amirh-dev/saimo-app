@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
@@ -251,10 +250,7 @@ class _FriendsContentState extends State<_FriendsContent>
     final graphql = context.read<GraphQLRepository>();
     _friendshipRepository = FriendshipRepository(graphql);
     _chatRepository = ChatRepository(graphql);
-    _inboxClient = InboxSubscriptionClient(
-      graphqlRepository: graphql,
-      tokenStorage: context.read<TokenStorage>(),
-    );
+    _inboxClient = context.read<InboxSubscriptionClient>();
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFriendships());
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -268,7 +264,6 @@ class _FriendsContentState extends State<_FriendsContent>
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _eventSubscription?.cancel();
-    _inboxClient.dispose();
     _targetUserIDController.dispose();
     super.dispose();
   }

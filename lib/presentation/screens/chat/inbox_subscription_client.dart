@@ -4,10 +4,26 @@ import 'dart:convert';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_endpoints.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
-// ignore: depend_on_referenced_packages
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'chat_models.dart';
+import 'websocket_channel_connector.dart';
+
+const String _legacyGraphQLWsProtocol = 'graphql-ws';
+const String _transportGraphQLWsProtocol = 'graphql-transport-ws';
+const String _inboxSubscriptionID = 'inbox';
+
+InboxEvent? inboxEventFromGraphQLSocketMessage(Object? rawMessage) {
+  if (rawMessage is! String) return null;
+  final decoded = _decodeJsonObject(rawMessage);
+  if (decoded == null) return null;
+
+  final type = decoded['type']?.toString();
+  if (type != 'next' && type != 'data') return null;
+
+  final payload = decoded['payload'];
+  return _inboxEventFromPayload(payload);
+}
 
 class InboxSubscriptionClient {
   InboxSubscriptionClient({
@@ -27,32 +43,68 @@ class InboxSubscriptionClient {
   StreamSubscription<dynamic>? _subscription;
   Timer? _reconnectTimer;
   Timer? _ackTimer;
+  Future<void>? _connectFuture;
   bool _disposed = false;
   bool _manuallyClosed = false;
   int _retryAttempt = 0;
+  var _currentStatus = InboxConnectionStatus.idle;
+  String? _activeProtocol;
 
   Stream<InboxEvent> get events => _eventsController.stream;
   Stream<InboxConnectionStatus> get status => _statusController.stream;
+  InboxConnectionStatus get currentStatus => _currentStatus;
 
-  Future<void> connect() async {
+  Future<void> connect({bool force = false}) {
+    if (_disposed) return Future<void>.value();
     _manuallyClosed = false;
     _disposed = false;
-    await _openSocket(isReconnect: _retryAttempt > 0);
+
+    if (!force) {
+      final pendingConnect = _connectFuture;
+      if (pendingConnect != null) return pendingConnect;
+
+      if (_currentStatus == InboxConnectionStatus.connected ||
+          _currentStatus == InboxConnectionStatus.connecting) {
+        return Future<void>.value();
+      }
+
+      if (_currentStatus == InboxConnectionStatus.reconnecting &&
+          _reconnectTimer != null) {
+        return Future<void>.value();
+      }
+    }
+
+    late final Future<void> connectFuture;
+    connectFuture = _openSocket(
+      isReconnect: _currentStatus != InboxConnectionStatus.idle &&
+          _currentStatus != InboxConnectionStatus.disconnected,
+    ).whenComplete(() {
+      if (_connectFuture == connectFuture) {
+        _connectFuture = null;
+      }
+    });
+    _connectFuture = connectFuture;
+    return _connectFuture!;
+  }
+
+  Future<void> disconnect() async {
+    _manuallyClosed = true;
+    _retryAttempt = 0;
+    _connectFuture = null;
+    await _closeSocket(emitDisconnected: true);
   }
 
   Future<void> dispose() async {
     _disposed = true;
     _manuallyClosed = true;
-    _reconnectTimer?.cancel();
-    _ackTimer?.cancel();
-    await _subscription?.cancel();
-    await _channel?.sink.close();
+    await _closeSocket(emitDisconnected: false);
     await _eventsController.close();
     await _statusController.close();
   }
 
   Future<void> _openSocket({required bool isReconnect}) async {
     if (_disposed) return;
+    _reconnectTimer?.cancel();
     _emitStatus(
       isReconnect
           ? InboxConnectionStatus.reconnecting
@@ -61,29 +113,49 @@ class InboxSubscriptionClient {
 
     try {
       await _graphqlRepository.ensureFreshToken();
+      if (_disposed || _manuallyClosed) return;
+
       final token = _tokenStorage.currentAccessToken;
       if (token == null || token.isEmpty) {
         _emitStatus(InboxConnectionStatus.error);
         return;
       }
 
-      await _subscription?.cancel();
-      await _channel?.sink.close();
-      _channel = WebSocketChannel.connect(
-        Uri.parse(endpoint),
-        protocols: const ['graphql-transport-ws'],
+      await _closeSocket(emitDisconnected: false);
+      if (_disposed || _manuallyClosed) return;
+
+      final authorization = 'Bearer $token';
+      final channel = connectAuthenticatedWebSocket(
+        uri: Uri.parse(endpoint),
+        authorization: authorization,
+        protocols: const [
+          _legacyGraphQLWsProtocol,
+          _transportGraphQLWsProtocol,
+        ],
       );
-      _subscription = _channel!.stream.listen(
+      _channel = channel;
+      _subscription = channel.stream.listen(
         _handleSocketMessage,
         onDone: _handleSocketDone,
         onError: (_) => _handleSocketDone(),
       );
+      await channel.ready.timeout(const Duration(seconds: 10));
+      if (_disposed || _manuallyClosed || _channel != channel) {
+        await channel.sink.close();
+        return;
+      }
+      _activeProtocol = channel.protocol ?? _legacyGraphQLWsProtocol;
       _startAckTimer();
       _send({
         'type': 'connection_init',
-        'payload': {'Authorization': 'Bearer $token'},
+        'payload': {
+          'Authorization': authorization,
+          'authorization': authorization,
+          'headers': {'Authorization': authorization},
+        },
       });
     } catch (_) {
+      if (_disposed || _manuallyClosed) return;
       _emitStatus(InboxConnectionStatus.error);
       _scheduleReconnect();
     }
@@ -91,13 +163,8 @@ class InboxSubscriptionClient {
 
   void _handleSocketMessage(dynamic rawMessage) {
     if (rawMessage is! String) return;
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(rawMessage);
-    } catch (_) {
-      return;
-    }
-    if (decoded is! Map<String, dynamic>) return;
+    final decoded = _decodeJsonObject(rawMessage);
+    if (decoded == null) return;
     final type = decoded['type']?.toString();
 
     switch (type) {
@@ -105,18 +172,20 @@ class InboxSubscriptionClient {
         _ackTimer?.cancel();
         _retryAttempt = 0;
         _emitStatus(InboxConnectionStatus.connected);
-        _send({
-          'id': '1',
-          'type': 'subscribe',
-          'payload': {'query': _inboxSubscriptionQuery},
-        });
+        _send(_subscribeMessage());
+        break;
+      case 'ka':
+      case 'connection_keep_alive':
         break;
       case 'next':
+      case 'data':
         final payload = decoded['payload'];
-        final data = payload is Map<String, dynamic> ? payload['data'] : null;
-        final inbox = data is Map<String, dynamic> ? data['inbox'] : null;
-        if (inbox is Map<String, dynamic>) {
-          _eventsController.add(InboxEvent.fromJson(inbox));
+        final event = _inboxEventFromPayload(payload);
+        if (event != null) {
+          _emitStatus(InboxConnectionStatus.connected);
+          if (!_eventsController.isClosed) {
+            _eventsController.add(event);
+          }
         }
         break;
       case 'ping':
@@ -139,6 +208,9 @@ class InboxSubscriptionClient {
       _emitStatus(InboxConnectionStatus.disconnected);
       return;
     }
+    _channel = null;
+    _subscription = null;
+    _activeProtocol = null;
     _ackTimer?.cancel();
     _emitStatus(InboxConnectionStatus.reconnecting);
     _scheduleReconnect();
@@ -147,6 +219,7 @@ class InboxSubscriptionClient {
   void _scheduleReconnect() {
     if (_disposed || _manuallyClosed) return;
     _reconnectTimer?.cancel();
+    _emitStatus(InboxConnectionStatus.reconnecting);
     _retryAttempt += 1;
     final seconds = _retryAttempt.clamp(1, 8).toInt();
     _reconnectTimer = Timer(Duration(seconds: seconds), () {
@@ -164,14 +237,62 @@ class InboxSubscriptionClient {
   }
 
   void _send(Map<String, dynamic> message) {
-    _channel?.sink.add(jsonEncode(message));
+    try {
+      _channel?.sink.add(jsonEncode(message));
+    } catch (_) {
+      _handleSocketDone();
+    }
+  }
+
+  Map<String, dynamic> _subscribeMessage() {
+    return {
+      'id': _inboxSubscriptionID,
+      'type': _activeProtocol == _transportGraphQLWsProtocol
+          ? 'subscribe'
+          : 'start',
+      'payload': {'query': _inboxSubscriptionQuery},
+    };
   }
 
   void _emitStatus(InboxConnectionStatus status) {
+    _currentStatus = status;
     if (!_statusController.isClosed) {
       _statusController.add(status);
     }
   }
+
+  Future<void> _closeSocket({required bool emitDisconnected}) async {
+    _reconnectTimer?.cancel();
+    _ackTimer?.cancel();
+
+    final subscription = _subscription;
+    final channel = _channel;
+    _subscription = null;
+    _channel = null;
+
+    await subscription?.cancel();
+    await channel?.sink.close();
+
+    if (emitDisconnected && !_disposed) {
+      _emitStatus(InboxConnectionStatus.disconnected);
+    }
+  }
+}
+
+Map<String, dynamic>? _decodeJsonObject(String rawMessage) {
+  try {
+    final decoded = jsonDecode(rawMessage);
+    return decoded is Map<String, dynamic> ? decoded : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+InboxEvent? _inboxEventFromPayload(Object? payload) {
+  final data = payload is Map<String, dynamic> ? payload['data'] : null;
+  final inbox = data is Map<String, dynamic> ? data['inbox'] : null;
+  if (inbox is! Map<String, dynamic>) return null;
+  return InboxEvent.fromJson(inbox);
 }
 
 const String _inboxSubscriptionQuery = r'''
@@ -195,9 +316,6 @@ subscription Inbox {
           content
           senderID
           createdAt
-        }
-        sender {
-          id
         }
       }
     }

@@ -55,6 +55,7 @@ dependencies:
   gql_code_builder_serializers: 0.1.0
   shared_preferences: ^2.2.2
   logger: ^2.0.2+1
+  web_socket_channel: ^2.4.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

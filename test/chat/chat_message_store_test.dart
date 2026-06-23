@@ -114,6 +114,35 @@ void main() {
       expect(result.activityByUserID['user-a']?.currentTaskName, 'ریاضی');
     });
   });
+
+  group('applyInitialMessagesToRoom', () {
+    test('keeps live messages that arrived while the first page was loading',
+        () {
+      final liveMessage = _message(
+        id: 'live-1',
+        content: 'from socket',
+        createdAt: '2026-01-01T10:03:00Z',
+      );
+      final fetchedMessage = _message(
+        id: 'fetched-1',
+        content: 'from api',
+        createdAt: '2026-01-01T10:00:00Z',
+      );
+
+      final result = applyInitialMessagesToRoom(
+        messages: [liveMessage],
+        fetchedMessages: [fetchedMessage],
+        pageSize: 30,
+      );
+
+      expect(result.messages.map((message) => message.id), [
+        'fetched-1',
+        'live-1',
+      ]);
+      expect(result.offset, 1);
+      expect(result.hasMore, isFalse);
+    });
+  });
 }
 
 ChatMessage _message({

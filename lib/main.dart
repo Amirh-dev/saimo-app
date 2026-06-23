@@ -11,6 +11,7 @@ import 'data/graphql/graphql_endpoints.dart';
 import 'data/graphql/graphql_repository.dart';
 import 'features/auth/cubit/auth_cubit.dart';
 import 'features/profile/profile_cubit.dart';
+import 'presentation/screens/chat/inbox_subscription_client.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,10 @@ Future<void> main() async {
     tokenStorage: tokenStorage,
     logger: graphQLLogger,
   );
+  final inboxSubscriptionClient = InboxSubscriptionClient(
+    graphqlRepository: graphQLRepository,
+    tokenStorage: tokenStorage,
+  );
 
   runApp(
     MultiRepositoryProvider(
@@ -34,6 +39,7 @@ Future<void> main() async {
         RepositoryProvider.value(value: tokenStorage),
         RepositoryProvider.value(value: graphQLLogger),
         RepositoryProvider.value(value: graphQLRepository),
+        RepositoryProvider.value(value: inboxSubscriptionClient),
       ],
       child: MultiBlocProvider(
         providers: [
