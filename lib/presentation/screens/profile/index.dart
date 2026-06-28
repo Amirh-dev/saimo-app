@@ -253,8 +253,12 @@ class _FriendsContentState extends State<_FriendsContent>
     _inboxClient = context.read<InboxSubscriptionClient>();
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFriendships());
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted || _busyTargetID != null || _isSendingRequest) return;
+      // Only poll while this screen is actually the visible top route. When a
+      // chat (or any screen) is pushed on top, this state stays mounted but
+      // must not keep hitting the server in the background.
+      if (ModalRoute.of(context)?.isCurrent != true) return;
       _loadFriendships(silent: true);
     });
   }

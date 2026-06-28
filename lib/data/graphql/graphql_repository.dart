@@ -85,7 +85,10 @@ class GraphQLRepository {
       }),
     );
 
-    final decoded = jsonDecode(response.body);
+    // Decode the raw bytes as UTF-8 explicitly. `response.body` falls back to
+    // Latin-1 when the server omits `charset=utf-8`, which turns Persian text
+    // into mojibake (e.g. "تست" -> "ØªØ³Øª").
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
     if (decoded is! Map<String, dynamic>) {
       throw const GraphQLRawException('Invalid GraphQL response');
     }

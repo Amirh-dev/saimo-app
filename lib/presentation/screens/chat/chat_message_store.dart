@@ -141,15 +141,23 @@ bool _isServerEchoOfLocalMessage({
   if (!localMessage.isLocal || serverMessage.isLocal) return false;
   if (localMessage.chatID != serverMessage.chatID) return false;
   if (localMessage.senderID != serverMessage.senderID) return false;
-  if (localMessage.content.trim() != serverMessage.content.trim()) return false;
   if (localMessage.replyToID != serverMessage.replyToID) return false;
+
+  final sameContent =
+      localMessage.content.trim() == serverMessage.content.trim();
+
+  // Fallback for a still-in-flight optimistic message: even if the two copies
+  // disagree on content (e.g. one arrived through a mis-encoded transport), a
+  // server message from the same sender/chat/reply that lands within a few
+  // seconds is the echo of what we just sent — never a second bubble.
+  if (!sameContent && !localMessage.isSending) return false;
 
   final localCreatedAt = DateTime.tryParse(localMessage.createdAt);
   final serverCreatedAt = DateTime.tryParse(serverMessage.createdAt);
   if (localCreatedAt == null || serverCreatedAt == null) return true;
 
-  return localCreatedAt.difference(serverCreatedAt).abs() <=
-      const Duration(seconds: 90);
+  final delta = localCreatedAt.difference(serverCreatedAt).abs();
+  return delta <= (sameContent ? const Duration(seconds: 90) : const Duration(seconds: 10));
 }
 
 int compareMessagesByCreatedAt(ChatMessage a, ChatMessage b) {
