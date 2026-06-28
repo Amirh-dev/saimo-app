@@ -42,6 +42,7 @@ class ReTextField extends StatefulWidget {
   final bool showFocusShadow;
   final double? height;
   final EdgeInsetsGeometry? contentPadding;
+  final List<TextInputFormatter>? inputFormatters;
 
   const ReTextField({
     super.key,
@@ -77,6 +78,7 @@ class ReTextField extends StatefulWidget {
     this.fontWeight,
     this.onFieldSubmitted,
     this.textInputAction,
+    this.inputFormatters,
   });
 
   @override
@@ -199,15 +201,16 @@ class _ReTextFieldState extends State<ReTextField> {
           controller: widget.controller,
           onFieldSubmitted: widget.onFieldSubmitted,
           onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-          inputFormatters: [
-            if (_isNumericKeyboard)
-              FilteringTextInputFormatter.allow(
-                RegExp(r'[0-9۰-۹٠-٩]'),
-              ),
-            if (_isNumericKeyboard) const PersianDigitsInputFormatter(),
-            LengthLimitingTextInputFormatter(widget.maxLength),
-            if (widget.useSeprator) ThousandSeparatorInputFormatter(),
-          ],
+          inputFormatters: widget.inputFormatters ??
+              [
+                if (_isNumericKeyboard)
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'[0-9۰-۹٠-٩]'),
+                  ),
+                if (_isNumericKeyboard) const PersianDigitsInputFormatter(),
+                LengthLimitingTextInputFormatter(widget.maxLength),
+                if (widget.useSeprator) ThousandSeparatorInputFormatter(),
+              ],
           cursorColor: widget.color ?? AppColors.primary,
           keyboardType: widget.keyboardType,
           buildCounter: widget.maxLength == null

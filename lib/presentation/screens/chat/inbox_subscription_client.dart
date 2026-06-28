@@ -129,8 +129,8 @@ class InboxSubscriptionClient {
         uri: Uri.parse(endpoint),
         authorization: authorization,
         protocols: const [
-          _legacyGraphQLWsProtocol,
           _transportGraphQLWsProtocol,
+          _legacyGraphQLWsProtocol,
         ],
       );
       _channel = channel;
@@ -144,15 +144,11 @@ class InboxSubscriptionClient {
         await channel.sink.close();
         return;
       }
-      _activeProtocol = channel.protocol ?? _legacyGraphQLWsProtocol;
+      _activeProtocol = channel.protocol ?? _transportGraphQLWsProtocol;
       _startAckTimer();
       _send({
         'type': 'connection_init',
-        'payload': {
-          'Authorization': authorization,
-          'authorization': authorization,
-          'headers': {'Authorization': authorization},
-        },
+        'payload': {'Authorization': authorization},
       });
     } catch (_) {
       if (_disposed || _manuallyClosed) return;

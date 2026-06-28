@@ -1,3 +1,5 @@
+import 'package:simo_learn/utils/iran_phone_number.dart';
+
 class FriendshipUser {
   const FriendshipUser({
     required this.id,
@@ -14,10 +16,11 @@ class FriendshipUser {
     if (name != null && name.isNotEmpty) return name;
 
     final phone = phoneNumber?.trim();
-    if (phone != null && phone.isNotEmpty) return phone;
+    if (phone != null && phone.isNotEmpty) {
+      return maskIranianMobileNumber(phone) ?? 'کاربر سیمو';
+    }
 
-    if (id.length <= 8) return 'کاربر $id';
-    return 'کاربر ${id.substring(0, 8)}';
+    return 'کاربر سیمو';
   }
 
   factory FriendshipUser.fromJson(Map<String, dynamic> json) {

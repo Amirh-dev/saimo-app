@@ -29,6 +29,7 @@ class ChatRepository {
         .whereType<Map<String, dynamic>>()
         .map((json) => _contactFromFriendJson(json, currentUserID))
         .whereType<ChatContact>()
+        .where((contact) => contact.status.toUpperCase() == 'ACCEPTED')
         .toList();
   }
 

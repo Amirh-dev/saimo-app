@@ -92,24 +92,13 @@ class GraphQLRepository {
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw GraphQLRawException(
-        decoded['message']?.toString() ?? 'GraphQL request failed',
+        graphQLRawErrorMessage(decoded),
       );
     }
 
     final errors = decoded['errors'];
     if (errors is List && errors.isNotEmpty) {
-      final message = errors
-          .map((error) {
-            if (error is Map<String, dynamic>) return error['message'];
-            return error;
-          })
-          .whereType<Object>()
-          .map((error) => error.toString())
-          .where((message) => message.isNotEmpty)
-          .join(', ');
-      throw GraphQLRawException(
-        message.isEmpty ? 'GraphQL request failed' : message,
-      );
+      throw GraphQLRawException(graphQLRawErrorMessage(decoded));
     }
 
     final data = decoded['data'];
@@ -178,6 +167,28 @@ class GraphQLRepository {
   ) {
     return response.data != null || response.hasErrors;
   }
+}
+
+String graphQLRawErrorMessage(Map<String, dynamic> response) {
+  final errors = response['errors'];
+  if (errors is List && errors.isNotEmpty) {
+    final message = errors
+        .map((error) {
+          if (error is Map<String, dynamic>) return error['message'];
+          if (error is Map) return error['message'];
+          return error;
+        })
+        .whereType<Object>()
+        .map((error) => error.toString().trim())
+        .where((message) => message.isNotEmpty)
+        .join(', ');
+    if (message.isNotEmpty) return message;
+  }
+
+  final message = response['message']?.toString().trim();
+  return message == null || message.isEmpty
+      ? 'GraphQL request failed'
+      : message;
 }
 
 String graphQLResponseErrorMessage(

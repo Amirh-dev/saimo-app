@@ -2,6 +2,14 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 
 import 'friendship_models.dart';
 
+class FriendRequestByPhoneUnavailableException implements Exception {
+  const FriendRequestByPhoneUnavailableException();
+
+  @override
+  String toString() =>
+      'افزودن دوست با شماره موبایل هنوز از سمت سرور فعال نشده است.';
+}
+
 class FriendshipRepository {
   FriendshipRepository(this._graphql);
 
@@ -52,22 +60,34 @@ class FriendshipRepository {
     return items;
   }
 
-  Future<FriendshipItem> sendFriendRequest({
+  Future<FriendshipItem> sendFriendRequestByPhone({
     required String currentUserID,
-    required String targetUserID,
+    required String phoneNumber,
   }) async {
-    final data = await _graphql.rawRequest(
-      query: _sendFriendRequestMutation,
-      variables: {'targetUserID': targetUserID},
-    );
-    final rawFriendship = data['sendFriendRequest'];
-    if (rawFriendship is Map<String, dynamic>) {
-      return FriendshipItem.fromJson(
-        rawFriendship,
-        currentUserID: currentUserID,
+    try {
+      final data = await _graphql.rawRequest(
+        query: _sendFriendRequestByPhoneMutation,
+        variables: {'phoneNumber': phoneNumber},
       );
+      final rawFriendship = data['sendFriendRequestByPhone'];
+      if (rawFriendship is Map<String, dynamic>) {
+        return FriendshipItem.fromJson(
+          rawFriendship,
+          currentUserID: currentUserID,
+        );
+      }
+      throw const GraphQLRawException('ارسال درخواست دوستی ناموفق بود');
+    } on GraphQLRawException catch (error) {
+      final message = error.message.toLowerCase();
+      if (message.contains('sendfriendrequestbyphone') &&
+          (message.contains('cannot query field') ||
+              message.contains('unknown field') ||
+              message.contains('not found'))) {
+        // TODO(backend): Add sendFriendRequestByPhone(phoneNumber: String!).
+        throw const FriendRequestByPhoneUnavailableException();
+      }
+      rethrow;
     }
-    throw const GraphQLRawException('ارسال درخواست دوستی ناموفق بود');
   }
 
   Future<FriendshipItem> acceptFriendRequest({
@@ -178,9 +198,9 @@ query GetFriendshipsForProfile(\$limit: Int, \$offset: Int) {
 }
 ''';
 
-const String _sendFriendRequestMutation = '''
-mutation SendFriendRequest(\$targetUserID: UUID!) {
-  sendFriendRequest(targetUserID: \$targetUserID) {
+const String _sendFriendRequestByPhoneMutation = '''
+mutation SendFriendRequestByPhone(\$phoneNumber: String!) {
+  sendFriendRequestByPhone(phoneNumber: \$phoneNumber) {
     $_friendshipFields
   }
 }

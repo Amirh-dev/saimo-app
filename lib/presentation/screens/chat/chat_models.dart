@@ -1,3 +1,5 @@
+import 'package:simo_learn/utils/iran_phone_number.dart';
+
 enum InboxConnectionStatus {
   idle,
   connecting,
@@ -157,10 +159,11 @@ class ChatContact {
     if (fullName != null && fullName.isNotEmpty) return fullName;
 
     final phoneNumber = targetPhoneNumber?.trim();
-    if (phoneNumber != null && phoneNumber.isNotEmpty) return phoneNumber;
+    if (phoneNumber != null && phoneNumber.isNotEmpty) {
+      return maskIranianMobileNumber(phoneNumber) ?? 'کاربر سیمو';
+    }
 
-    if (targetUserID.length <= 8) return 'کاربر $targetUserID';
-    return 'کاربر ${targetUserID.substring(0, 8)}';
+    return 'کاربر سیمو';
   }
 
   String get subtitle {

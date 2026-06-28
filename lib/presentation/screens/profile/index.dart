@@ -229,7 +229,7 @@ class _FriendsContent extends StatefulWidget {
 
 class _FriendsContentState extends State<_FriendsContent>
     with WidgetsBindingObserver {
-  final TextEditingController _targetUserIDController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
   late final FriendshipRepository _friendshipRepository;
   late final ChatRepository _chatRepository;
   late final InboxSubscriptionClient _inboxClient;
@@ -253,7 +253,7 @@ class _FriendsContentState extends State<_FriendsContent>
     _inboxClient = context.read<InboxSubscriptionClient>();
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadFriendships());
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (!mounted || _busyTargetID != null || _isSendingRequest) return;
       _loadFriendships(silent: true);
     });
@@ -264,7 +264,7 @@ class _FriendsContentState extends State<_FriendsContent>
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _eventSubscription?.cancel();
-    _targetUserIDController.dispose();
+    _phoneNumberController.dispose();
     super.dispose();
   }
 
@@ -339,65 +339,45 @@ class _FriendsContentState extends State<_FriendsContent>
     });
   }
 
-  void _openAddFriendSheet() {
-    showReModalBottomSheet<void>(
+  Future<void> _openAddFriendSheet() async {
+    final wasSent = await showReModalBottomSheet<bool>(
       context: context,
       builder: (sheetContext) => _AddFriendBottomSheet(
-        controller: _targetUserIDController,
-        isSubmitting: _isSendingRequest,
-        onCancel: () => Navigator.of(sheetContext).pop(),
-        onSubmit: () {
-          final targetUserID = _targetUserIDController.text.trim();
-          if (!_canSubmitFriendRequest(targetUserID)) return;
-          Navigator.of(sheetContext).pop();
-          _sendFriendRequest(targetUserID);
-        },
+        controller: _phoneNumberController,
+        onSubmit: _sendFriendRequestByPhone,
       ),
     );
+    if (!mounted || wasSent != true) return;
+    showReToast(context, 'درخواست دوستی ارسال شد', ReToastType.success);
   }
 
-  bool _canSubmitFriendRequest(String targetUserID) {
-    if (targetUserID.isEmpty) {
-      showReToast(context, 'شناسه کاربر را وارد کنید', ReToastType.warning);
-      return false;
-    }
-    if (!_looksLikeUUID(targetUserID)) {
-      showReToast(
-        context,
-        'در حال حاضر افزودن دوست با شناسه کاربر انجام می‌شود',
-        ReToastType.warning,
-      );
-      return false;
-    }
-    if (targetUserID == _currentUser?.id) {
-      showReToast(
-          context, 'شناسه خودتان قابل افزودن نیست', ReToastType.warning);
-      return false;
-    }
-    return true;
-  }
-
-  Future<void> _sendFriendRequest(String targetUserID) async {
+  Future<String?> _sendFriendRequestByPhone(String phoneNumber) async {
     final currentUser = _currentUser;
-    if (currentUser == null || _isSendingRequest) return;
+    if (currentUser == null) return 'اطلاعات حساب کاربری در دسترس نیست.';
+    if (_isSendingRequest) return 'درخواست قبلی در حال ارسال است.';
+
+    final currentPhone = currentUser.phoneNumber;
+    if (currentPhone != null &&
+        normalizeIranianMobileNumber(currentPhone) == phoneNumber) {
+      return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
+    }
 
     setState(() => _isSendingRequest = true);
     try {
-      final friendship = await _friendshipRepository.sendFriendRequest(
+      final friendship = await _friendshipRepository.sendFriendRequestByPhone(
         currentUserID: currentUser.id,
-        targetUserID: targetUserID,
+        phoneNumber: phoneNumber,
       );
-      if (!mounted) return;
+      if (!mounted) return null;
       setState(() {
         _friends = _upsertFriendship(friendship.copyWith(isExpanded: true));
-        _targetUserIDController.clear();
-        _isSendingRequest = false;
+        _phoneNumberController.clear();
       });
-      showReToast(context, 'درخواست دوستی ارسال شد', ReToastType.success);
+      return null;
     } catch (error) {
-      if (!mounted) return;
-      setState(() => _isSendingRequest = false);
-      showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+      return _friendlyProfileError(error);
+    } finally {
+      if (mounted) setState(() => _isSendingRequest = false);
     }
   }
 
@@ -463,7 +443,11 @@ class _FriendsContentState extends State<_FriendsContent>
 
   Future<void> _openChat(FriendshipItem friend) async {
     final currentUser = _currentUser;
-    if (currentUser == null || _busyTargetID != null) return;
+    if (currentUser == null ||
+        _busyTargetID != null ||
+        friend.relation != FriendshipRelation.accepted) {
+      return;
+    }
 
     setState(() => _busyTargetID = friend.targetUserID);
     try {
@@ -532,15 +516,6 @@ class _FriendsContentState extends State<_FriendsContent>
     };
   }
 
-  Future<void> _copyCurrentUserID() async {
-    final userID = _currentUser?.id;
-    if (userID == null || userID.isEmpty) return;
-
-    await Clipboard.setData(ClipboardData(text: userID));
-    if (!mounted) return;
-    showReToast(context, 'شناسه شما کپی شد', ReToastType.success);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -549,11 +524,6 @@ class _FriendsContentState extends State<_FriendsContent>
           onAddFriend: _openAddFriendSheet,
           onSectionSelected: widget.onSectionSelected,
         ),
-        if (_currentUser != null)
-          _FriendCodeCard(
-            userID: _currentUser!.id,
-            onCopy: _copyCurrentUserID,
-          ).hMargin(24).tMargin(14),
         Expanded(child: _buildBody()),
       ],
     );
@@ -624,105 +594,76 @@ class _FriendsContentState extends State<_FriendsContent>
   }
 
   Widget _buildList() {
+    final incoming = _friends
+        .where((item) => item.relation == FriendshipRelation.incomingPending)
+        .toList();
+    final outgoing = _friends
+        .where((item) => item.relation == FriendshipRelation.outgoingPending)
+        .toList();
+    final accepted = _friends
+        .where((item) => item.relation == FriendshipRelation.accepted)
+        .toList();
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: _loadFriendships,
-      child: ListView.separated(
+      child: ListView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(36, 22, 36, 28),
-        itemBuilder: (context, index) => _FriendTile(
-          friend: _friends[index],
-          activity: _activityByUserID[_friends[index].targetUserID],
-          isBusy: _busyTargetID == _friends[index].targetUserID,
-          onTap: () => _toggleFriend(_friends[index]),
-          onMessage: () => _openChat(_friends[index]),
-          onProfile: () {},
-          onAccept: () => _acceptFriend(_friends[index]),
-          onReject: () => _rejectFriend(_friends[index]),
-          onCancel: () => _cancelFriend(_friends[index]),
-          onDelete: () => _removeFriend(_friends[index]),
-        ),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemCount: _friends.length,
+        children: [
+          ..._buildFriendSection('درخواست‌های دریافتی', incoming),
+          ..._buildFriendSection('درخواست‌های ارسال‌شده', outgoing),
+          ..._buildFriendSection('دوستان', accepted),
+        ],
       ),
     );
   }
+
+  List<Widget> _buildFriendSection(
+    String title,
+    List<FriendshipItem> items,
+  ) {
+    if (items.isEmpty) return const [];
+    return [
+      _FriendSectionTitle(title: title),
+      for (final friend in items) ...[
+        _FriendTile(
+          friend: friend,
+          activity: _activityByUserID[friend.targetUserID],
+          isBusy: _busyTargetID == friend.targetUserID,
+          onTap: () => _toggleFriend(friend),
+          onMessage: () => _openChat(friend),
+          onAccept: () => _acceptFriend(friend),
+          onReject: () => _rejectFriend(friend),
+          onCancel: () => _cancelFriend(friend),
+          onDelete: () => _removeFriend(friend),
+        ),
+        const SizedBox(height: 12),
+      ],
+      const SizedBox(height: 8),
+    ];
+  }
 }
 
-class _FriendCodeCard extends StatelessWidget {
-  const _FriendCodeCard({
-    required this.userID,
-    required this.onCopy,
-  });
+class _FriendSectionTitle extends StatelessWidget {
+  const _FriendSectionTitle({required this.title});
 
-  final String userID;
-  final VoidCallback onCopy;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withOpacity(0.04),
-              blurRadius: 18,
-              offset: const Offset(0, 9),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: onCopy,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  SolarIconsOutline.copy,
-                  color: AppColors.primary,
-                  size: 17,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const ReText(
-                    'شناسه شما برای افزودن دوست',
-                    color: AppColors.black1,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  ReText(
-                    userID,
-                    color: AppColors.black1.withOpacity(0.56),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                  ).tMargin(2),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ReText(
+        title,
+        color: AppColors.black1.withOpacity(0.65),
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        textAlign: TextAlign.right,
       ),
-    );
+    ).bMargin(10);
   }
 }
 
@@ -806,7 +747,6 @@ class _FriendTile extends StatelessWidget {
     required this.isBusy,
     required this.onTap,
     required this.onMessage,
-    required this.onProfile,
     required this.onAccept,
     required this.onReject,
     required this.onCancel,
@@ -818,7 +758,6 @@ class _FriendTile extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onTap;
   final VoidCallback onMessage;
-  final VoidCallback onProfile;
   final VoidCallback onAccept;
   final VoidCallback onReject;
   final VoidCallback onCancel;
@@ -856,7 +795,6 @@ class _FriendTile extends StatelessWidget {
                     friend: friend,
                     isBusy: isBusy,
                     onMessage: onMessage,
-                    onProfile: onProfile,
                     onAccept: onAccept,
                     onReject: onReject,
                     onCancel: onCancel,
@@ -927,11 +865,10 @@ class _FriendTileHeader extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                   SizedBox(
-                    width: 168,
                     child: ReText(
                       _friendStatusText(friend, activity),
                       color: _friendStatusColor(friend, activity),
-                      fontSize: 10.5,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       textAlign: TextAlign.end,
                     ),
@@ -983,7 +920,6 @@ class _FriendActions extends StatelessWidget {
     required this.friend,
     required this.isBusy,
     required this.onMessage,
-    required this.onProfile,
     required this.onAccept,
     required this.onReject,
     required this.onCancel,
@@ -993,7 +929,6 @@ class _FriendActions extends StatelessWidget {
   final FriendshipItem friend;
   final bool isBusy;
   final VoidCallback onMessage;
-  final VoidCallback onProfile;
   final VoidCallback onAccept;
   final VoidCallback onReject;
   final VoidCallback onCancel;
@@ -1011,16 +946,10 @@ class _FriendActions extends StatelessWidget {
     final actions = switch (friend.relation) {
       FriendshipRelation.accepted => [
           _FriendActionSpec(
-            title: 'پیام',
+            title: 'پیام1',
             icon: SolarIconsBold.chatRound,
             color: AppColors.secondary,
             onTap: onMessage,
-          ),
-          _FriendActionSpec(
-            title: 'پروفایل',
-            icon: SolarIconsBold.user,
-            color: AppColors.primary,
-            onTap: onProfile,
           ),
           _FriendActionSpec(
             title: 'حذف',
@@ -1031,7 +960,7 @@ class _FriendActions extends StatelessWidget {
         ],
       FriendshipRelation.incomingPending => [
           _FriendActionSpec(
-            title: 'تایید',
+            title: 'قبول',
             icon: SolarIconsOutline.checkSquare,
             color: AppColors.done,
             onTap: onAccept,
@@ -1156,12 +1085,6 @@ class _FriendActionButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ReText(
-              title,
-              color: AppColors.black1,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ).rMargin(7),
             Container(
               width: 24,
               height: 24,
@@ -1175,6 +1098,12 @@ class _FriendActionButton extends StatelessWidget {
                 size: 15,
               ),
             ),
+            ReText(
+              title,
+              color: AppColors.black1,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ).rMargin(7),
           ],
         ),
       ),
@@ -1182,18 +1111,47 @@ class _FriendActionButton extends StatelessWidget {
   }
 }
 
-class _AddFriendBottomSheet extends StatelessWidget {
+class _AddFriendBottomSheet extends StatefulWidget {
   const _AddFriendBottomSheet({
     required this.controller,
-    required this.isSubmitting,
-    required this.onCancel,
     required this.onSubmit,
   });
 
   final TextEditingController controller;
-  final bool isSubmitting;
-  final VoidCallback onCancel;
-  final VoidCallback onSubmit;
+  final Future<String?> Function(String phoneNumber) onSubmit;
+
+  @override
+  State<_AddFriendBottomSheet> createState() => _AddFriendBottomSheetState();
+}
+
+class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
+  bool _isSubmitting = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+
+    final phoneNumber = normalizeIranianMobileNumber(widget.controller.text);
+    if (phoneNumber == null) {
+      setState(() => _error = 'شماره موبایل معتبر وارد کنید.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _error = null;
+    });
+    final error = await widget.onSubmit(phoneNumber);
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _isSubmitting = false;
+      _error = error;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1236,7 +1194,7 @@ class _AddFriendBottomSheet extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       ReText(
-                        'شناسه کاربر را وارد کنید',
+                        'شماره موبایل دوستتان را وارد کنید',
                         color: AppColors.black1.withOpacity(0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -1247,7 +1205,9 @@ class _AddFriendBottomSheet extends StatelessWidget {
                   Align(
                     alignment: Alignment.topRight,
                     child: GestureDetector(
-                      onTap: onCancel,
+                      onTap: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(false),
                       child: Container(
                         width: 44,
                         height: 44,
@@ -1267,22 +1227,47 @@ class _AddFriendBottomSheet extends StatelessWidget {
                 ],
               ),
               ReTextField(
-                controller: controller,
-                placeholder: 'شناسه کاربر',
-                keyboardType: TextInputType.text,
+                controller: widget.controller,
+                placeholder: 'شماره موبایل را وارد کنید',
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.send,
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
+                onFieldSubmitted: (_) => _submit(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'[+0-9۰-۹٠-٩\s\-()]'),
+                  ),
+                  const PersianDigitsInputFormatter(),
+                  LengthLimitingTextInputFormatter(20),
+                ],
                 height: 48,
                 backgroundColor: AppColors.gray1,
                 borderRadius: 100,
                 showFocusShadow: false,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 22),
               ).tMargin(26),
+              if (_error != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ReText(
+                    _error!,
+                    color: AppColors.errorColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    textAlign: TextAlign.right,
+                    maxLines: 3,
+                  ),
+                ).tMargin(8),
               Row(
                 children: [
                   Expanded(
                     child: ReButton(
-                      text: isSubmitting ? 'در حال ارسال' : 'ارسال درخواست',
+                      text: 'ارسال درخواست',
                       icon: Icons.chevron_left_rounded,
-                      onPressed: isSubmitting ? null : onSubmit,
+                      onPressed: _isSubmitting ? null : _submit,
+                      isLoading: _isSubmitting,
                       background: AppColors.primary,
                       height: 48,
                       borderRadius: 18,
@@ -1297,7 +1282,9 @@ class _AddFriendBottomSheet extends StatelessWidget {
                     child: ReButton(
                       text: 'لغو',
                       icon: Icons.close_rounded,
-                      onPressed: onCancel,
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(false),
                       isOutlined: true,
                       background: AppColors.white,
                       color: AppColors.gray2,
@@ -1932,19 +1919,30 @@ class _FriendsEmptyIllustrationPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-bool _looksLikeUUID(String value) {
-  return RegExp(
-    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-  ).hasMatch(value.trim());
-}
-
 String _friendlyProfileError(Object error) {
   final text = error.toString();
+  final upperText = text.toUpperCase();
+  if (error is FriendRequestByPhoneUnavailableException) {
+    return error.toString();
+  }
   if (text.contains('Unauthorized') || text.contains('Authentication')) {
     return 'برای ادامه دوباره وارد حساب شوید.';
   }
-  if (text.contains('uuid') || text.contains('UUID')) {
-    return 'شناسه کاربر معتبر نیست.';
+  if (upperText.contains('USER_NOT_FOUND') ||
+      upperText.contains('USER NOT FOUND')) {
+    return 'کاربری با این شماره موبایل پیدا نشد.';
+  }
+  if (upperText.contains('CANNOT_ADD_SELF')) {
+    return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
+  }
+  if (upperText.contains('ALREADY_FRIENDS')) {
+    return 'این کاربر از قبل در فهرست دوستان شماست.';
+  }
+  if (upperText.contains('REQUEST_ALREADY_SENT')) {
+    return 'درخواست دوستی قبلاً ارسال شده است.';
+  }
+  if (upperText.contains('UUID')) {
+    return 'انجام درخواست دوستی ناموفق بود.';
   }
   if (text.trim().isEmpty) return 'خطای ناشناخته رخ داد.';
   return text.replaceFirst('Exception: ', '');
