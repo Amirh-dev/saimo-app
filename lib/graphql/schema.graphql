@@ -1,6 +1,7 @@
 schema {
   query: Query
   mutation: Mutation
+  subscription: Subscription
 }
 
 """
@@ -10,6 +11,8 @@ https://relay.dev/graphql/connections.htm#sec-Cursor
 scalar Cursor
 
 scalar Time
+
+scalar UUID
 
 type AuthPayload {
   accessToken: String!
@@ -62,6 +65,14 @@ type Mutation {
   deleteTask(id: ID!): Boolean!
   """Updates the authenticated user's profile information."""
   updateProfile(input: UpdateProfileInput!): User!
+  createDirectChat(input: CreateDirectChatInput!): Chat!
+  sendMessage(input: SendMessageInput!): Message!
+  deleteMessage(messageID: UUID!): Message!
+  sendFriendRequest(targetUserID: UUID!): Friendship!
+  acceptFriendRequest(targetUserID: UUID!): Friendship!
+  rejectFriendRequest(targetUserID: UUID!): Boolean!
+  cancelFriendRequest(targetUserID: UUID!): Boolean!
+  removeFriend(targetUserID: UUID!): Boolean!
 }
 
 """
@@ -103,6 +114,10 @@ type Query {
   suggestTags(title: String!, shortDescription: String): [String!]!
   """Returns the currently authenticated user's profile with all stats."""
   getMe: User!
+  getChatMessages(chatID: UUID!, limit: Int, offset: Int): [Message!]!
+  getFriends(limit: Int, offset: Int): [Friendship!]!
+  getPendingFriendRequests(limit: Int, offset: Int): [Friendship!]!
+  getFriendshipStatus(targetUserID: UUID!): Friendship
 }
 
 type SendOTPPayload {
@@ -182,6 +197,108 @@ Follows the [Relay Global Object Identification Specification](https://relay.dev
 interface Node {
   """The id of the object."""
   id: ID!
+}
+
+type Chat {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  type: ChatType!
+  name: String
+  messages: [Message!]
+  participants: [ChatParticipant!]
+}
+
+type ChatParticipant {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  userID: ID!
+  chatID: ID!
+  lastReadAt: Time
+  clearedHistoryAt: Time
+  user: User!
+  chat: Chat!
+}
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+type Message {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  content: String!
+  type: MessageType!
+  chatID: ID!
+  senderID: ID!
+  replyToID: ID
+  isDeleted: Boolean!
+  deletedAt: Time
+  replyTo: Message
+  replies: [Message!]
+  chat: Chat!
+  sender: User!
+  deletedBy: [User!]
+}
+
+enum MessageType {
+  TEXT
+  DUEL_INVITE
+  SYSTEM
+}
+
+type Friendship {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  requesterID: ID!
+  receiverID: ID!
+  userLowID: UUID!
+  userHighID: UUID!
+  status: FriendshipStatus!
+  requester: User!
+  receiver: User!
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+input CreateDirectChatInput {
+  targetUserID: UUID!
+}
+
+input SendMessageInput {
+  chatID: ID!
+  content: String!
+  replyToID: ID
+}
+
+type Subscription {
+  inbox: InboxEvent!
+}
+
+union InboxEvent = NewMessageEvent | MessageDeletedEvent | UserActivityEvent
+
+type NewMessageEvent {
+  message: Message!
+}
+
+type MessageDeletedEvent {
+  messageID: UUID!
+  chatID: UUID!
+}
+
+type UserActivityEvent {
+  userID: UUID!
+  isOnline: Boolean!
+  currentTaskName: String
 }
 
 """Properties by which Goal connections can be ordered."""

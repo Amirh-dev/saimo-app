@@ -36,6 +36,117 @@ abstract class GTime implements Built<GTime, GTimeBuilder> {
       (Object serialized) => GTime((serialized as String?)));
 }
 
+abstract class GUUID implements Built<GUUID, GUUIDBuilder> {
+  GUUID._();
+
+  factory GUUID([String? value]) =>
+      _$GUUID((b) => value != null ? (b..value = value) : b);
+
+  String get value;
+  @BuiltValueSerializer(custom: true)
+  static Serializer<GUUID> get serializer => _i1.DefaultScalarSerializer<GUUID>(
+      (Object serialized) => GUUID((serialized as String?)));
+}
+
+class GChatType extends EnumClass {
+  const GChatType._(String name) : super(name);
+
+  static const GChatType DIRECT = _$gChatTypeDIRECT;
+
+  static const GChatType GROUP = _$gChatTypeGROUP;
+
+  static Serializer<GChatType> get serializer => _$gChatTypeSerializer;
+
+  static BuiltSet<GChatType> get values => _$gChatTypeValues;
+
+  static GChatType valueOf(String name) => _$gChatTypeValueOf(name);
+}
+
+class GMessageType extends EnumClass {
+  const GMessageType._(String name) : super(name);
+
+  static const GMessageType TEXT = _$gMessageTypeTEXT;
+
+  static const GMessageType DUEL_INVITE = _$gMessageTypeDUEL_INVITE;
+
+  static const GMessageType SYSTEM = _$gMessageTypeSYSTEM;
+
+  static Serializer<GMessageType> get serializer => _$gMessageTypeSerializer;
+
+  static BuiltSet<GMessageType> get values => _$gMessageTypeValues;
+
+  static GMessageType valueOf(String name) => _$gMessageTypeValueOf(name);
+}
+
+class GFriendshipStatus extends EnumClass {
+  const GFriendshipStatus._(String name) : super(name);
+
+  static const GFriendshipStatus PENDING = _$gFriendshipStatusPENDING;
+
+  static const GFriendshipStatus ACCEPTED = _$gFriendshipStatusACCEPTED;
+
+  static const GFriendshipStatus REJECTED = _$gFriendshipStatusREJECTED;
+
+  static const GFriendshipStatus BLOCKED = _$gFriendshipStatusBLOCKED;
+
+  static Serializer<GFriendshipStatus> get serializer =>
+      _$gFriendshipStatusSerializer;
+
+  static BuiltSet<GFriendshipStatus> get values => _$gFriendshipStatusValues;
+
+  static GFriendshipStatus valueOf(String name) =>
+      _$gFriendshipStatusValueOf(name);
+}
+
+abstract class GCreateDirectChatInput
+    implements Built<GCreateDirectChatInput, GCreateDirectChatInputBuilder> {
+  GCreateDirectChatInput._();
+
+  factory GCreateDirectChatInput(
+          [Function(GCreateDirectChatInputBuilder b) updates]) =
+      _$GCreateDirectChatInput;
+
+  GUUID get targetUserID;
+  static Serializer<GCreateDirectChatInput> get serializer =>
+      _$gCreateDirectChatInputSerializer;
+
+  Map<String, dynamic> toJson() => (_i2.serializers.serializeWith(
+        GCreateDirectChatInput.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GCreateDirectChatInput? fromJson(Map<String, dynamic> json) =>
+      _i2.serializers.deserializeWith(
+        GCreateDirectChatInput.serializer,
+        json,
+      );
+}
+
+abstract class GSendMessageInput
+    implements Built<GSendMessageInput, GSendMessageInputBuilder> {
+  GSendMessageInput._();
+
+  factory GSendMessageInput([Function(GSendMessageInputBuilder b) updates]) =
+      _$GSendMessageInput;
+
+  String get chatID;
+  String get content;
+  String? get replyToID;
+  static Serializer<GSendMessageInput> get serializer =>
+      _$gSendMessageInputSerializer;
+
+  Map<String, dynamic> toJson() => (_i2.serializers.serializeWith(
+        GSendMessageInput.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GSendMessageInput? fromJson(Map<String, dynamic> json) =>
+      _i2.serializers.deserializeWith(
+        GSendMessageInput.serializer,
+        json,
+      );
+}
+
 class GGoalOrderField extends EnumClass {
   const GGoalOrderField._(String name) : super(name);
 
@@ -963,5 +1074,10 @@ const Map<String, Set<String>> possibleTypesMap = {
     'Tag',
     'Task',
     'User',
-  }
+  },
+  'InboxEvent': {
+    'NewMessageEvent',
+    'MessageDeletedEvent',
+    'UserActivityEvent',
+  },
 };

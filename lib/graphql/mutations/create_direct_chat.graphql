@@ -1,0 +1,5 @@
+mutation CreateDirectChat($input: CreateDirectChatInput!) {
+  createDirectChat(input: $input) {
+    id
+  }
+}

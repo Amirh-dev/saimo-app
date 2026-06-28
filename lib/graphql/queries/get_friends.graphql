@@ -1,0 +1,20 @@
+query GetFriends($limit: Int, $offset: Int) {
+  getFriends(limit: $limit, offset: $offset) {
+    id
+    status
+    requesterID
+    receiverID
+    userLowID
+    userHighID
+    requester {
+      id
+      fullName
+      phoneNumber
+    }
+    receiver {
+      id
+      fullName
+      phoneNumber
+    }
+  }
+}

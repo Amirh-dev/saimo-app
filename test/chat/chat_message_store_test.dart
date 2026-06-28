@@ -44,6 +44,43 @@ void main() {
       expect(result, hasLength(1));
       expect(result.single.id, 'server-1');
     });
+
+    test(
+        'replaces an in-flight optimistic message even when the server echo '
+        'has divergent (e.g. mis-encoded) content', () {
+      final localMessage = _message(
+        id: 'local-1',
+        content: 'تست',
+        createdAt: '2026-01-01T10:00:00Z',
+      ).copyWith(isSending: true);
+      final serverEcho = _message(
+        id: 'server-1',
+        content: 'ØªØ³Øª',
+        createdAt: '2026-01-01T10:00:02Z',
+      );
+
+      final result = upsertMessages([localMessage], [serverEcho]);
+
+      expect(result, hasLength(1));
+      expect(result.single.id, 'server-1');
+    });
+
+    test('keeps two distinct messages from the same sender', () {
+      final first = _message(
+        id: 'server-1',
+        content: 'first',
+        createdAt: '2026-01-01T10:00:00Z',
+      );
+      final second = _message(
+        id: 'server-2',
+        content: 'second',
+        createdAt: '2026-01-01T10:00:30Z',
+      );
+
+      final result = upsertMessages([first], [second]);
+
+      expect(result.map((message) => message.id), ['server-1', 'server-2']);
+    });
   });
 
   group('applyInboxEventToRoom', () {

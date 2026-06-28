@@ -35,11 +35,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final _unreadByUserID = <String, int>{};
   final _chatUserByChatID = <String, String>{};
   var _connectionStatus = InboxConnectionStatus.idle;
+  var _displayConnectionStatus = InboxConnectionStatus.connected;
+  Timer? _connectionDebounce;
+  late final ScrollController _contactsController;
   String? _currentUserID;
   String? _activeChatUserID;
   String? _error;
   bool _isLoading = true;
+  bool _isLoadingMoreContacts = false;
+  bool _hasMoreContacts = true;
   String? _openingUserID;
+
+  static const int _contactsPageSize = 20;
+  static const Duration _connectionGrace = Duration(seconds: 3);
 
   @override
   void initState() {
@@ -48,6 +56,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _chatRepository = ChatRepository(context.read<GraphQLRepository>());
     _inboxClient = context.read<InboxSubscriptionClient>();
     _connectionStatus = _inboxClient.currentStatus;
+    _contactsController = ScrollController()..addListener(_handleContactsScroll);
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadContacts());
   }
@@ -57,6 +66,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
+    _connectionDebounce?.cancel();
+    _contactsController.dispose();
     super.dispose();
   }
 
@@ -67,13 +78,48 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _loadContacts(silent: true);
   }
 
+  void _handleContactsScroll() {
+    if (!_contactsController.hasClients) return;
+    final position = _contactsController.position;
+    if (position.pixels >= position.maxScrollExtent - 160) {
+      _loadMoreContacts();
+    }
+  }
+
   void _startInboxSubscription() {
     _eventSubscription = _inboxClient.events.listen(_handleInboxEvent);
     _statusSubscription = _inboxClient.status.listen((status) {
       if (!mounted) return;
-      setState(() => _connectionStatus = status);
+      _applyConnectionStatus(status);
     });
+    _applyConnectionStatus(_inboxClient.currentStatus);
     _inboxClient.connect();
+  }
+
+  /// Surfaces a disconnection only after it persists past a short grace period,
+  /// so transient reconnects never flash "در حال اتصال" in the list.
+  void _applyConnectionStatus(InboxConnectionStatus status) {
+    _connectionStatus = status;
+
+    if (status == InboxConnectionStatus.connected) {
+      _connectionDebounce?.cancel();
+      if (_displayConnectionStatus != status) {
+        setState(() => _displayConnectionStatus = status);
+      }
+      return;
+    }
+
+    if (_displayConnectionStatus == InboxConnectionStatus.connected) {
+      _connectionDebounce?.cancel();
+      _connectionDebounce = Timer(_connectionGrace, () {
+        if (!mounted) return;
+        if (_connectionStatus != InboxConnectionStatus.connected) {
+          setState(() => _displayConnectionStatus = _connectionStatus);
+        }
+      });
+    } else if (_displayConnectionStatus != status) {
+      setState(() => _displayConnectionStatus = status);
+    }
   }
 
   Future<void> _loadContacts({bool silent = false}) async {
@@ -85,12 +131,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
 
     try {
-      final currentUserID = await _chatRepository.getCurrentUserID();
-      final contacts = await _chatRepository.getFriends(currentUserID);
+      // The current user id never changes during a session, so fetch `getMe`
+      // once instead of on every (including silent/resume) refresh.
+      final currentUserID =
+          _currentUserID ?? await _chatRepository.getCurrentUserID();
+      final contacts = await _chatRepository.getFriends(
+        currentUserID,
+        limit: _contactsPageSize,
+        offset: 0,
+      );
       if (!mounted) return;
       setState(() {
         _currentUserID = currentUserID;
         _contacts = contacts;
+        _hasMoreContacts = contacts.length == _contactsPageSize;
+        _isLoadingMoreContacts = false;
         final contactIDs =
             contacts.map((contact) => contact.targetUserID).toSet();
         _latestMessageByUserID.removeWhere(
@@ -108,6 +163,39 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _error = _friendlyError(error);
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadMoreContacts() async {
+    final currentUserID = _currentUserID;
+    if (currentUserID == null ||
+        _isLoading ||
+        _isLoadingMoreContacts ||
+        !_hasMoreContacts) {
+      return;
+    }
+    setState(() => _isLoadingMoreContacts = true);
+
+    try {
+      final more = await _chatRepository.getFriends(
+        currentUserID,
+        limit: _contactsPageSize,
+        offset: _contacts.length,
+      );
+      if (!mounted) return;
+      setState(() {
+        final existingIDs =
+            _contacts.map((contact) => contact.targetUserID).toSet();
+        final fresh = more.where(
+          (contact) => existingIDs.add(contact.targetUserID),
+        );
+        _contacts = [..._contacts, ...fresh];
+        _hasMoreContacts = more.length == _contactsPageSize;
+        _isLoadingMoreContacts = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingMoreContacts = false);
     }
   }
 
@@ -261,20 +349,27 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       color: AppColors.primary,
       onRefresh: _loadContacts,
       child: ListView.separated(
+        controller: _contactsController,
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
-        itemCount: _contacts.length,
+        itemCount: _contacts.length + (_isLoadingMoreContacts ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
+          if (index >= _contacts.length) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            );
+          }
           final contact = _contacts[index];
           return _ContactTile(
             contact: contact,
             activity: _activityByUserID[contact.targetUserID],
             latestMessage: _latestMessageByUserID[contact.targetUserID],
             unreadCount: _unreadByUserID[contact.targetUserID] ?? 0,
-            connectionStatus: _connectionStatus,
+            connectionStatus: _displayConnectionStatus,
             isOpening: _openingUserID == contact.targetUserID,
             onTap: () => _openChat(contact),
           );
@@ -316,6 +411,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   var _messages = <ChatMessage>[];
   var _activityByUserID = <String, UserActivity>{};
   var _connectionStatus = InboxConnectionStatus.idle;
+  // What the UI actually shows. Stays optimistic ("connected") until a real
+  // disconnection persists, so routine/transient reconnects never flash the
+  // "در حال اتصال" message.
+  var _displayConnectionStatus = InboxConnectionStatus.connected;
+  Timer? _connectionDebounce;
   ChatMessage? _replyingTo;
   String? _currentUserID;
   String? _error;
@@ -325,6 +425,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   bool _isSyncingLatest = false;
   bool _hasMore = true;
   bool _isSending = false;
+
+  static const Duration _connectionGrace = Duration(seconds: 3);
 
   @override
   void initState() {
@@ -347,9 +449,40 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
+    _connectionDebounce?.cancel();
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  /// Applies a raw connection status with a grace period before surfacing a
+  /// disconnection to the user, and triggers a resync when the link recovers.
+  void _applyConnectionStatus(InboxConnectionStatus status) {
+    final wasConnected = _connectionStatus == InboxConnectionStatus.connected;
+    _connectionStatus = status;
+
+    if (status == InboxConnectionStatus.connected) {
+      _connectionDebounce?.cancel();
+      if (_displayConnectionStatus != status) {
+        setState(() => _displayConnectionStatus = status);
+      }
+      if (!wasConnected) _syncLatestMessages();
+      return;
+    }
+
+    if (_displayConnectionStatus == InboxConnectionStatus.connected) {
+      // Was healthy: wait out the grace period before showing a warning.
+      _connectionDebounce?.cancel();
+      _connectionDebounce = Timer(_connectionGrace, () {
+        if (!mounted) return;
+        if (_connectionStatus != InboxConnectionStatus.connected) {
+          setState(() => _displayConnectionStatus = _connectionStatus);
+        }
+      });
+    } else if (_displayConnectionStatus != status) {
+      // Already showing an issue: keep the detail in sync immediately.
+      setState(() => _displayConnectionStatus = status);
+    }
   }
 
   @override
@@ -439,11 +572,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     });
     _statusSubscription = _inboxClient.status.listen((status) {
       if (!mounted) return;
-      final shouldSync = status == InboxConnectionStatus.connected &&
-          _connectionStatus != InboxConnectionStatus.connected;
-      setState(() => _connectionStatus = status);
-      if (shouldSync) _syncLatestMessages();
+      _applyConnectionStatus(status);
     });
+    _applyConnectionStatus(_inboxClient.currentStatus);
     _inboxClient.connect();
   }
 
@@ -736,7 +867,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     isOnline: targetActivity?.isOnline == true,
                     onBack: () => Navigator.of(context).pop(),
                     onMenu: _openRoomMenu,
-                    connectionStatus: _connectionStatus,
+                    connectionStatus: _displayConnectionStatus,
                   ),
                   Expanded(child: _buildMessagesBody()),
                   _MessageComposer(
@@ -802,12 +933,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   String _roomSubtitle(UserActivity? activity) {
-    if (_connectionStatus == InboxConnectionStatus.connecting ||
-        _connectionStatus == InboxConnectionStatus.reconnecting) {
+    if (_displayConnectionStatus == InboxConnectionStatus.connecting ||
+        _displayConnectionStatus == InboxConnectionStatus.reconnecting) {
       return 'در حال اتصال...';
     }
-    if (_connectionStatus == InboxConnectionStatus.error ||
-        _connectionStatus == InboxConnectionStatus.disconnected) {
+    if (_displayConnectionStatus == InboxConnectionStatus.error ||
+        _displayConnectionStatus == InboxConnectionStatus.disconnected) {
       return 'اتصال زنده قطع است';
     }
     final taskName = activity?.currentTaskName?.trim();

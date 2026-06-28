@@ -6,6 +6,83 @@ part of 'schema.schema.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const GChatType _$gChatTypeDIRECT = const GChatType._('DIRECT');
+const GChatType _$gChatTypeGROUP = const GChatType._('GROUP');
+
+GChatType _$gChatTypeValueOf(String name) {
+  switch (name) {
+    case 'DIRECT':
+      return _$gChatTypeDIRECT;
+    case 'GROUP':
+      return _$gChatTypeGROUP;
+    default:
+      throw new ArgumentError(name);
+  }
+}
+
+final BuiltSet<GChatType> _$gChatTypeValues =
+    new BuiltSet<GChatType>(const <GChatType>[
+  _$gChatTypeDIRECT,
+  _$gChatTypeGROUP,
+]);
+
+const GMessageType _$gMessageTypeTEXT = const GMessageType._('TEXT');
+const GMessageType _$gMessageTypeDUEL_INVITE =
+    const GMessageType._('DUEL_INVITE');
+const GMessageType _$gMessageTypeSYSTEM = const GMessageType._('SYSTEM');
+
+GMessageType _$gMessageTypeValueOf(String name) {
+  switch (name) {
+    case 'TEXT':
+      return _$gMessageTypeTEXT;
+    case 'DUEL_INVITE':
+      return _$gMessageTypeDUEL_INVITE;
+    case 'SYSTEM':
+      return _$gMessageTypeSYSTEM;
+    default:
+      throw new ArgumentError(name);
+  }
+}
+
+final BuiltSet<GMessageType> _$gMessageTypeValues =
+    new BuiltSet<GMessageType>(const <GMessageType>[
+  _$gMessageTypeTEXT,
+  _$gMessageTypeDUEL_INVITE,
+  _$gMessageTypeSYSTEM,
+]);
+
+const GFriendshipStatus _$gFriendshipStatusPENDING =
+    const GFriendshipStatus._('PENDING');
+const GFriendshipStatus _$gFriendshipStatusACCEPTED =
+    const GFriendshipStatus._('ACCEPTED');
+const GFriendshipStatus _$gFriendshipStatusREJECTED =
+    const GFriendshipStatus._('REJECTED');
+const GFriendshipStatus _$gFriendshipStatusBLOCKED =
+    const GFriendshipStatus._('BLOCKED');
+
+GFriendshipStatus _$gFriendshipStatusValueOf(String name) {
+  switch (name) {
+    case 'PENDING':
+      return _$gFriendshipStatusPENDING;
+    case 'ACCEPTED':
+      return _$gFriendshipStatusACCEPTED;
+    case 'REJECTED':
+      return _$gFriendshipStatusREJECTED;
+    case 'BLOCKED':
+      return _$gFriendshipStatusBLOCKED;
+    default:
+      throw new ArgumentError(name);
+  }
+}
+
+final BuiltSet<GFriendshipStatus> _$gFriendshipStatusValues =
+    new BuiltSet<GFriendshipStatus>(const <GFriendshipStatus>[
+  _$gFriendshipStatusPENDING,
+  _$gFriendshipStatusACCEPTED,
+  _$gFriendshipStatusREJECTED,
+  _$gFriendshipStatusBLOCKED,
+]);
+
 const GGoalOrderField _$gGoalOrderFieldCREATED_AT =
     const GGoalOrderField._('CREATED_AT');
 const GGoalOrderField _$gGoalOrderFieldUPDATED_AT =
@@ -219,6 +296,15 @@ final BuiltSet<GUserStudyTime> _$gUserStudyTimeValues =
   _$gUserStudyTimeOVER_7_HOURS,
 ]);
 
+Serializer<GChatType> _$gChatTypeSerializer = new _$GChatTypeSerializer();
+Serializer<GMessageType> _$gMessageTypeSerializer =
+    new _$GMessageTypeSerializer();
+Serializer<GFriendshipStatus> _$gFriendshipStatusSerializer =
+    new _$GFriendshipStatusSerializer();
+Serializer<GCreateDirectChatInput> _$gCreateDirectChatInputSerializer =
+    new _$GCreateDirectChatInputSerializer();
+Serializer<GSendMessageInput> _$gSendMessageInputSerializer =
+    new _$GSendMessageInputSerializer();
 Serializer<GGoalOrderField> _$gGoalOrderFieldSerializer =
     new _$GGoalOrderFieldSerializer();
 Serializer<GGoalStatus> _$gGoalStatusSerializer = new _$GGoalStatusSerializer();
@@ -262,6 +348,164 @@ Serializer<GVerifyOTPAndLoginInput> _$gVerifyOTPAndLoginInputSerializer =
     new _$GVerifyOTPAndLoginInputSerializer();
 Serializer<GVerifyOTPAndRegisterInput> _$gVerifyOTPAndRegisterInputSerializer =
     new _$GVerifyOTPAndRegisterInputSerializer();
+
+class _$GChatTypeSerializer implements PrimitiveSerializer<GChatType> {
+  @override
+  final Iterable<Type> types = const <Type>[GChatType];
+  @override
+  final String wireName = 'GChatType';
+
+  @override
+  Object serialize(Serializers serializers, GChatType object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      object.name;
+
+  @override
+  GChatType deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      GChatType.valueOf(serialized as String);
+}
+
+class _$GMessageTypeSerializer implements PrimitiveSerializer<GMessageType> {
+  @override
+  final Iterable<Type> types = const <Type>[GMessageType];
+  @override
+  final String wireName = 'GMessageType';
+
+  @override
+  Object serialize(Serializers serializers, GMessageType object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      object.name;
+
+  @override
+  GMessageType deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      GMessageType.valueOf(serialized as String);
+}
+
+class _$GFriendshipStatusSerializer
+    implements PrimitiveSerializer<GFriendshipStatus> {
+  @override
+  final Iterable<Type> types = const <Type>[GFriendshipStatus];
+  @override
+  final String wireName = 'GFriendshipStatus';
+
+  @override
+  Object serialize(Serializers serializers, GFriendshipStatus object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      object.name;
+
+  @override
+  GFriendshipStatus deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      GFriendshipStatus.valueOf(serialized as String);
+}
+
+class _$GCreateDirectChatInputSerializer
+    implements StructuredSerializer<GCreateDirectChatInput> {
+  @override
+  final Iterable<Type> types = const [
+    GCreateDirectChatInput,
+    _$GCreateDirectChatInput
+  ];
+  @override
+  final String wireName = 'GCreateDirectChatInput';
+
+  @override
+  Iterable<Object?> serialize(
+      Serializers serializers, GCreateDirectChatInput object,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = <Object?>[
+      'targetUserID',
+      serializers.serialize(object.targetUserID,
+          specifiedType: const FullType(GUUID)),
+    ];
+
+    return result;
+  }
+
+  @override
+  GCreateDirectChatInput deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = new GCreateDirectChatInputBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'targetUserID':
+          result.targetUserID.replace(serializers.deserialize(value,
+              specifiedType: const FullType(GUUID))! as GUUID);
+          break;
+      }
+    }
+
+    return result.build();
+  }
+}
+
+class _$GSendMessageInputSerializer
+    implements StructuredSerializer<GSendMessageInput> {
+  @override
+  final Iterable<Type> types = const [GSendMessageInput, _$GSendMessageInput];
+  @override
+  final String wireName = 'GSendMessageInput';
+
+  @override
+  Iterable<Object?> serialize(Serializers serializers, GSendMessageInput object,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = <Object?>[
+      'chatID',
+      serializers.serialize(object.chatID,
+          specifiedType: const FullType(String)),
+      'content',
+      serializers.serialize(object.content,
+          specifiedType: const FullType(String)),
+    ];
+    Object? value;
+    value = object.replyToID;
+    if (value != null) {
+      result
+        ..add('replyToID')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(String)));
+    }
+    return result;
+  }
+
+  @override
+  GSendMessageInput deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = new GSendMessageInputBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'chatID':
+          result.chatID = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'content':
+          result.content = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'replyToID':
+          result.replyToID = serializers.deserialize(value,
+              specifiedType: const FullType(String)) as String?;
+          break;
+      }
+    }
+
+    return result.build();
+  }
+}
 
 class _$GGoalOrderFieldSerializer
     implements PrimitiveSerializer<GGoalOrderField> {
@@ -6087,6 +6331,301 @@ class GTimeBuilder implements Builder<GTime, GTimeBuilder> {
         new _$GTime._(
             value: BuiltValueNullFieldError.checkNotNull(
                 value, r'GTime', 'value'));
+    replace(_$result);
+    return _$result;
+  }
+}
+
+class _$GUUID extends GUUID {
+  @override
+  final String value;
+
+  factory _$GUUID([void Function(GUUIDBuilder)? updates]) =>
+      (new GUUIDBuilder()..update(updates))._build();
+
+  _$GUUID._({required this.value}) : super._() {
+    BuiltValueNullFieldError.checkNotNull(value, r'GUUID', 'value');
+  }
+
+  @override
+  GUUID rebuild(void Function(GUUIDBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GUUIDBuilder toBuilder() => new GUUIDBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GUUID && value == other.value;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, value.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GUUID')..add('value', value))
+        .toString();
+  }
+}
+
+class GUUIDBuilder implements Builder<GUUID, GUUIDBuilder> {
+  _$GUUID? _$v;
+
+  String? _value;
+  String? get value => _$this._value;
+  set value(String? value) => _$this._value = value;
+
+  GUUIDBuilder();
+
+  GUUIDBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _value = $v.value;
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GUUID other) {
+    ArgumentError.checkNotNull(other, 'other');
+    _$v = other as _$GUUID;
+  }
+
+  @override
+  void update(void Function(GUUIDBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GUUID build() => _build();
+
+  _$GUUID _build() {
+    final _$result = _$v ??
+        new _$GUUID._(
+            value: BuiltValueNullFieldError.checkNotNull(
+                value, r'GUUID', 'value'));
+    replace(_$result);
+    return _$result;
+  }
+}
+
+class _$GCreateDirectChatInput extends GCreateDirectChatInput {
+  @override
+  final GUUID targetUserID;
+
+  factory _$GCreateDirectChatInput(
+          [void Function(GCreateDirectChatInputBuilder)? updates]) =>
+      (new GCreateDirectChatInputBuilder()..update(updates))._build();
+
+  _$GCreateDirectChatInput._({required this.targetUserID}) : super._() {
+    BuiltValueNullFieldError.checkNotNull(
+        targetUserID, r'GCreateDirectChatInput', 'targetUserID');
+  }
+
+  @override
+  GCreateDirectChatInput rebuild(
+          void Function(GCreateDirectChatInputBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GCreateDirectChatInputBuilder toBuilder() =>
+      new GCreateDirectChatInputBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GCreateDirectChatInput &&
+        targetUserID == other.targetUserID;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, targetUserID.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GCreateDirectChatInput')
+          ..add('targetUserID', targetUserID))
+        .toString();
+  }
+}
+
+class GCreateDirectChatInputBuilder
+    implements Builder<GCreateDirectChatInput, GCreateDirectChatInputBuilder> {
+  _$GCreateDirectChatInput? _$v;
+
+  GUUIDBuilder? _targetUserID;
+  GUUIDBuilder get targetUserID => _$this._targetUserID ??= new GUUIDBuilder();
+  set targetUserID(GUUIDBuilder? targetUserID) =>
+      _$this._targetUserID = targetUserID;
+
+  GCreateDirectChatInputBuilder();
+
+  GCreateDirectChatInputBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _targetUserID = $v.targetUserID.toBuilder();
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GCreateDirectChatInput other) {
+    ArgumentError.checkNotNull(other, 'other');
+    _$v = other as _$GCreateDirectChatInput;
+  }
+
+  @override
+  void update(void Function(GCreateDirectChatInputBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GCreateDirectChatInput build() => _build();
+
+  _$GCreateDirectChatInput _build() {
+    _$GCreateDirectChatInput _$result;
+    try {
+      _$result = _$v ??
+          new _$GCreateDirectChatInput._(targetUserID: targetUserID.build());
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'targetUserID';
+        targetUserID.build();
+      } catch (e) {
+        throw new BuiltValueNestedFieldError(
+            r'GCreateDirectChatInput', _$failedField, e.toString());
+      }
+      rethrow;
+    }
+    replace(_$result);
+    return _$result;
+  }
+}
+
+class _$GSendMessageInput extends GSendMessageInput {
+  @override
+  final String chatID;
+  @override
+  final String content;
+  @override
+  final String? replyToID;
+
+  factory _$GSendMessageInput(
+          [void Function(GSendMessageInputBuilder)? updates]) =>
+      (new GSendMessageInputBuilder()..update(updates))._build();
+
+  _$GSendMessageInput._(
+      {required this.chatID, required this.content, this.replyToID})
+      : super._() {
+    BuiltValueNullFieldError.checkNotNull(
+        chatID, r'GSendMessageInput', 'chatID');
+    BuiltValueNullFieldError.checkNotNull(
+        content, r'GSendMessageInput', 'content');
+  }
+
+  @override
+  GSendMessageInput rebuild(void Function(GSendMessageInputBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GSendMessageInputBuilder toBuilder() =>
+      new GSendMessageInputBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GSendMessageInput &&
+        chatID == other.chatID &&
+        content == other.content &&
+        replyToID == other.replyToID;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, chatID.hashCode);
+    _$hash = $jc(_$hash, content.hashCode);
+    _$hash = $jc(_$hash, replyToID.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GSendMessageInput')
+          ..add('chatID', chatID)
+          ..add('content', content)
+          ..add('replyToID', replyToID))
+        .toString();
+  }
+}
+
+class GSendMessageInputBuilder
+    implements Builder<GSendMessageInput, GSendMessageInputBuilder> {
+  _$GSendMessageInput? _$v;
+
+  String? _chatID;
+  String? get chatID => _$this._chatID;
+  set chatID(String? chatID) => _$this._chatID = chatID;
+
+  String? _content;
+  String? get content => _$this._content;
+  set content(String? content) => _$this._content = content;
+
+  String? _replyToID;
+  String? get replyToID => _$this._replyToID;
+  set replyToID(String? replyToID) => _$this._replyToID = replyToID;
+
+  GSendMessageInputBuilder();
+
+  GSendMessageInputBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _chatID = $v.chatID;
+      _content = $v.content;
+      _replyToID = $v.replyToID;
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GSendMessageInput other) {
+    ArgumentError.checkNotNull(other, 'other');
+    _$v = other as _$GSendMessageInput;
+  }
+
+  @override
+  void update(void Function(GSendMessageInputBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GSendMessageInput build() => _build();
+
+  _$GSendMessageInput _build() {
+    final _$result = _$v ??
+        new _$GSendMessageInput._(
+            chatID: BuiltValueNullFieldError.checkNotNull(
+                chatID, r'GSendMessageInput', 'chatID'),
+            content: BuiltValueNullFieldError.checkNotNull(
+                content, r'GSendMessageInput', 'content'),
+            replyToID: replyToID);
     replace(_$result);
     return _$result;
   }

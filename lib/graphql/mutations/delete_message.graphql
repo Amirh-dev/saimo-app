@@ -1,0 +1,14 @@
+mutation DeleteMessage($messageID: UUID!) {
+  deleteMessage(messageID: $messageID) {
+    id
+    content
+    type
+    chatID
+    senderID
+    replyToID
+    isDeleted
+    deletedAt
+    createdAt
+    updatedAt
+  }
+}

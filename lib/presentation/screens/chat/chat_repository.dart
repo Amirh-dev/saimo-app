@@ -1,48 +1,69 @@
+import 'package:ferry/ferry.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/create_direct_chat.req.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/delete_message.req.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/send_message.req.gql.dart';
+import 'package:simo_learn/graphql/queries/__generated__/get_chat_messages.req.gql.dart';
+import 'package:simo_learn/graphql/queries/__generated__/get_friends.req.gql.dart';
+import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart';
 
+import 'chat_message_store.dart';
 import 'chat_models.dart';
 
+/// Chat data access built entirely on the typed Ferry client.
+///
+/// Every operation goes through [GraphQLRepository.requestOnce], so it shares
+/// the app's auth link, logging and (correct) UTF-8 transport. The generated
+/// data objects are converted with `toJson()` and fed into the existing domain
+/// mappers, keeping [ChatMessage]/[ChatContact] and the message-store logic
+/// stable.
 class ChatRepository {
   ChatRepository(this._graphql);
 
   final GraphQLRepository _graphql;
 
   Future<String> getCurrentUserID() async {
-    final data = await _graphql.rawRequest(query: _getMeQuery);
-    final getMe = data['getMe'];
-    if (getMe is Map<String, dynamic>) {
-      final id = getMe['id']?.toString();
-      if (id != null && id.isNotEmpty) return id;
-    }
+    final response = await _graphql.requestOnce(GGetMeReq());
+    _throwOnErrors(response, 'دریافت اطلاعات کاربر ناموفق بود');
+    final id = response.data?.getMe.id;
+    if (id != null && id.isNotEmpty) return id;
     throw const GraphQLRawException('دریافت اطلاعات کاربر ناموفق بود');
   }
 
-  Future<List<ChatContact>> getFriends(String currentUserID) async {
-    final data = await _graphql.rawRequest(
-      query: _getFriendsQuery,
-      variables: const {'limit': 20, 'offset': 0},
+  Future<List<ChatContact>> getFriends(
+    String currentUserID, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final response = await _graphql.requestOnce(
+      GGetFriendsReq(
+        (b) => b.vars
+          ..limit = limit
+          ..offset = offset,
+      ),
     );
-    final rawFriends = data['getFriends'];
-    if (rawFriends is! List) return const [];
+    _throwOnErrors(response, 'دریافت دوستان ناموفق بود');
 
-    return rawFriends
-        .whereType<Map<String, dynamic>>()
-        .map((json) => _contactFromFriendJson(json, currentUserID))
+    final friends = response.data?.getFriends;
+    if (friends == null) return const [];
+
+    return friends
+        .map((friend) => _contactFromFriendJson(friend.toJson(), currentUserID))
         .whereType<ChatContact>()
         .where((contact) => contact.status.toUpperCase() == 'ACCEPTED')
         .toList();
   }
 
   Future<String> createDirectChat(String targetUserID) async {
-    final data = await _graphql.rawRequest(
-      query: _createDirectChatMutation,
-      variables: {'targetUserID': targetUserID},
+    final response = await _graphql.requestOnce(
+      GCreateDirectChatReq(
+        (b) => b.vars.input.targetUserID.value = targetUserID,
+      ),
     );
-    final chat = data['createDirectChat'];
-    if (chat is Map<String, dynamic>) {
-      final id = chat['id']?.toString();
-      if (id != null && id.isNotEmpty) return id;
-    }
+    _throwOnErrors(response, 'ایجاد گفتگو ناموفق بود');
+
+    final id = response.data?.createDirectChat.id;
+    if (id != null && id.isNotEmpty) return id;
     throw const GraphQLRawException('ایجاد گفتگو ناموفق بود');
   }
 
@@ -51,27 +72,24 @@ class ChatRepository {
     int limit = 30,
     int offset = 0,
   }) async {
-    final data = await _graphql.rawRequest(
-      query: _getChatMessagesQuery,
-      variables: {
-        'chatID': chatID,
-        'limit': limit,
-        'offset': offset,
-      },
+    final response = await _graphql.requestOnce(
+      GGetChatMessagesReq(
+        (b) => b.vars
+          ..chatID.value = chatID
+          ..limit = limit
+          ..offset = offset,
+      ),
     );
-    final rawMessages = data['getChatMessages'];
-    if (rawMessages is! List) return const [];
+    _throwOnErrors(response, 'دریافت پیام‌ها ناموفق بود');
+
+    final rawMessages = response.data?.getChatMessages;
+    if (rawMessages == null) return const [];
+
     final messages = rawMessages
-        .whereType<Map<String, dynamic>>()
-        .map(ChatMessage.fromJson)
+        .map((message) => ChatMessage.fromJson(message.toJson()))
         .where((message) => message.id.isNotEmpty)
-        .toList();
-    messages.sort((a, b) {
-      final aDate = DateTime.tryParse(a.createdAt);
-      final bDate = DateTime.tryParse(b.createdAt);
-      if (aDate == null || bDate == null) return 0;
-      return aDate.compareTo(bDate);
-    });
+        .toList()
+      ..sort(compareMessagesByCreatedAt);
     return messages;
   }
 
@@ -80,31 +98,41 @@ class ChatRepository {
     required String content,
     String? replyToID,
   }) async {
-    final data = await _graphql.rawRequest(
-      query: _sendMessageMutation,
-      variables: {
-        'chatID': chatID,
-        'content': content,
-        'replyToID': replyToID,
-      },
+    final response = await _graphql.requestOnce(
+      GSendMessageReq((b) {
+        b.vars.input
+          ..chatID = chatID
+          ..content = content;
+        if (replyToID != null && replyToID.isNotEmpty) {
+          b.vars.input.replyToID = replyToID;
+        }
+      }),
     );
-    final rawMessage = data['sendMessage'];
-    if (rawMessage is Map<String, dynamic>) {
-      return ChatMessage.fromJson(rawMessage);
-    }
+    _throwOnErrors(response, 'ارسال پیام ناموفق بود');
+
+    final sent = response.data?.sendMessage;
+    if (sent != null) return ChatMessage.fromJson(sent.toJson());
     throw const GraphQLRawException('ارسال پیام ناموفق بود');
   }
 
   Future<ChatMessage> deleteMessage(String messageID) async {
-    final data = await _graphql.rawRequest(
-      query: _deleteMessageMutation,
-      variables: {'messageID': messageID},
+    final response = await _graphql.requestOnce(
+      GDeleteMessageReq((b) => b.vars.messageID.value = messageID),
     );
-    final rawMessage = data['deleteMessage'];
-    if (rawMessage is Map<String, dynamic>) {
-      return ChatMessage.fromJson(rawMessage);
-    }
+    _throwOnErrors(response, 'حذف پیام ناموفق بود');
+
+    final deleted = response.data?.deleteMessage;
+    if (deleted != null) return ChatMessage.fromJson(deleted.toJson());
     throw const GraphQLRawException('حذف پیام ناموفق بود');
+  }
+
+  void _throwOnErrors<TData, TVars>(
+    OperationResponse<TData, TVars> response,
+    String fallbackMessage,
+  ) {
+    if (!response.hasErrors) return;
+    final message = graphQLResponseErrorMessage(response);
+    throw GraphQLRawException(message.isEmpty ? fallbackMessage : message);
   }
 
   ChatContact? _contactFromFriendJson(
@@ -142,117 +170,3 @@ class ChatRepository {
     );
   }
 }
-
-const String _getMeQuery = r'''
-query GetMe {
-  getMe {
-    id
-  }
-}
-''';
-
-const String _getFriendsQuery = r'''
-query GetFriends($limit: Int, $offset: Int) {
-  getFriends(limit: $limit, offset: $offset) {
-    id
-    status
-    requesterID
-    receiverID
-    userLowID
-    userHighID
-    requester {
-      id
-      fullName
-      phoneNumber
-    }
-    receiver {
-      id
-      fullName
-      phoneNumber
-    }
-  }
-}
-''';
-
-const String _createDirectChatMutation = r'''
-mutation CreateDirectChat($targetUserID: UUID!) {
-  createDirectChat(input: {
-    targetUserID: $targetUserID
-  }) {
-    id
-  }
-}
-''';
-
-const String _getChatMessagesQuery = r'''
-query GetChatMessages($chatID: UUID!, $limit: Int, $offset: Int) {
-  getChatMessages(chatID: $chatID, limit: $limit, offset: $offset) {
-    id
-    content
-    type
-    chatID
-    senderID
-    replyToID
-    isDeleted
-    deletedAt
-    createdAt
-    updatedAt
-    replyTo {
-      id
-      content
-      senderID
-      createdAt
-    }
-    sender {
-      id
-    }
-  }
-}
-''';
-
-const String _sendMessageMutation = r'''
-mutation SendMessage($chatID: ID!, $content: String!, $replyToID: ID) {
-  sendMessage(input: {
-    chatID: $chatID
-    content: $content
-    replyToID: $replyToID
-  }) {
-    id
-    content
-    type
-    chatID
-    senderID
-    replyToID
-    isDeleted
-    deletedAt
-    createdAt
-    updatedAt
-    replyTo {
-      id
-      content
-      senderID
-      createdAt
-    }
-    sender {
-      id
-    }
-  }
-}
-''';
-
-const String _deleteMessageMutation = r'''
-mutation DeleteMessage($messageID: UUID!) {
-  deleteMessage(messageID: $messageID) {
-    id
-    content
-    type
-    chatID
-    senderID
-    replyToID
-    isDeleted
-    deletedAt
-    createdAt
-    updatedAt
-  }
-}
-''';
