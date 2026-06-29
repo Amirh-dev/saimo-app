@@ -87,6 +87,9 @@ class _$GRefreshTokenData_refreshTokenSerializer
       'accessToken',
       serializers.serialize(object.accessToken,
           specifiedType: const FullType(String)),
+      'refreshToken',
+      serializers.serialize(object.refreshToken,
+          specifiedType: const FullType(String)),
       'user',
       serializers.serialize(object.user,
           specifiedType: const FullType(GRefreshTokenData_refreshToken_user)),
@@ -113,6 +116,10 @@ class _$GRefreshTokenData_refreshTokenSerializer
           break;
         case 'accessToken':
           result.accessToken = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'refreshToken':
+          result.refreshToken = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
         case 'user':
@@ -304,6 +311,8 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
   @override
   final String accessToken;
   @override
+  final String refreshToken;
+  @override
   final GRefreshTokenData_refreshToken_user user;
 
   factory _$GRefreshTokenData_refreshToken(
@@ -313,12 +322,15 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
   _$GRefreshTokenData_refreshToken._(
       {required this.G__typename,
       required this.accessToken,
+      required this.refreshToken,
       required this.user})
       : super._() {
     BuiltValueNullFieldError.checkNotNull(
         G__typename, r'GRefreshTokenData_refreshToken', 'G__typename');
     BuiltValueNullFieldError.checkNotNull(
         accessToken, r'GRefreshTokenData_refreshToken', 'accessToken');
+    BuiltValueNullFieldError.checkNotNull(
+        refreshToken, r'GRefreshTokenData_refreshToken', 'refreshToken');
     BuiltValueNullFieldError.checkNotNull(
         user, r'GRefreshTokenData_refreshToken', 'user');
   }
@@ -338,6 +350,7 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
     return other is GRefreshTokenData_refreshToken &&
         G__typename == other.G__typename &&
         accessToken == other.accessToken &&
+        refreshToken == other.refreshToken &&
         user == other.user;
   }
 
@@ -346,6 +359,7 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
     var _$hash = 0;
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, accessToken.hashCode);
+    _$hash = $jc(_$hash, refreshToken.hashCode);
     _$hash = $jc(_$hash, user.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -356,6 +370,7 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
     return (newBuiltValueToStringHelper(r'GRefreshTokenData_refreshToken')
           ..add('G__typename', G__typename)
           ..add('accessToken', accessToken)
+          ..add('refreshToken', refreshToken)
           ..add('user', user))
         .toString();
   }
@@ -375,6 +390,10 @@ class GRefreshTokenData_refreshTokenBuilder
   String? get accessToken => _$this._accessToken;
   set accessToken(String? accessToken) => _$this._accessToken = accessToken;
 
+  String? _refreshToken;
+  String? get refreshToken => _$this._refreshToken;
+  set refreshToken(String? refreshToken) => _$this._refreshToken = refreshToken;
+
   GRefreshTokenData_refreshToken_userBuilder? _user;
   GRefreshTokenData_refreshToken_userBuilder get user =>
       _$this._user ??= new GRefreshTokenData_refreshToken_userBuilder();
@@ -390,6 +409,7 @@ class GRefreshTokenData_refreshTokenBuilder
     if ($v != null) {
       _G__typename = $v.G__typename;
       _accessToken = $v.accessToken;
+      _refreshToken = $v.refreshToken;
       _user = $v.user.toBuilder();
       _$v = null;
     }
@@ -419,6 +439,8 @@ class GRefreshTokenData_refreshTokenBuilder
                   r'GRefreshTokenData_refreshToken', 'G__typename'),
               accessToken: BuiltValueNullFieldError.checkNotNull(accessToken,
                   r'GRefreshTokenData_refreshToken', 'accessToken'),
+              refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
+                  r'GRefreshTokenData_refreshToken', 'refreshToken'),
               user: user.build());
     } catch (_) {
       late String _$failedField;

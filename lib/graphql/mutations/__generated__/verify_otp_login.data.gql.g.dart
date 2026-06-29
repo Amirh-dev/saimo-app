@@ -92,6 +92,9 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLoginSerializer
       'accessToken',
       serializers.serialize(object.accessToken,
           specifiedType: const FullType(String)),
+      'refreshToken',
+      serializers.serialize(object.refreshToken,
+          specifiedType: const FullType(String)),
       'user',
       serializers.serialize(object.user,
           specifiedType:
@@ -119,6 +122,10 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLoginSerializer
           break;
         case 'accessToken':
           result.accessToken = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'refreshToken':
+          result.refreshToken = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
         case 'user':
@@ -316,6 +323,8 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
   @override
   final String accessToken;
   @override
+  final String refreshToken;
+  @override
   final GVerifyOTPAndLoginData_verifyOTPAndLogin_user user;
 
   factory _$GVerifyOTPAndLoginData_verifyOTPAndLogin(
@@ -327,12 +336,15 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
   _$GVerifyOTPAndLoginData_verifyOTPAndLogin._(
       {required this.G__typename,
       required this.accessToken,
+      required this.refreshToken,
       required this.user})
       : super._() {
     BuiltValueNullFieldError.checkNotNull(G__typename,
         r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'G__typename');
     BuiltValueNullFieldError.checkNotNull(accessToken,
         r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'accessToken');
+    BuiltValueNullFieldError.checkNotNull(refreshToken,
+        r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'refreshToken');
     BuiltValueNullFieldError.checkNotNull(
         user, r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'user');
   }
@@ -353,6 +365,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
     return other is GVerifyOTPAndLoginData_verifyOTPAndLogin &&
         G__typename == other.G__typename &&
         accessToken == other.accessToken &&
+        refreshToken == other.refreshToken &&
         user == other.user;
   }
 
@@ -361,6 +374,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
     var _$hash = 0;
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, accessToken.hashCode);
+    _$hash = $jc(_$hash, refreshToken.hashCode);
     _$hash = $jc(_$hash, user.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -372,6 +386,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
             r'GVerifyOTPAndLoginData_verifyOTPAndLogin')
           ..add('G__typename', G__typename)
           ..add('accessToken', accessToken)
+          ..add('refreshToken', refreshToken)
           ..add('user', user))
         .toString();
   }
@@ -391,6 +406,10 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
   String? get accessToken => _$this._accessToken;
   set accessToken(String? accessToken) => _$this._accessToken = accessToken;
 
+  String? _refreshToken;
+  String? get refreshToken => _$this._refreshToken;
+  set refreshToken(String? refreshToken) => _$this._refreshToken = refreshToken;
+
   GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder? _user;
   GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder get user =>
       _$this._user ??=
@@ -407,6 +426,7 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
     if ($v != null) {
       _G__typename = $v.G__typename;
       _accessToken = $v.accessToken;
+      _refreshToken = $v.refreshToken;
       _user = $v.user.toBuilder();
       _$v = null;
     }
@@ -437,6 +457,8 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
                   r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'G__typename'),
               accessToken: BuiltValueNullFieldError.checkNotNull(accessToken,
                   r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'accessToken'),
+              refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
+                  r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'refreshToken'),
               user: user.build());
     } catch (_) {
       late String _$failedField;

@@ -1,8 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.req.gql.dart';
@@ -15,17 +17,22 @@ class AuthCubit extends Cubit<AuthState> {
     required TokenStorage tokenStorage,
   })  : _graphql = graphQLRepository,
         _tokenStorage = tokenStorage,
-        super(const AuthInitial());
+        super(const AuthInitial()) {
+    _sessionExpiredSubscription = _graphql.sessionExpired.listen((_) {
+      if (!isClosed) emit(const AuthUnauthenticated());
+    });
+  }
 
   final GraphQLRepository _graphql;
   final TokenStorage _tokenStorage;
+  late final StreamSubscription<void> _sessionExpiredSubscription;
   static const _temporaryFullName = 'Simo User';
 
   Future<void> sendOtp(String phoneNumber) async {
     emit(const AuthLoading(AuthAction.sendOtp));
 
     try {
-      await _tokenStorage.clear();
+      await _tokenStorage.clearTokens();
       final response = await _graphql.requestOnce(
         GSendOTPReq(
           (request) => request.vars.input.phoneNumber = phoneNumber,
@@ -138,7 +145,9 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final payload = response.data?.verifyOTPAndRegister;
-      if (payload == null || payload.accessToken.isEmpty) {
+      if (payload == null ||
+          payload.accessToken.isEmpty ||
+          payload.refreshToken.isEmpty) {
         emit(
           const AuthFailure(
             'Invalid verification code',
@@ -148,7 +157,11 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      await _tokenStorage.saveAccessToken(payload.accessToken);
+      await _tokenStorage.saveTokenPair(
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+        issuedAt: DateTime.now().toUtc(),
+      );
       emit(
         AuthNeedsRegistration(
           phoneNumber: phoneNumber,
@@ -202,7 +215,9 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final payload = response.data?.verifyOTPAndRegister;
-      if (payload == null || payload.accessToken.isEmpty) {
+      if (payload == null ||
+          payload.accessToken.isEmpty ||
+          payload.refreshToken.isEmpty) {
         emit(
           const AuthFailure(
             'Invalid verification code',
@@ -212,7 +227,11 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      await _tokenStorage.saveAccessToken(payload.accessToken);
+      await _tokenStorage.saveTokenPair(
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+        issuedAt: DateTime.now().toUtc(),
+      );
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
@@ -291,61 +310,99 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     emit(const AuthLoading(AuthAction.refresh));
 
     try {
-      final response = await _graphql.requestOnce(
-        GRefreshTokenReq(),
-        requiresAuth: false,
-        skipAuthRefresh: true,
+      final token = await _graphql.ensureValidAccessToken(forceRefresh: true);
+      if (token == null) {
+        emit(const AuthUnauthenticated());
+        return;
+      }
+
+      final profile = await _loadCurrentAuthProfile();
+      _emitProfileAwareAuthState(
+        profile: profile,
+        action: AuthAction.refresh,
+        accessToken: token,
       );
-      if (response.hasErrors) {
-        await _tokenStorage.clear();
-        emit(const AuthUnauthenticated());
-        return;
-      }
-
-      final payload = response.data?.refreshToken;
-      if (payload == null || payload.accessToken.isEmpty) {
-        await _tokenStorage.clear();
-        emit(const AuthUnauthenticated());
-        return;
-      }
-
-      await _tokenStorage.saveAccessToken(payload.accessToken);
+    } on UnauthorizedException {
+      emit(const AuthUnauthenticated());
+    } catch (error) {
       emit(
-        AuthAuthenticated(
-          userId: payload.user.id,
+        AuthFailure(
+          _friendlyError(error, fallbackMessage: 'Refreshing session failed'),
           action: AuthAction.refresh,
-          accessToken: payload.accessToken,
         ),
       );
-    } catch (_) {
-      await _tokenStorage.clear();
-      emit(const AuthUnauthenticated());
     }
   }
 
   Future<void> checkAuthStatus() async {
-    final token = await _tokenStorage.getAccessToken();
-    if (token == null || token.isEmpty) {
+    emit(const AuthLoading(AuthAction.checkStatus));
+    final accessToken = await _tokenStorage.getAccessToken();
+    final refreshToken = await _tokenStorage.getRefreshToken();
+
+    if (kDebugMode) {
+      debugPrint(
+        '[Auth] startup checking saved tokens '
+        'accessToken=${accessToken?.isNotEmpty == true} '
+        'refreshToken=${refreshToken?.isNotEmpty == true}',
+      );
+    }
+
+    if ((accessToken == null || accessToken.isEmpty) &&
+        (refreshToken == null || refreshToken.isEmpty)) {
       emit(const AuthUnauthenticated());
       return;
     }
 
     try {
+      final token = await _graphql.ensureValidAccessToken();
+      if (token == null) {
+        emit(const AuthUnauthenticated());
+        return;
+      }
+
       final profile = await _loadCurrentAuthProfile();
       _emitProfileAwareAuthState(
         profile: profile,
         action: AuthAction.checkStatus,
+        accessToken: token,
       );
-    } catch (_) {
-      await _tokenStorage.clear();
+    } on UnauthorizedException {
+      emit(const AuthUnauthenticated());
+    } catch (error) {
+      final stillHasAccessToken =
+          (await _tokenStorage.getAccessToken())?.isNotEmpty == true;
+      final stillHasRefreshToken =
+          (await _tokenStorage.getRefreshToken())?.isNotEmpty == true;
+      if (stillHasAccessToken || stillHasRefreshToken) {
+        if (kDebugMode) {
+          debugPrint(
+            '[Auth] startup validation temporarily unavailable; '
+            'keeping saved session',
+          );
+        }
+        emit(
+          AuthAuthenticated(
+            userId: '',
+            action: AuthAction.checkStatus,
+            accessToken: await _tokenStorage.getAccessToken(),
+          ),
+        );
+        return;
+      }
       emit(const AuthUnauthenticated());
     }
   }
 
   Future<void> logout() async {
-    await _tokenStorage.clear();
+    await _tokenStorage.clearTokens();
     _graphql.clearCache();
     emit(const AuthUnauthenticated());
+  }
+
+  @override
+  Future<void> close() async {
+    await _sessionExpiredSubscription.cancel();
+    return super.close();
   }
 
   GUserStudyTime _resolveStudyTime(dynamic studyTime) {
@@ -393,7 +450,9 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     }
 
     final payload = response.data?.verifyOTPAndLogin;
-    if (payload == null || payload.accessToken.isEmpty) {
+    if (payload == null ||
+        payload.accessToken.isEmpty ||
+        payload.refreshToken.isEmpty) {
       if (emitFailure) {
         emit(
           const AuthFailure(
@@ -405,7 +464,11 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       return false;
     }
 
-    await _tokenStorage.saveAccessToken(payload.accessToken);
+    await _tokenStorage.saveTokenPair(
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      issuedAt: DateTime.now().toUtc(),
+    );
     final profile = await _loadCurrentAuthProfile(
       fallbackUserId: payload.user.id,
       fallbackPhoneNumber: phoneNumber,

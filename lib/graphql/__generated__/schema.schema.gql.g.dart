@@ -330,6 +330,8 @@ Serializer<GInterestWhereInput> _$gInterestWhereInputSerializer =
     new _$GInterestWhereInputSerializer();
 Serializer<GSendOTPInput> _$gSendOTPInputSerializer =
     new _$GSendOTPInputSerializer();
+Serializer<GRefreshTokenInput> _$gRefreshTokenInputSerializer =
+    new _$GRefreshTokenInputSerializer();
 Serializer<GTagWhereInput> _$gTagWhereInputSerializer =
     new _$GTagWhereInputSerializer();
 Serializer<GTaskOrder> _$gTaskOrderSerializer = new _$GTaskOrderSerializer();
@@ -2197,6 +2199,49 @@ class _$GSendOTPInputSerializer implements StructuredSerializer<GSendOTPInput> {
       switch (key) {
         case 'phoneNumber':
           result.phoneNumber = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+      }
+    }
+
+    return result.build();
+  }
+}
+
+class _$GRefreshTokenInputSerializer
+    implements StructuredSerializer<GRefreshTokenInput> {
+  @override
+  final Iterable<Type> types = const [GRefreshTokenInput, _$GRefreshTokenInput];
+  @override
+  final String wireName = 'GRefreshTokenInput';
+
+  @override
+  Iterable<Object?> serialize(
+      Serializers serializers, GRefreshTokenInput object,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = <Object?>[
+      'refreshToken',
+      serializers.serialize(object.refreshToken,
+          specifiedType: const FullType(String)),
+    ];
+
+    return result;
+  }
+
+  @override
+  GRefreshTokenInput deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = new GRefreshTokenInputBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'refreshToken':
+          result.refreshToken = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
       }
@@ -8690,6 +8735,93 @@ class GSendOTPInputBuilder
         new _$GSendOTPInput._(
             phoneNumber: BuiltValueNullFieldError.checkNotNull(
                 phoneNumber, r'GSendOTPInput', 'phoneNumber'));
+    replace(_$result);
+    return _$result;
+  }
+}
+
+class _$GRefreshTokenInput extends GRefreshTokenInput {
+  @override
+  final String refreshToken;
+
+  factory _$GRefreshTokenInput(
+          [void Function(GRefreshTokenInputBuilder)? updates]) =>
+      (new GRefreshTokenInputBuilder()..update(updates))._build();
+
+  _$GRefreshTokenInput._({required this.refreshToken}) : super._() {
+    BuiltValueNullFieldError.checkNotNull(
+        refreshToken, r'GRefreshTokenInput', 'refreshToken');
+  }
+
+  @override
+  GRefreshTokenInput rebuild(
+          void Function(GRefreshTokenInputBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GRefreshTokenInputBuilder toBuilder() =>
+      new GRefreshTokenInputBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GRefreshTokenInput && refreshToken == other.refreshToken;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, refreshToken.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GRefreshTokenInput')
+          ..add('refreshToken', refreshToken))
+        .toString();
+  }
+}
+
+class GRefreshTokenInputBuilder
+    implements Builder<GRefreshTokenInput, GRefreshTokenInputBuilder> {
+  _$GRefreshTokenInput? _$v;
+
+  String? _refreshToken;
+  String? get refreshToken => _$this._refreshToken;
+  set refreshToken(String? refreshToken) => _$this._refreshToken = refreshToken;
+
+  GRefreshTokenInputBuilder();
+
+  GRefreshTokenInputBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _refreshToken = $v.refreshToken;
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GRefreshTokenInput other) {
+    ArgumentError.checkNotNull(other, 'other');
+    _$v = other as _$GRefreshTokenInput;
+  }
+
+  @override
+  void update(void Function(GRefreshTokenInputBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GRefreshTokenInput build() => _build();
+
+  _$GRefreshTokenInput _build() {
+    final _$result = _$v ??
+        new _$GRefreshTokenInput._(
+            refreshToken: BuiltValueNullFieldError.checkNotNull(
+                refreshToken, r'GRefreshTokenInput', 'refreshToken'));
     replace(_$result);
     return _$result;
   }

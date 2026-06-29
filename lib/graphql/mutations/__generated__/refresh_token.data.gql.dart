@@ -52,6 +52,7 @@ abstract class GRefreshTokenData_refreshToken
   @BuiltValueField(wireName: '__typename')
   String get G__typename;
   String get accessToken;
+  String get refreshToken;
   GRefreshTokenData_refreshToken_user get user;
   static Serializer<GRefreshTokenData_refreshToken> get serializer =>
       _$gRefreshTokenDataRefreshTokenSerializer;

@@ -55,6 +55,7 @@ abstract class GVerifyOTPAndRegisterData_verifyOTPAndRegister
   @BuiltValueField(wireName: '__typename')
   String get G__typename;
   String get accessToken;
+  String get refreshToken;
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_user get user;
   static Serializer<GVerifyOTPAndRegisterData_verifyOTPAndRegister>
       get serializer =>

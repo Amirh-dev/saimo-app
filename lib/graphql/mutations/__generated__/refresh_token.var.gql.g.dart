@@ -19,23 +19,50 @@ class _$GRefreshTokenVarsSerializer
   @override
   Iterable<Object?> serialize(Serializers serializers, GRefreshTokenVars object,
       {FullType specifiedType = FullType.unspecified}) {
-    return <Object?>[];
+    final result = <Object?>[
+      'input',
+      serializers.serialize(object.input,
+          specifiedType: const FullType(_i1.GRefreshTokenInput)),
+    ];
+
+    return result;
   }
 
   @override
   GRefreshTokenVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    return new GRefreshTokenVarsBuilder().build();
+    final result = new GRefreshTokenVarsBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'input':
+          result.input.replace(serializers.deserialize(value,
+                  specifiedType: const FullType(_i1.GRefreshTokenInput))!
+              as _i1.GRefreshTokenInput);
+          break;
+      }
+    }
+
+    return result.build();
   }
 }
 
 class _$GRefreshTokenVars extends GRefreshTokenVars {
+  @override
+  final _i1.GRefreshTokenInput input;
+
   factory _$GRefreshTokenVars(
           [void Function(GRefreshTokenVarsBuilder)? updates]) =>
       (new GRefreshTokenVarsBuilder()..update(updates))._build();
 
-  _$GRefreshTokenVars._() : super._();
+  _$GRefreshTokenVars._({required this.input}) : super._() {
+    BuiltValueNullFieldError.checkNotNull(input, r'GRefreshTokenVars', 'input');
+  }
 
   @override
   GRefreshTokenVars rebuild(void Function(GRefreshTokenVarsBuilder) updates) =>
@@ -48,17 +75,22 @@ class _$GRefreshTokenVars extends GRefreshTokenVars {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is GRefreshTokenVars;
+    return other is GRefreshTokenVars && input == other.input;
   }
 
   @override
   int get hashCode {
-    return 759434152;
+    var _$hash = 0;
+    _$hash = $jc(_$hash, input.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
   }
 
   @override
   String toString() {
-    return newBuiltValueToStringHelper(r'GRefreshTokenVars').toString();
+    return (newBuiltValueToStringHelper(r'GRefreshTokenVars')
+          ..add('input', input))
+        .toString();
   }
 }
 
@@ -66,7 +98,21 @@ class GRefreshTokenVarsBuilder
     implements Builder<GRefreshTokenVars, GRefreshTokenVarsBuilder> {
   _$GRefreshTokenVars? _$v;
 
+  _i1.GRefreshTokenInputBuilder? _input;
+  _i1.GRefreshTokenInputBuilder get input =>
+      _$this._input ??= new _i1.GRefreshTokenInputBuilder();
+  set input(_i1.GRefreshTokenInputBuilder? input) => _$this._input = input;
+
   GRefreshTokenVarsBuilder();
+
+  GRefreshTokenVarsBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _input = $v.input.toBuilder();
+      _$v = null;
+    }
+    return this;
+  }
 
   @override
   void replace(GRefreshTokenVars other) {
@@ -83,7 +129,20 @@ class GRefreshTokenVarsBuilder
   GRefreshTokenVars build() => _build();
 
   _$GRefreshTokenVars _build() {
-    final _$result = _$v ?? new _$GRefreshTokenVars._();
+    _$GRefreshTokenVars _$result;
+    try {
+      _$result = _$v ?? new _$GRefreshTokenVars._(input: input.build());
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'input';
+        input.build();
+      } catch (e) {
+        throw new BuiltValueNestedFieldError(
+            r'GRefreshTokenVars', _$failedField, e.toString());
+      }
+      rethrow;
+    }
     replace(_$result);
     return _$result;
   }

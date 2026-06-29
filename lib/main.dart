@@ -47,7 +47,7 @@ Future<void> main() async {
             create: (context) => AuthCubit(
               graphQLRepository: context.read<GraphQLRepository>(),
               tokenStorage: context.read<TokenStorage>(),
-            ),
+            )..checkAuthStatus(),
           ),
           BlocProvider(
             create: (context) => ProfileCubit(

@@ -11,11 +11,16 @@ Client createFerryClient({
 }) {
   final authLink = Link.function((request, [forward]) {
     final token = tokenStorage.currentAccessToken;
+    final operationName = request.operation.operationName;
+    final requiresAccessToken = operationName != 'SendOTP' &&
+        operationName != 'VerifyOTPAndLogin' &&
+        operationName != 'VerifyOTPAndRegister' &&
+        operationName != 'RefreshToken';
     final updatedRequest = request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(
         headers: {
           ...?headers?.headers,
-          if (token != null && token.isNotEmpty)
+          if (requiresAccessToken && token != null && token.isNotEmpty)
             'Authorization': 'Bearer $token',
         },
       ),

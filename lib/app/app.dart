@@ -27,6 +27,14 @@ class MyApp extends StatelessWidget {
         home: BlocBuilder<AuthCubit, AuthState>(
           buildWhen: _shouldBuildAuthShell,
           builder: (context, state) {
+            if (state is AuthInitial ||
+                (state is AuthLoading &&
+                    state.action == AuthAction.checkStatus)) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator.adaptive()),
+              );
+            }
+
             if (state is OtpSent) {
               return OTPCodeScreen(
                 phoneNumber: state.phoneNumber,
@@ -73,10 +81,8 @@ class MyApp extends StatelessWidget {
         AuthAction.login ||
         AuthAction.register =>
           false,
-        AuthAction.refresh ||
-        AuthAction.checkStatus ||
-        AuthAction.logout =>
-          false,
+        AuthAction.refresh || AuthAction.logout => false,
+        AuthAction.checkStatus => true,
       };
     }
 

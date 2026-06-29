@@ -1,6 +1,7 @@
-mutation RefreshToken {
-  refreshToken {
+mutation RefreshToken($input: RefreshTokenInput!) {
+  refreshToken(input: $input) {
     accessToken
+    refreshToken
     user {
       id
     }

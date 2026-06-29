@@ -1,6 +1,7 @@
 mutation VerifyOTPAndLogin($input: VerifyOTPAndLoginInput!) {
   verifyOTPAndLogin(input: $input) {
     accessToken
+    refreshToken
     user {
       id
     }

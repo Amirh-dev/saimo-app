@@ -57,6 +57,15 @@ const AuthPayload = _i1.ObjectTypeDefinitionNode(
       ),
     ),
     _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'refreshToken'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'String'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
       name: _i1.NameNode(value: 'user'),
       directives: [],
       args: [],
@@ -270,7 +279,17 @@ const Mutation = _i1.ObjectTypeDefinitionNode(
     _i1.FieldDefinitionNode(
       name: _i1.NameNode(value: 'refreshToken'),
       directives: [],
-      args: [],
+      args: [
+        _i1.InputValueDefinitionNode(
+          name: _i1.NameNode(value: 'input'),
+          directives: [],
+          type: _i1.NamedTypeNode(
+            name: _i1.NameNode(value: 'RefreshTokenInput'),
+            isNonNull: true,
+          ),
+          defaultValue: null,
+        )
+      ],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'AuthPayload'),
         isNonNull: true,
@@ -3368,6 +3387,21 @@ const SendOTPInput = _i1.InputObjectTypeDefinitionNode(
   fields: [
     _i1.InputValueDefinitionNode(
       name: _i1.NameNode(value: 'phoneNumber'),
+      directives: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'String'),
+        isNonNull: true,
+      ),
+      defaultValue: null,
+    )
+  ],
+);
+const RefreshTokenInput = _i1.InputObjectTypeDefinitionNode(
+  name: _i1.NameNode(value: 'RefreshTokenInput'),
+  directives: [],
+  fields: [
+    _i1.InputValueDefinitionNode(
+      name: _i1.NameNode(value: 'refreshToken'),
       directives: [],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'String'),
@@ -6655,6 +6689,7 @@ const document = _i1.DocumentNode(definitions: [
   GoalWhereInput,
   InterestWhereInput,
   SendOTPInput,
+  RefreshTokenInput,
   TagWhereInput,
   TaskOrder,
   TaskWhereInput,

@@ -93,6 +93,9 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegisterSerializer
       'accessToken',
       serializers.serialize(object.accessToken,
           specifiedType: const FullType(String)),
+      'refreshToken',
+      serializers.serialize(object.refreshToken,
+          specifiedType: const FullType(String)),
       'user',
       serializers.serialize(object.user,
           specifiedType: const FullType(
@@ -120,6 +123,10 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegisterSerializer
           break;
         case 'accessToken':
           result.accessToken = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'refreshToken':
+          result.refreshToken = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
         case 'user':
@@ -321,6 +328,8 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
   @override
   final String accessToken;
   @override
+  final String refreshToken;
+  @override
   final GVerifyOTPAndRegisterData_verifyOTPAndRegister_user user;
 
   factory _$GVerifyOTPAndRegisterData_verifyOTPAndRegister(
@@ -333,12 +342,15 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
   _$GVerifyOTPAndRegisterData_verifyOTPAndRegister._(
       {required this.G__typename,
       required this.accessToken,
+      required this.refreshToken,
       required this.user})
       : super._() {
     BuiltValueNullFieldError.checkNotNull(G__typename,
         r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'G__typename');
     BuiltValueNullFieldError.checkNotNull(accessToken,
         r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'accessToken');
+    BuiltValueNullFieldError.checkNotNull(refreshToken,
+        r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'refreshToken');
     BuiltValueNullFieldError.checkNotNull(
         user, r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'user');
   }
@@ -360,6 +372,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
     return other is GVerifyOTPAndRegisterData_verifyOTPAndRegister &&
         G__typename == other.G__typename &&
         accessToken == other.accessToken &&
+        refreshToken == other.refreshToken &&
         user == other.user;
   }
 
@@ -368,6 +381,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
     var _$hash = 0;
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, accessToken.hashCode);
+    _$hash = $jc(_$hash, refreshToken.hashCode);
     _$hash = $jc(_$hash, user.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -379,6 +393,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
             r'GVerifyOTPAndRegisterData_verifyOTPAndRegister')
           ..add('G__typename', G__typename)
           ..add('accessToken', accessToken)
+          ..add('refreshToken', refreshToken)
           ..add('user', user))
         .toString();
   }
@@ -398,6 +413,10 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
   String? get accessToken => _$this._accessToken;
   set accessToken(String? accessToken) => _$this._accessToken = accessToken;
 
+  String? _refreshToken;
+  String? get refreshToken => _$this._refreshToken;
+  set refreshToken(String? refreshToken) => _$this._refreshToken = refreshToken;
+
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder? _user;
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder get user =>
       _$this._user ??=
@@ -414,6 +433,7 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
     if ($v != null) {
       _G__typename = $v.G__typename;
       _accessToken = $v.accessToken;
+      _refreshToken = $v.refreshToken;
       _user = $v.user.toBuilder();
       _$v = null;
     }
@@ -449,6 +469,10 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
                   accessToken,
                   r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
                   'accessToken'),
+              refreshToken: BuiltValueNullFieldError.checkNotNull(
+                  refreshToken,
+                  r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
+                  'refreshToken'),
               user: user.build());
     } catch (_) {
       late String _$failedField;

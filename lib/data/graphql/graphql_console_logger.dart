@@ -83,20 +83,44 @@ class GraphQLConsoleLogger {
   }
 
   Object? _toLogValue(Object? value) {
-    if (value == null ||
-        value is String ||
-        value is num ||
-        value is bool ||
-        value is Map ||
-        value is Iterable) {
-      return value;
+    Object? serializableValue = value;
+
+    if (value != null &&
+        value is! String &&
+        value is! num &&
+        value is! bool &&
+        value is! Map &&
+        value is! Iterable) {
+      try {
+        final dynamic dynamicValue = value;
+        serializableValue = dynamicValue.toJson();
+      } catch (_) {
+        serializableValue = value.toString();
+      }
     }
 
-    try {
-      final dynamic dynamicValue = value;
-      return dynamicValue.toJson();
-    } catch (_) {
-      return value.toString();
+    return _redactTokens(serializableValue);
+  }
+
+  Object? _redactTokens(Object? value) {
+    if (value is Map) {
+      return value.map((key, nestedValue) {
+        final fieldName = key.toString();
+        if (fieldName == 'accessToken' || fieldName == 'refreshToken') {
+          final token = nestedValue?.toString() ?? '';
+          return MapEntry(
+            key,
+            '<redacted exists=${token.isNotEmpty} length=${token.length}>',
+          );
+        }
+        return MapEntry(key, _redactTokens(nestedValue));
+      });
     }
+
+    if (value is Iterable) {
+      return value.map(_redactTokens).toList();
+    }
+
+    return value;
   }
 }

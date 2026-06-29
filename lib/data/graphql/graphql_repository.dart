@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ferry/ferry.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gql_http_link/gql_http_link.dart';
 import 'package:http/http.dart' as http;
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
@@ -25,6 +27,15 @@ class GraphQLRawException implements Exception {
   String toString() => message;
 }
 
+class AuthRefreshTemporarilyUnavailableException implements Exception {
+  const AuthRefreshTemporarilyUnavailableException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class GraphQLRepository {
   GraphQLRepository(
     this._client, {
@@ -36,7 +47,10 @@ class GraphQLRepository {
   final Client _client;
   final TokenStorage _tokenStorage;
   final GraphQLConsoleLogger _logger;
-  Future<void>? _refreshFuture;
+  Future<String?>? _refreshFuture;
+  final _sessionExpiredController = StreamController<void>.broadcast();
+
+  Stream<void> get sessionExpired => _sessionExpiredController.stream;
 
   Stream<OperationResponse<TData, TVars>> request<TData, TVars>(
     OperationRequest<TData, TVars> request, {
@@ -44,9 +58,32 @@ class GraphQLRepository {
     bool skipAuthRefresh = false,
   }) async* {
     if (requiresAuth && !skipAuthRefresh) {
-      await ensureFreshToken();
+      final token = await ensureValidAccessToken();
+      if (token == null) throw const UnauthorizedException();
     }
-    yield* _loggedRequest(request);
+
+    await for (final response in _loggedRequest(request)) {
+      if (!requiresAuth ||
+          skipAuthRefresh ||
+          !_isUnauthorizedResponse(response)) {
+        yield response;
+        continue;
+      }
+
+      final refreshedToken = await ensureValidAccessToken(forceRefresh: true);
+      if (refreshedToken == null) {
+        yield response;
+        return;
+      }
+
+      await for (final retryResponse in _loggedRequest(request)) {
+        if (_isUnauthorizedResponse(retryResponse)) {
+          await _expireSession();
+        }
+        yield retryResponse;
+      }
+      return;
+    }
   }
 
   Future<OperationResponse<TData, TVars>> requestOnce<TData, TVars>(
@@ -55,9 +92,27 @@ class GraphQLRepository {
     bool skipAuthRefresh = false,
   }) async {
     if (requiresAuth && !skipAuthRefresh) {
-      await ensureFreshToken();
+      final token = await ensureValidAccessToken();
+      if (token == null) throw const UnauthorizedException();
     }
-    return _loggedRequest(request).firstWhere(_isResolvedResponse);
+
+    final response =
+        await _loggedRequest(request).firstWhere(_isResolvedResponse);
+    if (!requiresAuth ||
+        skipAuthRefresh ||
+        !_isUnauthorizedResponse(response)) {
+      return response;
+    }
+
+    final refreshedToken = await ensureValidAccessToken(forceRefresh: true);
+    if (refreshedToken == null) return response;
+
+    final retryResponse =
+        await _loggedRequest(request).firstWhere(_isResolvedResponse);
+    if (_isUnauthorizedResponse(retryResponse)) {
+      await _expireSession();
+    }
+    return retryResponse;
   }
 
   void clearCache() {
@@ -82,85 +137,195 @@ class GraphQLRepository {
     Map<String, dynamic> variables = const {},
     bool requiresAuth = true,
   }) async {
-    if (requiresAuth) {
-      await ensureFreshToken();
-    }
+    var token = requiresAuth ? await ensureValidAccessToken() : null;
+    if (requiresAuth && token == null) throw const UnauthorizedException();
 
-    final token = _tokenStorage.currentAccessToken;
-    final response = await http.post(
-      Uri.parse(_logger.endpoint),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'query': query,
-        'variables': variables,
-      }),
-    );
-
-    // Decode the raw bytes as UTF-8 explicitly. `response.body` falls back to
-    // Latin-1 when the server omits `charset=utf-8`, which turns Persian text
-    // into mojibake (e.g. "تست" -> "ØªØ³Øª").
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    if (decoded is! Map<String, dynamic>) {
-      throw const GraphQLRawException('Invalid GraphQL response');
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw GraphQLRawException(
-        graphQLRawErrorMessage(decoded),
+    for (var attempt = 0; attempt < 2; attempt += 1) {
+      final response = await http.post(
+        Uri.parse(_logger.endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          if (requiresAuth && token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'query': query,
+          'variables': variables,
+        }),
       );
+
+      // Decode the raw bytes as UTF-8 explicitly. `response.body` falls back
+      // to Latin-1 when the server omits `charset=utf-8`.
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! Map<String, dynamic>) {
+        throw const GraphQLRawException('Invalid GraphQL response');
+      }
+
+      if (requiresAuth &&
+          _isUnauthorizedRawResponse(response.statusCode, decoded)) {
+        if (attempt == 0) {
+          token = await ensureValidAccessToken(forceRefresh: true);
+          if (token == null) throw const UnauthorizedException();
+          continue;
+        }
+        await _expireSession();
+        throw const UnauthorizedException();
+      }
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw GraphQLRawException(graphQLRawErrorMessage(decoded));
+      }
+
+      final errors = decoded['errors'];
+      if (errors is List && errors.isNotEmpty) {
+        throw GraphQLRawException(graphQLRawErrorMessage(decoded));
+      }
+
+      final data = decoded['data'];
+      if (data is Map<String, dynamic>) return data;
+      return const {};
     }
 
-    final errors = decoded['errors'];
-    if (errors is List && errors.isNotEmpty) {
-      throw GraphQLRawException(graphQLRawErrorMessage(decoded));
-    }
-
-    final data = decoded['data'];
-    if (data is Map<String, dynamic>) return data;
-    return const {};
+    throw const UnauthorizedException();
   }
 
   Future<void> ensureFreshToken() async {
-    final token = await _tokenStorage.getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw const UnauthorizedException();
+    final token = await ensureValidAccessToken();
+    if (token == null) throw const UnauthorizedException();
+  }
+
+  Future<String?> ensureValidAccessToken({bool forceRefresh = false}) async {
+    final accessToken = await _tokenStorage.getAccessToken();
+    final refreshToken = await _tokenStorage.getRefreshToken();
+    final savedAt = await _tokenStorage.getAccessTokenSavedAt();
+    final now = DateTime.now().toUtc();
+    final age = savedAt == null ? null : now.difference(savedAt.toUtc());
+
+    if (kDebugMode) {
+      debugPrint(
+        '[Auth] token age minutes=${age?.inMinutes ?? 'unknown'}',
+      );
     }
 
-    if (!await _tokenStorage.shouldRefreshAccessToken()) return;
+    final isFresh = accessToken != null &&
+        accessToken.isNotEmpty &&
+        savedAt != null &&
+        age != null &&
+        age < const Duration(minutes: 25);
+    if (!forceRefresh && isFresh) return accessToken;
 
-    _refreshFuture ??= _refreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _expireSession();
+      return null;
+    }
+
+    final refreshInFlight = _refreshFuture;
+    if (refreshInFlight != null) return refreshInFlight;
+
+    late final Future<String?> refreshFuture;
+    refreshFuture = _refreshAccessToken(refreshToken).whenComplete(() {
+      if (identical(_refreshFuture, refreshFuture)) {
+        _refreshFuture = null;
+      }
+    });
+    _refreshFuture = refreshFuture;
+
     try {
-      await _refreshFuture;
-    } finally {
-      _refreshFuture = null;
+      return await refreshFuture;
+    } on AuthRefreshTemporarilyUnavailableException {
+      rethrow;
     }
   }
 
-  Future<void> _refreshToken() async {
-    // TODO: Backend stores the refresh token in an HttpOnly cookie. If mobile
-    // refresh does not persist across app launches, add cookie-jar support for
-    // the HTTP client used by Ferry/gql_http_link.
+  Future<String?> _refreshAccessToken(String savedRefreshToken) async {
+    if (kDebugMode) {
+      debugPrint('[Auth] refreshing token using saved refreshToken');
+    }
+
     final response = await requestOnce(
-      GRefreshTokenReq(),
+      GRefreshTokenReq(
+        (b) => b.vars.input.refreshToken = savedRefreshToken,
+      ),
       requiresAuth: false,
       skipAuthRefresh: true,
     );
     if (response.hasErrors) {
       final message = graphQLResponseErrorMessage(response);
-      await _tokenStorage.clear();
-      throw UnauthorizedException(message);
+      if (_isUnauthorizedResponse(response) ||
+          _isInvalidRefreshMessage(message)) {
+        if (kDebugMode) {
+          debugPrint('[Auth] refresh failed invalid/expired, clearing tokens');
+        }
+        await _expireSession();
+        return null;
+      }
+      throw AuthRefreshTemporarilyUnavailableException(message);
     }
 
-    final accessToken = response.data?.refreshToken.accessToken;
-    if (accessToken == null || accessToken.isEmpty) {
-      await _tokenStorage.clear();
-      throw const UnauthorizedException('Refresh token failed');
+    final payload = response.data?.refreshToken;
+    if (payload == null ||
+        payload.accessToken.isEmpty ||
+        payload.refreshToken.isEmpty) {
+      await _expireSession();
+      return null;
     }
 
-    await _tokenStorage.saveAccessToken(accessToken);
+    await _tokenStorage.saveTokenPair(
+      accessToken: payload.accessToken,
+      refreshToken: payload.refreshToken,
+      issuedAt: DateTime.now().toUtc(),
+    );
+    if (kDebugMode) {
+      debugPrint('[Auth] refresh success, saved new token pair');
+    }
+    return payload.accessToken;
+  }
+
+  Future<void> _expireSession() async {
+    await _tokenStorage.clearTokens();
+    if (!_sessionExpiredController.isClosed) {
+      _sessionExpiredController.add(null);
+    }
+  }
+
+  bool _isUnauthorizedResponse(OperationResponse<dynamic, dynamic> response) {
+    final exception = response.linkException;
+    if (exception is HttpLinkServerException && exception.statusCode == 401) {
+      return true;
+    }
+
+    final messages = response.graphqlErrors
+            ?.map((error) => error.message)
+            .where((message) => message.isNotEmpty)
+            .join(' ') ??
+        '';
+    return _isUnauthorizedMessage(messages);
+  }
+
+  bool _isUnauthorizedRawResponse(
+    int statusCode,
+    Map<String, dynamic> response,
+  ) {
+    return statusCode == 401 ||
+        _isUnauthorizedMessage(graphQLRawErrorMessage(response));
+  }
+
+  bool _isUnauthorizedMessage(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('unauthorized') ||
+        normalized.contains('unauthenticated') ||
+        normalized.contains('token expired') ||
+        normalized.contains('expired token') ||
+        normalized.contains('invalid token');
+  }
+
+  bool _isInvalidRefreshMessage(String message) {
+    final normalized = message.toLowerCase();
+    return _isUnauthorizedMessage(message) ||
+        (normalized.contains('refresh') &&
+            (normalized.contains('invalid') ||
+                normalized.contains('expired') ||
+                normalized.contains('revoked')));
   }
 
   Stream<OperationResponse<TData, TVars>> _loggedRequest<TData, TVars>(

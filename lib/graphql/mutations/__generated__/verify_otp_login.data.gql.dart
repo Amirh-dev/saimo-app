@@ -54,6 +54,7 @@ abstract class GVerifyOTPAndLoginData_verifyOTPAndLogin
   @BuiltValueField(wireName: '__typename')
   String get G__typename;
   String get accessToken;
+  String get refreshToken;
   GVerifyOTPAndLoginData_verifyOTPAndLogin_user get user;
   static Serializer<GVerifyOTPAndLoginData_verifyOTPAndLogin> get serializer =>
       _$gVerifyOTPAndLoginDataVerifyOTPAndLoginSerializer;
