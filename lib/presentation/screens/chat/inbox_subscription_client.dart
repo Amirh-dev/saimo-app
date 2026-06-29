@@ -7,6 +7,7 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'chat_models.dart';
+import 'chat_repository.dart';
 import 'websocket_channel_connector.dart';
 
 const String _legacyGraphQLWsProtocol = 'graphql-ws';
@@ -31,9 +32,11 @@ class InboxSubscriptionClient {
     required TokenStorage tokenStorage,
     this.endpoint = GraphQLEndpoints.websocket,
   })  : _graphqlRepository = graphqlRepository,
+        _chatRepository = ChatRepository(graphqlRepository),
         _tokenStorage = tokenStorage;
 
   final GraphQLRepository _graphqlRepository;
+  final ChatRepository _chatRepository;
   final TokenStorage _tokenStorage;
   final String endpoint;
   final _eventsController = StreamController<InboxEvent>.broadcast();
@@ -179,6 +182,14 @@ class InboxSubscriptionClient {
         final event = _inboxEventFromPayload(payload);
         if (event != null) {
           _emitStatus(InboxConnectionStatus.connected);
+          try {
+            // Keep Ferry's normalized history current even when no chat room
+            // is open. Active screens receive the same event just below and
+            // run it through their ID-based state upsert as well.
+            _chatRepository.applyInboxEventToCache(event);
+          } catch (_) {
+            // A cache conversion must never interrupt the live socket stream.
+          }
           if (!_eventsController.isClosed) {
             _eventsController.add(event);
           }
@@ -312,6 +323,9 @@ subscription Inbox {
           content
           senderID
           createdAt
+        }
+        sender {
+          id
         }
       }
     }

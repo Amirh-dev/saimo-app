@@ -19,6 +19,11 @@ class ChatUser {
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(id: json['id']?.toString() ?? '');
   }
+
+  Map<String, dynamic> toJson() => {
+        '__typename': 'User',
+        'id': id,
+      };
 }
 
 class ChatReplyMessage {
@@ -42,6 +47,14 @@ class ChatReplyMessage {
       createdAt: json['createdAt']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        '__typename': 'Message',
+        'id': id,
+        'content': content,
+        'senderID': senderID,
+        'createdAt': createdAt,
+      };
 }
 
 class ChatMessage {
@@ -135,6 +148,24 @@ class ChatMessage {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        '__typename': 'Message',
+        'id': id,
+        'content': content,
+        'type': type,
+        'chatID': chatID,
+        'senderID': senderID,
+        'replyToID': replyToID,
+        'isDeleted': isDeleted,
+        'deletedAt': deletedAt,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+        'replyTo': replyTo?.toJson(),
+        // GetChatMessages selects a non-null sender. Delete events only carry
+        // IDs, so retain a normalizable User reference from senderID.
+        'sender': (sender ?? ChatUser(id: senderID)).toJson(),
+      };
 }
 
 class ChatContact {

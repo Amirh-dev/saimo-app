@@ -407,6 +407,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   late final TextEditingController _messageController;
   StreamSubscription<InboxEvent>? _eventSubscription;
   StreamSubscription<InboxConnectionStatus>? _statusSubscription;
+  StreamSubscription<ChatMessageBatch>? _initialMessagesSubscription;
 
   var _messages = <ChatMessage>[];
   var _activityByUserID = <String, UserActivity>{};
@@ -449,6 +450,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     WidgetsBinding.instance.removeObserver(this);
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
+    _initialMessagesSubscription?.cancel();
     _connectionDebounce?.cancel();
     _scrollController.dispose();
     _messageController.dispose();
@@ -488,11 +490,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
+    // The app-level connector forces one socket reconnect on resume. Its next
+    // connected status triggers the single NetworkOnly catch-up below.
     _inboxClient.connect();
-    _syncLatestMessages();
   }
 
   Future<void> _loadInitial() async {
+    await _initialMessagesSubscription?.cancel();
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -500,32 +505,48 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
     try {
       final userID = _currentUserID ?? await _chatRepository.getCurrentUserID();
-      final messages = await _chatRepository.getChatMessages(
-        chatID: widget.chatID,
-        limit: _pageSize,
-        offset: 0,
-      );
       if (!mounted) return;
-      final initialLoad = applyInitialMessagesToRoom(
-        messages: _messages,
-        fetchedMessages: messages,
-        pageSize: _pageSize,
-      );
-      setState(() {
-        _currentUserID = userID;
-        _messages = initialLoad.messages;
-        _offset = initialLoad.offset;
-        _hasMore = initialLoad.hasMore;
-        _isLoading = false;
-      });
-      _scrollToBottomSoon();
+      _currentUserID = userID;
+      _initialMessagesSubscription = _chatRepository
+          .getInitialChatMessages(
+            chatID: widget.chatID,
+            limit: _pageSize,
+            offset: 0,
+          )
+          .listen(
+            _applyInitialMessageBatch,
+            onError: _handleInitialMessageError,
+          );
     } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = _friendlyError(error);
-        _isLoading = false;
-      });
+      _handleInitialMessageError(error);
     }
+  }
+
+  void _applyInitialMessageBatch(ChatMessageBatch batch) {
+    if (!mounted) return;
+    final initialLoad = applyInitialMessagesToRoom(
+      messages: _messages,
+      fetchedMessages: batch.messages,
+      pageSize: _pageSize,
+    );
+    setState(() {
+      _messages = initialLoad.messages;
+      _offset = initialLoad.offset;
+      _hasMore = initialLoad.hasMore;
+      _error = null;
+      _isLoading = false;
+    });
+    _scrollToBottomSoon();
+  }
+
+  void _handleInitialMessageError(Object error, [StackTrace? _]) {
+    if (!mounted) return;
+    setState(() {
+      if (_messages.isEmpty) {
+        _error = _friendlyError(error);
+      }
+      _isLoading = false;
+    });
   }
 
   Future<void> _loadOlderMessages() async {
@@ -533,7 +554,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     setState(() => _isLoadingOlder = true);
 
     try {
-      final olderMessages = await _chatRepository.getChatMessages(
+      final olderMessages = await _chatRepository.getChatMessagesFromNetwork(
         chatID: widget.chatID,
         limit: _pageSize,
         offset: _offset,
@@ -554,6 +575,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   void _startInboxSubscription() {
     _eventSubscription = _inboxClient.events.listen((event) {
+      _chatRepository.applyInboxEventToCache(
+        event,
+        limit: _pageSize,
+        cachedPageOffsets: _cachedPageOffsets,
+      );
       final result = applyInboxEventToRoom(
         messages: _messages,
         activityByUserID: _activityByUserID,
@@ -709,7 +735,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     _isSyncingLatest = true;
     final shouldScroll = _isNearBottom;
     try {
-      final latestMessages = await _chatRepository.getChatMessages(
+      final latestMessages = await _chatRepository.getChatMessagesFromNetwork(
         chatID: widget.chatID,
         limit: _pageSize,
         offset: 0,
@@ -725,6 +751,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       // The foreground subscription will retry separately; this sync is best effort.
     } finally {
       _isSyncingLatest = false;
+    }
+  }
+
+  Iterable<int> get _cachedPageOffsets sync* {
+    yield 0;
+    for (var offset = _pageSize; offset < _offset; offset += _pageSize) {
+      yield offset;
     }
   }
 

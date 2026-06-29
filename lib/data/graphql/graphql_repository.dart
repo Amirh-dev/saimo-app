@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ferry/ferry.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
@@ -61,6 +62,19 @@ class GraphQLRepository {
 
   void clearCache() {
     _client.cache.clear();
+  }
+
+  TData? readCache<TData, TVars>(
+    OperationRequest<TData, TVars> request,
+  ) {
+    return _client.cache.readQuery(request);
+  }
+
+  void writeCache<TData, TVars>(
+    OperationRequest<TData, TVars> request,
+    TData data,
+  ) {
+    _client.cache.writeQuery(request, data);
   }
 
   Future<Map<String, dynamic>> rawRequest({
@@ -153,15 +167,83 @@ class GraphQLRepository {
     OperationRequest<TData, TVars> request,
   ) async* {
     _logger.logRequest(request);
+    var responseIndex = 0;
 
     try {
       await for (final response in _client.request(request)) {
+        responseIndex += 1;
+        _logGetChatMessagesResponse(request, response, responseIndex);
         _logger.logResponse(request, response);
         yield response;
       }
     } catch (error, stackTrace) {
       _logger.logException(request, error, stackTrace);
       rethrow;
+    }
+  }
+
+  void _logGetChatMessagesResponse<TData, TVars>(
+    OperationRequest<TData, TVars> request,
+    OperationResponse<TData, TVars> response,
+    int responseIndex,
+  ) {
+    if (!kDebugMode || request.operation.operationName != 'GetChatMessages') {
+      return;
+    }
+
+    final graphqlErrors = response.graphqlErrors
+            ?.map((error) => error.message)
+            .where((message) => message.isNotEmpty)
+            .toList() ??
+        const <String>[];
+    final errors = [
+      ...graphqlErrors,
+      if (response.linkException != null) response.linkException.toString(),
+    ];
+
+    debugPrint(
+      '[ChatFerry][GetChatMessages] '
+      'timestamp=${DateTime.now().toUtc().toIso8601String()} '
+      'responseIndex=$responseIndex '
+      'source=${_ferryDataSourceLabel(response.dataSource)} '
+      'chatID=${_getChatID(request.vars)} '
+      'messageCount=${_getChatMessageCount(response.data)} '
+      'hasData=${response.data != null} '
+      'hasErrors=${response.hasErrors} '
+      'errors=${errors.isEmpty ? 'none' : errors.join(' | ')}',
+    );
+  }
+
+  String _ferryDataSourceLabel(DataSource source) {
+    return switch (source) {
+      DataSource.Cache => 'cache',
+      DataSource.Link => 'network',
+      DataSource.Optimistic => 'optimistic',
+      DataSource.None => 'none',
+    };
+  }
+
+  String _getChatID(Object? vars) {
+    try {
+      final dynamic dynamicVars = vars;
+      final json = dynamicVars?.toJson();
+      if (json is Map) {
+        return json['chatID']?.toString() ?? 'unknown';
+      }
+    } catch (_) {
+      // Debug logging must never affect a request.
+    }
+    return 'unknown';
+  }
+
+  int _getChatMessageCount(Object? data) {
+    try {
+      final dynamic dynamicData = data;
+      final messages = dynamicData?.getChatMessages;
+      return messages is Iterable ? messages.length : 0;
+    } catch (_) {
+      // Debug logging must never affect a request.
+      return 0;
     }
   }
 

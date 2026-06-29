@@ -28,6 +28,10 @@ Client createFerryClient({
 
   return Client(
     link: authLink.concat(httpLink),
+    // No Store is supplied, so Ferry uses MemoryStore. This normalized cache
+    // can serve previously loaded chats while the app process is alive, but it
+    // is cleared by a full restart. Persistence would require HiveStore; this
+    // project intentionally does not add that dependency here.
     cache: Cache(
       possibleTypes: possibleTypesMap,
     ),
