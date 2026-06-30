@@ -48,6 +48,7 @@ class GraphQLRepository {
   final TokenStorage _tokenStorage;
   final GraphQLConsoleLogger _logger;
   Future<String?>? _refreshFuture;
+  int _authSessionRevision = 0;
   final _sessionExpiredController = StreamController<void>.broadcast();
 
   Stream<void> get sessionExpired => _sessionExpiredController.stream;
@@ -117,6 +118,13 @@ class GraphQLRepository {
 
   void clearCache() {
     _client.cache.clear();
+  }
+
+  Future<void> clearAuthSession() async {
+    _authSessionRevision += 1;
+    _refreshFuture = null;
+    clearCache();
+    await _tokenStorage.clearTokens();
   }
 
   TData? readCache<TData, TVars>(
@@ -222,8 +230,12 @@ class GraphQLRepository {
     final refreshInFlight = _refreshFuture;
     if (refreshInFlight != null) return refreshInFlight;
 
+    final authSessionRevision = _authSessionRevision;
     late final Future<String?> refreshFuture;
-    refreshFuture = _refreshAccessToken(refreshToken).whenComplete(() {
+    refreshFuture = _refreshAccessToken(
+      refreshToken,
+      authSessionRevision: authSessionRevision,
+    ).whenComplete(() {
       if (identical(_refreshFuture, refreshFuture)) {
         _refreshFuture = null;
       }
@@ -237,7 +249,10 @@ class GraphQLRepository {
     }
   }
 
-  Future<String?> _refreshAccessToken(String savedRefreshToken) async {
+  Future<String?> _refreshAccessToken(
+    String savedRefreshToken, {
+    required int authSessionRevision,
+  }) async {
     if (kDebugMode) {
       debugPrint('[Auth] refreshing token using saved refreshToken');
     }
@@ -249,6 +264,8 @@ class GraphQLRepository {
       requiresAuth: false,
       skipAuthRefresh: true,
     );
+    if (authSessionRevision != _authSessionRevision) return null;
+
     if (response.hasErrors) {
       final message = graphQLResponseErrorMessage(response);
       if (_isUnauthorizedResponse(response) ||
@@ -275,6 +292,7 @@ class GraphQLRepository {
       refreshToken: payload.refreshToken,
       issuedAt: DateTime.now().toUtc(),
     );
+    if (authSessionRevision != _authSessionRevision) return null;
     if (kDebugMode) {
       debugPrint('[Auth] refresh success, saved new token pair');
     }
@@ -282,7 +300,7 @@ class GraphQLRepository {
   }
 
   Future<void> _expireSession() async {
-    await _tokenStorage.clearTokens();
+    await clearAuthSession();
     if (!_sessionExpiredController.isClosed) {
       _sessionExpiredController.add(null);
     }

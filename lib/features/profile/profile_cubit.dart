@@ -9,6 +9,8 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   final GraphQLRepository _graphql;
 
+  void reset() => emit(ProfileInitial());
+
   Future<void> getMe() async {
     emit(ProfileLoading());
 

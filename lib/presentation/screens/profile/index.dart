@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
-import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -201,7 +201,7 @@ class _ProfileHomeContent extends StatelessWidget {
                       icon: SolarIconsOutline.logout,
                       itemColor: AppColors.errorColor,
                       onTap: () {
-                        context.to(const TasksScreen());
+                        unawaited(context.read<AuthCubit>().logout());
                       },
                       showSuffixIcon: false,
                     ),

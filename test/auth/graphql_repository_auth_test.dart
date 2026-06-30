@@ -189,6 +189,35 @@ void main() {
     expect(await storage.getRefreshToken(), 'saved-refresh');
     expect(await storage.getAccessTokenSavedAt(), isNotNull);
   });
+
+  test('logout invalidates an in-flight token refresh', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    await storage.saveTokenPair(
+      accessToken: 'old-access',
+      refreshToken: 'saved-refresh',
+      issuedAt: DateTime.now().toUtc().subtract(const Duration(minutes: 26)),
+    );
+    final refreshStarted = Completer<void>();
+    final refreshResponse = Completer<Response>();
+    final repository = _repository(
+      storage,
+      onRefresh: (request) {
+        refreshStarted.complete();
+        return refreshResponse.future;
+      },
+    );
+
+    final refresh = repository.ensureValidAccessToken();
+    await refreshStarted.future;
+    await repository.clearAuthSession();
+    refreshResponse.complete(_tokenPairResponse());
+
+    expect(await refresh, isNull);
+    expect(await storage.getAccessToken(), isNull);
+    expect(await storage.getRefreshToken(), isNull);
+    expect(await storage.getAccessTokenSavedAt(), isNull);
+  });
 }
 
 GraphQLRepository _repository(

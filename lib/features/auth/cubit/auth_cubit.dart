@@ -394,9 +394,21 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
   }
 
   Future<void> logout() async {
-    await _tokenStorage.clearTokens();
-    _graphql.clearCache();
-    emit(const AuthUnauthenticated());
+    if (state is AuthLoading &&
+        (state as AuthLoading).action == AuthAction.logout) {
+      return;
+    }
+
+    emit(const AuthLoading(AuthAction.logout));
+    try {
+      await _graphql.clearAuthSession();
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[Auth] logout cleanup failed: ${error.runtimeType}');
+      }
+    } finally {
+      if (!isClosed) emit(const AuthUnauthenticated());
+    }
   }
 
   @override

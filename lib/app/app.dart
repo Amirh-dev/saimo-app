@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/index.dart';
@@ -20,9 +22,26 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _LiveInboxConnector(
       child: BlocListener<AuthCubit, AuthState>(
-        listenWhen: (previous, state) =>
-            state is AuthAuthenticated && state.action == AuthAction.login,
+        listenWhen: _shouldHandleRootAuthState,
         listener: (context, state) {
+          if (state is AuthUnauthenticated) {
+            context.read<ProfileCubit>().reset();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final navigator = _rootNavigatorKey.currentState;
+              if (navigator == null) return;
+              navigator.pushAndRemoveUntil<void>(
+                PageRouteBuilder<void>(
+                  pageBuilder: (_, __, ___) => const _AuthGate(),
+                  settings: const RouteSettings(name: Routes.initialRoute),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+                (_) => false,
+              );
+            });
+            return;
+          }
+
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final overlayContext =
                 _rootNavigatorKey.currentState?.overlay?.context;
@@ -43,41 +62,60 @@ class MyApp extends StatelessWidget {
             fontFamily: AppFonts.iranSansVar,
             useMaterial3: true,
           ),
-          home: BlocBuilder<AuthCubit, AuthState>(
-            buildWhen: _shouldBuildAuthShell,
-            builder: (context, state) {
-              if (state is AuthInitial ||
-                  (state is AuthLoading &&
-                      state.action == AuthAction.checkStatus)) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator.adaptive()),
-                );
-              }
-
-              if (state is OtpSent) {
-                return OTPCodeScreen(
-                  phoneNumber: state.phoneNumber,
-                  isRegistered: state.isRegistered,
-                );
-              }
-
-              if (state is AuthAuthenticated) {
-                return const GoalScreen();
-              }
-
-              if (state is AuthNeedsRegistration) {
-                return RegisterScreen(
-                  phoneNumber: state.phoneNumber,
-                  code: state.code,
-                  completeProfileOnly: state.completeProfileOnly,
-                );
-              }
-
-              return const LoginScreen();
-            },
-          ),
+          home: const _AuthGate(),
         ),
       ),
+    );
+  }
+}
+
+bool _shouldHandleRootAuthState(AuthState previous, AuthState state) {
+  if (state is AuthAuthenticated && state.action == AuthAction.login) {
+    return true;
+  }
+
+  if (state is! AuthUnauthenticated) return false;
+  if (previous is AuthInitial) return false;
+  if (previous is AuthUnauthenticated) return false;
+  return previous is! AuthLoading || previous.action != AuthAction.checkStatus;
+}
+
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      buildWhen: _shouldBuildAuthShell,
+      builder: (context, state) {
+        if (state is AuthInitial ||
+            (state is AuthLoading && state.action == AuthAction.checkStatus)) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator.adaptive()),
+          );
+        }
+
+        if (state is OtpSent) {
+          return OTPCodeScreen(
+            phoneNumber: state.phoneNumber,
+            isRegistered: state.isRegistered,
+          );
+        }
+
+        if (state is AuthAuthenticated) {
+          return const GoalScreen();
+        }
+
+        if (state is AuthNeedsRegistration) {
+          return RegisterScreen(
+            phoneNumber: state.phoneNumber,
+            code: state.code,
+            completeProfileOnly: state.completeProfileOnly,
+          );
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 
