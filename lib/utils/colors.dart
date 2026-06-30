@@ -11,12 +11,16 @@ class AppColors {
   static const Color textPrimary = Color(0xFF212121);
   static const Color black1 = Color(0xFF23232B);
   static const Color errorColor = Color(0xFFF12222);
-  static const Color toastSuccessBackground = Color(0xFFEAF8F0);
-  static const Color toastSuccessText = Color(0xFF167A3E);
-  static const Color toastWarningBackground = Color(0xFFFFF5DF);
-  static const Color toastWarningText = Color(0xFF9A6400);
-  static const Color toastErrorBackground = Color(0xFFFFE9E9);
-  static const Color toastErrorText = Color(0xFFC92222);
+  static const Color toastSuccess = Color(0xFF1AC56A);
+  static const Color toastError = Color(0xFFFF2025);
+  static const Color toastInfo = Color(0xFF4361EE);
+  static const Color toastWarning = Color(0xFFF4B72F);
+  static const Color toastSuccessBackground = toastSuccess;
+  static const Color toastSuccessText = white;
+  static const Color toastWarningBackground = toastWarning;
+  static const Color toastWarningText = black1;
+  static const Color toastErrorBackground = toastError;
+  static const Color toastErrorText = white;
 
   static const Color lightGray = Color.fromARGB(35, 35, 43, 0);
 

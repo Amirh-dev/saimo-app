@@ -8,7 +8,10 @@ import 'package:simo_learn/presentation/screens/authentication/otp_code/index.da
 import 'package:simo_learn/presentation/screens/authentication/register/index.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
+import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -16,46 +19,63 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _LiveInboxConnector(
-      child: MaterialApp(
-        title: AppStrings.appName,
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-          fontFamily: AppFonts.iranSansVar,
-          useMaterial3: true,
-        ),
-        home: BlocBuilder<AuthCubit, AuthState>(
-          buildWhen: _shouldBuildAuthShell,
-          builder: (context, state) {
-            if (state is AuthInitial ||
-                (state is AuthLoading &&
-                    state.action == AuthAction.checkStatus)) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator.adaptive()),
-              );
-            }
+      child: BlocListener<AuthCubit, AuthState>(
+        listenWhen: (previous, state) =>
+            state is AuthAuthenticated && state.action == AuthAction.login,
+        listener: (context, state) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final overlayContext =
+                _rootNavigatorKey.currentState?.overlay?.context;
+            if (overlayContext == null) return;
+            showReToast(
+              overlayContext,
+              'با موفقیت به حساب خود وارد شدید',
+              ReToastType.success,
+            );
+          });
+        },
+        child: MaterialApp(
+          navigatorKey: _rootNavigatorKey,
+          title: AppStrings.appName,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+            fontFamily: AppFonts.iranSansVar,
+            useMaterial3: true,
+          ),
+          home: BlocBuilder<AuthCubit, AuthState>(
+            buildWhen: _shouldBuildAuthShell,
+            builder: (context, state) {
+              if (state is AuthInitial ||
+                  (state is AuthLoading &&
+                      state.action == AuthAction.checkStatus)) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator.adaptive()),
+                );
+              }
 
-            if (state is OtpSent) {
-              return OTPCodeScreen(
-                phoneNumber: state.phoneNumber,
-                isRegistered: state.isRegistered,
-              );
-            }
+              if (state is OtpSent) {
+                return OTPCodeScreen(
+                  phoneNumber: state.phoneNumber,
+                  isRegistered: state.isRegistered,
+                );
+              }
 
-            if (state is AuthAuthenticated) {
-              return const GoalScreen();
-            }
+              if (state is AuthAuthenticated) {
+                return const GoalScreen();
+              }
 
-            if (state is AuthNeedsRegistration) {
-              return RegisterScreen(
-                phoneNumber: state.phoneNumber,
-                code: state.code,
-                completeProfileOnly: state.completeProfileOnly,
-              );
-            }
+              if (state is AuthNeedsRegistration) {
+                return RegisterScreen(
+                  phoneNumber: state.phoneNumber,
+                  code: state.code,
+                  completeProfileOnly: state.completeProfileOnly,
+                );
+              }
 
-            return const LoginScreen();
-          },
+              return const LoginScreen();
+            },
+          ),
         ),
       ),
     );

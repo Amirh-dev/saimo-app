@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_endpoints.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -57,24 +58,40 @@ class InboxSubscriptionClient {
   Stream<InboxConnectionStatus> get status => _statusController.stream;
   InboxConnectionStatus get currentStatus => _currentStatus;
 
-  Future<void> connect({bool force = false}) {
-    if (_disposed) return Future<void>.value();
+  Future<void> connect({bool force = false, String source = 'app'}) {
+    _logInbox('url=${_safeWebSocketUrl(endpoint)}');
+    _logInbox('connect called source=$source');
+    if (_disposed) {
+      _logInbox('connect ignored client_disposed');
+      return Future<void>.value();
+    }
     _manuallyClosed = false;
     _disposed = false;
 
     if (!force) {
       final pendingConnect = _connectFuture;
-      if (pendingConnect != null) return pendingConnect;
+      if (pendingConnect != null) {
+        _logInbox('connection already in progress, reusing pending socket');
+        return pendingConnect;
+      }
 
-      if (_currentStatus == InboxConnectionStatus.connected ||
-          _currentStatus == InboxConnectionStatus.connecting) {
+      if (_currentStatus == InboxConnectionStatus.connected) {
+        _logInbox('already connected, reusing existing socket');
+        return Future<void>.value();
+      }
+
+      if (_currentStatus == InboxConnectionStatus.connecting) {
+        _logInbox('connection already in progress, reusing pending socket');
         return Future<void>.value();
       }
 
       if (_currentStatus == InboxConnectionStatus.reconnecting &&
           _reconnectTimer != null) {
+        _logInbox('reconnect already scheduled, reusing existing socket');
         return Future<void>.value();
       }
+    } else if (_channel != null) {
+      _logInbox('force reconnect replacing active socket');
     }
 
     late final Future<void> connectFuture;
@@ -108,6 +125,8 @@ class InboxSubscriptionClient {
   Future<void> _openSocket({required bool isReconnect}) async {
     if (_disposed) return;
     _reconnectTimer?.cancel();
+    if (isReconnect) _logInbox('reconnect started');
+    _logInbox('connecting');
     _emitStatus(
       isReconnect
           ? InboxConnectionStatus.reconnecting
@@ -120,6 +139,7 @@ class InboxSubscriptionClient {
 
       final token = _tokenStorage.currentAccessToken;
       if (token == null || token.isEmpty) {
+        _logInbox('error missing_access_token');
         _emitStatus(InboxConnectionStatus.error);
         return;
       }
@@ -139,8 +159,14 @@ class InboxSubscriptionClient {
       _channel = channel;
       _subscription = channel.stream.listen(
         _handleSocketMessage,
-        onDone: _handleSocketDone,
-        onError: (_) => _handleSocketDone(),
+        onDone: () => _handleSocketDone(channel: channel),
+        onError: (Object error) {
+          _logInbox('error message=${_safeLogText(error.runtimeType)}');
+          _handleSocketDone(
+            channel: channel,
+            fallbackReason: error.runtimeType.toString(),
+          );
+        },
       );
       await channel.ready.timeout(const Duration(seconds: 10));
       if (_disposed || _manuallyClosed || _channel != channel) {
@@ -148,30 +174,44 @@ class InboxSubscriptionClient {
         return;
       }
       _activeProtocol = channel.protocol ?? _transportGraphQLWsProtocol;
+      _logInbox('connected protocol=$_activeProtocol');
       _startAckTimer();
+      _logInbox('sending connection_init hasAuth=true');
       _send({
         'type': 'connection_init',
         'payload': {'Authorization': authorization},
       });
-    } catch (_) {
+    } catch (error) {
       if (_disposed || _manuallyClosed) return;
+      _logInbox('error message=${_safeLogText(error.runtimeType)}');
       _emitStatus(InboxConnectionStatus.error);
       _scheduleReconnect();
     }
   }
 
   void _handleSocketMessage(dynamic rawMessage) {
-    if (rawMessage is! String) return;
+    if (rawMessage is! String) {
+      _logInbox('error message=non_string_frame');
+      return;
+    }
     final decoded = _decodeJsonObject(rawMessage);
-    if (decoded == null) return;
+    if (decoded == null) {
+      _logInbox('error message=invalid_json_frame');
+      return;
+    }
     final type = decoded['type']?.toString();
+    _logInbox('raw frame type=${type ?? 'null'}');
 
     switch (type) {
       case 'connection_ack':
+        _logInbox('received connection_ack');
         _ackTimer?.cancel();
         _retryAttempt = 0;
         _emitStatus(InboxConnectionStatus.connected);
-        _send(_subscribeMessage());
+        _logInbox('sending subscribe operation=Inbox');
+        if (_send(_subscribeMessage())) {
+          _logInbox('subscribed operation=Inbox');
+        }
         break;
       case 'ka':
       case 'connection_keep_alive':
@@ -180,6 +220,7 @@ class InboxSubscriptionClient {
       case 'data':
         final payload = decoded['payload'];
         final event = _inboxEventFromPayload(payload);
+        _logInbox('raw event typename=${event?.typename ?? 'null'}');
         if (event != null) {
           _emitStatus(InboxConnectionStatus.connected);
           try {
@@ -187,30 +228,57 @@ class InboxSubscriptionClient {
             // is open. Active screens receive the same event just below and
             // run it through their ID-based state upsert as well.
             _chatRepository.applyInboxEventToCache(event);
-          } catch (_) {
+          } catch (error) {
+            _logInbox(
+              'error message=cache_update_${_safeLogText(error.runtimeType)}',
+            );
             // A cache conversion must never interrupt the live socket stream.
           }
           if (!_eventsController.isClosed) {
             _eventsController.add(event);
+          }
+        } else {
+          final errorMessage = _payloadErrorMessage(payload);
+          if (errorMessage != null) {
+            _logInbox('error message=$errorMessage');
           }
         }
         break;
       case 'ping':
         _send({'type': 'pong'});
         break;
+      case 'pong':
+        break;
       case 'error':
       case 'connection_error':
+        _logInbox(
+          'error message=${_payloadErrorMessage(decoded['payload']) ?? type}',
+        );
         _emitStatus(InboxConnectionStatus.error);
         _scheduleReconnect();
         break;
       case 'complete':
+        _logInbox('subscription complete operation=Inbox');
         _emitStatus(InboxConnectionStatus.reconnecting);
         _scheduleReconnect();
         break;
     }
   }
 
-  void _handleSocketDone() {
+  void _handleSocketDone({
+    WebSocketChannel? channel,
+    String? fallbackReason,
+  }) {
+    final closedChannel = channel ?? _channel;
+    final code = closedChannel?.closeCode;
+    final reason = closedChannel?.closeReason ?? fallbackReason ?? 'unknown';
+    _logInbox(
+      'closed code=${code ?? 'null'} reason=${_safeLogText(reason)}',
+    );
+    if (channel != null && !identical(_channel, channel)) {
+      _logInbox('stale socket close ignored');
+      return;
+    }
     if (_disposed || _manuallyClosed) {
       _emitStatus(InboxConnectionStatus.disconnected);
       return;
@@ -229,6 +297,7 @@ class InboxSubscriptionClient {
     _emitStatus(InboxConnectionStatus.reconnecting);
     _retryAttempt += 1;
     final seconds = _retryAttempt.clamp(1, 8).toInt();
+    _logInbox('reconnect scheduled delaySeconds=$seconds');
     _reconnectTimer = Timer(Duration(seconds: seconds), () {
       _openSocket(isReconnect: true);
     });
@@ -238,16 +307,24 @@ class InboxSubscriptionClient {
     _ackTimer?.cancel();
     _ackTimer = Timer(const Duration(seconds: 10), () {
       if (_disposed || _manuallyClosed) return;
+      _logInbox('error message=connection_ack_timeout');
       _emitStatus(InboxConnectionStatus.reconnecting);
       _scheduleReconnect();
     });
   }
 
-  void _send(Map<String, dynamic> message) {
+  bool _send(Map<String, dynamic> message) {
+    if (_channel == null) {
+      _logInbox('error message=send_without_active_socket');
+      return false;
+    }
     try {
-      _channel?.sink.add(jsonEncode(message));
-    } catch (_) {
-      _handleSocketDone();
+      _channel!.sink.add(jsonEncode(message));
+      return true;
+    } catch (error) {
+      _logInbox('error message=${_safeLogText(error.runtimeType)}');
+      _handleSocketDone(fallbackReason: error.runtimeType.toString());
+      return false;
     }
   }
 
@@ -279,11 +356,58 @@ class InboxSubscriptionClient {
 
     await subscription?.cancel();
     await channel?.sink.close();
+    if (channel != null) {
+      _logInbox(
+        'closed code=${channel.closeCode ?? 'null'} reason=client_close',
+      );
+    }
 
     if (emitDisconnected && !_disposed) {
       _emitStatus(InboxConnectionStatus.disconnected);
     }
   }
+}
+
+void _logInbox(String message) {
+  if (kDebugMode) debugPrint('[InboxWS] $message');
+}
+
+String _safeWebSocketUrl(String endpoint) {
+  final uri = Uri.tryParse(endpoint);
+  if (uri == null || uri.host.isEmpty) return 'invalid';
+  final port = uri.hasPort ? ':${uri.port}' : '';
+  return '${uri.scheme}://${uri.host}$port${uri.path}';
+}
+
+String _safeLogText(Object? value) {
+  final text = value?.toString().replaceAll(RegExp(r'[\r\n]+'), ' ') ?? 'null';
+  final withoutBearer = text.replaceAll(
+    RegExp(r'Bearer\s+[^\s,}]+', caseSensitive: false),
+    'Bearer ***',
+  );
+  return withoutBearer.length <= 160
+      ? withoutBearer
+      : '${withoutBearer.substring(0, 160)}…';
+}
+
+String? _payloadErrorMessage(Object? payload) {
+  if (payload is Map<String, dynamic>) {
+    final errors = payload['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      final firstError = errors.first;
+      if (firstError is Map) {
+        return _safeLogText(firstError['message'] ?? 'graphql_error');
+      }
+      return _safeLogText(firstError);
+    }
+    if (payload['message'] != null) {
+      return _safeLogText(payload['message']);
+    }
+  }
+  if (payload is List && payload.isNotEmpty) {
+    return _safeLogText(payload.first);
+  }
+  return null;
 }
 
 Map<String, dynamic>? _decodeJsonObject(String rawMessage) {
@@ -318,15 +442,6 @@ subscription Inbox {
         deletedAt
         createdAt
         updatedAt
-        replyTo {
-          id
-          content
-          senderID
-          createdAt
-        }
-        sender {
-          id
-        }
       }
     }
     ... on MessageDeletedEvent {

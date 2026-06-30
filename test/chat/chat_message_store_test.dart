@@ -32,7 +32,7 @@ void main() {
         id: 'local-1',
         content: 'same message',
         createdAt: '2026-01-01T10:00:00Z',
-      );
+      ).copyWith(isSending: true);
       final serverMessage = _message(
         id: 'server-1',
         content: 'same message',
@@ -45,24 +45,47 @@ void main() {
       expect(result.single.id, 'server-1');
     });
 
-    test(
-        'replaces an in-flight optimistic message even when the server echo '
-        'has divergent (e.g. mis-encoded) content', () {
+    test('does not drop same-content live message from another sender', () {
       final localMessage = _message(
         id: 'local-1',
-        content: 'تست',
+        content: 'same message',
+        senderID: 'current-user',
         createdAt: '2026-01-01T10:00:00Z',
       ).copyWith(isSending: true);
-      final serverEcho = _message(
+      final incomingMessage = _message(
         id: 'server-1',
-        content: 'ØªØ³Øª',
+        content: 'same message',
+        senderID: 'other-user',
         createdAt: '2026-01-01T10:00:02Z',
       );
 
-      final result = upsertMessages([localMessage], [serverEcho]);
+      final result = upsertMessages([localMessage], [incomingMessage]);
 
-      expect(result, hasLength(1));
-      expect(result.single.id, 'server-1');
+      expect(result, hasLength(2));
+      expect(result.map((message) => message.id), ['local-1', 'server-1']);
+    });
+
+    test('one server event replaces only one matching pending message', () {
+      final firstLocal = _message(
+        id: 'local-1',
+        content: 'same message',
+        createdAt: '2026-01-01T10:00:00Z',
+      ).copyWith(isSending: true);
+      final secondLocal = _message(
+        id: 'local-2',
+        content: 'same message',
+        createdAt: '2026-01-01T10:00:04Z',
+      ).copyWith(isSending: true);
+      final serverEcho = _message(
+        id: 'server-1',
+        content: 'same message',
+        createdAt: '2026-01-01T10:00:01Z',
+      );
+
+      final result = upsertMessages([firstLocal, secondLocal], [serverEcho]);
+
+      expect(result, hasLength(2));
+      expect(result.map((message) => message.id), ['server-1', 'local-2']);
     });
 
     test('keeps two distinct messages from the same sender', () {
@@ -83,7 +106,57 @@ void main() {
     });
   });
 
+  group('replaceLocalMessage', () {
+    test('scalar-only mutation response preserves optimistic reply preview',
+        () {
+      const reply = ChatReplyMessage(
+        id: 'reply-1',
+        content: 'original message',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T09:59:00Z',
+      );
+      final localMessage = _message(
+        id: 'local-1',
+        content: 'reply text',
+        replyToID: reply.id,
+        replyTo: reply,
+      ).copyWith(isSending: true);
+      final scalarServerMessage = _message(
+        id: 'server-1',
+        content: 'reply text',
+        replyToID: reply.id,
+      );
+
+      final result = replaceLocalMessage(
+        [localMessage],
+        localID: localMessage.id,
+        serverMessage: scalarServerMessage,
+      );
+
+      expect(result, hasLength(1));
+      expect(result.single.id, 'server-1');
+      expect(result.single.replyTo?.id, reply.id);
+      expect(result.single.isSending, isFalse);
+    });
+  });
+
   group('applyInboxEventToRoom', () {
+    test('inserts incoming NewMessageEvent from another sender', () {
+      final incomingMessage = _message(
+        id: 'live-1',
+        senderID: 'other-user',
+      );
+
+      final result = applyInboxEventToRoom(
+        messages: const [],
+        activityByUserID: const {},
+        event: NewMessageInboxEvent(message: incomingMessage),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages, [incomingMessage]);
+    });
+
     test('inserts matching new messages without duplicating existing ones', () {
       final message = _message(id: '1', chatID: 'chat-a');
       final initial = [message];
@@ -150,6 +223,33 @@ void main() {
       expect(result.activityByUserID['user-a']?.isOnline, isTrue);
       expect(result.activityByUserID['user-a']?.currentTaskName, 'ریاضی');
     });
+
+    test('still applies WebSocket event when an optimistic send has failed',
+        () {
+      final failedLocal = _message(
+        id: 'local-failed',
+        content: 'failed send',
+        senderID: 'current-user',
+      ).copyWith(isFailed: true);
+      final incomingMessage = _message(
+        id: 'live-1',
+        content: 'live message',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T10:00:01Z',
+      );
+
+      final result = applyInboxEventToRoom(
+        messages: [failedLocal],
+        activityByUserID: const {},
+        event: NewMessageInboxEvent(message: incomingMessage),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages.map((message) => message.id), [
+        'local-failed',
+        'live-1',
+      ]);
+    });
   });
 
   group('applyInitialMessagesToRoom', () {
@@ -186,6 +286,9 @@ ChatMessage _message({
   required String id,
   String chatID = 'chat-a',
   String content = 'hello',
+  String senderID = 'user-a',
+  String? replyToID,
+  ChatReplyMessage? replyTo,
   String createdAt = '2026-01-01T10:00:00Z',
 }) {
   return ChatMessage(
@@ -193,9 +296,11 @@ ChatMessage _message({
     content: content,
     type: 'TEXT',
     chatID: chatID,
-    senderID: 'user-a',
+    senderID: senderID,
+    replyToID: replyToID,
     isDeleted: false,
     createdAt: createdAt,
     updatedAt: createdAt,
+    replyTo: replyTo,
   );
 }

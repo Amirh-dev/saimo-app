@@ -10,14 +10,5 @@ mutation SendMessage($input: SendMessageInput!) {
     deletedAt
     createdAt
     updatedAt
-    replyTo {
-      id
-      content
-      senderID
-      createdAt
-    }
-    sender {
-      id
-    }
   }
 }

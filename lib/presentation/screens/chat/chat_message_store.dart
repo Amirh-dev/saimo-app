@@ -11,12 +11,11 @@ List<ChatMessage> upsertMessages(
   for (final message in incoming) {
     if (message.id.isEmpty) continue;
     if (!message.isLocal) {
-      byId.removeWhere((_, localMessage) {
-        return _isServerEchoOfLocalMessage(
-          localMessage: localMessage,
-          serverMessage: message,
-        );
-      });
+      final matchingLocal = findMatchingPendingLocalMessage(
+        byId.values,
+        message,
+      );
+      if (matchingLocal != null) byId.remove(matchingLocal.id);
     }
     byId[message.id] = message;
   }
@@ -34,6 +33,35 @@ List<ChatMessage> removeLocalMessage(
     for (final message in current)
       if (message.id != localID) message,
   ];
+}
+
+List<ChatMessage> replaceLocalMessage(
+  List<ChatMessage> current, {
+  required String localID,
+  required ChatMessage serverMessage,
+}) {
+  ChatMessage? localMessage;
+  final byId = <String, ChatMessage>{};
+  for (final message in current) {
+    if (message.id == localID) {
+      localMessage = message;
+    } else {
+      byId[message.id] = message;
+    }
+  }
+
+  if (serverMessage.id.isNotEmpty) {
+    byId[serverMessage.id] = serverMessage.copyWith(
+      replyTo: serverMessage.replyTo ?? localMessage?.replyTo,
+      sender: serverMessage.sender ?? localMessage?.sender,
+      isSending: false,
+      isFailed: false,
+    );
+  }
+
+  final messages = byId.values.toList();
+  messages.sort(compareMessagesByCreatedAt);
+  return messages;
 }
 
 List<ChatMessage> markMessageDeleted(
@@ -77,6 +105,32 @@ bool hasServerEchoOfLocalMessage(
       serverMessage: message,
     );
   });
+}
+
+ChatMessage? findMatchingPendingLocalMessage(
+  Iterable<ChatMessage> messages,
+  ChatMessage serverMessage,
+) {
+  ChatMessage? closestMatch;
+  Duration? closestDelta;
+
+  for (final message in messages) {
+    if (!_isServerEchoOfLocalMessage(
+      localMessage: message,
+      serverMessage: serverMessage,
+    )) {
+      continue;
+    }
+
+    final delta = _createdAtDelta(message, serverMessage);
+    if (closestMatch == null ||
+        (delta != null && (closestDelta == null || delta < closestDelta))) {
+      closestMatch = message;
+      closestDelta = delta;
+    }
+  }
+
+  return closestMatch;
 }
 
 ChatRoomEventResult applyInboxEventToRoom({
@@ -138,26 +192,26 @@ bool _isServerEchoOfLocalMessage({
   required ChatMessage localMessage,
   required ChatMessage serverMessage,
 }) {
-  if (!localMessage.isLocal || serverMessage.isLocal) return false;
+  if (!localMessage.isLocal || !localMessage.isSending) return false;
+  if (serverMessage.isLocal) return false;
   if (localMessage.chatID != serverMessage.chatID) return false;
   if (localMessage.senderID != serverMessage.senderID) return false;
   if (localMessage.replyToID != serverMessage.replyToID) return false;
-
-  final sameContent =
-      localMessage.content.trim() == serverMessage.content.trim();
-
-  // Fallback for a still-in-flight optimistic message: even if the two copies
-  // disagree on content (e.g. one arrived through a mis-encoded transport), a
-  // server message from the same sender/chat/reply that lands within a few
-  // seconds is the echo of what we just sent — never a second bubble.
-  if (!sameContent && !localMessage.isSending) return false;
+  if (localMessage.content != serverMessage.content) return false;
 
   final localCreatedAt = DateTime.tryParse(localMessage.createdAt);
   final serverCreatedAt = DateTime.tryParse(serverMessage.createdAt);
-  if (localCreatedAt == null || serverCreatedAt == null) return true;
+  if (localCreatedAt == null || serverCreatedAt == null) return false;
 
   final delta = localCreatedAt.difference(serverCreatedAt).abs();
-  return delta <= (sameContent ? const Duration(seconds: 90) : const Duration(seconds: 10));
+  return delta <= const Duration(seconds: 15);
+}
+
+Duration? _createdAtDelta(ChatMessage a, ChatMessage b) {
+  final aCreatedAt = DateTime.tryParse(a.createdAt);
+  final bCreatedAt = DateTime.tryParse(b.createdAt);
+  if (aCreatedAt == null || bCreatedAt == null) return null;
+  return aCreatedAt.difference(bCreatedAt).abs();
 }
 
 int compareMessagesByCreatedAt(ChatMessage a, ChatMessage b) {

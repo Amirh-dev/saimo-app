@@ -74,11 +74,7 @@ import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.var.gql.dart'
     show GRefreshTokenVars;
 import 'package:simo_learn/graphql/mutations/__generated__/send_message.data.gql.dart'
-    show
-        GSendMessageData,
-        GSendMessageData_sendMessage,
-        GSendMessageData_sendMessage_replyTo,
-        GSendMessageData_sendMessage_sender;
+    show GSendMessageData, GSendMessageData_sendMessage;
 import 'package:simo_learn/graphql/mutations/__generated__/send_message.req.gql.dart'
     show GSendMessageReq;
 import 'package:simo_learn/graphql/mutations/__generated__/send_message.var.gql.dart'
@@ -206,8 +202,6 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GRefreshTokenVars,
   GSendMessageData,
   GSendMessageData_sendMessage,
-  GSendMessageData_sendMessage_replyTo,
-  GSendMessageData_sendMessage_sender,
   GSendMessageInput,
   GSendMessageReq,
   GSendMessageVars,

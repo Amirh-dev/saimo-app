@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +57,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _chatRepository = ChatRepository(context.read<GraphQLRepository>());
     _inboxClient = context.read<InboxSubscriptionClient>();
     _connectionStatus = _inboxClient.currentStatus;
-    _contactsController = ScrollController()..addListener(_handleContactsScroll);
+    _contactsController = ScrollController()
+      ..addListener(_handleContactsScroll);
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadContacts());
   }
@@ -74,7 +76,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    _inboxClient.connect();
+    _inboxClient.connect(source: 'chat_list');
     _loadContacts(silent: true);
   }
 
@@ -93,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       _applyConnectionStatus(status);
     });
     _applyConnectionStatus(_inboxClient.currentStatus);
-    _inboxClient.connect();
+    _inboxClient.connect(source: 'chat_list');
   }
 
   /// Surfaces a disconnection only after it persists past a short grace period,
@@ -448,6 +450,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _logChatLive('room listener disposed chatID=${widget.chatID}');
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
     _initialMessagesSubscription?.cancel();
@@ -492,7 +495,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     if (state != AppLifecycleState.resumed) return;
     // The app-level connector forces one socket reconnect on resume. Its next
     // connected status triggers the single NetworkOnly catch-up below.
-    _inboxClient.connect();
+    _inboxClient.connect(source: 'chat_room');
   }
 
   Future<void> _loadInitial() async {
@@ -574,34 +577,82 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   }
 
   void _startInboxSubscription() {
+    _logChatLive('room listener started chatID=${widget.chatID}');
     _eventSubscription = _inboxClient.events.listen((event) {
+      if (!mounted) return;
       _chatRepository.applyInboxEventToCache(
         event,
         limit: _pageSize,
         cachedPageOffsets: _cachedPageOffsets,
       );
+
+      if (event case NewMessageInboxEvent(:final message)) {
+        _logChatLive(
+          'event received typename=NewMessageEvent '
+          'eventChatID=${message.chatID} currentChatID=${widget.chatID}',
+        );
+        if (message.chatID != widget.chatID) {
+          _logChatLive('ignored event for other chat');
+          return;
+        }
+
+        final matchingLocal = findMatchingPendingLocalMessage(
+          _messages,
+          message,
+        );
+        final alreadyExists = _messages.any(
+          (existingMessage) => existingMessage.id == message.id,
+        );
+        final beforeCount = _messages.length;
+        _logChatLive(
+          'applying NewMessageEvent messageId=${message.id} '
+          'senderID=${message.senderID}',
+        );
+        _logChatLive('before count=$beforeCount');
+        final shouldScroll = _isNearBottom;
+        final result = applyInboxEventToRoom(
+          messages: _messages,
+          activityByUserID: _activityByUserID,
+          event: event,
+          chatID: widget.chatID,
+        );
+        setState(() {
+          _messages = result.messages;
+          _activityByUserID = result.activityByUserID;
+        });
+        _logChatLive('after count=${result.messages.length}');
+        _logChatLive('setState called');
+        if (matchingLocal != null) {
+          _logChatLive(
+            'replaced optimistic localId=${matchingLocal.id} '
+            'serverId=${message.id}',
+          );
+        } else if (alreadyExists) {
+          _logChatLive('duplicate serverId=${message.id} updated');
+        } else {
+          _logChatLive('inserted messageId=${message.id}');
+        }
+        if (shouldScroll) _scrollToBottomSoon();
+        return;
+      }
+
       final result = applyInboxEventToRoom(
         messages: _messages,
         activityByUserID: _activityByUserID,
         event: event,
         chatID: widget.chatID,
       );
-      if (!mounted) return;
-      final shouldScroll = event is NewMessageInboxEvent &&
-          event.message.chatID == widget.chatID &&
-          _isNearBottom;
       setState(() {
         _messages = result.messages;
         _activityByUserID = result.activityByUserID;
       });
-      if (shouldScroll) _scrollToBottomSoon();
     });
     _statusSubscription = _inboxClient.status.listen((status) {
       if (!mounted) return;
       _applyConnectionStatus(status);
     });
     _applyConnectionStatus(_inboxClient.currentStatus);
-    _inboxClient.connect();
+    _inboxClient.connect(source: 'chat_room');
   }
 
   void _handleScroll() {
@@ -666,18 +717,35 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       );
       if (!mounted) return;
       setState(() {
-        _messages = upsertMessages(removeLocalMessage(_messages, localID), [
-          sentMessage,
-        ]);
+        _messages = replaceLocalMessage(
+          _messages,
+          localID: localID,
+          serverMessage: sentMessage,
+        );
         _isSending = false;
       });
       _scrollToBottomSoon();
     } catch (error) {
       if (!mounted) return;
       if (_isCommittedTransactionError(error)) {
-        await _recoverCommittedSend(
-          localMessage.copyWith(isSending: false, isFailed: false),
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+        if (!mounted) return;
+        final isStillPending = _messages.any(
+          (message) => message.id == localID && message.isSending,
         );
+        setState(() {
+          if (isStillPending) {
+            _messages = markMessageFailed(_messages, localID);
+          }
+          _isSending = false;
+        });
+        if (isStillPending) {
+          showReToast(
+            context,
+            'تأیید ارسال پیام دریافت نشد.',
+            ReToastType.failed,
+          );
+        }
         return;
       }
       setState(() {
@@ -686,48 +754,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       });
       showReToast(context, _friendlyError(error), ReToastType.failed);
     }
-  }
-
-  Future<void> _recoverCommittedSend(ChatMessage localMessage) async {
-    await Future<void>.delayed(const Duration(milliseconds: 450));
-    if (!mounted) return;
-
-    if (_hasRecoveredCommittedSend(localMessage)) {
-      setState(() {
-        _messages = removeLocalMessage(_messages, localMessage.id);
-        _isSending = false;
-      });
-      _scrollToBottomSoon();
-      return;
-    }
-
-    await _syncLatestMessages();
-    if (!mounted) return;
-    if (_hasRecoveredCommittedSend(localMessage)) {
-      setState(() {
-        _messages = removeLocalMessage(_messages, localMessage.id);
-        _isSending = false;
-      });
-      _scrollToBottomSoon();
-      return;
-    }
-
-    setState(() {
-      _messages = upsertMessages(
-        removeLocalMessage(_messages, localMessage.id),
-        [localMessage.copyWith(isSending: false, isFailed: false)],
-      );
-      _isSending = false;
-    });
-    _scrollToBottomSoon();
-  }
-
-  bool _hasRecoveredCommittedSend(ChatMessage localMessage) {
-    final localMessageAlreadyReplaced = !_messages.any(
-      (message) => message.id == localMessage.id,
-    );
-    return localMessageAlreadyReplaced ||
-        hasServerEchoOfLocalMessage(_messages, localMessage);
   }
 
   Future<void> _syncLatestMessages() async {
@@ -2285,6 +2311,10 @@ class _ChatPatternPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+void _logChatLive(String message) {
+  if (kDebugMode) debugPrint('[ChatLive] $message');
 }
 
 String _formatMessageTime(String isoDate) {

@@ -1,10 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/helpers.dart';
 import 'package:solar_icons/solar_icons.dart';
 
-enum ReToastType { success, warning, failed }
+enum ReToastType {
+  success,
+  error,
+  info,
+  warning;
+
+  static const ReToastType failed = error;
+}
 
 OverlayEntry? _currentToastEntry;
 
@@ -35,6 +44,8 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _positionAnimation;
+  Timer? _dismissTimer;
+  bool _isDismissing = false;
 
   @override
   void initState() {
@@ -45,24 +56,29 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
       duration: widget.slideDuration,
     );
     _positionAnimation = Tween<double>(
-      begin: -78,
+      begin: -100,
       end: 0,
     ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
     _controller.forward();
-    Future.delayed(widget.showDuration, () async {
-      if (!mounted) return;
-      await _controller.reverse();
-      if (mounted) widget.onDismissed();
-    });
+    _dismissTimer = Timer(widget.showDuration, _dismiss);
   }
 
   @override
   void dispose() {
+    _dismissTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _dismiss() async {
+    if (_isDismissing || !mounted) return;
+    _isDismissing = true;
+    _dismissTimer?.cancel();
+    await _controller.reverse();
+    if (mounted) widget.onDismissed();
   }
 
   @override
@@ -80,74 +96,69 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(0, _positionAnimation.value),
-                child: child,
+                child: Opacity(opacity: _controller.value, child: child),
               );
             },
             child: Container(
-              height: 68,
-              margin: const EdgeInsets.only(
-                top: 20,
-                left: 20,
-                right: 20,
-              ),
-              clipBehavior: Clip.antiAlias,
+              constraints: const BoxConstraints(minHeight: 68),
+              margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
                 color: widget.backgroundColor,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.10),
+                    color: AppColors.black.withOpacity(0.12),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              child: Column(
+              child: Row(
+                textDirection: TextDirection.ltr,
                 children: [
+                  _ToastCircle(
+                    backgroundColor: AppColors.white,
+                    child: Icon(
+                      widget.icon,
+                      color: widget.backgroundColor,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: Row(
-                          children: [
-                            Icon(
-                              widget.icon,
-                              color: widget.contentColor,
-                              size: 22,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: ReText(
-                                widget.title,
-                                textDirection: TextDirection.rtl,
-                                color: widget.contentColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                textAlign: TextAlign.right,
-                                maxLines: 2,
-                              ),
-                            ),
-                          ],
+                    child: ReText(
+                      widget.title,
+                      textDirection: TextDirection.rtl,
+                      color: widget.contentColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      lineHeight: 1.55,
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Semantics(
+                    key: const Key('re-toast-dismiss'),
+                    button: true,
+                    label: 'بستن اعلان',
+                    child: Material(
+                      color: AppColors.white.withOpacity(0.20),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _dismiss,
+                        child: const SizedBox.square(
+                          dimension: 40,
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: AppColors.white,
+                            size: 28,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 1, end: 0),
-                    duration: widget.showDuration,
-                    builder: (context, value, child) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: LinearProgressIndicator(
-                          value: value,
-                          backgroundColor:
-                              widget.backgroundColor.withOpacity(0.4),
-                          color: widget.contentColor,
-                          minHeight: 4,
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
@@ -155,6 +166,27 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ToastCircle extends StatelessWidget {
+  const _ToastCircle({required this.backgroundColor, required this.child});
+
+  final Color backgroundColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+      ),
+      child: child,
     );
   }
 }
@@ -168,27 +200,39 @@ void showReToast(
 
   final style = switch (type) {
     ReToastType.success => (
-        backgroundColor: AppColors.toastSuccessBackground,
-        contentColor: AppColors.toastSuccessText,
-        icon: SolarIconsOutline.checkSquare,
+        backgroundColor: AppColors.toastSuccess,
+        contentColor: AppColors.white,
+        icon: Icons.check_rounded,
+      ),
+    ReToastType.error => (
+        backgroundColor: AppColors.toastError,
+        contentColor: AppColors.white,
+        icon: Icons.close_rounded,
+      ),
+    ReToastType.info => (
+        backgroundColor: AppColors.toastInfo,
+        contentColor: AppColors.white,
+        icon: SolarIconsOutline.infoCircle,
       ),
     ReToastType.warning => (
-        backgroundColor: AppColors.toastWarningBackground,
-        contentColor: AppColors.toastWarningText,
-        icon: SolarIconsOutline.dangerSquare,
-      ),
-    ReToastType.failed => (
-        backgroundColor: AppColors.toastErrorBackground,
-        contentColor: AppColors.toastErrorText,
-        icon: SolarIconsOutline.closeSquare,
+        backgroundColor: AppColors.toastWarning,
+        contentColor: AppColors.black1,
+        icon: SolarIconsOutline.dangerTriangle,
       ),
   };
 
   const slideDuration = Duration(milliseconds: 420);
-  const showDuration = Duration(milliseconds: 2400);
+  const showDuration = Duration(milliseconds: 3000);
 
-  _currentToastEntry?.remove();
+  if (_currentToastEntry?.mounted ?? false) {
+    _currentToastEntry?.remove();
+  }
   _currentToastEntry = null;
+
+  final overlayState =
+      Navigator.maybeOf(context, rootNavigator: true)?.overlay ??
+          Overlay.maybeOf(context, rootOverlay: true);
+  if (overlayState == null) return;
 
   late final OverlayEntry overlayEntry;
   overlayEntry = OverlayEntry(
@@ -204,12 +248,12 @@ void showReToast(
           if (_currentToastEntry == overlayEntry) {
             _currentToastEntry = null;
           }
-          overlayEntry.remove();
+          if (overlayEntry.mounted) overlayEntry.remove();
         },
       );
     },
   );
 
   _currentToastEntry = overlayEntry;
-  Overlay.of(context).insert(overlayEntry);
+  overlayState.insert(overlayEntry);
 }
