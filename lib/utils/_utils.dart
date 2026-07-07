@@ -6,4 +6,5 @@ export 'fonts.dart';
 export 'extentions.dart';
 export 'helpers.dart';
 export 'iran_phone_number.dart';
+export 'username.dart';
 export 'strings.dart';

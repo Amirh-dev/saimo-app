@@ -1,22 +1,24 @@
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/utils/username.dart';
 
 import 'friendship_models.dart';
 
-class FriendRequestByPhoneUnavailableException implements Exception {
-  const FriendRequestByPhoneUnavailableException();
-
-  @override
-  String toString() =>
-      'افزودن دوست با شماره موبایل هنوز از سمت سرور فعال نشده است.';
-}
+typedef RawGraphQLRequest = Future<Map<String, dynamic>> Function({
+  required String query,
+  Map<String, dynamic> variables,
+  bool requiresAuth,
+});
 
 class FriendshipRepository {
-  FriendshipRepository(this._graphql);
+  FriendshipRepository(GraphQLRepository graphql)
+      : _rawRequest = graphql.rawRequest;
 
-  final GraphQLRepository _graphql;
+  FriendshipRepository.withRawRequest(this._rawRequest);
+
+  final RawGraphQLRequest _rawRequest;
 
   Future<CurrentFriendshipUser> getCurrentUser() async {
-    final data = await _graphql.rawRequest(query: _getMeForFriendsQuery);
+    final data = await _rawRequest(query: _getMeForFriendsQuery);
     final getMe = data['getMe'];
     if (getMe is Map<String, dynamic>) {
       final user = CurrentFriendshipUser.fromJson(getMe);
@@ -26,7 +28,7 @@ class FriendshipRepository {
   }
 
   Future<List<FriendshipItem>> getFriendships(String currentUserID) async {
-    final data = await _graphql.rawRequest(
+    final data = await _rawRequest(
       query: _getFriendshipsQuery,
       variables: const {'limit': 50, 'offset': 0},
     );
@@ -60,41 +62,79 @@ class FriendshipRepository {
     return items;
   }
 
-  Future<FriendshipItem> sendFriendRequestByPhone({
-    required String currentUserID,
-    required String phoneNumber,
+  Future<UsernameSearchUser?> findUserByUsername(String username) async {
+    final normalizedUsername = username.trim();
+    if (!hasValidUsernameCharacters(normalizedUsername)) return null;
+
+    final data = await _rawRequest(
+      query: _findUserByUsernameQuery,
+      variables: {'username': normalizedUsername},
+    );
+    final rawUser = data['findUserByUsername'];
+    if (rawUser is! Map<String, dynamic>) return null;
+
+    final user = UsernameSearchUser.fromJson(rawUser);
+    return user.id.isEmpty || user.username.isEmpty ? null : user;
+  }
+
+  Future<List<UsernameSearchUser>> searchUsersByUsername({
+    required String query,
+    int? limit,
+    int? offset,
   }) async {
-    try {
-      final data = await _graphql.rawRequest(
-        query: _sendFriendRequestByPhoneMutation,
-        variables: {'phoneNumber': phoneNumber},
-      );
-      final rawFriendship = data['sendFriendRequestByPhone'];
-      if (rawFriendship is Map<String, dynamic>) {
-        return FriendshipItem.fromJson(
-          rawFriendship,
-          currentUserID: currentUserID,
-        );
-      }
-      throw const GraphQLRawException('ارسال درخواست دوستی ناموفق بود');
-    } on GraphQLRawException catch (error) {
-      final message = error.message.toLowerCase();
-      if (message.contains('sendfriendrequestbyphone') &&
-          (message.contains('cannot query field') ||
-              message.contains('unknown field') ||
-              message.contains('not found'))) {
-        // TODO(backend): Add sendFriendRequestByPhone(phoneNumber: String!).
-        throw const FriendRequestByPhoneUnavailableException();
-      }
-      rethrow;
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.length < 3 ||
+        !hasValidUsernameCharacters(normalizedQuery)) {
+      return const [];
     }
+    if (limit != null && limit <= 0) {
+      throw ArgumentError.value(limit, 'limit', 'must be greater than zero');
+    }
+    if (offset != null && offset < 0) {
+      throw ArgumentError.value(offset, 'offset', 'must not be negative');
+    }
+
+    final data = await _rawRequest(
+      query: _searchUsersByUsernameQuery,
+      variables: {
+        'query': normalizedQuery,
+        if (limit != null) 'limit': limit,
+        if (offset != null) 'offset': offset,
+      },
+    );
+    final rawUsers = data['searchUsersByUsername'];
+    if (rawUsers is! List) return const [];
+
+    return rawUsers
+        .whereType<Map<String, dynamic>>()
+        .map(UsernameSearchUser.fromJson)
+        .where((user) => user.id.isNotEmpty && user.username.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<FriendshipItem> sendFriendRequest({
+    required String currentUserID,
+    required String targetUserID,
+  }) async {
+    final data = await _rawRequest(
+      query: _sendFriendRequestMutation,
+      variables: {'targetUserID': targetUserID},
+    );
+    final rawFriendship = data['sendFriendRequest'];
+    if (rawFriendship is Map<String, dynamic>) {
+      return FriendshipItem.fromJson(
+        rawFriendship,
+        currentUserID: currentUserID,
+      );
+    }
+    throw const GraphQLRawException('ارسال درخواست دوستی ناموفق بود');
   }
 
   Future<FriendshipItem> acceptFriendRequest({
     required String currentUserID,
     required String targetUserID,
   }) async {
-    final data = await _graphql.rawRequest(
+    final data = await _rawRequest(
       query: _acceptFriendRequestMutation,
       variables: {'targetUserID': targetUserID},
     );
@@ -141,7 +181,7 @@ class FriendshipRepository {
     required String targetUserID,
     required String failureMessage,
   }) async {
-    final data = await _graphql.rawRequest(
+    final data = await _rawRequest(
       query: query,
       variables: {'targetUserID': targetUserID},
     );
@@ -168,12 +208,12 @@ userHighID
 requester {
   id
   fullName
-  phoneNumber
+  username
 }
 receiver {
   id
   fullName
-  phoneNumber
+  username
 }
 ''';
 
@@ -182,7 +222,7 @@ query GetMeForFriends {
   getMe {
     id
     fullName
-    phoneNumber
+    username
   }
 }
 ''';
@@ -198,9 +238,31 @@ query GetFriendshipsForProfile(\$limit: Int, \$offset: Int) {
 }
 ''';
 
-const String _sendFriendRequestByPhoneMutation = '''
-mutation SendFriendRequestByPhone(\$phoneNumber: String!) {
-  sendFriendRequestByPhone(phoneNumber: \$phoneNumber) {
+const String _usernameSearchUserFields = r'''
+id
+username
+fullName
+''';
+
+const String _findUserByUsernameQuery = '''
+query FindUserByUsername(\$username: String!) {
+  findUserByUsername(username: \$username) {
+    $_usernameSearchUserFields
+  }
+}
+''';
+
+const String _searchUsersByUsernameQuery = '''
+query SearchUsersByUsername(\$query: String!, \$limit: Int, \$offset: Int) {
+  searchUsersByUsername(query: \$query, limit: \$limit, offset: \$offset) {
+    $_usernameSearchUserFields
+  }
+}
+''';
+
+const String _sendFriendRequestMutation = '''
+mutation SendFriendRequest(\$targetUserID: UUID!) {
+  sendFriendRequest(targetUserID: \$targetUserID) {
     $_friendshipFields
   }
 }

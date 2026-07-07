@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
@@ -14,6 +18,7 @@ import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/fonts.dart';
+import 'package:simo_learn/utils/username.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
@@ -33,14 +38,27 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _fullNameController;
+  late TextEditingController _usernameController;
   late TextEditingController _phoneController;
   late FocusNode _fullNameFocusNode;
+  late UsernameRepository _usernameRepository;
+  Timer? _usernameDebounce;
   Jalali? _birthDate;
   int? _selectedStudyIndex;
   bool _isStudyMenuExpanded = false;
   final LayerLink _studyLayerLink = LayerLink();
   final GlobalKey _studyHeaderKey = GlobalKey();
   OverlayEntry? _studyOverlayEntry;
+  UsernameAvailability? _usernameAvailability;
+  String? _validatedUsername;
+  String? _usernameError;
+  bool _usernameWasManuallyEdited = false;
+  bool _isSuggestedUsername = false;
+  bool _isSuggestingUsername = false;
+  bool _isCheckingUsername = false;
+  int _usernameRequestRevision = 0;
+
+  static const _usernameDebounceDuration = Duration(milliseconds: 650);
 
   static const List<String> _studyOptions = [
     'زیر ۴ ساعت',
@@ -52,17 +70,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _fullNameController = TextEditingController();
+    _usernameController = TextEditingController();
     _phoneController = TextEditingController(text: widget.phoneNumber);
     _fullNameFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _usernameRepository = UsernameRepository(
+      context.read<GraphQLRepository>(),
+    );
   }
 
   @override
   void dispose() {
     _removeStudyOverlay();
+    _usernameDebounce?.cancel();
     _fullNameFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
     _fullNameController.dispose();
+    _usernameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -70,6 +94,135 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleFieldFocusChange() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  bool get _hasValidPersianFullName {
+    return isValidPersianFullName(_fullNameController.text);
+  }
+
+  void _onFullNameChanged(String value) {
+    _usernameDebounce?.cancel();
+    _usernameRequestRevision += 1;
+    final revision = _usernameRequestRevision;
+
+    setState(() {
+      _usernameError = null;
+      _isSuggestingUsername = false;
+      _isCheckingUsername = false;
+      if (!_usernameWasManuallyEdited) {
+        _usernameController.clear();
+        _usernameAvailability = null;
+        _validatedUsername = null;
+        _isSuggestedUsername = false;
+      }
+    });
+
+    if (!_hasValidPersianFullName || _usernameWasManuallyEdited) return;
+    _usernameDebounce = Timer(
+      _usernameDebounceDuration,
+      () => _suggestUsername(value.trim(), revision),
+    );
+  }
+
+  Future<void> _suggestUsername(String fullName, int revision) async {
+    if (!mounted || revision != _usernameRequestRevision) return;
+    setState(() {
+      _isSuggestingUsername = true;
+      _usernameError = null;
+    });
+
+    try {
+      final suggestion = await _usernameRepository.suggestUsername(fullName);
+      if (!mounted || revision != _usernameRequestRevision) return;
+      _setUsernameText(suggestion.username);
+      setState(() {
+        _isSuggestingUsername = false;
+        _usernameAvailability = UsernameAvailability(
+          available: suggestion.available,
+          normalizedUsername: suggestion.username,
+        );
+        _validatedUsername = suggestion.available ? suggestion.username : null;
+        _isSuggestedUsername = true;
+        _usernameError = suggestion.available
+            ? null
+            : 'نام کاربری پیشنهادی در دسترس نیست؛ یک نام دیگر وارد کنید.';
+      });
+    } catch (error) {
+      if (!mounted || revision != _usernameRequestRevision) return;
+      setState(() {
+        _isSuggestingUsername = false;
+        _usernameError = _friendlyUsernameError(error);
+      });
+    }
+  }
+
+  void _onUsernameChanged(String value) {
+    _usernameDebounce?.cancel();
+    _usernameRequestRevision += 1;
+    final revision = _usernameRequestRevision;
+    final username = value.trim();
+    final hasValidCharacters =
+        username.isEmpty || hasValidUsernameCharacters(username);
+
+    setState(() {
+      _usernameWasManuallyEdited = true;
+      _isSuggestedUsername = false;
+      _usernameAvailability = null;
+      _validatedUsername = null;
+      _isSuggestingUsername = false;
+      _usernameError = !hasValidCharacters
+          ? 'نام کاربری را فقط با حروف انگلیسی، عدد و _ وارد کنید.'
+          : username.isNotEmpty && username.length < 3
+              ? 'نام کاربری باید حداقل ۳ کاراکتر باشد.'
+              : null;
+      _isCheckingUsername = hasValidCharacters && username.length >= 3;
+    });
+
+    if (!hasValidCharacters || username.length < 3) return;
+    _usernameDebounce = Timer(
+      _usernameDebounceDuration,
+      () => _checkUsernameAvailability(username, revision),
+    );
+  }
+
+  Future<void> _checkUsernameAvailability(
+    String username,
+    int revision,
+  ) async {
+    if (!mounted || revision != _usernameRequestRevision) return;
+    try {
+      final availability =
+          await _usernameRepository.checkUsernameAvailability(username);
+      if (!mounted || revision != _usernameRequestRevision) return;
+      _setUsernameText(availability.normalizedUsername);
+      setState(() {
+        _isCheckingUsername = false;
+        _usernameAvailability = availability;
+        _validatedUsername =
+            availability.available ? availability.normalizedUsername : null;
+        _usernameError = availability.available
+            ? null
+            : 'این نام کاربری قبلاً انتخاب شده است.';
+      });
+    } catch (error) {
+      if (!mounted || revision != _usernameRequestRevision) return;
+      setState(() {
+        _isCheckingUsername = false;
+        _usernameError = _friendlyUsernameError(error);
+      });
+    }
+  }
+
+  void _setUsernameText(String username) {
+    _usernameController.value = TextEditingValue(
+      text: username,
+      selection: TextSelection.collapsed(offset: username.length),
+    );
+  }
+
+  void _useUsernameSuggestion(String suggestion) {
+    _setUsernameText(suggestion);
+    _onUsernameChanged(suggestion);
   }
 
   Future<void> _openBirthDatePicker() async {
@@ -226,7 +379,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: TextFormField(
                   focusNode: _fullNameFocusNode,
                   controller: _fullNameController,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: _onFullNameChanged,
                   onTapOutside: (_) =>
                       FocusManager.instance.primaryFocus?.unfocus(),
                   textAlign: TextAlign.right,
@@ -287,6 +440,91 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUsernameField() {
+    final isBusy = _isSuggestingUsername || _isCheckingUsername;
+    return Column(
+      children: [
+        ReTextField(
+          controller: _usernameController,
+          placeholder: 'نام کاربری',
+          inputTextAlign: TextAlign.left,
+          placeholderAlign: TextAlign.right,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          maxLength: 64,
+          backgroundColor: AppColors.gray1,
+          borderRadius: 100,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          onChanged: _onUsernameChanged,
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(left: 15),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              child: isBusy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator.adaptive(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      _usernameAvailability?.available == true
+                          ? Icons.check_circle_rounded
+                          : Icons.alternate_email_rounded,
+                      color: _usernameAvailability?.available == true
+                          ? AppColors.done
+                          : AppColors.black1,
+                      size: 19,
+                    ),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ReText(
+                _usernameError ??
+                    (_isSuggestedUsername
+                        ? 'نام کاربری پیشنهادی: @$_validatedUsername'
+                        : _usernameAvailability?.available == true
+                            ? 'این نام کاربری در دسترس است.'
+                            : 'فقط از حروف انگلیسی، عدد و _ استفاده کنید.'),
+                color: _usernameError != null
+                    ? AppColors.errorColor
+                    : _usernameAvailability?.available == true
+                        ? AppColors.done
+                        : AppColors.black1.withOpacity(0.55),
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                textAlign: TextAlign.right,
+                maxLines: 2,
+              ),
+              if (_usernameAvailability?.suggestion != null)
+                GestureDetector(
+                  onTap: () => _useUsernameSuggestion(
+                    _usernameAvailability!.suggestion!,
+                  ),
+                  child: ReText(
+                    '  استفاده از @${_usernameAvailability!.suggestion}',
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    textAlign: TextAlign.left,
+                    isPersian: false,
+                  ),
+                ),
+            ],
+          ),
+        ).tMargin(5),
+      ],
     );
   }
 
@@ -426,6 +664,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: Column(
                                 children: [
                                   _buildNameAndDateRow(),
+                                  if (_fullNameController.text
+                                          .trim()
+                                          .isNotEmpty &&
+                                      !_hasValidPersianFullName)
+                                    const Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ReText(
+                                        'نام و نام خانوادگی را به فارسی وارد کنید.',
+                                        color: AppColors.errorColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ).tMargin(5),
+                                  _buildUsernameField().tMargin(8),
                                   _buildPhoneField().tMargin(8),
                                   _buildStudyHeader().tMargin(8),
                                   ReButton(
@@ -469,7 +721,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   bool get _canSubmitRegistration {
-    return _fullNameController.text.trim().isNotEmpty &&
+    return _hasValidPersianFullName &&
+        _usernameAvailability?.available == true &&
+        _validatedUsername != null &&
+        !_isSuggestingUsername &&
+        !_isCheckingUsername &&
         _normalizeDigits(_phoneController.text).length == 11 &&
         _birthDate != null &&
         _selectedStudyIndex != null;
@@ -483,6 +739,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final birthDate = _birthDate!.toGregorian();
       context.read<AuthCubit>().completeRegistrationProfile(
             fullName: _fullNameController.text.trim(),
+            username: _validatedUsername!,
             birthDate: DateTime(
               birthDate.year,
               birthDate.month,
@@ -504,6 +761,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           phoneNumber: phoneNumber,
           code: code,
           fullName: _fullNameController.text.trim(),
+          username: _validatedUsername!,
           birthDate: DateTime(
             birthDate.year,
             birthDate.month,
@@ -531,4 +789,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     return result;
   }
+}
+
+String _friendlyUsernameError(Object error) {
+  final message = error.toString();
+  final normalized = message.toLowerCase();
+  if (error is ArgumentError || normalized.contains('at least 3')) {
+    if (normalized.contains('english letters')) {
+      return 'نام کاربری را فقط با حروف انگلیسی، عدد و _ وارد کنید.';
+    }
+    return 'نام کاربری باید حداقل ۳ کاراکتر باشد.';
+  }
+  if (normalized.contains('rate_limit') ||
+      normalized.contains('too many') ||
+      normalized.contains('429')) {
+    return 'تعداد درخواست‌ها زیاد شده است؛ لطفاً کمی بعد تلاش کنید.';
+  }
+  if (normalized.contains('socket') ||
+      normalized.contains('network') ||
+      normalized.contains('host lookup')) {
+    return 'اتصال به سرور برقرار نشد.';
+  }
+  return 'بررسی نام کاربری ناموفق بود؛ دوباره تلاش کنید.';
 }

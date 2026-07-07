@@ -810,6 +810,7 @@ abstract class GUpdateProfileInput
   factory GUpdateProfileInput(
       [Function(GUpdateProfileInputBuilder b) updates]) = _$GUpdateProfileInput;
 
+  String? get username;
   String? get fullName;
   GTime? get birthDate;
   GUserStudyTime? get studyTime;
@@ -1073,6 +1074,7 @@ abstract class GVerifyOTPAndRegisterInput
   String get phoneNumber;
   String get code;
   String get fullName;
+  String get username;
   GTime get birthDate;
   GUserStudyTime get studyTime;
   static Serializer<GVerifyOTPAndRegisterInput> get serializer =>

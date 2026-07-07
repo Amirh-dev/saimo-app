@@ -1,24 +1,29 @@
-import 'package:simo_learn/utils/iran_phone_number.dart';
-
 class FriendshipUser {
   const FriendshipUser({
     required this.id,
     this.fullName,
-    this.phoneNumber,
+    this.username,
   });
 
   final String id;
   final String? fullName;
-  final String? phoneNumber;
+  final String? username;
+
+  bool get hasFullName => fullName?.trim().isNotEmpty == true;
+
+  String? get usernameLabel {
+    final normalizedUsername = username?.trim();
+    return normalizedUsername == null || normalizedUsername.isEmpty
+        ? null
+        : '@$normalizedUsername';
+  }
 
   String get displayName {
     final name = fullName?.trim();
     if (name != null && name.isNotEmpty) return name;
 
-    final phone = phoneNumber?.trim();
-    if (phone != null && phone.isNotEmpty) {
-      return maskIranianMobileNumber(phone) ?? 'کاربر سیمو';
-    }
+    final normalizedUsername = usernameLabel;
+    if (normalizedUsername != null) return normalizedUsername;
 
     return 'کاربر سیمو';
   }
@@ -27,7 +32,7 @@ class FriendshipUser {
     return FriendshipUser(
       id: json['id']?.toString() ?? '',
       fullName: json['fullName']?.toString(),
-      phoneNumber: json['phoneNumber']?.toString(),
+      username: json['username']?.toString(),
     );
   }
 }
@@ -112,18 +117,43 @@ class CurrentFriendshipUser {
   const CurrentFriendshipUser({
     required this.id,
     this.fullName,
-    this.phoneNumber,
+    this.username,
   });
 
   final String id;
   final String? fullName;
-  final String? phoneNumber;
+  final String? username;
 
   factory CurrentFriendshipUser.fromJson(Map<String, dynamic> json) {
     return CurrentFriendshipUser(
       id: json['id']?.toString() ?? '',
       fullName: json['fullName']?.toString(),
-      phoneNumber: json['phoneNumber']?.toString(),
+      username: json['username']?.toString(),
+    );
+  }
+}
+
+class UsernameSearchUser {
+  const UsernameSearchUser({
+    required this.id,
+    required this.username,
+    this.fullName,
+  });
+
+  final String id;
+  final String username;
+  final String? fullName;
+
+  String get displayName {
+    final name = fullName?.trim();
+    return name == null || name.isEmpty ? 'کاربر سیمو' : name;
+  }
+
+  factory UsernameSearchUser.fromJson(Map<String, dynamic> json) {
+    return UsernameSearchUser(
+      id: json['id']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      fullName: json['fullName']?.toString(),
     );
   }
 }

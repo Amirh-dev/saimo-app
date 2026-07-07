@@ -1,5 +1,3 @@
-import 'package:simo_learn/utils/iran_phone_number.dart';
-
 enum InboxConnectionStatus {
   idle,
   connecting,
@@ -175,7 +173,7 @@ class ChatContact {
     required this.status,
     required this.isPending,
     this.targetFullName,
-    this.targetPhoneNumber,
+    this.targetUsername,
   });
 
   final String friendshipID;
@@ -183,16 +181,21 @@ class ChatContact {
   final String status;
   final bool isPending;
   final String? targetFullName;
-  final String? targetPhoneNumber;
+  final String? targetUsername;
+
+  bool get hasFullName => targetFullName?.trim().isNotEmpty == true;
+
+  String? get usernameLabel {
+    final username = targetUsername?.trim();
+    return username == null || username.isEmpty ? null : '@$username';
+  }
 
   String get displayName {
     final fullName = targetFullName?.trim();
     if (fullName != null && fullName.isNotEmpty) return fullName;
 
-    final phoneNumber = targetPhoneNumber?.trim();
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      return maskIranianMobileNumber(phoneNumber) ?? 'کاربر سیمو';
-    }
+    final username = usernameLabel;
+    if (username != null) return username;
 
     return 'کاربر سیمو';
   }

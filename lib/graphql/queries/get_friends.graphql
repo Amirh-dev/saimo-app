@@ -9,12 +9,12 @@ query GetFriends($limit: Int, $offset: Int) {
     requester {
       id
       fullName
-      phoneNumber
+      username
     }
     receiver {
       id
       fullName
-      phoneNumber
+      username
     }
   }
 }

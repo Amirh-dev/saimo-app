@@ -195,8 +195,8 @@ class _$GGetFriendsData_getFriends_requesterSerializer
           specifiedType: const FullType(String)),
       'id',
       serializers.serialize(object.id, specifiedType: const FullType(String)),
-      'phoneNumber',
-      serializers.serialize(object.phoneNumber,
+      'username',
+      serializers.serialize(object.username,
           specifiedType: const FullType(String)),
     ];
     Object? value;
@@ -234,8 +234,8 @@ class _$GGetFriendsData_getFriends_requesterSerializer
           result.fullName = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
           break;
-        case 'phoneNumber':
-          result.phoneNumber = serializers.deserialize(value,
+        case 'username':
+          result.username = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
       }
@@ -265,8 +265,8 @@ class _$GGetFriendsData_getFriends_receiverSerializer
           specifiedType: const FullType(String)),
       'id',
       serializers.serialize(object.id, specifiedType: const FullType(String)),
-      'phoneNumber',
-      serializers.serialize(object.phoneNumber,
+      'username',
+      serializers.serialize(object.username,
           specifiedType: const FullType(String)),
     ];
     Object? value;
@@ -304,8 +304,8 @@ class _$GGetFriendsData_getFriends_receiverSerializer
           result.fullName = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
           break;
-        case 'phoneNumber':
-          result.phoneNumber = serializers.deserialize(value,
+        case 'username':
+          result.username = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
       }
@@ -676,7 +676,7 @@ class _$GGetFriendsData_getFriends_requester
   @override
   final String? fullName;
   @override
-  final String phoneNumber;
+  final String username;
 
   factory _$GGetFriendsData_getFriends_requester(
           [void Function(GGetFriendsData_getFriends_requesterBuilder)?
@@ -688,14 +688,14 @@ class _$GGetFriendsData_getFriends_requester
       {required this.G__typename,
       required this.id,
       this.fullName,
-      required this.phoneNumber})
+      required this.username})
       : super._() {
     BuiltValueNullFieldError.checkNotNull(
         G__typename, r'GGetFriendsData_getFriends_requester', 'G__typename');
     BuiltValueNullFieldError.checkNotNull(
         id, r'GGetFriendsData_getFriends_requester', 'id');
     BuiltValueNullFieldError.checkNotNull(
-        phoneNumber, r'GGetFriendsData_getFriends_requester', 'phoneNumber');
+        username, r'GGetFriendsData_getFriends_requester', 'username');
   }
 
   @override
@@ -714,7 +714,7 @@ class _$GGetFriendsData_getFriends_requester
         G__typename == other.G__typename &&
         id == other.id &&
         fullName == other.fullName &&
-        phoneNumber == other.phoneNumber;
+        username == other.username;
   }
 
   @override
@@ -723,7 +723,7 @@ class _$GGetFriendsData_getFriends_requester
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, fullName.hashCode);
-    _$hash = $jc(_$hash, phoneNumber.hashCode);
+    _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -734,7 +734,7 @@ class _$GGetFriendsData_getFriends_requester
           ..add('G__typename', G__typename)
           ..add('id', id)
           ..add('fullName', fullName)
-          ..add('phoneNumber', phoneNumber))
+          ..add('username', username))
         .toString();
   }
 }
@@ -757,9 +757,9 @@ class GGetFriendsData_getFriends_requesterBuilder
   String? get fullName => _$this._fullName;
   set fullName(String? fullName) => _$this._fullName = fullName;
 
-  String? _phoneNumber;
-  String? get phoneNumber => _$this._phoneNumber;
-  set phoneNumber(String? phoneNumber) => _$this._phoneNumber = phoneNumber;
+  String? _username;
+  String? get username => _$this._username;
+  set username(String? username) => _$this._username = username;
 
   GGetFriendsData_getFriends_requesterBuilder() {
     GGetFriendsData_getFriends_requester._initializeBuilder(this);
@@ -771,7 +771,7 @@ class GGetFriendsData_getFriends_requesterBuilder
       _G__typename = $v.G__typename;
       _id = $v.id;
       _fullName = $v.fullName;
-      _phoneNumber = $v.phoneNumber;
+      _username = $v.username;
       _$v = null;
     }
     return this;
@@ -800,8 +800,8 @@ class GGetFriendsData_getFriends_requesterBuilder
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'GGetFriendsData_getFriends_requester', 'id'),
             fullName: fullName,
-            phoneNumber: BuiltValueNullFieldError.checkNotNull(phoneNumber,
-                r'GGetFriendsData_getFriends_requester', 'phoneNumber'));
+            username: BuiltValueNullFieldError.checkNotNull(
+                username, r'GGetFriendsData_getFriends_requester', 'username'));
     replace(_$result);
     return _$result;
   }
@@ -816,7 +816,7 @@ class _$GGetFriendsData_getFriends_receiver
   @override
   final String? fullName;
   @override
-  final String phoneNumber;
+  final String username;
 
   factory _$GGetFriendsData_getFriends_receiver(
           [void Function(GGetFriendsData_getFriends_receiverBuilder)?
@@ -828,14 +828,14 @@ class _$GGetFriendsData_getFriends_receiver
       {required this.G__typename,
       required this.id,
       this.fullName,
-      required this.phoneNumber})
+      required this.username})
       : super._() {
     BuiltValueNullFieldError.checkNotNull(
         G__typename, r'GGetFriendsData_getFriends_receiver', 'G__typename');
     BuiltValueNullFieldError.checkNotNull(
         id, r'GGetFriendsData_getFriends_receiver', 'id');
     BuiltValueNullFieldError.checkNotNull(
-        phoneNumber, r'GGetFriendsData_getFriends_receiver', 'phoneNumber');
+        username, r'GGetFriendsData_getFriends_receiver', 'username');
   }
 
   @override
@@ -854,7 +854,7 @@ class _$GGetFriendsData_getFriends_receiver
         G__typename == other.G__typename &&
         id == other.id &&
         fullName == other.fullName &&
-        phoneNumber == other.phoneNumber;
+        username == other.username;
   }
 
   @override
@@ -863,7 +863,7 @@ class _$GGetFriendsData_getFriends_receiver
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
     _$hash = $jc(_$hash, fullName.hashCode);
-    _$hash = $jc(_$hash, phoneNumber.hashCode);
+    _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -874,7 +874,7 @@ class _$GGetFriendsData_getFriends_receiver
           ..add('G__typename', G__typename)
           ..add('id', id)
           ..add('fullName', fullName)
-          ..add('phoneNumber', phoneNumber))
+          ..add('username', username))
         .toString();
   }
 }
@@ -897,9 +897,9 @@ class GGetFriendsData_getFriends_receiverBuilder
   String? get fullName => _$this._fullName;
   set fullName(String? fullName) => _$this._fullName = fullName;
 
-  String? _phoneNumber;
-  String? get phoneNumber => _$this._phoneNumber;
-  set phoneNumber(String? phoneNumber) => _$this._phoneNumber = phoneNumber;
+  String? _username;
+  String? get username => _$this._username;
+  set username(String? username) => _$this._username = username;
 
   GGetFriendsData_getFriends_receiverBuilder() {
     GGetFriendsData_getFriends_receiver._initializeBuilder(this);
@@ -911,7 +911,7 @@ class GGetFriendsData_getFriends_receiverBuilder
       _G__typename = $v.G__typename;
       _id = $v.id;
       _fullName = $v.fullName;
-      _phoneNumber = $v.phoneNumber;
+      _username = $v.username;
       _$v = null;
     }
     return this;
@@ -940,8 +940,8 @@ class GGetFriendsData_getFriends_receiverBuilder
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'GGetFriendsData_getFriends_receiver', 'id'),
             fullName: fullName,
-            phoneNumber: BuiltValueNullFieldError.checkNotNull(phoneNumber,
-                r'GGetFriendsData_getFriends_receiver', 'phoneNumber'));
+            username: BuiltValueNullFieldError.checkNotNull(
+                username, r'GGetFriendsData_getFriends_receiver', 'username'));
     replace(_$result);
     return _$result;
   }

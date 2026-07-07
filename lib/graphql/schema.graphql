@@ -99,6 +99,8 @@ type Query {
     """The list of node IDs."""
     ids: [ID!]!,
   ): [Node]!
+  suggestUsername(fullName: String!): UsernameSuggestionPayload!
+  checkUsernameAvailability(username: String!): UsernameAvailabilityPayload!
   getGoals(status: GoalStatus, limit: Int, offset: Int): [Goal!]!
   getGoal(id: ID!): Goal!
   """Fetches all available interests to display on the selection screen."""
@@ -112,6 +114,8 @@ type Query {
   suggestTags(title: String!, shortDescription: String): [String!]!
   """Returns the currently authenticated user's profile with all stats."""
   getMe: User!
+  findUserByUsername(username: String!): User
+  searchUsersByUsername(query: String!, limit: Int, offset: Int): [User!]!
   getChatMessages(chatID: UUID!, limit: Int, offset: Int): [Message!]!
   getFriends(limit: Int, offset: Int): [Friendship!]!
   getPendingFriendRequests(limit: Int, offset: Int): [Friendship!]!
@@ -167,6 +171,7 @@ type User implements Node {
   updatedAt: Time!
   """User's unique phone number for login"""
   phoneNumber: String!
+  username: String!
   fullName: String
   """User's birth date (stored in UTC)"""
   birthDate: Time
@@ -728,6 +733,7 @@ input UpdateGoalInput {
 }
 
 input UpdateProfileInput {
+  username: String
   fullName: String
   birthDate: Time
   studyTime: UserStudyTime
@@ -919,8 +925,20 @@ input VerifyOTPAndRegisterInput {
   phoneNumber: String!
   code: String!
   fullName: String!
+  username: String!
   birthDate: Time!
   studyTime: UserStudyTime!
+}
+
+type UsernameSuggestionPayload {
+  username: String!
+  available: Boolean!
+}
+
+type UsernameAvailabilityPayload {
+  available: Boolean!
+  normalizedUsername: String!
+  suggestion: String
 }
 
 """

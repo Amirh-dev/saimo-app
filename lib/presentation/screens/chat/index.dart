@@ -1132,6 +1132,16 @@ class _ContactTile extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
                 ),
+                if (contact.hasFullName && contact.usernameLabel != null)
+                  ReText(
+                    contact.usernameLabel!,
+                    color: AppColors.black1.withOpacity(0.5),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    isPersian: false,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.right,
+                  ).tMargin(1),
                 SizedBox(
                   width: 180,
                   child: ReText(

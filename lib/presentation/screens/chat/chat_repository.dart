@@ -323,7 +323,7 @@ class ChatRepository {
       status: status,
       isPending: status.toUpperCase() != 'ACCEPTED',
       targetFullName: targetUser['fullName']?.toString(),
-      targetPhoneNumber: targetUser['phoneNumber']?.toString(),
+      targetUsername: targetUser['username']?.toString(),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.gql.dart';
@@ -16,6 +17,7 @@ class AuthCubit extends Cubit<AuthState> {
     required GraphQLRepository graphQLRepository,
     required TokenStorage tokenStorage,
   })  : _graphql = graphQLRepository,
+        _usernameRepository = UsernameRepository(graphQLRepository),
         _tokenStorage = tokenStorage,
         super(const AuthInitial()) {
     _sessionExpiredSubscription = _graphql.sessionExpired.listen((_) {
@@ -24,6 +26,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   final GraphQLRepository _graphql;
+  final UsernameRepository _usernameRepository;
   final TokenStorage _tokenStorage;
   late final StreamSubscription<void> _sessionExpiredSubscription;
   static const _temporaryFullName = 'Simo User';
@@ -119,12 +122,14 @@ class AuthCubit extends Cubit<AuthState> {
       );
       if (loggedIn || isRegistered) return;
 
+      final temporaryUsername = await _suggestTemporaryUsername();
       final response = await _graphql.requestOnce(
         GVerifyOTPAndRegisterReq(
           (request) => request.vars.input
             ..phoneNumber = phoneNumber
             ..code = code
             ..fullName = _temporaryFullName
+            ..username = temporaryUsername
             ..birthDate.value = DateTime.utc(2000).toIso8601String()
             ..studyTime = GUserStudyTime.UNDER_4_HOURS,
         ),
@@ -182,6 +187,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String phoneNumber,
     required String code,
     required String fullName,
+    required String username,
     required DateTime birthDate,
     required dynamic studyTime,
   }) async {
@@ -195,6 +201,7 @@ class AuthCubit extends Cubit<AuthState> {
             ..phoneNumber = phoneNumber
             ..code = code
             ..fullName = fullName
+            ..username = username
             ..birthDate.value = birthDate.toUtc().toIso8601String()
             ..studyTime = resolvedStudyTime,
         ),
@@ -251,6 +258,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> completeRegistrationProfile({
     required String fullName,
+    required String username,
     required DateTime birthDate,
     required dynamic studyTime,
   }) async {
@@ -268,6 +276,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
 ''',
         variables: {
           'input': {
+            'username': username,
             'fullName': fullName,
             'birthDate': birthDate.toUtc().toIso8601String(),
             'studyTime': resolvedStudyTime.name,
@@ -431,6 +440,15 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     throw ArgumentError('Invalid study time option');
   }
 
+  Future<String> _suggestTemporaryUsername() async {
+    final suggestion =
+        await _usernameRepository.suggestUsername(_temporaryFullName);
+    if (!suggestion.available) {
+      throw const GraphQLRawException('Username suggestion is unavailable');
+    }
+    return suggestion.username;
+  }
+
   Future<bool> _tryCompleteLogin({
     required String phoneNumber,
     required String code,
@@ -504,6 +522,7 @@ query GetMeForAuthCompletion {
     id
     phoneNumber
     fullName
+    username
     birthDate
     studyTime
   }
@@ -518,12 +537,14 @@ query GetMeForAuthCompletion {
     final fullName = user['fullName']?.toString().trim() ?? '';
     final birthDate = user['birthDate']?.toString().trim() ?? '';
     final studyTime = user['studyTime']?.toString().trim() ?? '';
+    final username = user['username']?.toString().trim() ?? '';
 
     return _AuthProfile(
       userId: user['id']?.toString() ?? fallbackUserId ?? '',
       phoneNumber: user['phoneNumber']?.toString() ?? fallbackPhoneNumber ?? '',
       isComplete: fullName.isNotEmpty &&
           fullName != _temporaryFullName &&
+          username.isNotEmpty &&
           birthDate.isNotEmpty &&
           studyTime.isNotEmpty,
     );

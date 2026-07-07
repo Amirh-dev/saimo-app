@@ -4271,6 +4271,13 @@ class _$GUpdateProfileInputSerializer
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[];
     Object? value;
+    value = object.username;
+    if (value != null) {
+      result
+        ..add('username')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(String)));
+    }
     value = object.fullName;
     if (value != null) {
       result
@@ -4321,6 +4328,10 @@ class _$GUpdateProfileInputSerializer
       iterator.moveNext();
       final Object? value = iterator.current;
       switch (key) {
+        case 'username':
+          result.username = serializers.deserialize(value,
+              specifiedType: const FullType(String)) as String?;
+          break;
         case 'fullName':
           result.fullName = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
@@ -6169,6 +6180,9 @@ class _$GVerifyOTPAndRegisterInputSerializer
       'fullName',
       serializers.serialize(object.fullName,
           specifiedType: const FullType(String)),
+      'username',
+      serializers.serialize(object.username,
+          specifiedType: const FullType(String)),
       'birthDate',
       serializers.serialize(object.birthDate,
           specifiedType: const FullType(GTime)),
@@ -6202,6 +6216,10 @@ class _$GVerifyOTPAndRegisterInputSerializer
           break;
         case 'fullName':
           result.fullName = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'username':
+          result.username = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
         case 'birthDate':
@@ -11344,6 +11362,8 @@ class GUpdateGoalInputBuilder
 
 class _$GUpdateProfileInput extends GUpdateProfileInput {
   @override
+  final String? username;
+  @override
   final String? fullName;
   @override
   final GTime? birthDate;
@@ -11359,7 +11379,12 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
       (new GUpdateProfileInputBuilder()..update(updates))._build();
 
   _$GUpdateProfileInput._(
-      {this.fullName, this.birthDate, this.studyTime, this.major, this.bio})
+      {this.username,
+      this.fullName,
+      this.birthDate,
+      this.studyTime,
+      this.major,
+      this.bio})
       : super._();
 
   @override
@@ -11375,6 +11400,7 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is GUpdateProfileInput &&
+        username == other.username &&
         fullName == other.fullName &&
         birthDate == other.birthDate &&
         studyTime == other.studyTime &&
@@ -11385,6 +11411,7 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jc(_$hash, fullName.hashCode);
     _$hash = $jc(_$hash, birthDate.hashCode);
     _$hash = $jc(_$hash, studyTime.hashCode);
@@ -11397,6 +11424,7 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'GUpdateProfileInput')
+          ..add('username', username)
           ..add('fullName', fullName)
           ..add('birthDate', birthDate)
           ..add('studyTime', studyTime)
@@ -11409,6 +11437,10 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
 class GUpdateProfileInputBuilder
     implements Builder<GUpdateProfileInput, GUpdateProfileInputBuilder> {
   _$GUpdateProfileInput? _$v;
+
+  String? _username;
+  String? get username => _$this._username;
+  set username(String? username) => _$this._username = username;
 
   String? _fullName;
   String? get fullName => _$this._fullName;
@@ -11435,6 +11467,7 @@ class GUpdateProfileInputBuilder
   GUpdateProfileInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _username = $v.username;
       _fullName = $v.fullName;
       _birthDate = $v.birthDate?.toBuilder();
       _studyTime = $v.studyTime;
@@ -11464,6 +11497,7 @@ class GUpdateProfileInputBuilder
     try {
       _$result = _$v ??
           new _$GUpdateProfileInput._(
+              username: username,
               fullName: fullName,
               birthDate: _birthDate?.build(),
               studyTime: studyTime,
@@ -13765,6 +13799,8 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
   @override
   final String fullName;
   @override
+  final String username;
+  @override
   final GTime birthDate;
   @override
   final GUserStudyTime studyTime;
@@ -13777,6 +13813,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
       {required this.phoneNumber,
       required this.code,
       required this.fullName,
+      required this.username,
       required this.birthDate,
       required this.studyTime})
       : super._() {
@@ -13786,6 +13823,8 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
         code, r'GVerifyOTPAndRegisterInput', 'code');
     BuiltValueNullFieldError.checkNotNull(
         fullName, r'GVerifyOTPAndRegisterInput', 'fullName');
+    BuiltValueNullFieldError.checkNotNull(
+        username, r'GVerifyOTPAndRegisterInput', 'username');
     BuiltValueNullFieldError.checkNotNull(
         birthDate, r'GVerifyOTPAndRegisterInput', 'birthDate');
     BuiltValueNullFieldError.checkNotNull(
@@ -13808,6 +13847,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
         phoneNumber == other.phoneNumber &&
         code == other.code &&
         fullName == other.fullName &&
+        username == other.username &&
         birthDate == other.birthDate &&
         studyTime == other.studyTime;
   }
@@ -13818,6 +13858,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
     _$hash = $jc(_$hash, phoneNumber.hashCode);
     _$hash = $jc(_$hash, code.hashCode);
     _$hash = $jc(_$hash, fullName.hashCode);
+    _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jc(_$hash, birthDate.hashCode);
     _$hash = $jc(_$hash, studyTime.hashCode);
     _$hash = $jf(_$hash);
@@ -13830,6 +13871,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
           ..add('phoneNumber', phoneNumber)
           ..add('code', code)
           ..add('fullName', fullName)
+          ..add('username', username)
           ..add('birthDate', birthDate)
           ..add('studyTime', studyTime))
         .toString();
@@ -13853,6 +13895,10 @@ class GVerifyOTPAndRegisterInputBuilder
   String? get fullName => _$this._fullName;
   set fullName(String? fullName) => _$this._fullName = fullName;
 
+  String? _username;
+  String? get username => _$this._username;
+  set username(String? username) => _$this._username = username;
+
   GTimeBuilder? _birthDate;
   GTimeBuilder get birthDate => _$this._birthDate ??= new GTimeBuilder();
   set birthDate(GTimeBuilder? birthDate) => _$this._birthDate = birthDate;
@@ -13869,6 +13915,7 @@ class GVerifyOTPAndRegisterInputBuilder
       _phoneNumber = $v.phoneNumber;
       _code = $v.code;
       _fullName = $v.fullName;
+      _username = $v.username;
       _birthDate = $v.birthDate.toBuilder();
       _studyTime = $v.studyTime;
       _$v = null;
@@ -13901,6 +13948,8 @@ class GVerifyOTPAndRegisterInputBuilder
                   code, r'GVerifyOTPAndRegisterInput', 'code'),
               fullName: BuiltValueNullFieldError.checkNotNull(
                   fullName, r'GVerifyOTPAndRegisterInput', 'fullName'),
+              username: BuiltValueNullFieldError.checkNotNull(
+                  username, r'GVerifyOTPAndRegisterInput', 'username'),
               birthDate: birthDate.build(),
               studyTime: BuiltValueNullFieldError.checkNotNull(
                   studyTime, r'GVerifyOTPAndRegisterInput', 'studyTime'));

@@ -149,22 +149,41 @@ class GraphQLRepository {
     if (requiresAuth && token == null) throw const UnauthorizedException();
 
     for (var attempt = 0; attempt < 2; attempt += 1) {
-      final response = await http.post(
-        Uri.parse(_logger.endpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          if (requiresAuth && token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'query': query,
-          'variables': variables,
-        }),
+      final logContext = _logger.startRawRequest(
+        query: query,
+        variables: variables,
+        requiresAuth: requiresAuth,
+        attempt: attempt + 1,
       );
+      late final http.Response response;
+      late final Object? decoded;
+      try {
+        response = await http.post(
+          Uri.parse(_logger.endpoint),
+          headers: {
+            'Content-Type': 'application/json',
+            if (requiresAuth && token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'query': query,
+            'variables': variables,
+          }),
+        );
 
-      // Decode the raw bytes as UTF-8 explicitly. `response.body` falls back
-      // to Latin-1 when the server omits `charset=utf-8`.
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        // Decode the raw bytes as UTF-8 explicitly. `response.body` falls
+        // back to Latin-1 when the server omits `charset=utf-8`.
+        decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        _logger.logRawResponse(
+          logContext,
+          statusCode: response.statusCode,
+          decodedBody: decoded,
+        );
+      } catch (error, stackTrace) {
+        _logger.logRawException(logContext, error, stackTrace);
+        rethrow;
+      }
+
       if (decoded is! Map<String, dynamic>) {
         throw const GraphQLRawException('Invalid GraphQL response');
       }

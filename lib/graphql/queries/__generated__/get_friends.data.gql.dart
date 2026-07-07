@@ -93,7 +93,7 @@ abstract class GGetFriendsData_getFriends_requester
   String get G__typename;
   String get id;
   String? get fullName;
-  String get phoneNumber;
+  String get username;
   static Serializer<GGetFriendsData_getFriends_requester> get serializer =>
       _$gGetFriendsDataGetFriendsRequesterSerializer;
 
@@ -128,7 +128,7 @@ abstract class GGetFriendsData_getFriends_receiver
   String get G__typename;
   String get id;
   String? get fullName;
-  String get phoneNumber;
+  String get username;
   static Serializer<GGetFriendsData_getFriends_receiver> get serializer =>
       _$gGetFriendsDataGetFriendsReceiverSerializer;
 

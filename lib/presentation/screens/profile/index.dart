@@ -229,7 +229,7 @@ class _FriendsContent extends StatefulWidget {
 
 class _FriendsContentState extends State<_FriendsContent>
     with WidgetsBindingObserver {
-  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   late final FriendshipRepository _friendshipRepository;
   late final ChatRepository _chatRepository;
   late final InboxSubscriptionClient _inboxClient;
@@ -268,7 +268,7 @@ class _FriendsContentState extends State<_FriendsContent>
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _eventSubscription?.cancel();
-    _phoneNumberController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -347,35 +347,36 @@ class _FriendsContentState extends State<_FriendsContent>
     final wasSent = await showReModalBottomSheet<bool>(
       context: context,
       builder: (sheetContext) => _AddFriendBottomSheet(
-        controller: _phoneNumberController,
-        onSubmit: _sendFriendRequestByPhone,
+        controller: _usernameController,
+        currentUserID: _currentUser?.id,
+        friendships: _friends,
+        onSearch: _friendshipRepository.searchUsersByUsername,
+        onSubmit: _sendFriendRequest,
       ),
     );
     if (!mounted || wasSent != true) return;
     showReToast(context, 'درخواست دوستی ارسال شد', ReToastType.success);
   }
 
-  Future<String?> _sendFriendRequestByPhone(String phoneNumber) async {
+  Future<String?> _sendFriendRequest(UsernameSearchUser user) async {
     final currentUser = _currentUser;
     if (currentUser == null) return 'اطلاعات حساب کاربری در دسترس نیست.';
     if (_isSendingRequest) return 'درخواست قبلی در حال ارسال است.';
 
-    final currentPhone = currentUser.phoneNumber;
-    if (currentPhone != null &&
-        normalizeIranianMobileNumber(currentPhone) == phoneNumber) {
+    if (currentUser.id == user.id) {
       return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
     }
 
     setState(() => _isSendingRequest = true);
     try {
-      final friendship = await _friendshipRepository.sendFriendRequestByPhone(
+      final friendship = await _friendshipRepository.sendFriendRequest(
         currentUserID: currentUser.id,
-        phoneNumber: phoneNumber,
+        targetUserID: user.id,
       );
       if (!mounted) return null;
       setState(() {
         _friends = _upsertFriendship(friendship.copyWith(isExpanded: true));
-        _phoneNumberController.clear();
+        _usernameController.clear();
       });
       return null;
     } catch (error) {
@@ -825,8 +826,9 @@ class _FriendTileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final username = friend.targetUser.usernameLabel;
     return SizedBox(
-      height: 50,
+      height: username != null && friend.targetUser.hasFullName ? 62 : 50,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -868,6 +870,16 @@ class _FriendTileHeader extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
+                  if (username != null && friend.targetUser.hasFullName)
+                    ReText(
+                      username,
+                      color: AppColors.black1.withOpacity(0.5),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      isPersian: false,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.right,
+                    ).tMargin(1),
                   SizedBox(
                     child: ReText(
                       _friendStatusText(friend, activity),
@@ -1115,56 +1127,217 @@ class _FriendActionButton extends StatelessWidget {
   }
 }
 
+typedef _SearchUsersByUsername = Future<List<UsernameSearchUser>> Function({
+  required String query,
+  int? limit,
+  int? offset,
+});
+
 class _AddFriendBottomSheet extends StatefulWidget {
   const _AddFriendBottomSheet({
     required this.controller,
+    required this.currentUserID,
+    required this.friendships,
+    required this.onSearch,
     required this.onSubmit,
   });
 
   final TextEditingController controller;
-  final Future<String?> Function(String phoneNumber) onSubmit;
+  final String? currentUserID;
+  final List<FriendshipItem> friendships;
+  final _SearchUsersByUsername onSearch;
+  final Future<String?> Function(UsernameSearchUser user) onSubmit;
 
   @override
   State<_AddFriendBottomSheet> createState() => _AddFriendBottomSheetState();
 }
 
 class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
-  bool _isSubmitting = false;
+  static const _pageSize = 20;
+  static const _minimumQueryLength = 3;
+  static const _searchDebounce = Duration(milliseconds: 700);
+  static const _rateLimitWindow = Duration(minutes: 1);
+  static const _maxRequestsPerWindow = 25;
+
+  final _searchCache = <String, List<UsernameSearchUser>>{};
+  final _hasMoreCache = <String, bool>{};
+  final _searchRequestTimes = <DateTime>[];
+  Timer? _searchTimer;
+  List<UsernameSearchUser> _results = const [];
   String? _error;
+  String? _submittingUserID;
+  bool _isSearching = false;
+  bool _hasSearched = false;
+  bool _hasMore = false;
+  int _searchRevision = 0;
 
-  Future<void> _submit() async {
-    if (_isSubmitting) return;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller.text.trim().length >= _minimumQueryLength) {
+      _scheduleSearch(widget.controller.text);
+    }
+  }
 
-    final phoneNumber = normalizeIranianMobileNumber(widget.controller.text);
-    if (phoneNumber == null) {
-      setState(() => _error = 'شماره موبایل معتبر وارد کنید.');
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    super.dispose();
+  }
+
+  String get _query => widget.controller.text.trim();
+
+  Map<String, FriendshipRelation> get _relationsByUserID => {
+        for (final friendship in widget.friendships)
+          friendship.targetUserID: friendship.relation,
+      };
+
+  void _scheduleSearch(String value) {
+    _searchTimer?.cancel();
+    _searchRevision += 1;
+    final query = value.trim();
+
+    if (query.length < _minimumQueryLength ||
+        !hasValidUsernameCharacters(query)) {
+      setState(() {
+        _results = const [];
+        _error = null;
+        _isSearching = false;
+        _hasSearched = false;
+        _hasMore = false;
+      });
+      return;
+    }
+
+    final cached = _searchCache[query];
+    if (cached != null) {
+      setState(() {
+        _results = cached;
+        _error = null;
+        _isSearching = false;
+        _hasSearched = true;
+        _hasMore = _hasMoreCache[query] ?? false;
+      });
       return;
     }
 
     setState(() {
-      _isSubmitting = true;
+      _error = null;
+      _isSearching = true;
+      _hasSearched = false;
+      _hasMore = false;
+    });
+    final revision = _searchRevision;
+    _searchTimer = Timer(
+      _searchDebounce,
+      () => _search(query: query, revision: revision, reset: true),
+    );
+  }
+
+  bool _canMakeSearchRequest() {
+    final now = DateTime.now();
+    _searchRequestTimes.removeWhere(
+      (requestTime) => now.difference(requestTime) >= _rateLimitWindow,
+    );
+    if (_searchRequestTimes.length >= _maxRequestsPerWindow) return false;
+    _searchRequestTimes.add(now);
+    return true;
+  }
+
+  Future<void> _search({
+    required String query,
+    required int revision,
+    required bool reset,
+  }) async {
+    if (!mounted || query != _query || revision != _searchRevision) return;
+    if (!reset && (_isSearching || !_hasMore)) return;
+    if (!_canMakeSearchRequest()) {
+      setState(() {
+        _isSearching = false;
+        _error =
+            'تعداد جست‌وجوها زیاد شده است؛ لطفاً یک دقیقه دیگر دوباره تلاش کنید.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
       _error = null;
     });
-    final error = await widget.onSubmit(phoneNumber);
+
+    try {
+      final offset = reset ? 0 : _results.length;
+      final page = await widget.onSearch(
+        query: query,
+        limit: _pageSize,
+        offset: offset,
+      );
+      if (!mounted || query != _query || revision != _searchRevision) return;
+
+      final usersByID = <String, UsernameSearchUser>{
+        if (!reset)
+          for (final user in _results) user.id: user,
+        for (final user in page) user.id: user,
+      };
+      final results = usersByID.values.toList(growable: false);
+      _searchCache[query] = results;
+      _hasMoreCache[query] = page.length == _pageSize;
+      setState(() {
+        _results = results;
+        _isSearching = false;
+        _hasSearched = true;
+        _hasMore = _hasMoreCache[query]!;
+      });
+    } catch (error) {
+      if (!mounted || query != _query || revision != _searchRevision) return;
+      setState(() {
+        _isSearching = false;
+        _hasSearched = true;
+        _error = _friendlyProfileError(error);
+      });
+    }
+  }
+
+  Future<void> _submit(UsernameSearchUser user) async {
+    if (_submittingUserID != null || _relationFor(user.id) != null) return;
+    setState(() {
+      _submittingUserID = user.id;
+      _error = null;
+    });
+    final error = await widget.onSubmit(user);
     if (!mounted) return;
     if (error == null) {
       Navigator.of(context).pop(true);
       return;
     }
     setState(() {
-      _isSubmitting = false;
+      _submittingUserID = null;
       _error = error;
     });
   }
 
+  FriendshipRelation? _relationFor(String userID) => _relationsByUserID[userID];
+
+  String? _resultStatus(String userID) {
+    if (userID == widget.currentUserID) return 'حساب شما';
+    return switch (_relationFor(userID)) {
+      FriendshipRelation.accepted => 'دوست شما',
+      FriendshipRelation.incomingPending => 'درخواست دریافت‌شده',
+      FriendshipRelation.outgoingPending => 'در انتظار تایید',
+      null => null,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final availableHeight =
+        mediaQuery.size.height - mediaQuery.viewInsets.bottom;
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(30, 0, 30, 28),
+        height: availableHeight * 0.82,
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         decoration: const BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.only(
@@ -1175,7 +1348,6 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
         child: SafeArea(
           top: false,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 40,
@@ -1185,126 +1357,230 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
                   borderRadius: BorderRadius.circular(100),
                 ),
               ),
-              Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  Column(
-                    children: [
-                      const ReText(
-                        'افزودن دوست',
-                        color: AppColors.black1,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        textAlign: TextAlign.center,
-                      ),
-                      ReText(
-                        'شماره موبایل دوستتان را وارد کنید',
-                        color: AppColors.black1.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        textAlign: TextAlign.center,
-                      ).tMargin(4),
-                    ],
-                  ).tMargin(28),
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: GestureDetector(
-                      onTap: _isSubmitting
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: AppColors.gray2),
-                        ),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          size: 18,
-                          color: AppColors.black1,
-                        ),
-                      ),
-                    ),
-                  ).tMargin(22),
-                ],
-              ),
+              _buildHeader(),
               ReTextField(
                 controller: widget.controller,
-                placeholder: 'شماره موبایل را وارد کنید',
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.send,
-                onChanged: (_) {
-                  if (_error != null) setState(() => _error = null);
+                autofocus: true,
+                placeholder: 'نام کاربری را وارد کنید',
+                inputTextAlign: TextAlign.left,
+                placeholderAlign: TextAlign.right,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.search,
+                icon: Icons.search_rounded,
+                onChanged: _scheduleSearch,
+                onFieldSubmitted: (value) {
+                  _searchTimer?.cancel();
+                  final query = value.trim();
+                  if (query.length < _minimumQueryLength ||
+                      !hasValidUsernameCharacters(query)) {
+                    return;
+                  }
+                  _search(
+                    query: query,
+                    revision: _searchRevision,
+                    reset: true,
+                  );
                 },
-                onFieldSubmitted: (_) => _submit(),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'[+0-9۰-۹٠-٩\s\-()]'),
-                  ),
-                  const PersianDigitsInputFormatter(),
-                  LengthLimitingTextInputFormatter(20),
-                ],
+                inputFormatters: [LengthLimitingTextInputFormatter(64)],
                 height: 48,
                 backgroundColor: AppColors.gray1,
                 borderRadius: 100,
                 showFocusShadow: false,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 22),
-              ).tMargin(26),
-              if (_error != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ReText(
-                    _error!,
-                    color: AppColors.errorColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    textAlign: TextAlign.right,
-                    maxLines: 3,
-                  ),
-                ).tMargin(8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ReButton(
-                      text: 'ارسال درخواست',
-                      icon: Icons.chevron_left_rounded,
-                      onPressed: _isSubmitting ? null : _submit,
-                      isLoading: _isSubmitting,
-                      background: AppColors.primary,
-                      height: 48,
-                      borderRadius: 18,
-                      fontSize: 14,
-                      iconSize: 22,
-                      reverseIconPosition: true,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 96,
-                    child: ReButton(
-                      text: 'لغو',
-                      icon: Icons.close_rounded,
-                      onPressed: _isSubmitting
-                          ? null
-                          : () => Navigator.of(context).pop(false),
-                      isOutlined: true,
-                      background: AppColors.white,
-                      color: AppColors.gray2,
-                      textColor: AppColors.black1,
-                      iconColor: AppColors.black1,
-                      height: 48,
-                      borderRadius: 18,
-                      fontSize: 14,
-                      iconSize: 17,
-                      reverseIconPosition: true,
-                    ),
-                  ),
-                ],
+                contentPadding: const EdgeInsets.symmetric(horizontal: 18),
               ).tMargin(22),
+              Expanded(child: _buildSearchBody()),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        Column(
+          children: [
+            const ReText(
+              'افزودن دوست',
+              color: AppColors.black1,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              textAlign: TextAlign.center,
+            ),
+            ReText(
+              'دوستتان را با نام کاربری پیدا کنید',
+              color: AppColors.black1.withOpacity(0.7),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              textAlign: TextAlign.center,
+            ).tMargin(4),
+          ],
+        ).tMargin(28),
+        Align(
+          alignment: Alignment.topRight,
+          child: GestureDetector(
+            onTap: _submittingUserID == null
+                ? () => Navigator.of(context).pop(false)
+                : null,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: AppColors.black1,
+              ),
+            ),
+          ),
+        ).tMargin(22),
+      ],
+    );
+  }
+
+  Widget _buildSearchBody() {
+    if (_query.length < _minimumQueryLength) {
+      return _searchHint('برای جست‌وجو حداقل ۳ کاراکتر وارد کنید.');
+    }
+    if (!hasValidUsernameCharacters(_query)) {
+      return _searchHint(
+        'نام کاربری را با حروف انگلیسی، عدد و _ جست‌وجو کنید.',
+        isError: true,
+      );
+    }
+    if (_isSearching && _results.isEmpty) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    if (_error != null && _results.isEmpty) {
+      return _searchHint(_error!, isError: true);
+    }
+    if (_hasSearched && _results.isEmpty) {
+      return _searchHint('کاربری با این نام کاربری پیدا نشد.');
+    }
+
+    return ListView.separated(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      itemCount: _results.length + (_hasMore || _isSearching ? 1 : 0),
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        if (index == _results.length) return _buildLoadMore();
+        return _buildSearchResult(_results[index]);
+      },
+    );
+  }
+
+  Widget _searchHint(String text, {bool isError = false}) {
+    return Center(
+      child: ReText(
+        text,
+        color:
+            isError ? AppColors.errorColor : AppColors.black1.withOpacity(0.55),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        textAlign: TextAlign.center,
+        maxLines: 4,
+      ).hMargin(18),
+    );
+  }
+
+  Widget _buildSearchResult(UsernameSearchUser user) {
+    final status = _resultStatus(user.id);
+    final isSelf = user.id == widget.currentUserID;
+    final isDisabled = isSelf || status != null;
+    final isSubmitting = _submittingUserID == user.id;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            child: ReButton(
+              text: status ?? 'ارسال درخواست',
+              onPressed: isDisabled || _submittingUserID != null
+                  ? null
+                  : () => _submit(user),
+              isLoading: isSubmitting,
+              background: isDisabled ? AppColors.gray2 : AppColors.primary,
+              height: 38,
+              borderRadius: 16,
+              fontSize: 10,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  user.displayName,
+                  color: AppColors.black1,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  maxLines: 1,
+                ),
+                ReText(
+                  '@${user.username}',
+                  color: AppColors.black1.withOpacity(0.5),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  textAlign: TextAlign.left,
+                  isPersian: false,
+                  maxLines: 1,
+                ).tMargin(2),
+              ],
+            ),
+          ),
+          Container(
+            width: 42,
+            height: 42,
+            margin: const EdgeInsets.only(left: 10),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Icon(
+              SolarIconsOutline.user,
+              color: AppColors.secondary,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadMore() {
+    if (_isSearching) {
+      return const SizedBox(
+        height: 42,
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
+    return Center(
+      child: SizedBox(
+        width: 140,
+        child: ReButton(
+          text: 'نمایش بیشتر',
+          onPressed: () => _search(
+            query: _query,
+            revision: _searchRevision,
+            reset: false,
+          ),
+          height: 42,
+          borderRadius: 18,
+          fontSize: 12,
+          background: AppColors.secondary,
         ),
       ),
     );
@@ -1926,15 +2202,17 @@ class _FriendsEmptyIllustrationPainter extends CustomPainter {
 String _friendlyProfileError(Object error) {
   final text = error.toString();
   final upperText = text.toUpperCase();
-  if (error is FriendRequestByPhoneUnavailableException) {
-    return error.toString();
-  }
   if (text.contains('Unauthorized') || text.contains('Authentication')) {
     return 'برای ادامه دوباره وارد حساب شوید.';
   }
+  if (upperText.contains('RATE_LIMIT') ||
+      upperText.contains('TOO MANY REQUESTS') ||
+      upperText.contains('429')) {
+    return 'تعداد درخواست‌ها زیاد شده است؛ لطفاً یک دقیقه دیگر تلاش کنید.';
+  }
   if (upperText.contains('USER_NOT_FOUND') ||
       upperText.contains('USER NOT FOUND')) {
-    return 'کاربری با این شماره موبایل پیدا نشد.';
+    return 'کاربری با این نام کاربری پیدا نشد.';
   }
   if (upperText.contains('CANNOT_ADD_SELF')) {
     return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
