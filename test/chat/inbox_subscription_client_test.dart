@@ -27,6 +27,26 @@ void main() {
       expect((event as NewMessageInboxEvent).message.senderID, 'user-2');
     });
 
+    test('parses nested reply preview on new message frames', () {
+      final event = inboxEventFromGraphQLSocketMessage(
+        _messageFrame(
+          type: 'next',
+          replyTo: {
+            'id': 'reply-1',
+            'content': 'original message',
+            'senderID': 'user-1',
+            'createdAt': '2026-01-01T09:59:00Z',
+          },
+        ),
+      );
+
+      expect(event, isA<NewMessageInboxEvent>());
+      final message = (event as NewMessageInboxEvent).message;
+      expect(message.replyToID, 'reply-1');
+      expect(message.replyTo?.id, 'reply-1');
+      expect(message.replyTo?.content, 'original message');
+    });
+
     test('parses MessageSeenEvent read watermark frames', () {
       final event = inboxEventFromGraphQLSocketMessage(
         _messageSeenFrame(type: 'next'),
@@ -97,6 +117,7 @@ String _messageSeenFrame({
 String _messageFrame({
   required String type,
   List<Map<String, String>> errors = const [],
+  Map<String, Object?>? replyTo,
 }) {
   return jsonEncode({
     'id': 'inbox',
@@ -112,12 +133,12 @@ String _messageFrame({
             'type': 'TEXT',
             'chatID': 'chat-1',
             'senderID': 'user-2',
-            'replyToID': null,
+            'replyToID': replyTo?['id'],
             'isDeleted': false,
             'deletedAt': null,
             'createdAt': '2026-01-01T10:00:00Z',
             'updatedAt': '2026-01-01T10:00:00Z',
-            'replyTo': null,
+            'replyTo': replyTo,
           },
         },
       },

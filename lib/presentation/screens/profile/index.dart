@@ -2111,6 +2111,7 @@ class _FriendsContentState extends State<_FriendsContent>
   final _chatUserByChatID = <String, String>{};
   CurrentFriendshipUser? _currentUser;
   Timer? _refreshTimer;
+  Future<void>? _friendshipsLoadFuture;
   String? _error;
   String? _busyTargetID;
   bool _isLoading = true;
@@ -2207,7 +2208,21 @@ class _FriendsContentState extends State<_FriendsContent>
     });
   }
 
-  Future<void> _loadFriendships({bool silent = false}) async {
+  Future<void> _loadFriendships({bool silent = false}) {
+    final activeLoad = _friendshipsLoadFuture;
+    if (activeLoad != null) return activeLoad;
+
+    late final Future<void> loadFuture;
+    loadFuture = _loadFriendshipsOnce(silent: silent).whenComplete(() {
+      if (identical(_friendshipsLoadFuture, loadFuture)) {
+        _friendshipsLoadFuture = null;
+      }
+    });
+    _friendshipsLoadFuture = loadFuture;
+    return loadFuture;
+  }
+
+  Future<void> _loadFriendshipsOnce({required bool silent}) async {
     if (!silent) {
       setState(() {
         _isLoading = true;

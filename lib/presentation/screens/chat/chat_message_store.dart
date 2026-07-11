@@ -8,16 +8,21 @@ List<ChatMessage> upsertMessages(
     for (final message in current) message.id: message,
   };
 
-  for (final message in incoming) {
-    if (message.id.isEmpty) continue;
+  for (final incomingMessage in incoming) {
+    if (incomingMessage.id.isEmpty) continue;
+    final message = _resolveReplyPreview(incomingMessage, byId);
+    ChatMessage? matchingLocal;
     if (!message.isLocal) {
-      final matchingLocal = findMatchingPendingLocalMessage(
+      matchingLocal = findMatchingPendingLocalMessage(
         byId.values,
         message,
       );
       if (matchingLocal != null) byId.remove(matchingLocal.id);
     }
-    byId[message.id] = _mergeMessageForUpsert(byId[message.id], message);
+    byId[message.id] = _mergeMessageForUpsert(
+      byId[message.id] ?? matchingLocal,
+      message,
+    );
   }
 
   final messages = byId.values.toList();
@@ -256,7 +261,35 @@ ChatMessage _mergeMessageForUpsert(
   ChatMessage incoming,
 ) {
   if (existing == null) return incoming;
-  return incoming.copyWith(seenAt: incoming.seenAt ?? existing.seenAt);
+  final shouldPreserveReply = incoming.replyTo == null &&
+      existing.replyTo != null &&
+      incoming.replyToID == existing.replyToID;
+  return incoming.copyWith(
+    replyTo: shouldPreserveReply ? existing.replyTo : incoming.replyTo,
+    sender: incoming.sender ?? existing.sender,
+    seenAt: incoming.seenAt ?? existing.seenAt,
+  );
+}
+
+ChatMessage _resolveReplyPreview(
+  ChatMessage message,
+  Map<String, ChatMessage> messagesById,
+) {
+  if (message.replyTo != null) return message;
+  final replyToID = message.replyToID;
+  if (replyToID == null || replyToID.isEmpty) return message;
+
+  final reply = messagesById[replyToID];
+  if (reply == null || reply.id.isEmpty) return message;
+
+  return message.copyWith(
+    replyTo: ChatReplyMessage(
+      id: reply.id,
+      content: reply.content,
+      senderID: reply.senderID,
+      createdAt: reply.createdAt,
+    ),
+  );
 }
 
 bool _isServerEchoOfLocalMessage({

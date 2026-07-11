@@ -39,6 +39,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   var _displayConnectionStatus = InboxConnectionStatus.connected;
   Timer? _connectionDebounce;
   late final ScrollController _contactsController;
+  Future<void>? _contactsLoadFuture;
   String? _currentUserID;
   String? _activeChatUserID;
   String? _error;
@@ -124,7 +125,21 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _loadContacts({bool silent = false}) async {
+  Future<void> _loadContacts({bool silent = false}) {
+    final activeLoad = _contactsLoadFuture;
+    if (activeLoad != null) return activeLoad;
+
+    late final Future<void> loadFuture;
+    loadFuture = _loadContactsOnce(silent: silent).whenComplete(() {
+      if (identical(_contactsLoadFuture, loadFuture)) {
+        _contactsLoadFuture = null;
+      }
+    });
+    _contactsLoadFuture = loadFuture;
+    return loadFuture;
+  }
+
+  Future<void> _loadContactsOnce({required bool silent}) async {
     if (!silent) {
       setState(() {
         _isLoading = true;

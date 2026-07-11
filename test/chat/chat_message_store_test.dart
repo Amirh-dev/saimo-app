@@ -45,6 +45,85 @@ void main() {
       expect(result.single.id, 'server-1');
     });
 
+    test('server echo preserves optimistic reply preview', () {
+      const reply = ChatReplyMessage(
+        id: 'reply-1',
+        content: 'original message',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T09:59:00Z',
+      );
+      final localMessage = _message(
+        id: 'local-1',
+        content: 'reply text',
+        replyToID: reply.id,
+        replyTo: reply,
+        createdAt: '2026-01-01T10:00:00Z',
+      ).copyWith(isSending: true);
+      final scalarServerMessage = _message(
+        id: 'server-1',
+        content: 'reply text',
+        replyToID: reply.id,
+        createdAt: '2026-01-01T10:00:01Z',
+      );
+
+      final result = upsertMessages([localMessage], [scalarServerMessage]);
+
+      expect(result, hasLength(1));
+      expect(result.single.id, 'server-1');
+      expect(result.single.replyTo?.id, reply.id);
+      expect(result.single.isSending, isFalse);
+    });
+
+    test('scalar update for same message preserves existing reply preview', () {
+      const reply = ChatReplyMessage(
+        id: 'reply-1',
+        content: 'original message',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T09:59:00Z',
+      );
+      final existing = _message(
+        id: 'server-1',
+        content: 'reply text',
+        replyToID: reply.id,
+        replyTo: reply,
+      );
+      final scalarUpdate = _message(
+        id: 'server-1',
+        content: 'reply text edited',
+        replyToID: reply.id,
+      );
+
+      final result = upsertMessages([existing], [scalarUpdate]);
+
+      expect(result, hasLength(1));
+      expect(result.single.content, 'reply text edited');
+      expect(result.single.replyTo?.id, reply.id);
+    });
+
+    test('scalar live reply resolves preview from loaded messages', () {
+      final original = _message(
+        id: 'original-1',
+        content: 'original message',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T09:59:00Z',
+      );
+      final incomingReply = _message(
+        id: 'incoming-1',
+        content: 'reply text',
+        senderID: 'other-user',
+        replyToID: original.id,
+        createdAt: '2026-01-01T10:00:00Z',
+      );
+
+      final result = upsertMessages([original], [incomingReply]);
+
+      expect(result, hasLength(2));
+      final replyMessage = result.last;
+      expect(replyMessage.id, 'incoming-1');
+      expect(replyMessage.replyTo?.id, original.id);
+      expect(replyMessage.replyTo?.content, original.content);
+    });
+
     test('does not drop same-content live message from another sender', () {
       final localMessage = _message(
         id: 'local-1',
