@@ -2114,6 +2114,7 @@ class _FriendsContentState extends State<_FriendsContent>
   Future<void>? _friendshipsLoadFuture;
   String? _error;
   String? _busyTargetID;
+  String? _activeChatUserID;
   bool _isLoading = true;
   bool _isSendingRequest = false;
 
@@ -2192,20 +2193,30 @@ class _FriendsContentState extends State<_FriendsContent>
 
     setState(() {
       _chatUserByChatID[message.chatID] = message.senderID;
-      _unreadByUserID[message.senderID] =
-          (_unreadByUserID[message.senderID] ?? 0) + 1;
+      if (message.senderID == _activeChatUserID) {
+        _unreadByUserID.remove(message.senderID);
+      } else {
+        _unreadByUserID[message.senderID] =
+            (_unreadByUserID[message.senderID] ?? 0) + 1;
+      }
     });
   }
 
   void _handleMessageSeenEvent(MessageSeenInboxEvent event) {
     final currentUserID = _currentUser?.id;
     if (currentUserID == null || event.userID != currentUserID) return;
-    final targetUserID = _chatUserByChatID[event.chatID];
+    final targetUserID = _targetUserIDForChatID(event.chatID);
     if (targetUserID == null) return;
 
     setState(() {
       _unreadByUserID.remove(targetUserID);
     });
+  }
+
+  String? _targetUserIDForChatID(String chatID) {
+    final mappedUserID = _chatUserByChatID[chatID];
+    if (mappedUserID != null) return mappedUserID;
+    return null;
   }
 
   Future<void> _loadFriendships({bool silent = false}) {
@@ -2392,6 +2403,7 @@ class _FriendsContentState extends State<_FriendsContent>
 
     setState(() {
       _busyTargetID = friend.targetUserID;
+      _activeChatUserID = friend.targetUserID;
       _unreadByUserID.remove(friend.targetUserID);
     });
     try {
@@ -2410,11 +2422,18 @@ class _FriendsContentState extends State<_FriendsContent>
         ),
       );
       if (mounted) {
-        setState(() => _busyTargetID = null);
+        setState(() {
+          _busyTargetID = null;
+          _activeChatUserID = null;
+          _unreadByUserID.remove(friend.targetUserID);
+        });
       }
     } catch (error) {
       if (!mounted) return;
-      setState(() => _busyTargetID = null);
+      setState(() {
+        _busyTargetID = null;
+        _activeChatUserID = null;
+      });
       showReToast(context, _friendlyProfileError(error), ReToastType.failed);
     }
   }
@@ -3014,8 +3033,6 @@ String _friendStatusText(FriendshipItem friend, UserActivity? activity) {
     if (taskName != null && taskName.isNotEmpty) {
       return 'درحال انجام $taskName';
     }
-    if (activity?.isOnline == true) return 'آنلاین';
-    if (activity?.isOnline == false) return 'آفلاین';
   }
 
   return switch (friend.relation) {
@@ -3030,8 +3047,6 @@ Color _friendStatusColor(FriendshipItem friend, UserActivity? activity) {
     if (activity?.currentTaskName?.trim().isNotEmpty == true) {
       return AppColors.secondary;
     }
-    if (activity?.isOnline == true) return AppColors.done;
-    if (activity?.isOnline == false) return AppColors.gray;
   }
 
   return switch (friend.relation) {

@@ -236,12 +236,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       final currentUserID = _currentUserID;
       setState(() {
         _latestMessageByUserID[contactUserID] = event.message;
-        if (event.message.senderID != currentUserID &&
-            contactUserID != _activeChatUserID) {
-          _unreadByUserID[contactUserID] =
-              (_unreadByUserID[contactUserID] ?? 0) + 1;
+        if (event.message.senderID != currentUserID) {
+          if (contactUserID == _activeChatUserID) {
+            _unreadByUserID.remove(contactUserID);
+          } else {
+            _unreadByUserID[contactUserID] =
+                (_unreadByUserID[contactUserID] ?? 0) + 1;
+          }
         }
       });
+      return;
+    }
+
+    if (event is MessageSeenInboxEvent) {
+      _handleMessageSeenEvent(event);
       return;
     }
 
@@ -257,6 +265,31 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         );
       });
     }
+  }
+
+  void _handleMessageSeenEvent(MessageSeenInboxEvent event) {
+    final currentUserID = _currentUserID;
+    if (currentUserID == null || event.userID != currentUserID) return;
+    final contactUserID = _contactUserIDForChatID(event.chatID);
+    if (contactUserID == null) return;
+
+    setState(() {
+      _unreadByUserID.remove(contactUserID);
+    });
+  }
+
+  String? _contactUserIDForChatID(String chatID) {
+    final mappedUserID = _chatUserByChatID[chatID];
+    if (mappedUserID != null) return mappedUserID;
+
+    for (final entry in _latestMessageByUserID.entries) {
+      if (entry.value.chatID == chatID) {
+        _chatUserByChatID[chatID] = entry.key;
+        return entry.key;
+      }
+    }
+
+    return null;
   }
 
   String? _contactUserIDForMessage(ChatMessage message) {
@@ -434,6 +467,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   // "در حال اتصال" message.
   var _displayConnectionStatus = InboxConnectionStatus.connected;
   Timer? _connectionDebounce;
+  Timer? _targetViewingChatTimer;
   ChatMessage? _replyingTo;
   String? _selectedMessageID;
   String? _currentUserID;
@@ -442,6 +476,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   bool _isLoading = true;
   bool _isLoadingOlder = false;
   bool _isSyncingLatest = false;
+  bool _isTargetViewingChat = false;
   bool _hasMore = true;
   bool _isSending = false;
   String? _outgoingSeenReadAt;
@@ -474,6 +509,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     _statusSubscription?.cancel();
     _initialMessagesSubscription?.cancel();
     _connectionDebounce?.cancel();
+    _targetViewingChatTimer?.cancel();
     _scrollController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -618,6 +654,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
           _logChatLive('ignored event for other chat');
           return;
         }
+        if (message.senderID != _currentUserID) {
+          _markTargetViewingChat();
+        }
 
         final matchingLocal = findMatchingPendingLocalMessage(
           _messages,
@@ -676,6 +715,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         if (eventChatID != widget.chatID) {
           _logChatLive('ignored MessageSeenEvent for other chat');
           return;
+        }
+        if (userID == widget.targetUserID) {
+          _markTargetViewingChat();
         }
 
         final currentUserID = _currentUserID;
@@ -885,6 +927,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     );
   }
 
+  void _markTargetViewingChat() {
+    if (widget.targetUserID == null || widget.targetUserID!.isEmpty) return;
+    _targetViewingChatTimer?.cancel();
+    if (!_isTargetViewingChat) {
+      setState(() => _isTargetViewingChat = true);
+    }
+    _targetViewingChatTimer = Timer(const Duration(seconds: 45), () {
+      if (!mounted) return;
+      setState(() => _isTargetViewingChat = false);
+    });
+  }
+
   void _markChatRead({required String source}) {
     if (!mounted || _currentUserID == null) return;
     if (_markReadFuture != null) {
@@ -1068,8 +1122,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                 children: [
                   _ChatRoomHeader(
                     title: widget.title ?? 'گفتگو',
-                    subtitle: _roomSubtitle(targetActivity),
-                    isOnline: targetActivity?.isOnline == true,
+                    subtitle: _roomSubtitle(
+                      targetActivity,
+                      isTargetViewingChat: _isTargetViewingChat,
+                    ),
+                    isOnline: _isTargetViewingChat,
                     onBack: () => Navigator.of(context).pop(),
                     onMenu: _openRoomMenu,
                     connectionStatus: _displayConnectionStatus,
@@ -1131,13 +1188,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
           message: message,
           isMine: message.senderID == _currentUserID,
           isSelected: message.id == _selectedMessageID,
+          onReply: () => setState(() => _replyingTo = message),
           onLongPress: (position) => _openMessageActions(message, position),
         );
       },
     );
   }
 
-  String _roomSubtitle(UserActivity? activity) {
+  String _roomSubtitle(
+    UserActivity? activity, {
+    required bool isTargetViewingChat,
+  }) {
     if (_displayConnectionStatus == InboxConnectionStatus.connecting ||
         _displayConnectionStatus == InboxConnectionStatus.reconnecting) {
       return 'در حال اتصال...';
@@ -1146,11 +1207,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         _displayConnectionStatus == InboxConnectionStatus.disconnected) {
       return 'اتصال زنده قطع است';
     }
+    if (isTargetViewingChat) return 'آنلاین';
     final taskName = activity?.currentTaskName?.trim();
     if (taskName != null && taskName.isNotEmpty) {
       return 'درحال انجام $taskName';
     }
-    if (activity?.isOnline == true) return 'آنلاین';
     return 'گفتگوی مستقیم';
   }
 }
@@ -1367,9 +1428,6 @@ String _contactSubtitle(
     return 'درحال انجام $taskName';
   }
 
-  if (activity?.isOnline == true) return 'آنلاین';
-  if (activity?.isOnline == false) return 'آفلاین';
-
   if (connectionStatus == InboxConnectionStatus.connecting ||
       connectionStatus == InboxConnectionStatus.reconnecting) {
     return 'در حال اتصال زنده...';
@@ -1390,8 +1448,6 @@ Color _contactSubtitleColor(
   if (activity?.currentTaskName?.trim().isNotEmpty == true) {
     return AppColors.secondary;
   }
-  if (activity?.isOnline == true) return AppColors.done;
-  if (activity?.isOnline == false) return AppColors.gray;
   return AppColors.gray;
 }
 
@@ -1612,21 +1668,81 @@ class _EmptyChatWelcome extends StatelessWidget {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends StatefulWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
     required this.isSelected,
+    required this.onReply,
     required this.onLongPress,
   });
 
   final ChatMessage message;
   final bool isMine;
   final bool isSelected;
+  final VoidCallback onReply;
   final ValueChanged<Offset> onLongPress;
 
   @override
+  State<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<_MessageBubble> {
+  static const double _replySwipeThreshold = 58;
+  static const double _replySwipeMaxOffset = 86;
+
+  double _dragOffset = 0;
+  bool _replyArmed = false;
+
+  bool get _canSwipeReply => !widget.message.isDeleted;
+
+  @override
+  void didUpdateWidget(covariant _MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.id != widget.message.id) {
+      _dragOffset = 0;
+      _replyArmed = false;
+    }
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (!_canSwipeReply) return;
+    final nextOffset =
+        (_dragOffset + details.delta.dx).clamp(-_replySwipeMaxOffset, 0.0);
+    final isArmed = nextOffset.abs() >= _replySwipeThreshold;
+    if (nextOffset == _dragOffset && isArmed == _replyArmed) return;
+    setState(() {
+      _dragOffset = nextOffset.toDouble();
+      _replyArmed = isArmed;
+    });
+  }
+
+  void _handleDragEnd([DragEndDetails? _]) {
+    final shouldReply = _canSwipeReply && _replyArmed;
+    setState(() {
+      _dragOffset = 0;
+      _replyArmed = false;
+    });
+    if (!shouldReply) return;
+    HapticFeedback.selectionClick();
+    widget.onReply();
+  }
+
+  void _handleDragCancel() {
+    if (_dragOffset == 0 && !_replyArmed) return;
+    setState(() {
+      _dragOffset = 0;
+      _replyArmed = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final message = widget.message;
+    final isMine = widget.isMine;
+    final isSelected = widget.isSelected;
+    final replyProgress =
+        (_dragOffset.abs() / _replySwipeThreshold).clamp(0.0, 1.0);
     final bubbleColor = message.isFailed
         ? const Color(0xFFF9F9FC)
         : isMine
@@ -1634,8 +1750,12 @@ class _MessageBubble extends StatelessWidget {
             : AppColors.white;
 
     return GestureDetector(
-      onLongPressStart: (details) => onLongPress(details.globalPosition),
-      onSecondaryTapDown: (details) => onLongPress(details.globalPosition),
+      onHorizontalDragUpdate: _handleDragUpdate,
+      onHorizontalDragEnd: _handleDragEnd,
+      onHorizontalDragCancel: _handleDragCancel,
+      onLongPressStart: (details) => widget.onLongPress(details.globalPosition),
+      onSecondaryTapDown: (details) =>
+          widget.onLongPress(details.globalPosition),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
@@ -1646,93 +1766,133 @@ class _MessageBubble extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Padding(
-              padding: EdgeInsets.only(
-                right: isSelected && isMine ? 38 : 0,
-                left: isSelected && !isMine ? 38 : 0,
-              ),
-              child: Align(
-                alignment:
-                    isMine ? Alignment.centerRight : Alignment.centerLeft,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth:
-                        math.min(MediaQuery.of(context).size.width * 0.72, 430),
-                  ),
-                  child: PhysicalShape(
-                    clipper: _MessageBubbleClipper(isMine: isMine),
-                    clipBehavior: Clip.antiAlias,
-                    color: bubbleColor,
-                    shadowColor: AppColors.black.withOpacity(0.10),
-                    elevation: 1,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMine ? 12 : 18,
-                        11,
-                        isMine ? 18 : 12,
-                        9,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (message.replyTo != null && !message.isDeleted)
-                            _InlineReplyPreview(
-                              reply: message.replyTo!,
-                              isMine: isMine,
-                            ).bMargin(7),
-                          ReText(
-                            message.isDeleted
-                                ? 'این پیام حذف شده است'
-                                : message.content,
-                            color: message.isDeleted
-                                ? AppColors.gray
-                                : AppColors.black1.withOpacity(0.94),
-                            fontSize: 13.5,
-                            fontWeight: message.isDeleted
-                                ? FontWeight.w600
-                                : FontWeight.w700,
-                            lineHeight: 1.55,
-                            maxLines: 20,
-                            overflow: TextOverflow.fade,
+            if (_canSwipeReply && replyProgress > 0)
+              Positioned(
+                right: 24,
+                child: Opacity(
+                  opacity: replyProgress,
+                  child: Transform.scale(
+                    scale: 0.74 + replyProgress * 0.26,
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color:
+                            _replyArmed ? AppColors.secondary : AppColors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.secondary.withOpacity(0.18),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (message.isFailed)
-                                const Icon(
-                                  SolarIconsOutline.dangerTriangle,
-                                  color: AppColors.errorColor,
-                                  size: 15,
-                                ).lMargin(4)
-                              else if (message.isSending)
-                                SizedBox(
-                                  width: 11,
-                                  height: 11,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: AppColors.black1.withOpacity(0.45),
-                                  ),
-                                ).lMargin(4)
-                              else if (isMine)
-                                Icon(
-                                  message.seenAt == null
-                                      ? Icons.done_rounded
-                                      : Icons.done_all_rounded,
-                                  color: message.seenAt == null
-                                      ? AppColors.secondary
-                                      : AppColors.done,
-                                  size: 16,
-                                ).lMargin(4),
-                              ReText(
-                                _formatMessageTime(message.createdAt),
-                                color: AppColors.black1.withOpacity(0.40),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                textDirection: TextDirection.ltr,
-                              ),
-                            ],
-                          ).tMargin(5),
                         ],
+                      ),
+                      child: Icon(
+                        SolarIconsOutline.reply,
+                        size: 18,
+                        color:
+                            _replyArmed ? AppColors.white : AppColors.secondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            Transform.translate(
+              offset: Offset(_dragOffset, 0),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: isSelected && isMine ? 38 : 0,
+                  left: isSelected && !isMine ? 38 : 0,
+                ),
+                child: Align(
+                  alignment:
+                      isMine ? Alignment.centerRight : Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: math.min(
+                        MediaQuery.of(context).size.width * 0.72,
+                        430,
+                      ),
+                    ),
+                    child: PhysicalShape(
+                      clipper: _MessageBubbleClipper(isMine: isMine),
+                      clipBehavior: Clip.antiAlias,
+                      color: bubbleColor,
+                      shadowColor: AppColors.black.withOpacity(0.10),
+                      elevation: 1,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          isMine ? 12 : 18,
+                          11,
+                          isMine ? 18 : 12,
+                          9,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (message.replyTo != null && !message.isDeleted)
+                              _InlineReplyPreview(
+                                reply: message.replyTo!,
+                                isMine: isMine,
+                              ).bMargin(7),
+                            ReText(
+                              message.isDeleted
+                                  ? 'این پیام حذف شده است'
+                                  : message.content,
+                              color: message.isDeleted
+                                  ? AppColors.gray
+                                  : AppColors.black1.withOpacity(0.94),
+                              fontSize: 13.5,
+                              fontWeight: message.isDeleted
+                                  ? FontWeight.w600
+                                  : FontWeight.w700,
+                              lineHeight: 1.55,
+                              maxLines: 20,
+                              overflow: TextOverflow.fade,
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (message.isFailed)
+                                  const Icon(
+                                    SolarIconsOutline.dangerTriangle,
+                                    color: AppColors.errorColor,
+                                    size: 15,
+                                  ).lMargin(4)
+                                else if (message.isSending)
+                                  SizedBox(
+                                    width: 11,
+                                    height: 11,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      color: AppColors.black1.withOpacity(0.45),
+                                    ),
+                                  ).lMargin(4)
+                                else if (isMine)
+                                  Icon(
+                                    message.seenAt == null
+                                        ? Icons.done_rounded
+                                        : Icons.done_all_rounded,
+                                    color: message.seenAt == null
+                                        ? AppColors.secondary
+                                        : AppColors.done,
+                                    size: 16,
+                                  ).lMargin(4),
+                                ReText(
+                                  _formatMessageTime(message.createdAt),
+                                  color: AppColors.black1.withOpacity(0.40),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  textDirection: TextDirection.ltr,
+                                ),
+                              ],
+                            ).tMargin(5),
+                          ],
+                        ),
                       ),
                     ),
                   ),
