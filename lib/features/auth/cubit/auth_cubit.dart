@@ -30,6 +30,29 @@ class AuthCubit extends Cubit<AuthState> {
   final TokenStorage _tokenStorage;
   late final StreamSubscription<void> _sessionExpiredSubscription;
   static const _temporaryFullName = 'Simo User';
+  _PendingRegistration? _pendingRegistration;
+
+  void startRegistration() {
+    _pendingRegistration = null;
+    emit(const AuthNeedsRegistration(phoneNumber: ''));
+  }
+
+  Future<void> sendRegistrationOtp({
+    required String phoneNumber,
+    required String fullName,
+    required String username,
+    required DateTime birthDate,
+    required dynamic studyTime,
+  }) async {
+    _pendingRegistration = _PendingRegistration(
+      phoneNumber: phoneNumber,
+      fullName: fullName,
+      username: username,
+      birthDate: birthDate,
+      studyTime: _resolveStudyTime(studyTime),
+    );
+    await sendOtp(phoneNumber);
+  }
 
   Future<void> sendOtp(String phoneNumber) async {
     emit(const AuthLoading(AuthAction.sendOtp));
@@ -115,12 +138,32 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading(isRegistered ? AuthAction.login : AuthAction.verifyOtp));
 
     try {
+      final pendingRegistration = _pendingRegistration;
+      if (!isRegistered &&
+          pendingRegistration != null &&
+          pendingRegistration.phoneNumber == phoneNumber) {
+        await _verifyRegistration(
+          phoneNumber: pendingRegistration.phoneNumber,
+          code: code,
+          fullName: pendingRegistration.fullName,
+          username: pendingRegistration.username,
+          birthDate: pendingRegistration.birthDate,
+          studyTime: pendingRegistration.studyTime,
+          failureAction: AuthAction.verifyOtp,
+          emitLoading: false,
+        );
+        return;
+      }
+
       final loggedIn = await _tryCompleteLogin(
         phoneNumber: phoneNumber,
         code: code,
         emitFailure: isRegistered,
       );
-      if (loggedIn || isRegistered) return;
+      if (loggedIn || isRegistered) {
+        if (loggedIn) _pendingRegistration = null;
+        return;
+      }
 
       final temporaryUsername = await _suggestTemporaryUsername();
       final response = await _graphql.requestOnce(
@@ -191,10 +234,31 @@ class AuthCubit extends Cubit<AuthState> {
     required DateTime birthDate,
     required dynamic studyTime,
   }) async {
-    emit(const AuthLoading(AuthAction.register));
+    await _verifyRegistration(
+      phoneNumber: phoneNumber,
+      code: code,
+      fullName: fullName,
+      username: username,
+      birthDate: birthDate,
+      studyTime: _resolveStudyTime(studyTime),
+      failureAction: AuthAction.register,
+      emitLoading: true,
+    );
+  }
+
+  Future<void> _verifyRegistration({
+    required String phoneNumber,
+    required String code,
+    required String fullName,
+    required String username,
+    required DateTime birthDate,
+    required GUserStudyTime studyTime,
+    required AuthAction failureAction,
+    required bool emitLoading,
+  }) async {
+    if (emitLoading) emit(const AuthLoading(AuthAction.register));
 
     try {
-      final resolvedStudyTime = _resolveStudyTime(studyTime);
       final response = await _graphql.requestOnce(
         GVerifyOTPAndRegisterReq(
           (request) => request.vars.input
@@ -202,8 +266,8 @@ class AuthCubit extends Cubit<AuthState> {
             ..code = code
             ..fullName = fullName
             ..username = username
-            ..birthDate.value = birthDate.toUtc().toIso8601String()
-            ..studyTime = resolvedStudyTime,
+            ..birthDate.value = _dateOnlyUtc(birthDate).toIso8601String()
+            ..studyTime = studyTime,
         ),
         requiresAuth: false,
       );
@@ -215,7 +279,7 @@ class AuthCubit extends Cubit<AuthState> {
               response,
               fallbackMessage: 'Invalid verification code',
             ),
-            action: AuthAction.register,
+            action: failureAction,
           ),
         );
         return;
@@ -226,9 +290,9 @@ class AuthCubit extends Cubit<AuthState> {
           payload.accessToken.isEmpty ||
           payload.refreshToken.isEmpty) {
         emit(
-          const AuthFailure(
+          AuthFailure(
             'Invalid verification code',
-            action: AuthAction.register,
+            action: failureAction,
           ),
         );
         return;
@@ -239,6 +303,7 @@ class AuthCubit extends Cubit<AuthState> {
         refreshToken: payload.refreshToken,
         issuedAt: DateTime.now().toUtc(),
       );
+      _pendingRegistration = null;
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
@@ -250,7 +315,7 @@ class AuthCubit extends Cubit<AuthState> {
       emit(
         AuthFailure(
           _friendlyError(error, fallbackMessage: 'Invalid verification code'),
-          action: AuthAction.register,
+          action: failureAction,
         ),
       );
     }
@@ -278,7 +343,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
           'input': {
             'username': username,
             'fullName': fullName,
-            'birthDate': birthDate.toUtc().toIso8601String(),
+            'birthDate': _dateOnlyUtc(birthDate).toIso8601String(),
             'studyTime': resolvedStudyTime.name,
           },
         },
@@ -408,6 +473,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       return;
     }
 
+    _pendingRegistration = null;
     emit(const AuthLoading(AuthAction.logout));
     try {
       await _graphql.clearAuthSession();
@@ -438,6 +504,10 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     }
     if (studyTime is String) return GUserStudyTime.valueOf(studyTime);
     throw ArgumentError('Invalid study time option');
+  }
+
+  DateTime _dateOnlyUtc(DateTime value) {
+    return DateTime.utc(value.year, value.month, value.day);
   }
 
   Future<String> _suggestTemporaryUsername() async {
@@ -612,4 +682,20 @@ class _AuthProfile {
   final String userId;
   final String phoneNumber;
   final bool isComplete;
+}
+
+class _PendingRegistration {
+  const _PendingRegistration({
+    required this.phoneNumber,
+    required this.fullName,
+    required this.username,
+    required this.birthDate,
+    required this.studyTime,
+  });
+
+  final String phoneNumber;
+  final String fullName;
+  final String username;
+  final DateTime birthDate;
+  final GUserStudyTime studyTime;
 }

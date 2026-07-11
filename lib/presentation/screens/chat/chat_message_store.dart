@@ -17,7 +17,7 @@ List<ChatMessage> upsertMessages(
       );
       if (matchingLocal != null) byId.remove(matchingLocal.id);
     }
-    byId[message.id] = message;
+    byId[message.id] = _mergeMessageForUpsert(byId[message.id], message);
   }
 
   final messages = byId.values.toList();
@@ -56,6 +56,7 @@ List<ChatMessage> replaceLocalMessage(
       sender: serverMessage.sender ?? localMessage?.sender,
       isSending: false,
       isFailed: false,
+      seenAt: serverMessage.seenAt ?? localMessage?.seenAt,
     );
   }
 
@@ -90,6 +91,54 @@ List<ChatMessage> markMessageFailed(
     for (final message in current)
       if (message.id == messageID)
         message.copyWith(isSending: false, isFailed: true)
+      else
+        message,
+  ];
+}
+
+List<ChatMessage> markMessagesSeenByUser(
+  List<ChatMessage> current, {
+  required String chatID,
+  required String userID,
+  required String readAt,
+}) {
+  final parsedReadAt = DateTime.tryParse(readAt);
+  if (chatID.isEmpty || userID.isEmpty || parsedReadAt == null) return current;
+
+  return [
+    for (final message in current)
+      if (_shouldMarkMessageSeenByUser(
+        message: message,
+        chatID: chatID,
+        userID: userID,
+        readAt: parsedReadAt,
+      ))
+        message.copyWith(seenAt: readAt)
+      else
+        message,
+  ];
+}
+
+List<ChatMessage> markMessagesSeenForSender(
+  List<ChatMessage> current, {
+  required String chatID,
+  required String senderID,
+  required String readAt,
+}) {
+  final parsedReadAt = DateTime.tryParse(readAt);
+  if (chatID.isEmpty || senderID.isEmpty || parsedReadAt == null) {
+    return current;
+  }
+
+  return [
+    for (final message in current)
+      if (_shouldMarkMessageSeenForSender(
+        message: message,
+        chatID: chatID,
+        senderID: senderID,
+        readAt: parsedReadAt,
+      ))
+        message.copyWith(seenAt: readAt)
       else
         message,
   ];
@@ -153,6 +202,20 @@ ChatRoomEventResult applyInboxEventToRoom({
         nextMessages = markMessageDeleted(nextMessages, messageID);
       }
       break;
+    case MessageSeenInboxEvent(
+        chatID: final eventChatID,
+        :final userID,
+        :final readAt,
+      ):
+      if (eventChatID == chatID) {
+        nextMessages = markMessagesSeenByUser(
+          nextMessages,
+          chatID: eventChatID,
+          userID: userID,
+          readAt: readAt,
+        );
+      }
+      break;
     case UserActivityInboxEvent(
         :final userID,
         :final isOnline,
@@ -188,6 +251,14 @@ ChatRoomInitialLoadResult applyInitialMessagesToRoom({
   );
 }
 
+ChatMessage _mergeMessageForUpsert(
+  ChatMessage? existing,
+  ChatMessage incoming,
+) {
+  if (existing == null) return incoming;
+  return incoming.copyWith(seenAt: incoming.seenAt ?? existing.seenAt);
+}
+
 bool _isServerEchoOfLocalMessage({
   required ChatMessage localMessage,
   required ChatMessage serverMessage,
@@ -205,6 +276,44 @@ bool _isServerEchoOfLocalMessage({
 
   final delta = localCreatedAt.difference(serverCreatedAt).abs();
   return delta <= const Duration(seconds: 15);
+}
+
+bool _shouldMarkMessageSeenByUser({
+  required ChatMessage message,
+  required String chatID,
+  required String userID,
+  required DateTime readAt,
+}) {
+  if (message.id.isEmpty || message.isLocal) return false;
+  if (message.chatID != chatID) return false;
+  if (message.senderID == userID) return false;
+
+  final createdAt = DateTime.tryParse(message.createdAt);
+  if (createdAt == null || createdAt.isAfter(readAt)) return false;
+
+  final existingSeenAt = DateTime.tryParse(message.seenAt ?? '');
+  if (existingSeenAt != null && !existingSeenAt.isBefore(readAt)) return false;
+
+  return true;
+}
+
+bool _shouldMarkMessageSeenForSender({
+  required ChatMessage message,
+  required String chatID,
+  required String senderID,
+  required DateTime readAt,
+}) {
+  if (message.id.isEmpty || message.isLocal) return false;
+  if (message.chatID != chatID) return false;
+  if (message.senderID != senderID) return false;
+
+  final createdAt = DateTime.tryParse(message.createdAt);
+  if (createdAt == null || createdAt.isAfter(readAt)) return false;
+
+  final existingSeenAt = DateTime.tryParse(message.seenAt ?? '');
+  if (existingSeenAt != null && !existingSeenAt.isBefore(readAt)) return false;
+
+  return true;
 }
 
 Duration? _createdAtDelta(ChatMessage a, ChatMessage b) {

@@ -27,6 +27,18 @@ void main() {
       expect((event as NewMessageInboxEvent).message.senderID, 'user-2');
     });
 
+    test('parses MessageSeenEvent read watermark frames', () {
+      final event = inboxEventFromGraphQLSocketMessage(
+        _messageSeenFrame(type: 'next'),
+      );
+
+      expect(event, isA<MessageSeenInboxEvent>());
+      final seenEvent = event as MessageSeenInboxEvent;
+      expect(seenEvent.chatID, 'chat-1');
+      expect(seenEvent.userID, 'user-2');
+      expect(seenEvent.readAt, '2026-01-01T10:02:00Z');
+    });
+
     test('parses message data even when the payload has field errors', () {
       final event = inboxEventFromGraphQLSocketMessage(
         _messageFrame(
@@ -60,6 +72,25 @@ void main() {
         isNull,
       );
     });
+  });
+}
+
+String _messageSeenFrame({
+  required String type,
+}) {
+  return jsonEncode({
+    'id': 'inbox',
+    'type': type,
+    'payload': {
+      'data': {
+        'inbox': {
+          '__typename': 'MessageSeenEvent',
+          'chatID': 'chat-1',
+          'userID': 'user-2',
+          'readAt': '2026-01-01T10:02:00Z',
+        },
+      },
+    },
   });
 }
 

@@ -26,11 +26,13 @@ class RegisterScreen extends StatefulWidget {
     this.phoneNumber,
     this.code,
     this.completeProfileOnly = false,
+    this.usernameRepository,
   });
 
   final String? phoneNumber;
   final String? code;
   final bool completeProfileOnly;
+  final UsernameRepository? usernameRepository;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -42,7 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _phoneController;
   late FocusNode _fullNameFocusNode;
   late UsernameRepository _usernameRepository;
-  Timer? _usernameDebounce;
+  Timer? _usernameAvailabilityDebounce;
   Jalali? _birthDate;
   int? _selectedStudyIndex;
   bool _isStudyMenuExpanded = false;
@@ -56,7 +58,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isSuggestedUsername = false;
   bool _isSuggestingUsername = false;
   bool _isCheckingUsername = false;
-  int _usernameRequestRevision = 0;
+  int _suggestionRequestRevision = 0;
+  int _availabilityRequestRevision = 0;
+  String? _suggestionFullNameInFlight;
+  String? _lastSuggestedFullName;
 
   static const _usernameDebounceDuration = Duration(milliseconds: 650);
 
@@ -73,15 +78,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _usernameController = TextEditingController();
     _phoneController = TextEditingController(text: widget.phoneNumber);
     _fullNameFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
-    _usernameRepository = UsernameRepository(
-      context.read<GraphQLRepository>(),
-    );
+    _usernameRepository = widget.usernameRepository ??
+        UsernameRepository(context.read<GraphQLRepository>());
   }
 
   @override
   void dispose() {
     _removeStudyOverlay();
-    _usernameDebounce?.cancel();
+    _usernameAvailabilityDebounce?.cancel();
     _fullNameFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
@@ -94,6 +98,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleFieldFocusChange() {
     if (!mounted) return;
     setState(() {});
+    if (!_fullNameFocusNode.hasFocus) {
+      unawaited(_suggestUsernameAfterFullNameBlur());
+    }
   }
 
   bool get _hasValidPersianFullName {
@@ -101,31 +108,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _onFullNameChanged(String value) {
-    _usernameDebounce?.cancel();
-    _usernameRequestRevision += 1;
-    final revision = _usernameRequestRevision;
+    _suggestionRequestRevision += 1;
+    _suggestionFullNameInFlight = null;
 
     setState(() {
-      _usernameError = null;
       _isSuggestingUsername = false;
-      _isCheckingUsername = false;
       if (!_usernameWasManuallyEdited) {
         _usernameController.clear();
         _usernameAvailability = null;
         _validatedUsername = null;
         _isSuggestedUsername = false;
+        _usernameError = null;
       }
     });
+  }
 
-    if (!_hasValidPersianFullName || _usernameWasManuallyEdited) return;
-    _usernameDebounce = Timer(
-      _usernameDebounceDuration,
-      () => _suggestUsername(value.trim(), revision),
-    );
+  Future<void> _suggestUsernameAfterFullNameBlur() async {
+    final fullName = _fullNameController.text.trim();
+    if (!isValidPersianFullName(fullName) || _usernameWasManuallyEdited) {
+      return;
+    }
+    if (_suggestionFullNameInFlight == fullName ||
+        (_lastSuggestedFullName == fullName && _isSuggestedUsername)) {
+      return;
+    }
+
+    final revision = ++_suggestionRequestRevision;
+    _suggestionFullNameInFlight = fullName;
+    await _suggestUsername(fullName, revision);
   }
 
   Future<void> _suggestUsername(String fullName, int revision) async {
-    if (!mounted || revision != _usernameRequestRevision) return;
+    if (!mounted || revision != _suggestionRequestRevision) return;
     setState(() {
       _isSuggestingUsername = true;
       _usernameError = null;
@@ -133,9 +147,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final suggestion = await _usernameRepository.suggestUsername(fullName);
-      if (!mounted || revision != _usernameRequestRevision) return;
+      if (!mounted || revision != _suggestionRequestRevision) return;
       _setUsernameText(suggestion.username);
       setState(() {
+        _suggestionFullNameInFlight = null;
+        _lastSuggestedFullName = fullName;
         _isSuggestingUsername = false;
         _usernameAvailability = UsernameAvailability(
           available: suggestion.available,
@@ -148,8 +164,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             : 'نام کاربری پیشنهادی در دسترس نیست؛ یک نام دیگر وارد کنید.';
       });
     } catch (error) {
-      if (!mounted || revision != _usernameRequestRevision) return;
+      if (!mounted || revision != _suggestionRequestRevision) return;
       setState(() {
+        _suggestionFullNameInFlight = null;
         _isSuggestingUsername = false;
         _usernameError = _friendlyUsernameError(error);
       });
@@ -157,9 +174,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _onUsernameChanged(String value) {
-    _usernameDebounce?.cancel();
-    _usernameRequestRevision += 1;
-    final revision = _usernameRequestRevision;
+    _usernameAvailabilityDebounce?.cancel();
+    _suggestionRequestRevision += 1;
+    _suggestionFullNameInFlight = null;
+    final revision = ++_availabilityRequestRevision;
     final username = value.trim();
     final hasValidCharacters =
         username.isEmpty || hasValidUsernameCharacters(username);
@@ -179,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     if (!hasValidCharacters || username.length < 3) return;
-    _usernameDebounce = Timer(
+    _usernameAvailabilityDebounce = Timer(
       _usernameDebounceDuration,
       () => _checkUsernameAvailability(username, revision),
     );
@@ -189,11 +207,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String username,
     int revision,
   ) async {
-    if (!mounted || revision != _usernameRequestRevision) return;
+    if (!mounted || revision != _availabilityRequestRevision) return;
     try {
       final availability =
           await _usernameRepository.checkUsernameAvailability(username);
-      if (!mounted || revision != _usernameRequestRevision) return;
+      if (!mounted || revision != _availabilityRequestRevision) return;
       _setUsernameText(availability.normalizedUsername);
       setState(() {
         _isCheckingUsername = false;
@@ -205,7 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             : 'این نام کاربری قبلاً انتخاب شده است.';
       });
     } catch (error) {
-      if (!mounted || revision != _usernameRequestRevision) return;
+      if (!mounted || revision != _availabilityRequestRevision) return;
       setState(() {
         _isCheckingUsername = false;
         _usernameError = _friendlyUsernameError(error);
@@ -328,16 +346,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       size: 12,
                       color: AppColors.black,
                     ),
-                    const Spacer(),
-                    ReText(
-                      _birthDate == null
-                          ? 'تاریخ تولد'
-                          : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _birthDate == null
-                          ? AppColors.black
-                          : AppColors.black1,
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: ReText(
+                        _birthDate == null
+                            ? 'تاریخ تولد'
+                            : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _birthDate == null
+                            ? AppColors.black
+                            : AppColors.black1,
+                        maxLines: 1,
+                      ),
                     ),
                   ],
                 ),
@@ -377,9 +398,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: TextFormField(
+                  key: const ValueKey('register-full-name-field'),
                   focusNode: _fullNameFocusNode,
                   controller: _fullNameController,
                   onChanged: _onFullNameChanged,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   onTapOutside: (_) =>
                       FocusManager.instance.primaryFocus?.unfocus(),
                   textAlign: TextAlign.right,
@@ -448,6 +472,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       children: [
         ReTextField(
+          key: const ValueKey('register-username-field'),
           controller: _usernameController,
           placeholder: 'نام کاربری',
           inputTextAlign: TextAlign.left,
@@ -735,16 +760,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _closeStudyMenu();
 
     final phoneNumber = _normalizeDigits(_phoneController.text);
+    final birthDate = _birthDate!.toGregorian();
+    final registrationBirthDate = DateTime(
+      birthDate.year,
+      birthDate.month,
+      birthDate.day,
+    );
     if (widget.completeProfileOnly) {
-      final birthDate = _birthDate!.toGregorian();
       context.read<AuthCubit>().completeRegistrationProfile(
             fullName: _fullNameController.text.trim(),
             username: _validatedUsername!,
-            birthDate: DateTime(
-              birthDate.year,
-              birthDate.month,
-              birthDate.day,
-            ),
+            birthDate: registrationBirthDate,
             studyTime: _studyTime,
           );
       return;
@@ -752,21 +778,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final code = widget.code;
     if (code == null || code.isEmpty) {
-      context.read<AuthCubit>().sendOtp(phoneNumber);
+      context.read<AuthCubit>().sendRegistrationOtp(
+            phoneNumber: phoneNumber,
+            fullName: _fullNameController.text.trim(),
+            username: _validatedUsername!,
+            birthDate: registrationBirthDate,
+            studyTime: _studyTime,
+          );
       return;
     }
 
-    final birthDate = _birthDate!.toGregorian();
     context.read<AuthCubit>().verifyRegister(
           phoneNumber: phoneNumber,
           code: code,
           fullName: _fullNameController.text.trim(),
           username: _validatedUsername!,
-          birthDate: DateTime(
-            birthDate.year,
-            birthDate.month,
-            birthDate.day,
-          ),
+          birthDate: registrationBirthDate,
           studyTime: _studyTime,
         );
   }

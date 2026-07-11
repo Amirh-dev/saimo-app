@@ -71,6 +71,7 @@ class ChatMessage {
     this.sender,
     this.isSending = false,
     this.isFailed = false,
+    this.seenAt,
   });
 
   final String id;
@@ -87,6 +88,7 @@ class ChatMessage {
   final ChatUser? sender;
   final bool isSending;
   final bool isFailed;
+  final String? seenAt;
 
   bool get isLocal => id.startsWith('local-');
 
@@ -105,6 +107,7 @@ class ChatMessage {
     ChatUser? sender,
     bool? isSending,
     bool? isFailed,
+    String? seenAt,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -121,6 +124,7 @@ class ChatMessage {
       sender: sender ?? this.sender,
       isSending: isSending ?? this.isSending,
       isFailed: isFailed ?? this.isFailed,
+      seenAt: seenAt ?? this.seenAt,
     );
   }
 
@@ -144,6 +148,7 @@ class ChatMessage {
       sender: senderJson is Map<String, dynamic>
           ? ChatUser.fromJson(senderJson)
           : null,
+      seenAt: json['seenAt']?.toString(),
     );
   }
 
@@ -224,6 +229,11 @@ sealed class InboxEvent {
           messageID: json['messageID']?.toString() ?? '',
           chatID: json['chatID']?.toString() ?? '',
         ),
+      'MessageSeenEvent' => MessageSeenInboxEvent(
+          chatID: json['chatID']?.toString() ?? '',
+          userID: json['userID']?.toString() ?? '',
+          readAt: json['readAt']?.toString() ?? '',
+        ),
       'UserActivityEvent' => UserActivityInboxEvent(
           userID: json['userID']?.toString() ?? '',
           isOnline: json['isOnline'] == true,
@@ -250,6 +260,18 @@ class MessageDeletedInboxEvent extends InboxEvent {
 
   final String messageID;
   final String chatID;
+}
+
+class MessageSeenInboxEvent extends InboxEvent {
+  const MessageSeenInboxEvent({
+    required this.chatID,
+    required this.userID,
+    required this.readAt,
+  }) : super('MessageSeenEvent');
+
+  final String chatID;
+  final String userID;
+  final String readAt;
 }
 
 class UserActivityInboxEvent extends InboxEvent {

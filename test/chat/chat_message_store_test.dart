@@ -208,6 +208,183 @@ void main() {
       expect(result.messages.single.content, isEmpty);
     });
 
+    test('marks existing sent messages up to MessageSeenEvent read watermark',
+        () {
+      const readAt = '2026-01-01T10:02:30Z';
+      final firstSent = _message(
+        id: 'sent-1',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:00:00Z',
+      );
+      final secondSent = _message(
+        id: 'sent-2',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:02:00Z',
+      );
+      final afterWatermark = _message(
+        id: 'sent-3',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:03:00Z',
+      );
+      final incomingFromReader = _message(
+        id: 'incoming-1',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T10:01:00Z',
+      );
+
+      final result = applyInboxEventToRoom(
+        messages: [
+          firstSent,
+          secondSent,
+          afterWatermark,
+          incomingFromReader,
+        ],
+        activityByUserID: const {},
+        event: const MessageSeenInboxEvent(
+          chatID: 'chat-a',
+          userID: 'other-user',
+          readAt: readAt,
+        ),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages, hasLength(4));
+      expect(
+        result.messages.firstWhere((message) => message.id == 'sent-1').seenAt,
+        readAt,
+      );
+      expect(
+        result.messages.firstWhere((message) => message.id == 'sent-2').seenAt,
+        readAt,
+      );
+      expect(
+        result.messages
+            .firstWhere((message) => message.id == 'incoming-1')
+            .seenAt,
+        isNull,
+      );
+      expect(
+        result.messages.firstWhere((message) => message.id == 'sent-3').seenAt,
+        isNull,
+      );
+    });
+
+    test('ignores MessageSeenEvent for another chat', () {
+      final sent = _message(id: 'sent-1', senderID: 'current-user');
+
+      final result = applyInboxEventToRoom(
+        messages: [sent],
+        activityByUserID: const {},
+        event: const MessageSeenInboxEvent(
+          chatID: 'chat-b',
+          userID: 'other-user',
+          readAt: '2026-01-01T10:02:00Z',
+        ),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages, hasLength(1));
+      expect(result.messages.single.id, 'sent-1');
+      expect(result.messages.single.seenAt, isNull);
+    });
+
+    test('does not insert a message for MessageSeenEvent', () {
+      final sent = _message(id: 'sent-1', senderID: 'current-user');
+
+      final result = applyInboxEventToRoom(
+        messages: [sent],
+        activityByUserID: const {},
+        event: const MessageSeenInboxEvent(
+          chatID: 'chat-a',
+          userID: 'other-user',
+          readAt: '2026-01-01T10:02:00Z',
+        ),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages.map((message) => message.id), ['sent-1']);
+    });
+
+    test('does not mark pending local temp messages seen', () {
+      final pendingLocal = _message(
+        id: 'local-1',
+        senderID: 'current-user',
+      ).copyWith(isSending: true);
+
+      final result = applyInboxEventToRoom(
+        messages: [pendingLocal],
+        activityByUserID: const {},
+        event: const MessageSeenInboxEvent(
+          chatID: 'chat-a',
+          userID: 'other-user',
+          readAt: '2026-01-01T10:02:00Z',
+        ),
+        chatID: 'chat-a',
+      );
+
+      expect(result.messages.single.id, 'local-1');
+      expect(result.messages.single.isSending, isTrue);
+      expect(result.messages.single.seenAt, isNull);
+    });
+
+    test('marks only current sender messages with sender read watermark', () {
+      const readAt = '2026-01-01T10:02:00Z';
+      final sent = _message(
+        id: 'sent-1',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:01:00Z',
+      );
+      final incoming = _message(
+        id: 'incoming-1',
+        senderID: 'other-user',
+        createdAt: '2026-01-01T10:01:00Z',
+      );
+      final pendingLocal = _message(
+        id: 'local-1',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:01:00Z',
+      ).copyWith(isSending: true);
+
+      final result = markMessagesSeenForSender(
+        [sent, incoming, pendingLocal],
+        chatID: 'chat-a',
+        senderID: 'current-user',
+        readAt: readAt,
+      );
+
+      expect(
+        result.firstWhere((message) => message.id == 'sent-1').seenAt,
+        readAt,
+      );
+      expect(
+        result.firstWhere((message) => message.id == 'incoming-1').seenAt,
+        isNull,
+      );
+      expect(
+        result.firstWhere((message) => message.id == 'local-1').seenAt,
+        isNull,
+      );
+    });
+
+    test('sender watermark supports MessageSeenEvent userID matching sender',
+        () {
+      const readAt = '2026-01-01T10:02:00Z';
+      final sent = _message(
+        id: 'sent-1',
+        senderID: 'current-user',
+        createdAt: '2026-01-01T10:01:00Z',
+      );
+
+      final result = markMessagesSeenForSender(
+        [sent],
+        chatID: 'chat-a',
+        senderID: 'current-user',
+        readAt: readAt,
+      );
+
+      expect(result.single.seenAt, readAt);
+    });
+
     test('stores user activity events', () {
       final result = applyInboxEventToRoom(
         messages: const [],
@@ -290,6 +467,7 @@ ChatMessage _message({
   String? replyToID,
   ChatReplyMessage? replyTo,
   String createdAt = '2026-01-01T10:00:00Z',
+  String? seenAt,
 }) {
   return ChatMessage(
     id: id,
@@ -302,5 +480,6 @@ ChatMessage _message({
     createdAt: createdAt,
     updatedAt: createdAt,
     replyTo: replyTo,
+    seenAt: seenAt,
   );
 }

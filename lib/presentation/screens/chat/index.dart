@@ -420,6 +420,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   var _displayConnectionStatus = InboxConnectionStatus.connected;
   Timer? _connectionDebounce;
   ChatMessage? _replyingTo;
+  String? _selectedMessageID;
   String? _currentUserID;
   String? _error;
   int _offset = 0;
@@ -428,6 +429,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   bool _isSyncingLatest = false;
   bool _hasMore = true;
   bool _isSending = false;
+  String? _outgoingSeenReadAt;
+  Future<void>? _markReadFuture;
+  bool _markReadAgain = false;
 
   static const Duration _connectionGrace = Duration(seconds: 3);
 
@@ -496,6 +500,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     // The app-level connector forces one socket reconnect on resume. Its next
     // connected status triggers the single NetworkOnly catch-up below.
     _inboxClient.connect(source: 'chat_room');
+    _markChatRead(source: 'resume');
   }
 
   Future<void> _loadInitial() async {
@@ -533,12 +538,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       pageSize: _pageSize,
     );
     setState(() {
-      _messages = initialLoad.messages;
+      _messages = _applyOutgoingSeenWatermark(initialLoad.messages);
       _offset = initialLoad.offset;
       _hasMore = initialLoad.hasMore;
       _error = null;
       _isLoading = false;
     });
+    _markChatRead(source: 'initial_load');
     _scrollToBottomSoon();
   }
 
@@ -564,7 +570,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       );
       if (!mounted) return;
       setState(() {
-        _messages = upsertMessages(_messages, olderMessages);
+        _messages = _applyOutgoingSeenWatermark(
+          upsertMessages(_messages, olderMessages),
+        );
         _offset += olderMessages.length;
         _hasMore = olderMessages.length == _pageSize;
         _isLoadingOlder = false;
@@ -616,11 +624,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
           event: event,
           chatID: widget.chatID,
         );
+        final nextMessages = _applyOutgoingSeenWatermark(result.messages);
         setState(() {
-          _messages = result.messages;
+          _messages = nextMessages;
           _activityByUserID = result.activityByUserID;
         });
-        _logChatLive('after count=${result.messages.length}');
+        _logChatLive('after count=${nextMessages.length}');
         _logChatLive('setState called');
         if (matchingLocal != null) {
           _logChatLive(
@@ -632,7 +641,62 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
         } else {
           _logChatLive('inserted messageId=${message.id}');
         }
+        if (message.senderID != _currentUserID) {
+          _markChatRead(source: 'incoming_message');
+        }
         if (shouldScroll) _scrollToBottomSoon();
+        return;
+      }
+
+      if (event
+          case MessageSeenInboxEvent(
+            chatID: final eventChatID,
+            :final userID,
+            :final readAt,
+          )) {
+        _logChatLive(
+          'MessageSeenEvent eventChatID=$eventChatID '
+          'currentChatID=${widget.chatID} userID=$userID readAt=$readAt',
+        );
+        if (eventChatID != widget.chatID) {
+          _logChatLive('ignored MessageSeenEvent for other chat');
+          return;
+        }
+
+        final currentUserID = _currentUserID;
+        if (currentUserID == null || currentUserID.isEmpty) {
+          _logChatLive(
+            'no matching message for MessageSeenEvent '
+            'reason=missing_current_user userID=$userID readAt=$readAt',
+          );
+          return;
+        }
+        final beforeMessages = _messages;
+        final nextReadAt = _latestReadAt(_outgoingSeenReadAt, readAt);
+        final nextMessages = markMessagesSeenForSender(
+          _messages,
+          chatID: widget.chatID,
+          senderID: currentUserID,
+          readAt: nextReadAt,
+        );
+        final updatedSeenMessageIDs = _updatedSeenMessageIDs(
+          beforeMessages,
+          nextMessages,
+        );
+        setState(() {
+          _outgoingSeenReadAt = nextReadAt;
+          _messages = nextMessages;
+        });
+        if (updatedSeenMessageIDs.isEmpty) {
+          _logChatLive(
+            'no matching message for MessageSeenEvent '
+            'userID=$userID readAt=$readAt storedReadAt=$nextReadAt',
+          );
+        } else {
+          for (final messageID in updatedSeenMessageIDs) {
+            _logChatLive('updated seen messageId=$messageID');
+          }
+        }
         return;
       }
 
@@ -657,7 +721,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 
   void _handleScroll() {
     if (!_scrollController.hasClients) return;
-    if (_scrollController.position.pixels < 120) {
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 120) {
       _loadOlderMessages();
     }
   }
@@ -717,11 +782,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       );
       if (!mounted) return;
       setState(() {
-        _messages = replaceLocalMessage(
+        _messages = _applyOutgoingSeenWatermark(replaceLocalMessage(
           _messages,
           localID: localID,
           serverMessage: sentMessage,
-        );
+        ));
         _isSending = false;
       });
       _scrollToBottomSoon();
@@ -768,7 +833,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       );
       if (!mounted) return;
       setState(() {
-        _messages = upsertMessages(_messages, latestMessages);
+        _messages = _applyOutgoingSeenWatermark(
+          upsertMessages(_messages, latestMessages),
+        );
         _offset = math.max(_offset, latestMessages.length);
         _hasMore = latestMessages.length == _pageSize || _hasMore;
       });
@@ -785,6 +852,50 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     for (var offset = _pageSize; offset < _offset; offset += _pageSize) {
       yield offset;
     }
+  }
+
+  List<ChatMessage> _applyOutgoingSeenWatermark(
+    List<ChatMessage> messages,
+  ) {
+    final currentUserID = _currentUserID;
+    final readAt = _outgoingSeenReadAt;
+    if (currentUserID == null || currentUserID.isEmpty || readAt == null) {
+      return messages;
+    }
+    return markMessagesSeenForSender(
+      messages,
+      chatID: widget.chatID,
+      senderID: currentUserID,
+      readAt: readAt,
+    );
+  }
+
+  void _markChatRead({required String source}) {
+    if (!mounted || _currentUserID == null) return;
+    if (_markReadFuture != null) {
+      _markReadAgain = true;
+      _logChatLive('markChatRead queued source=$source');
+      return;
+    }
+
+    _logChatLive('markChatRead started source=$source chatID=${widget.chatID}');
+    late final Future<void> future;
+    future = _chatRepository.markChatRead(chatID: widget.chatID).then((readAt) {
+      _logChatLive('markChatRead completed source=$source readAt=$readAt');
+    }).catchError((Object error) {
+      _logChatLive(
+        'markChatRead failed source=$source '
+        'error=${error.runtimeType}',
+      );
+    }).whenComplete(() {
+      if (_markReadFuture == future) {
+        _markReadFuture = null;
+      }
+      if (!mounted || !_markReadAgain) return;
+      _markReadAgain = false;
+      _markChatRead(source: 'queued');
+    });
+    _markReadFuture = future;
   }
 
   Future<void> _deleteMessage(ChatMessage message) async {
@@ -821,7 +932,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   void _openMessageActions(ChatMessage message, Offset globalPosition) {
     if (message.isDeleted) return;
 
-    showGeneralDialog<void>(
+    setState(() => _selectedMessageID = message.id);
+    unawaited(showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -850,7 +962,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
           _sendMessage(retryMessage: message);
         },
       ),
-    );
+    ).whenComplete(() {
+      if (mounted && _selectedMessageID == message.id) {
+        setState(() => _selectedMessageID = null);
+      }
+    }));
   }
 
   void _openRoomMenu() {
@@ -885,18 +1001,33 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     );
   }
 
+  void _sendWelcomeGreeting() {
+    if (_isSending) return;
+    const greeting = 'سلام چطوری؟ 👋';
+    _messageController
+      ..text = greeting
+      ..selection = const TextSelection.collapsed(offset: greeting.length);
+    _sendMessage();
+  }
+
+  void _showUnsupportedAttachmentAction() {
+    showReToast(
+      context,
+      'ارسال فایل هنوز پشتیبانی نمی‌شود',
+      ReToastType.info,
+    );
+  }
+
   bool get _isNearBottom {
     if (!_scrollController.hasClients) return true;
-    final distance = _scrollController.position.maxScrollExtent -
-        _scrollController.position.pixels;
-    return distance < 120;
+    return _scrollController.position.pixels < 120;
   }
 
   void _scrollToBottomSoon() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        _scrollController.position.minScrollExtent,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
@@ -912,8 +1043,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        backgroundColor: AppColors.gray1,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: AppColors.white,
         body: SafeArea(
           child: Stack(
             children: [
@@ -932,9 +1063,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                   _MessageComposer(
                     controller: _messageController,
                     replyingTo: _replyingTo,
-                    isSending: _isSending,
                     onCancelReply: () => setState(() => _replyingTo = null),
                     onSend: _sendMessage,
+                    onAttachment: _showUnsupportedAttachmentAction,
                   ),
                 ],
               ),
@@ -961,30 +1092,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     }
 
     if (_messages.isEmpty) {
-      return const _ChatStateView(
-        icon: SolarIconsOutline.chatRoundDots,
-        title: 'اولین پیام را بفرستید',
-        subtitle: 'این گفتگو هنوز پیامی ندارد.',
+      return _EmptyChatWelcome(
+        onGreetingTap: _sendWelcomeGreeting,
       );
     }
 
     return ListView.builder(
       controller: _scrollController,
+      reverse: true,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+      padding: const EdgeInsets.fromLTRB(0, 18, 0, 18),
       itemCount: _messages.length + (_isLoadingOlder ? 1 : 0),
       itemBuilder: (context, index) {
-        if (_isLoadingOlder && index == 0) {
+        if (_isLoadingOlder && index == _messages.length) {
           return const Padding(
-            padding: EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(top: 8),
             child: Center(child: CircularProgressIndicator.adaptive()),
           );
         }
-        final messageIndex = index - (_isLoadingOlder ? 1 : 0);
+        final messageIndex = _messages.length - index - 1;
         final message = _messages[messageIndex];
         return _MessageBubble(
           message: message,
           isMine: message.senderID == _currentUserID,
+          isSelected: message.id == _selectedMessageID,
           onLongPress: (position) => _openMessageActions(message, position),
         );
       },
@@ -1274,12 +1405,12 @@ class _ChatRoomHeader extends StatelessWidget {
             connectionStatus == InboxConnectionStatus.disconnected;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       decoration: const BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(38),
+          bottomRight: Radius.circular(38),
         ),
       ),
       child: Column(
@@ -1309,7 +1440,7 @@ class _ChatRoomHeader extends StatelessWidget {
                           ReText(
                             title,
                             color: AppColors.black1,
-                            fontSize: 13.5,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w900,
                             maxLines: 1,
                           ),
@@ -1343,7 +1474,7 @@ class _ChatRoomHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 9),
-                    const _ChatAvatar(size: 42),
+                    const _ChatAvatar(size: 46),
                     const SizedBox(width: 3),
                     _CircleIconButton(
                       icon: SolarIconsOutline.altArrowRight,
@@ -1381,110 +1512,293 @@ class _ChatRoomHeader extends StatelessWidget {
   }
 }
 
+class _EmptyChatWelcome extends StatelessWidget {
+  const _EmptyChatWelcome({required this.onGreetingTap});
+
+  final VoidCallback onGreetingTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageSize = math.min(
+          constraints.maxWidth * 0.68,
+          math.min(290.0, constraints.maxHeight * 0.50),
+        );
+        final verticalShift = math.min(28.0, constraints.maxHeight * 0.04);
+
+        return Center(
+          child: Transform.translate(
+            offset: Offset(0, -verticalShift),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    image: true,
+                    label: 'تصویر خوش‌آمدگویی شروع گفتگو',
+                    child: ReImage(
+                      'assets/images/empty_chat_welcome.png',
+                      width: imageSize,
+                      height: imageSize,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const ReText(
+                    'سلام کنید!',
+                    color: AppColors.black1,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  Semantics(
+                    button: true,
+                    label: 'ارسال پیام سلام چطوری',
+                    child: GestureDetector(
+                      key: const ValueKey('empty-chat-greeting'),
+                      onTap: onGreetingTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withOpacity(0.035),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const ReText(
+                          '👋 سلام چطوری؟',
+                          color: AppColors.black1,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
+    required this.isSelected,
     required this.onLongPress,
   });
 
   final ChatMessage message;
   final bool isMine;
+  final bool isSelected;
   final ValueChanged<Offset> onLongPress;
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = isMine ? const Color(0xFFEFF3FF) : AppColors.white;
-    final radius = BorderRadius.only(
-      topLeft: const Radius.circular(18),
-      topRight: const Radius.circular(18),
-      bottomLeft: Radius.circular(isMine ? 18 : 5),
-      bottomRight: Radius.circular(isMine ? 5 : 18),
-    );
+    final bubbleColor = message.isFailed
+        ? const Color(0xFFF9F9FC)
+        : isMine
+            ? const Color(0xFFEFF2FF)
+            : AppColors.white;
 
     return GestureDetector(
       onLongPressStart: (details) => onLongPress(details.globalPosition),
       onSecondaryTapDown: (details) => onLongPress(details.globalPosition),
       behavior: HitTestBehavior.opaque,
-      child: Align(
-        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: math.min(MediaQuery.of(context).size.width * 0.72, 430),
-          ),
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            decoration: BoxDecoration(
-              color: bubbleColor,
-              borderRadius: radius,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.black.withOpacity(0.035),
-                  blurRadius: 14,
-                  offset: const Offset(0, 7),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (message.replyTo != null && !message.isDeleted)
-                  _InlineReplyPreview(
-                    reply: message.replyTo!,
-                    isMine: isMine,
-                  ).bMargin(7),
-                ReText(
-                  message.isDeleted ? 'این پیام حذف شده است' : message.content,
-                  color: message.isDeleted
-                      ? AppColors.gray
-                      : AppColors.black1.withOpacity(0.92),
-                  fontSize: 12,
-                  fontWeight:
-                      message.isDeleted ? FontWeight.w600 : FontWeight.w700,
-                  lineHeight: 1.55,
-                  maxLines: 20,
-                  overflow: TextOverflow.fade,
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (message.isFailed)
-                      const Icon(
-                        SolarIconsOutline.dangerTriangle,
-                        color: AppColors.errorColor,
-                        size: 13,
-                      ).lMargin(4)
-                    else if (message.isSending)
-                      SizedBox(
-                        width: 10,
-                        height: 10,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.5,
-                          color: AppColors.black1.withOpacity(0.45),
-                        ),
-                      ).lMargin(4)
-                    else if (isMine)
-                      const Icon(
-                        Icons.done_rounded,
-                        color: AppColors.secondary,
-                        size: 14,
-                      ).lMargin(4),
-                    ReText(
-                      _formatMessageTime(message.createdAt),
-                      color: AppColors.black1.withOpacity(0.38),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      textDirection: TextDirection.ltr,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        color: isSelected
+            ? AppColors.secondary.withOpacity(0.10)
+            : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(
+                right: isSelected && isMine ? 38 : 0,
+                left: isSelected && !isMine ? 38 : 0,
+              ),
+              child: Align(
+                alignment:
+                    isMine ? Alignment.centerRight : Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth:
+                        math.min(MediaQuery.of(context).size.width * 0.72, 430),
+                  ),
+                  child: PhysicalShape(
+                    clipper: _MessageBubbleClipper(isMine: isMine),
+                    clipBehavior: Clip.antiAlias,
+                    color: bubbleColor,
+                    shadowColor: AppColors.black.withOpacity(0.10),
+                    elevation: 1,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isMine ? 12 : 18,
+                        11,
+                        isMine ? 18 : 12,
+                        9,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (message.replyTo != null && !message.isDeleted)
+                            _InlineReplyPreview(
+                              reply: message.replyTo!,
+                              isMine: isMine,
+                            ).bMargin(7),
+                          ReText(
+                            message.isDeleted
+                                ? 'این پیام حذف شده است'
+                                : message.content,
+                            color: message.isDeleted
+                                ? AppColors.gray
+                                : AppColors.black1.withOpacity(0.94),
+                            fontSize: 13.5,
+                            fontWeight: message.isDeleted
+                                ? FontWeight.w600
+                                : FontWeight.w700,
+                            lineHeight: 1.55,
+                            maxLines: 20,
+                            overflow: TextOverflow.fade,
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (message.isFailed)
+                                const Icon(
+                                  SolarIconsOutline.dangerTriangle,
+                                  color: AppColors.errorColor,
+                                  size: 15,
+                                ).lMargin(4)
+                              else if (message.isSending)
+                                SizedBox(
+                                  width: 11,
+                                  height: 11,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: AppColors.black1.withOpacity(0.45),
+                                  ),
+                                ).lMargin(4)
+                              else if (isMine)
+                                Icon(
+                                  message.seenAt == null
+                                      ? Icons.done_rounded
+                                      : Icons.done_all_rounded,
+                                  color: message.seenAt == null
+                                      ? AppColors.secondary
+                                      : AppColors.done,
+                                  size: 16,
+                                ).lMargin(4),
+                              ReText(
+                                _formatMessageTime(message.createdAt),
+                                color: AppColors.black1.withOpacity(0.40),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                textDirection: TextDirection.ltr,
+                              ),
+                            ],
+                          ).tMargin(5),
+                        ],
+                      ),
                     ),
-                  ],
-                ).tMargin(5),
-              ],
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (isSelected)
+              Align(
+                alignment:
+                    isMine ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.secondary.withOpacity(0.16),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: AppColors.secondary,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
+  }
+}
+
+class _MessageBubbleClipper extends CustomClipper<Path> {
+  const _MessageBubbleClipper({required this.isMine});
+
+  final bool isMine;
+
+  @override
+  Path getClip(Size size) {
+    const tailWidth = 9.0;
+    final bubbleRect = Rect.fromLTRB(
+      isMine ? 0 : tailWidth,
+      0,
+      isMine ? size.width - tailWidth : size.width,
+      size.height,
+    );
+    final path = Path()
+      ..addRRect(
+          RRect.fromRectAndRadius(bubbleRect, const Radius.circular(20)));
+
+    final tailTop = size.height - 33;
+    final tailBottom = size.height - 17;
+    if (isMine) {
+      path
+        ..moveTo(size.width - tailWidth - 2, tailTop)
+        ..quadraticBezierTo(size.width - 2, tailTop + 6, size.width, tailBottom)
+        ..lineTo(size.width - tailWidth - 3, tailBottom - 2)
+        ..close();
+    } else {
+      path
+        ..moveTo(tailWidth + 2, tailTop)
+        ..quadraticBezierTo(2, tailTop + 6, 0, tailBottom)
+        ..lineTo(tailWidth + 3, tailBottom - 2)
+        ..close();
+    }
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _MessageBubbleClipper oldClipper) {
+    return oldClipper.isMine != isMine;
   }
 }
 
@@ -1492,16 +1806,16 @@ class _MessageComposer extends StatefulWidget {
   const _MessageComposer({
     required this.controller,
     required this.replyingTo,
-    required this.isSending,
     required this.onCancelReply,
     required this.onSend,
+    required this.onAttachment,
   });
 
   final TextEditingController controller;
   final ChatMessage? replyingTo;
-  final bool isSending;
   final VoidCallback onCancelReply;
   final VoidCallback onSend;
+  final VoidCallback onAttachment;
 
   @override
   State<_MessageComposer> createState() => _MessageComposerState();
@@ -1546,13 +1860,11 @@ class _MessageComposerState extends State<_MessageComposer> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.88),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(26),
-            topRight: Radius.circular(26),
-          ),
+          color: AppColors.white.withOpacity(0.94),
+          borderRadius: BorderRadius.circular(36),
           boxShadow: [
             BoxShadow(
               color: AppColors.black.withOpacity(0.05),
@@ -1572,39 +1884,27 @@ class _MessageComposerState extends State<_MessageComposer> {
             Row(
               children: [
                 GestureDetector(
-                  onTap: _hasText && !widget.isSending ? widget.onSend : null,
+                  onTap: _hasText ? widget.onSend : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _hasText && !widget.isSending
-                          ? AppColors.primary
-                          : AppColors.gray2,
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
-                      boxShadow: _hasText && !widget.isSending
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.26),
-                                blurRadius: 14,
-                                offset: const Offset(0, 6),
-                              ),
-                            ]
-                          : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.26),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    child: widget.isSending
-                        ? const Padding(
-                            padding: EdgeInsets.all(14),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.white,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.near_me_rounded,
-                            color: AppColors.white,
-                            size: 23,
-                          ),
+                    child: const Icon(
+                      Icons.near_me_rounded,
+                      color: AppColors.white,
+                      size: 23,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1642,6 +1942,26 @@ class _MessageComposerState extends State<_MessageComposer> {
                           vertical: 14,
                         ),
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  key: const ValueKey('chat-attachment-button'),
+                  onTap: widget.onAttachment,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.gray2),
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: AppColors.black1,
+                      size: 25,
                     ),
                   ),
                 ),
@@ -1728,6 +2048,7 @@ class _MessageActionsDialog extends StatelessWidget {
                       _CompactActionRow(
                         icon: SolarIconsOutline.copy,
                         title: 'کپی',
+                        backgroundColor: AppColors.gray1,
                         onTap: onCopy,
                       ),
                       if (canRetry)
@@ -1740,7 +2061,6 @@ class _MessageActionsDialog extends StatelessWidget {
                         _CompactActionRow(
                           icon: SolarIconsOutline.trashBinTrash,
                           title: 'حذف',
-                          color: AppColors.errorColor,
                           onTap: onDelete,
                         ),
                     ],
@@ -1760,36 +2080,44 @@ class _CompactActionRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onTap,
-    this.color = AppColors.black1,
+    this.backgroundColor = Colors.transparent,
   });
 
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final Color color;
+  final Color backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 39,
-        child: Row(
-          children: [
-            const SizedBox(width: 14),
-            Expanded(
-              child: ReText(
-                title,
-                color: color,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                maxLines: 1,
+      child: ColoredBox(
+        color: backgroundColor,
+        child: SizedBox(
+          height: 39,
+          child: Row(
+            children: [
+              const SizedBox(width: 13),
+              Icon(
+                icon,
+                color: AppColors.black1.withOpacity(0.62),
+                size: 16,
               ),
-            ),
-            Icon(icon, color: color, size: 15),
-            const SizedBox(width: 13),
-          ],
+              const SizedBox(width: 9),
+              Expanded(
+                child: ReText(
+                  title,
+                  color: AppColors.black1,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  maxLines: 1,
+                ),
+              ),
+              const SizedBox(width: 14),
+            ],
+          ),
         ),
       ),
     );
@@ -2028,7 +2356,7 @@ class _RoomMenuRow extends StatelessWidget {
             Expanded(
               child: ReText(
                 title,
-                color: color,
+                color: AppColors.black1,
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
                 maxLines: 1,
@@ -2282,49 +2610,45 @@ class _ChatPatternBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _ChatPatternPainter(),
-      child: Container(color: const Color(0xFFF3F5FB).withOpacity(0.86)),
+    return ColoredBox(
+      color: const Color(0xFFF3F4F9),
+      child: Image.asset(
+        'assets/images/chat_background.png',
+        width: double.infinity,
+        height: double.infinity,
+        alignment: Alignment.topCenter,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      ),
     );
   }
 }
 
-class _ChatPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.black1.withOpacity(0.035)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    const gap = 58.0;
-    for (double y = 16; y < size.height; y += gap) {
-      for (double x = 18; x < size.width; x += gap) {
-        final shift = ((x + y) ~/ gap).isEven ? 0.0 : 18.0;
-        final rect = Rect.fromCenter(
-          center: Offset(x + shift, y),
-          width: 18,
-          height: 12,
-        );
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(rect, const Radius.circular(4)),
-          paint,
-        );
-        canvas.drawCircle(Offset(x + 24 + shift, y + 18), 5, paint);
-        canvas.drawLine(
-          Offset(x - 9 + shift, y + 22),
-          Offset(x + 7 + shift, y + 32),
-          paint,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 void _logChatLive(String message) {
   if (kDebugMode) debugPrint('[ChatLive] $message');
+}
+
+List<String> _updatedSeenMessageIDs(
+  List<ChatMessage> before,
+  List<ChatMessage> after,
+) {
+  final beforeSeenAtByID = {
+    for (final message in before) message.id: message.seenAt,
+  };
+  return [
+    for (final message in after)
+      if (message.seenAt != null &&
+          beforeSeenAtByID[message.id] != message.seenAt)
+        message.id,
+  ];
+}
+
+String _latestReadAt(String? current, String incoming) {
+  final currentDate = DateTime.tryParse(current ?? '');
+  final incomingDate = DateTime.tryParse(incoming);
+  if (incomingDate == null) return current ?? incoming;
+  if (currentDate == null || incomingDate.isAfter(currentDate)) return incoming;
+  return current!;
 }
 
 String _formatMessageTime(String isoDate) {

@@ -1,14 +1,21 @@
+// ignore_for_file: deprecated_member_use, prefer_const_constructors,
+// ignore_for_file: prefer_const_literals_to_create_immutables
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
-import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/auth/username_repository.dart';
+import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -22,6 +29,8 @@ enum ProfileContentSection {
   friends,
   notifications,
   competition,
+  accountDetails,
+  settings,
 }
 
 class ProfileScreen extends StatefulWidget {
@@ -38,11 +47,16 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late ProfileContentSection _section;
+  late final ProfileRepository _profileRepository;
+  ProfileUser? _profile;
+  bool _isProfileLoading = false;
 
   @override
   void initState() {
     super.initState();
     _section = widget.initialSection;
+    _profileRepository = ProfileRepository(context.read<GraphQLRepository>());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
   }
 
   @override
@@ -59,13 +73,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _loadProfile() async {
+    if (_isProfileLoading) return;
+    setState(() => _isProfileLoading = true);
+    try {
+      final profile = await _profileRepository.getMe();
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _isProfileLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isProfileLoading = false);
+      showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+    }
+  }
+
+  Future<ProfileUser> _updateProfile({
+    required String fullName,
+    required String username,
+    required DateTime birthDate,
+  }) async {
+    final profile = await _profileRepository.updateProfile(
+      fullName: fullName,
+      username: username,
+      birthDate: birthDate,
+    );
+    if (mounted) setState(() => _profile = profile);
+    return profile;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBottomNavigationScaffold(
       currentIndex: 4,
-      onTap: (index) => navigateToIndex(context, index),
-      body: SafeArea(
-        child: _buildSection(),
+      onTap: (index) {
+        if (index == 4) {
+          _setSection(ProfileContentSection.profile);
+          return;
+        }
+        navigateToIndex(context, index);
+      },
+      body: ColoredBox(
+        color: AppColors.white,
+        child: SafeArea(
+          bottom: false,
+          child: ColoredBox(
+            color: AppColors.gray1,
+            child: _buildSection(),
+          ),
+        ),
       ),
     );
   }
@@ -74,6 +132,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     switch (_section) {
       case ProfileContentSection.profile:
         return _ProfileHomeContent(
+          profile: _profile,
+          isRefreshing: _isProfileLoading,
+          onRefresh: _loadProfile,
+          onOpenAccountDetails: () =>
+              _setSection(ProfileContentSection.accountDetails),
+          onOpenSettings: () => _setSection(ProfileContentSection.settings),
           onSectionSelected: _setSection,
         );
       case ProfileContentSection.friends:
@@ -99,20 +163,464 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onSectionSelected: _setSection,
           selectedSection: _section,
         );
+      case ProfileContentSection.accountDetails:
+        return _AccountDetailsContent(
+          profile: _profile,
+          onBack: () => _setSection(ProfileContentSection.profile),
+          onSectionSelected: _setSection,
+          onSave: _updateProfile,
+        );
+      case ProfileContentSection.settings:
+        return _ProfileSettingsContent(
+          profile: _profile,
+          onBack: () => _setSection(ProfileContentSection.profile),
+          onSectionSelected: _setSection,
+        );
     }
+  }
+}
+
+class FriendProfileScreen extends StatefulWidget {
+  const FriendProfileScreen({
+    super.key,
+    required this.userID,
+    required this.displayName,
+    this.initialRelation,
+  });
+
+  final String userID;
+  final String displayName;
+  final FriendshipRelation? initialRelation;
+
+  @override
+  State<FriendProfileScreen> createState() => _FriendProfileScreenState();
+}
+
+class _FriendProfileScreenState extends State<FriendProfileScreen> {
+  late final ProfileRepository _profileRepository;
+  late final FriendshipRepository _friendshipRepository;
+  late final ChatRepository _chatRepository;
+  ProfileUser? _profile;
+  CurrentFriendshipUser? _currentUser;
+  FriendshipRelation? _relation;
+  bool _isLoading = true;
+  bool _isBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final graphql = context.read<GraphQLRepository>();
+    _profileRepository = ProfileRepository(graphql);
+    _friendshipRepository = FriendshipRepository(graphql);
+    _chatRepository = ChatRepository(graphql);
+    _relation = widget.initialRelation;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void didUpdateWidget(covariant FriendProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userID != widget.userID ||
+        oldWidget.initialRelation != widget.initialRelation) {
+      _relation = widget.initialRelation;
+      if (oldWidget.userID != widget.userID) {
+        _profile = null;
+        _isLoading = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+      }
+    }
+  }
+
+  Future<void> _load() async {
+    try {
+      final values = await Future.wait<Object>([
+        _profileRepository.getUserProfile(widget.userID),
+        _friendshipRepository.getCurrentUser(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _profile = values[0] as ProfileUser;
+        _currentUser = values[1] as CurrentFriendshipUser;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+    }
+  }
+
+  Future<void> _changeFriendship() async {
+    final currentUser = _currentUser;
+    if (_isBusy || currentUser == null) return;
+    setState(() => _isBusy = true);
+    try {
+      switch (_relation) {
+        case FriendshipRelation.accepted:
+          await _friendshipRepository.removeFriend(widget.userID);
+          if (mounted) setState(() => _relation = null);
+          break;
+        case FriendshipRelation.outgoingPending:
+          await _friendshipRepository.cancelFriendRequest(widget.userID);
+          if (mounted) setState(() => _relation = null);
+          break;
+        case FriendshipRelation.incomingPending:
+          await _friendshipRepository.acceptFriendRequest(
+            currentUserID: currentUser.id,
+            targetUserID: widget.userID,
+          );
+          if (mounted) setState(() => _relation = FriendshipRelation.accepted);
+          break;
+        case null:
+          await _friendshipRepository.sendFriendRequest(
+            currentUserID: currentUser.id,
+            targetUserID: widget.userID,
+          );
+          if (mounted) {
+            setState(() => _relation = FriendshipRelation.outgoingPending);
+          }
+          break;
+      }
+    } catch (error) {
+      if (mounted) {
+        showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+      }
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  Future<void> _openChat() async {
+    final currentUser = _currentUser;
+    if (_isBusy ||
+        currentUser == null ||
+        _relation != FriendshipRelation.accepted) {
+      return;
+    }
+    setState(() => _isBusy = true);
+    try {
+      final chatID = await _chatRepository.createDirectChat(widget.userID);
+      if (!mounted) return;
+      await context.to(
+        ChatRoomScreen(
+          chatID: chatID,
+          currentUserID: currentUser.id,
+          targetUserID: widget.userID,
+          title: _profile?.displayName ?? widget.displayName,
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+      }
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  String get _actionTitle => switch (_relation) {
+        FriendshipRelation.accepted => 'لغو دوستی',
+        FriendshipRelation.incomingPending => 'تایید درخواست',
+        FriendshipRelation.outgoingPending => 'لغو درخواست',
+        null => 'درخواست دوستی',
+      };
+
+  bool get _isDestructiveAction =>
+      _relation == FriendshipRelation.accepted ||
+      _relation == FriendshipRelation.outgoingPending;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomNavigationScaffold(
+      currentIndex: 4,
+      onTap: (index) => navigateToIndex(context, index),
+      body: ColoredBox(
+        color: AppColors.white,
+        child: SafeArea(
+          bottom: false,
+          child: ColoredBox(
+            color: AppColors.gray1,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator.adaptive())
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _FriendProfileHeader(
+                          title: _profile?.displayName ?? widget.displayName,
+                          onBack: () => Navigator.of(context).pop(),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+                          child: ReButton(
+                            key: const ValueKey('friendship-action'),
+                            text: _actionTitle,
+                            icon: _isDestructiveAction
+                                ? SolarIconsOutline.userMinus
+                                : SolarIconsOutline.userPlus,
+                            reverseIconPosition: true,
+                            isLoading: _isBusy,
+                            isOutlined: _isDestructiveAction,
+                            background: _isDestructiveAction
+                                ? AppColors.white
+                                : AppColors.secondary,
+                            textColor: _isDestructiveAction
+                                ? AppColors.black1
+                                : AppColors.white,
+                            color: _isDestructiveAction
+                                ? AppColors.gray2
+                                : AppColors.secondary,
+                            onPressed: _changeFriendship,
+                            height: 52,
+                            borderRadius: 100,
+                          ),
+                        ),
+                        _FriendProfileSummaryCard(
+                          profile: _profile,
+                          relation: _relation,
+                          onChat: _openChat,
+                        ),
+                        _ProfileInfoSections(
+                          profile: _profile,
+                          canEdit: false,
+                        ),
+                        const _AchievementsSection(),
+                        _ProfileStatusSection(profile: _profile),
+                        if (_relation != FriendshipRelation.accepted)
+                          const _SuggestedProfilesSection(
+                            isRefreshing: false,
+                            onRefresh: _noop,
+                          ),
+                        const SizedBox(height: 26),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendProfileHeader extends StatelessWidget {
+  const _FriendProfileHeader({required this.title, required this.onBack});
+
+  final String title;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 14, 18, 10),
+      color: AppColors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Icon(
+            SolarIconsOutline.menuDots,
+            color: AppColors.black1,
+            size: 22,
+          ),
+          Row(
+            textDirection: TextDirection.rtl,
+            children: [
+              GestureDetector(
+                onTap: onBack,
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.gray,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const ClipOval(
+                child: ReImage(
+                  'assets/images/sample_profile.png',
+                  width: 46,
+                  height: 46,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ReText(
+                    title,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.simoCoin,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const ReText(
+                      'کاربر ویژه',
+                      color: AppColors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendProfileSummaryCard extends StatelessWidget {
+  const _FriendProfileSummaryCard({
+    required this.profile,
+    required this.relation,
+    required this.onChat,
+  });
+
+  final ProfileUser? profile;
+  final FriendshipRelation? relation;
+  final VoidCallback onChat;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: _ProfileMetricCard(
+                  value: '3×',
+                  label: 'ضریب امتیاز',
+                  color: Color(0xFFFF3040),
+                  icon: Icons.local_fire_department_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ProfileMetricCard(
+                  value: '${profile?.simoCoins ?? 36}',
+                  label: 'سیموکوین',
+                  color: const Color(0xFFFFC94C),
+                  icon: Icons.generating_tokens_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _RoundProfileAction(
+                icon: Icons.sports_martial_arts_rounded,
+                color: AppColors.errorColor,
+                onTap: _noop,
+              ),
+              const SizedBox(width: 8),
+              _RoundProfileAction(
+                icon: SolarIconsBold.chatRound,
+                color: AppColors.secondary,
+                onTap: relation == FriendshipRelation.accepted ? onChat : _noop,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.gray1,
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ReText(
+                        '+33',
+                        color: AppColors.secondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      SizedBox(width: 8),
+                      _MiniAvatarStack(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundProfileAction extends StatelessWidget {
+  const _RoundProfileAction({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: color, size: 19),
+      ),
+    );
   }
 }
 
 class _ProfileHomeContent extends StatelessWidget {
   const _ProfileHomeContent({
+    required this.profile,
+    required this.isRefreshing,
+    required this.onRefresh,
+    required this.onOpenAccountDetails,
+    required this.onOpenSettings,
     required this.onSectionSelected,
   });
 
+  final ProfileUser? profile;
+  final bool isRefreshing;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenAccountDetails;
+  final VoidCallback onOpenSettings;
   final ValueChanged<ProfileContentSection> onSectionSelected;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
           Container(
@@ -130,19 +638,819 @@ class _ProfileHomeContent extends StatelessWidget {
                   selectedSection: ProfileContentSection.profile,
                   onSectionSelected: onSectionSelected,
                 ).tMargin(20).hMargin(36),
-                const _ProfileSummaryCard(),
+                _SelfProfileSummaryCard(
+                  profile: profile,
+                  onSettings: onOpenSettings,
+                  onFriends: () =>
+                      onSectionSelected(ProfileContentSection.friends),
+                ),
               ],
-            ).bMargin(12),
+            ).bMargin(10),
           ),
-          Column(
+          _ProfileInfoSections(
+            profile: profile,
+            canEdit: true,
+            onEditBiography: onOpenAccountDetails,
+            onEditInterests: () => showReToast(
+              context,
+              'ویرایش علایق به‌زودی اضافه می‌شود',
+              ReToastType.info,
+            ),
+          ),
+          _SuggestedProfilesSection(
+            isRefreshing: isRefreshing,
+            onRefresh: onRefresh,
+          ),
+          const _AchievementsSection(),
+          _ProfileStatusSection(profile: profile),
+          const SizedBox(height: 26),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelfProfileSummaryCard extends StatelessWidget {
+  const _SelfProfileSummaryCard({
+    required this.profile,
+    required this.onSettings,
+    required this.onFriends,
+  });
+
+  final ProfileUser? profile;
+  final VoidCallback onSettings;
+  final VoidCallback onFriends;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              GestureDetector(
+                key: const ValueKey('open-profile-settings'),
+                onTap: onSettings,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    SolarIconsOutline.settings,
+                    size: 20,
+                    color: AppColors.black1,
+                  ),
+                ),
+              ),
               Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  ClipOval(
+                    child: const ReImage(
+                      'assets/images/sample_profile.png',
+                      width: 50,
+                      height: 50,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ReText(
+                        profile?.displayName ?? 'علیرضا یوسفی',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.simoCoin,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ReText(
+                              'کاربر ویژه',
+                              color: AppColors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            SizedBox(width: 3),
+                            Icon(
+                              SolarIconsOutline.stars,
+                              color: AppColors.white,
+                              size: 12,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Expanded(
+                child: _ProfileMetricCard(
+                  value: '3×',
+                  label: 'ضریب امتیاز',
+                  color: Color(0xFFFF3040),
+                  icon: Icons.local_fire_department_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ProfileMetricCard(
+                  value: '${profile?.simoCoins ?? 36}',
+                  label: 'سیموکوین',
+                  color: const Color(0xFFFFC94C),
+                  icon: Icons.generating_tokens_rounded,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            key: const ValueKey('open-friends-list'),
+            onTap: onFriends,
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.gray2),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 11,
+                          color: AppColors.gray,
+                        ),
+                        SizedBox(width: 7),
+                        ReText(
+                          'دوستان',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Row(
+                    children: [
+                      ReText(
+                        '+33',
+                        color: AppColors.secondary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      SizedBox(width: 8),
+                      _MiniAvatarStack(),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniAvatarStack extends StatelessWidget {
+  const _MiniAvatarStack();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 46,
+      height: 34,
+      child: Stack(
+        children: [
+          for (var index = 0; index < 3; index++)
+            Positioned(
+              right: index * 10,
+              child: Container(
+                width: 32,
+                height: 32,
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: index == 0 ? AppColors.secondary : AppColors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: index == 0
+                    ? const Icon(
+                        SolarIconsBold.usersGroupRounded,
+                        color: AppColors.white,
+                        size: 15,
+                      )
+                    : const ClipOval(
+                        child: ReImage(
+                          'assets/images/sample_profile.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileInfoSections extends StatelessWidget {
+  const _ProfileInfoSections({
+    required this.profile,
+    required this.canEdit,
+    this.onEditBiography,
+    this.onEditInterests,
+  });
+
+  final ProfileUser? profile;
+  final bool canEdit;
+  final VoidCallback? onEditBiography;
+  final VoidCallback? onEditInterests;
+
+  @override
+  Widget build(BuildContext context) {
+    final interests = profile?.interests.isNotEmpty == true
+        ? profile!.interests
+        : const ['ریاضی', 'ورزش', 'هنر'];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(36, 20, 36, 18),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(38),
+          bottomRight: Radius.circular(38),
+        ),
+      ),
+      child: Column(
+        children: [
+          _ProfileSectionHeading(
+            title: 'بیوگرافی',
+            icon: SolarIconsOutline.infoCircle,
+            actionText: canEdit ? 'ویرایش' : null,
+            actionKey: canEdit ? const ValueKey('open-account-details') : null,
+            onAction: onEditBiography,
+          ),
+          ReText(
+            profile?.bio?.trim().isNotEmpty == true
+                ? profile!.bio!.trim()
+                : 'سلام! ${profile?.displayName ?? 'علیرضا یوسفی'} هستم. دانش آموز رشته ریاضی فیزیک! از مدرسه خواجه نصیر شهرستان چهرم.',
+            color: AppColors.gray,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
+            lineHeight: 1.7,
+            maxLines: 3,
+          ).tMargin(10),
+          Divider(color: AppColors.gray2, height: 30),
+          _ProfileSectionHeading(
+            title: 'علاقه مندی ها',
+            icon: SolarIconsOutline.heart,
+            iconColor: AppColors.errorColor,
+            actionText: canEdit ? 'ویرایش' : null,
+            onAction: onEditInterests,
+          ),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 7,
+            children: [
+              for (final interest in interests)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: AppColors.gray2),
+                  ),
+                  child: ReText(
+                    '#$interest',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ).tMargin(10),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileSectionHeading extends StatelessWidget {
+  const _ProfileSectionHeading({
+    required this.title,
+    required this.icon,
+    this.iconColor = AppColors.secondary,
+    this.actionText,
+    this.actionKey,
+    this.onAction,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final String? actionText;
+  final Key? actionKey;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (actionText != null)
+          GestureDetector(
+            key: actionKey,
+            onTap: onAction,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    SolarIconsOutline.pen,
+                    size: 13,
+                    color: AppColors.gray,
+                  ),
+                  const SizedBox(width: 6),
+                  ReText(
+                    actionText!,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          const SizedBox.shrink(),
+        Row(
+          children: [
+            ReText(
+              title,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+            const SizedBox(width: 7),
+            Icon(icon, color: iconColor, size: 17),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestedProfilesSection extends StatelessWidget {
+  const _SuggestedProfilesSection({
+    required this.isRefreshing,
+    required this.onRefresh,
+  });
+
+  final bool isRefreshing;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 8),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 36),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _OutlinedProfileAction(
+                  title: 'بروزرسانی',
+                  icon: Icons.refresh_rounded,
+                  onTap: isRefreshing ? () {} : onRefresh,
+                ),
+                const ReText(
+                  'پیشنهادی',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 180,
+            child: ListView.separated(
+              reverse: true,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, index) => _SuggestedProfileCard(index: index),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestedProfileCard extends StatelessWidget {
+  const _SuggestedProfileCard({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          ClipOval(
+            child: const ReImage(
+              'assets/images/sample_profile.png',
+              width: 48,
+              height: 48,
+            ),
+          ),
+          const SizedBox(height: 7),
+          ReText(
+            index.isEven ? 'علیرضا یوسفی' : 'علیرضا یوسفی',
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            textAlign: TextAlign.center,
+          ),
+          const Spacer(),
+          Container(
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.secondary,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const ReText(
+              'افزودن',
+              color: AppColors.white,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementsSection extends StatelessWidget {
+  const _AchievementsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    const achievements = [
+      ('۳ پیروزی در لیگ', '۳ بار پیروزی اول لیگ های مختلف را کسب کنید.'),
+      ('مدال وفاداری', 'یک سال فعالیت در سیمو'),
+      ('شکست ناپذیر', 'پیروزی در ۱۰ دوئل'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(36, 14, 36, 8),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const _OutlinedProfileAction(
+                title: 'مشاهده همه',
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: _noop,
+              ),
+              const ReText(
+                'دستاورد ها 33',
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (var index = 0; index < achievements.length; index++) ...[
+            _AchievementTile(
+              title: achievements[index].$1,
+              subtitle: achievements[index].$2,
+              icon: index == 0
+                  ? SolarIconsBold.cupFirst
+                  : index == 1
+                      ? SolarIconsBold.suitcase
+                      : SolarIconsBold.medalRibbonStar,
+            ),
+            if (index != achievements.length - 1) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  const _AchievementTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFD45F),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppColors.simoCoin, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  title,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                ),
+                ReText(
+                  subtitle,
+                  fontSize: 8.5,
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileStatusSection extends StatelessWidget {
+  const _ProfileStatusSection({required this.profile});
+
+  final ProfileUser? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(36, 18, 36, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          const ReText(
+            'خلاصه وضعیت',
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            childAspectRatio: 2.45,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const [
+              _ProfileStatusCard(
+                value: '+3333',
+                label: 'تسک انجام شده',
+                color: AppColors.done,
+                icon: Icons.check_rounded,
+              ),
+              _ProfileStatusCard(
+                value: '13 روز',
+                label: 'شرکت در لیگ',
+                color: AppColors.secondary,
+                icon: SolarIconsBold.cupFirst,
+              ),
+              _ProfileStatusCard(
+                value: '+880',
+                label: 'مجموع تمرکز',
+                color: AppColors.primary,
+                icon: Icons.timer_rounded,
+              ),
+              _ProfileStatusCard(
+                value: '+117',
+                label: 'چالش انجام شده',
+                color: AppColors.simoCoin,
+                icon: Icons.check_rounded,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileStatusCard extends StatelessWidget {
+  const _ProfileStatusCard({
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: AppColors.white, size: 19),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  value,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.black1,
+                ),
+                ReText(
+                  label,
+                  fontSize: 8,
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _noop() {}
+
+class _ProfileSettingsContent extends StatefulWidget {
+  const _ProfileSettingsContent({
+    required this.profile,
+    required this.onBack,
+    required this.onSectionSelected,
+  });
+
+  final ProfileUser? profile;
+  final VoidCallback onBack;
+  final ValueChanged<ProfileContentSection> onSectionSelected;
+
+  @override
+  State<_ProfileSettingsContent> createState() =>
+      _ProfileSettingsContentState();
+}
+
+class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
+  static const _notificationsKey = 'profile_notifications_enabled';
+  static const _newsKey = 'profile_news_enabled';
+
+  bool _notificationsEnabled = true;
+  bool _newsEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadSettings());
+  }
+
+  Future<void> _loadSettings() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _notificationsEnabled = preferences.getBool(_notificationsKey) ?? true;
+      _newsEnabled = preferences.getBool(_newsKey) ?? false;
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      _notificationsEnabled = true;
+      _newsEnabled = false;
+    });
+  }
+
+  Future<void> _save() async {
+    final preferences = await SharedPreferences.getInstance();
+    await Future.wait([
+      preferences.setBool(_notificationsKey, _notificationsEnabled),
+      preferences.setBool(_newsKey, _newsEnabled),
+    ]);
+    if (!mounted) return;
+    showReToast(context, 'تنظیمات ذخیره شد', ReToastType.success);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          _ProfileTopCard(
+            profile: widget.profile,
+            selectedSection: ProfileContentSection.settings,
+            onSectionSelected: widget.onSectionSelected,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(36, 24, 36, 18),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: _reset,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 10,
+                      vertical: 9,
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(100),
@@ -152,66 +1460,629 @@ class _ProfileHomeContent extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.replay_rounded,
-                          size: 15,
+                          size: 16,
+                          color: AppColors.gray,
                         ),
-                        ReText('بروزرسانی'),
+                        SizedBox(width: 8),
+                        ReText(
+                          'بازگشت به پیش فرض',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ],
                     ),
                   ),
-                  const ReText(
-                    'حساب کاربری',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                ),
+                const ReText(
+                  'تنظیمات',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 36),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.035),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _SettingsRow(
+                  title: 'اعلان ها',
+                  subtitle: 'نمایش یا عدم نمایش اعلان ها',
+                  trailing: _SettingsToggle(
+                    value: _notificationsEnabled,
+                    onChanged: (value) =>
+                        setState(() => _notificationsEnabled = value),
                   ),
-                ],
-              ).hMargin(16).tMargin(20).bMargin(10),
-              _ProfileItem(
-                title: 'اشتراک ویژه',
-                icon: SolarIconsOutline.user,
-                itemColor: AppColors.secondary,
-                onTap: () {},
-              ),
-              _ProfileItem(
-                title: 'مشخصات حساب',
-                icon: SolarIconsOutline.user,
-                itemColor: AppColors.secondary,
-                onTap: () {},
-              ).vMargin(12),
-              _ProfileItem(
-                title: 'تنظیمات',
-                icon: SolarIconsOutline.settings,
-                itemColor: AppColors.secondary,
-                onTap: () {},
-              ),
-              Row(
-                children: [
-                  Flexible(
-                    child: _ProfileItem(
-                      title: 'پشتیبانی',
-                      icon: SolarIconsOutline.headphonesRound,
-                      itemColor: AppColors.black1,
-                      onTap: () {},
+                ),
+                const SizedBox(height: 10),
+                _SettingsRow(
+                  title: 'اخبار ها',
+                  subtitle: 'نمایش یا عدم نمایش اعلان ها',
+                  trailing: _SettingsToggle(
+                    value: _newsEnabled,
+                    onChanged: (value) => setState(() => _newsEnabled = value),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const _SettingsRow(
+                  title: 'نسخه 1.0.0',
+                  subtitle: 'نسخه اپلیکیشن',
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SettingsActionButton(
+                        title: 'ذخیره',
+                        icon: SolarIconsOutline.checkSquare,
+                        isPrimary: true,
+                        onTap: _save,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    flex: 0,
-                    child: _ProfileItem(
-                      title: 'خروج',
-                      icon: SolarIconsOutline.logout,
-                      itemColor: AppColors.errorColor,
-                      onTap: () {
-                        unawaited(context.read<AuthCubit>().logout());
-                      },
-                      showSuffixIcon: false,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SettingsActionButton(
+                        title: 'لغو تغییرات',
+                        icon: Icons.close_rounded,
+                        onTap: widget.onBack,
+                      ),
                     ),
-                  ),
-                ],
-              ).vMargin(12),
-            ],
-          ).hMargin(36),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+}
+
+class _AccountDetailsContent extends StatefulWidget {
+  const _AccountDetailsContent({
+    required this.profile,
+    required this.onBack,
+    required this.onSectionSelected,
+    required this.onSave,
+  });
+
+  final ProfileUser? profile;
+  final VoidCallback onBack;
+  final ValueChanged<ProfileContentSection> onSectionSelected;
+  final Future<ProfileUser> Function({
+    required String fullName,
+    required String username,
+    required DateTime birthDate,
+  }) onSave;
+
+  @override
+  State<_AccountDetailsContent> createState() => _AccountDetailsContentState();
+}
+
+class _AccountDetailsContentState extends State<_AccountDetailsContent> {
+  late final TextEditingController _fullNameController;
+  late final TextEditingController _usernameController;
+  late final UsernameRepository _usernameRepository;
+  DateTime? _birthDate;
+  String? _fullNameError;
+  String? _usernameError;
+  String? _birthDateError;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fullNameController = TextEditingController();
+    _usernameController = TextEditingController();
+    _usernameRepository = UsernameRepository(context.read<GraphQLRepository>());
+    _applyProfile(widget.profile);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AccountDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profile == null && widget.profile != null) {
+      _applyProfile(widget.profile);
+    }
+  }
+
+  void _applyProfile(ProfileUser? profile) {
+    if (profile == null) return;
+    _fullNameController.text = profile.fullName ?? '';
+    _usernameController.text = profile.username;
+    _birthDate = profile.birthDate?.toLocal();
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _usernameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickBirthDate() async {
+    final initialDate =
+        _birthDate == null ? Jalali.now() : Jalali.fromDateTime(_birthDate!);
+    final selected = await showReModalBottomSheet<Jalali>(
+      context: context,
+      isScrollControlled: false,
+      builder: (_) => BirthDatePickerBottomSheet(initialDate: initialDate),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _birthDate = selected.toGregorian().toDateTime();
+      _birthDateError = null;
+    });
+  }
+
+  Future<void> _save() async {
+    if (_isSaving) return;
+    final fullName = _fullNameController.text.trim();
+    final username = _usernameController.text.trim();
+    final birthDate = _birthDate;
+
+    setState(() {
+      _fullNameError = isValidPersianFullName(fullName)
+          ? null
+          : 'نام و نام خانوادگی را به فارسی وارد کنید.';
+      _usernameError =
+          username.length >= 3 && hasValidUsernameCharacters(username)
+              ? null
+              : 'نام کاربری باید حداقل ۳ حرف انگلیسی، عدد یا _ باشد.';
+      _birthDateError = birthDate == null ? 'تاریخ تولد را انتخاب کنید.' : null;
+    });
+    if (_fullNameError != null ||
+        _usernameError != null ||
+        _birthDateError != null) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      if (username != widget.profile?.username) {
+        final availability =
+            await _usernameRepository.checkUsernameAvailability(username);
+        if (!availability.available) {
+          if (!mounted) return;
+          setState(() {
+            _usernameError = availability.suggestion == null
+                ? 'این نام کاربری قبلاً انتخاب شده است.'
+                : 'این نام کاربری آزاد نیست؛ پیشنهاد: ${availability.suggestion}';
+          });
+          return;
+        }
+      }
+
+      final updated = await widget.onSave(
+        fullName: fullName,
+        username: username,
+        birthDate: birthDate!,
+      );
+      if (!mounted) return;
+      _applyProfile(updated);
+      showReToast(context, 'مشخصات حساب ذخیره شد', ReToastType.success);
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  String get _birthDateLabel {
+    final date = _birthDate;
+    if (date == null) return 'تاریخ تولد';
+    final jalali = Jalali.fromDateTime(date);
+    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/'
+        '${jalali.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        children: [
+          _ProfileTopCard(
+            profile: widget.profile,
+            selectedSection: ProfileContentSection.accountDetails,
+            onSectionSelected: widget.onSectionSelected,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(36, 24, 36, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _OutlinedProfileAction(
+                  title: 'بازگشت',
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: widget.onBack,
+                ),
+                const ReText(
+                  'مشخصات حساب',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 36),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              children: [
+                _ProfileFieldLabel(
+                  title: 'نام و نام خانوادگی',
+                  error: _fullNameError,
+                  child: ReTextField(
+                    key: const ValueKey('profile-full-name-field'),
+                    controller: _fullNameController,
+                    placeholder: 'نام و نام خانوادگی',
+                    maxLength: 80,
+                    backgroundColor: AppColors.gray1,
+                    onChanged: (_) => setState(() => _fullNameError = null),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ProfileFieldLabel(
+                  title: 'تاریخ تولد',
+                  error: _birthDateError,
+                  child: GestureDetector(
+                    key: const ValueKey('profile-birth-date-field'),
+                    onTap: _pickBirthDate,
+                    child: Container(
+                      height: 55,
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      decoration: BoxDecoration(
+                        color: AppColors.gray1,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Icon(
+                            SolarIconsOutline.calendar,
+                            color: AppColors.gray,
+                            size: 20,
+                          ),
+                          ReText(
+                            _birthDateLabel,
+                            color: _birthDate == null
+                                ? AppColors.gray
+                                : AppColors.black1,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ProfileFieldLabel(
+                  title: 'نام کاربری',
+                  error: _usernameError,
+                  child: ReTextField(
+                    key: const ValueKey('profile-username-field'),
+                    controller: _usernameController,
+                    placeholder: 'نام کاربری',
+                    inputTextAlign: TextAlign.left,
+                    placeholderAlign: TextAlign.left,
+                    textInputAction: TextInputAction.done,
+                    maxLength: 30,
+                    backgroundColor: AppColors.gray1,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'[A-Za-z0-9_]'),
+                      ),
+                      LengthLimitingTextInputFormatter(30),
+                    ],
+                    onChanged: (_) => setState(() => _usernameError = null),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ReButton(
+                        text: 'ذخیره',
+                        icon: SolarIconsOutline.checkSquare,
+                        reverseIconPosition: true,
+                        isLoading: _isSaving,
+                        onPressed: _save,
+                        height: 50,
+                        borderRadius: 100,
+                        background: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ReButton(
+                        text: 'لغو تغییرات',
+                        icon: Icons.close_rounded,
+                        reverseIconPosition: true,
+                        onPressed: widget.onBack,
+                        height: 50,
+                        borderRadius: 100,
+                        isOutlined: true,
+                        background: AppColors.white,
+                        color: AppColors.gray2,
+                        textColor: AppColors.black1,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileTopCard extends StatelessWidget {
+  const _ProfileTopCard({
+    required this.profile,
+    required this.selectedSection,
+    required this.onSectionSelected,
+  });
+
+  final ProfileUser? profile;
+  final ProfileContentSection selectedSection;
+  final ValueChanged<ProfileContentSection> onSectionSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(42),
+          bottomRight: Radius.circular(42),
+        ),
+      ),
+      child: Column(
+        children: [
+          _ProfileHeader(
+            title: 'پروفایل',
+            selectedSection: selectedSection,
+            onSectionSelected: onSectionSelected,
+          ).tMargin(20).hMargin(36),
+          _ProfileSummaryCard(profile: profile),
+        ],
+      ).bMargin(12),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      child: Row(
+        children: [
+          if (trailing != null) trailing!,
+          if (trailing != null) const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  title,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+                const SizedBox(height: 3),
+                ReText(
+                  subtitle,
+                  fontSize: 11.5,
+                  color: AppColors.gray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsToggle extends StatelessWidget {
+  const _SettingsToggle({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 50,
+        height: 30,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 180),
+          alignment: value ? Alignment.centerLeft : Alignment.centerRight,
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: value ? AppColors.primary : AppColors.white,
+              shape: BoxShape.circle,
+              border: value ? null : Border.all(color: AppColors.gray),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsActionButton extends StatelessWidget {
+  const _SettingsActionButton({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color:
+              isPrimary ? AppColors.primary.withOpacity(0.10) : AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: isPrimary
+                ? AppColors.primary.withOpacity(0.08)
+                : AppColors.gray2,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isPrimary ? AppColors.primary : AppColors.gray,
+            ),
+            const SizedBox(width: 8),
+            ReText(
+              title,
+              color: isPrimary ? AppColors.primary : AppColors.black1,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlinedProfileAction extends StatelessWidget {
+  const _OutlinedProfileAction({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: AppColors.gray),
+            const SizedBox(width: 7),
+            ReText(
+              title,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileFieldLabel extends StatelessWidget {
+  const _ProfileFieldLabel({
+    required this.title,
+    required this.child,
+    this.error,
+  });
+
+  final String title;
+  final Widget child;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        ReText(
+          title,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ).bMargin(7),
+        child,
+        if (error != null)
+          ReText(
+            error!,
+            color: AppColors.errorColor,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            maxLines: 2,
+          ).tMargin(5),
+      ],
     );
   }
 }
@@ -236,6 +2107,8 @@ class _FriendsContentState extends State<_FriendsContent>
   StreamSubscription<InboxEvent>? _eventSubscription;
   var _friends = <FriendshipItem>[];
   final _activityByUserID = <String, UserActivity>{};
+  final _unreadByUserID = <String, int>{};
+  final _chatUserByChatID = <String, String>{};
   CurrentFriendshipUser? _currentUser;
   Timer? _refreshTimer;
   String? _error;
@@ -281,16 +2154,57 @@ class _FriendsContentState extends State<_FriendsContent>
 
   void _startInboxSubscription() {
     _eventSubscription = _inboxClient.events.listen((event) {
-      if (event is! UserActivityInboxEvent || event.userID.isEmpty) return;
       if (!mounted) return;
-      setState(() {
-        _activityByUserID[event.userID] = UserActivity(
-          isOnline: event.isOnline,
-          currentTaskName: event.currentTaskName,
-        );
-      });
+
+      if (event is UserActivityInboxEvent) {
+        if (event.userID.isEmpty) return;
+        setState(() {
+          _activityByUserID[event.userID] = UserActivity(
+            isOnline: event.isOnline,
+            currentTaskName: event.currentTaskName,
+          );
+        });
+        return;
+      }
+
+      if (event is NewMessageInboxEvent) {
+        _handleNewMessageEvent(event.message);
+        return;
+      }
+
+      if (event is MessageSeenInboxEvent) {
+        _handleMessageSeenEvent(event);
+      }
     });
     _inboxClient.connect();
+  }
+
+  void _handleNewMessageEvent(ChatMessage message) {
+    final currentUserID = _currentUser?.id;
+    if (currentUserID == null || message.senderID == currentUserID) return;
+    final isAcceptedFriend = _friends.any(
+      (friend) =>
+          friend.relation == FriendshipRelation.accepted &&
+          friend.targetUserID == message.senderID,
+    );
+    if (!isAcceptedFriend) return;
+
+    setState(() {
+      _chatUserByChatID[message.chatID] = message.senderID;
+      _unreadByUserID[message.senderID] =
+          (_unreadByUserID[message.senderID] ?? 0) + 1;
+    });
+  }
+
+  void _handleMessageSeenEvent(MessageSeenInboxEvent event) {
+    final currentUserID = _currentUser?.id;
+    if (currentUserID == null || event.userID != currentUserID) return;
+    final targetUserID = _chatUserByChatID[event.chatID];
+    if (targetUserID == null) return;
+
+    setState(() {
+      _unreadByUserID.remove(targetUserID);
+    });
   }
 
   Future<void> _loadFriendships({bool silent = false}) async {
@@ -320,6 +2234,13 @@ class _FriendsContentState extends State<_FriendsContent>
           for (final friendship in friendships)
             friendship.copyWith(isExpanded: friendship.id == expandedID),
         ];
+        final acceptedIDs = friendships
+            .where((friend) => friend.relation == FriendshipRelation.accepted)
+            .map((friend) => friend.targetUserID)
+            .toSet();
+        _unreadByUserID.removeWhere(
+          (userID, _) => !acceptedIDs.contains(userID),
+        );
         _isLoading = false;
       });
     } catch (error) {
@@ -454,11 +2375,17 @@ class _FriendsContentState extends State<_FriendsContent>
       return;
     }
 
-    setState(() => _busyTargetID = friend.targetUserID);
+    setState(() {
+      _busyTargetID = friend.targetUserID;
+      _unreadByUserID.remove(friend.targetUserID);
+    });
     try {
       final chatID =
           await _chatRepository.createDirectChat(friend.targetUserID);
       if (!mounted) return;
+      setState(() {
+        _chatUserByChatID[chatID] = friend.targetUserID;
+      });
       await context.to(
         ChatRoomScreen(
           chatID: chatID,
@@ -475,6 +2402,17 @@ class _FriendsContentState extends State<_FriendsContent>
       setState(() => _busyTargetID = null);
       showReToast(context, _friendlyProfileError(error), ReToastType.failed);
     }
+  }
+
+  Future<void> _openFriendProfile(FriendshipItem friend) async {
+    await context.to(
+      FriendProfileScreen(
+        userID: friend.targetUserID,
+        displayName: friend.targetUser.displayName,
+        initialRelation: friend.relation,
+      ),
+    );
+    if (mounted) await _loadFriendships(silent: true);
   }
 
   Future<void> _runFriendAction(
@@ -639,7 +2577,9 @@ class _FriendsContentState extends State<_FriendsContent>
           activity: _activityByUserID[friend.targetUserID],
           isBusy: _busyTargetID == friend.targetUserID,
           onTap: () => _toggleFriend(friend),
+          onOpenProfile: () => _openFriendProfile(friend),
           onMessage: () => _openChat(friend),
+          unreadCount: _unreadByUserID[friend.targetUserID] ?? 0,
           onAccept: () => _acceptFriend(friend),
           onReject: () => _rejectFriend(friend),
           onCancel: () => _cancelFriend(friend),
@@ -749,8 +2689,10 @@ class _FriendTile extends StatelessWidget {
   const _FriendTile({
     required this.friend,
     required this.activity,
+    required this.unreadCount,
     required this.isBusy,
     required this.onTap,
+    required this.onOpenProfile,
     required this.onMessage,
     required this.onAccept,
     required this.onReject,
@@ -760,8 +2702,10 @@ class _FriendTile extends StatelessWidget {
 
   final FriendshipItem friend;
   final UserActivity? activity;
+  final int unreadCount;
   final bool isBusy;
   final VoidCallback onTap;
+  final VoidCallback onOpenProfile;
   final VoidCallback onMessage;
   final VoidCallback onAccept;
   final VoidCallback onReject;
@@ -791,6 +2735,7 @@ class _FriendTile extends StatelessWidget {
             friend: friend,
             activity: activity,
             onTap: onTap,
+            onOpenProfile: onOpenProfile,
           ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
@@ -798,6 +2743,7 @@ class _FriendTile extends StatelessWidget {
                 ? _FriendActions(
                     key: const ValueKey('friend-actions'),
                     friend: friend,
+                    unreadCount: unreadCount,
                     isBusy: isBusy,
                     onMessage: onMessage,
                     onAccept: onAccept,
@@ -818,11 +2764,13 @@ class _FriendTileHeader extends StatelessWidget {
     required this.friend,
     required this.activity,
     required this.onTap,
+    required this.onOpenProfile,
   });
 
   final FriendshipItem friend;
   final UserActivity? activity;
   final VoidCallback onTap;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -858,41 +2806,45 @@ class _FriendTileHeader extends StatelessWidget {
               ),
             ),
           ),
-          Row(
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  ReText(
-                    friend.targetUser.displayName,
-                    color: AppColors.black1,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  if (username != null && friend.targetUser.hasFullName)
+          GestureDetector(
+            onTap: onOpenProfile,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     ReText(
-                      username,
-                      color: AppColors.black1.withOpacity(0.5),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      isPersian: false,
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.right,
-                    ).tMargin(1),
-                  SizedBox(
-                    child: ReText(
-                      _friendStatusText(friend, activity),
-                      color: _friendStatusColor(friend, activity),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      textAlign: TextAlign.end,
+                      friend.targetUser.displayName,
+                      color: AppColors.black1,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
                     ),
-                  ).tMargin(2),
-                ],
-              ).rMargin(9),
-              const _FriendAvatar(path: 'assets/images/sample_profile.png'),
-            ],
+                    if (username != null && friend.targetUser.hasFullName)
+                      ReText(
+                        username,
+                        color: AppColors.black1.withOpacity(0.5),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        isPersian: false,
+                        textDirection: TextDirection.ltr,
+                        textAlign: TextAlign.right,
+                      ).tMargin(1),
+                    SizedBox(
+                      child: ReText(
+                        _friendStatusText(friend, activity),
+                        color: _friendStatusColor(friend, activity),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        textAlign: TextAlign.end,
+                      ),
+                    ).tMargin(2),
+                  ],
+                ).rMargin(9),
+                const _FriendAvatar(path: 'assets/images/sample_profile.png'),
+              ],
+            ),
           ),
         ],
       ),
@@ -934,6 +2886,7 @@ class _FriendActions extends StatelessWidget {
   const _FriendActions({
     super.key,
     required this.friend,
+    required this.unreadCount,
     required this.isBusy,
     required this.onMessage,
     required this.onAccept,
@@ -943,6 +2896,7 @@ class _FriendActions extends StatelessWidget {
   });
 
   final FriendshipItem friend;
+  final int unreadCount;
   final bool isBusy;
   final VoidCallback onMessage;
   final VoidCallback onAccept;
@@ -962,7 +2916,7 @@ class _FriendActions extends StatelessWidget {
     final actions = switch (friend.relation) {
       FriendshipRelation.accepted => [
           _FriendActionSpec(
-            title: 'پیام1',
+            title: _messageActionTitle(unreadCount),
             icon: SolarIconsBold.chatRound,
             color: AppColors.secondary,
             onTap: onMessage,
@@ -1031,6 +2985,12 @@ class _FriendActionSpec {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+}
+
+String _messageActionTitle(int unreadCount) {
+  if (unreadCount <= 0) return 'پیام';
+  final label = unreadCount > 99 ? '99+' : '$unreadCount';
+  return 'پیام $label';
 }
 
 String _friendStatusText(FriendshipItem friend, UserActivity? activity) {
@@ -1496,66 +3456,78 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
     final isSelf = user.id == widget.currentUserID;
     final isDisabled = isSelf || status != null;
     final isSubmitting = _submittingUserID == user.id;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 96,
-            child: ReButton(
-              text: status ?? 'ارسال درخواست',
-              onPressed: isDisabled || _submittingUserID != null
-                  ? null
-                  : () => _submit(user),
-              isLoading: isSubmitting,
-              background: isDisabled ? AppColors.gray2 : AppColors.primary,
-              height: 38,
-              borderRadius: 16,
-              fontSize: 10,
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ReText(
-                  user.displayName,
-                  color: AppColors.black1,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  maxLines: 1,
+    return GestureDetector(
+      onTap: isSelf
+          ? null
+          : () => context.to(
+                FriendProfileScreen(
+                  userID: user.id,
+                  displayName: user.displayName,
+                  initialRelation: _relationFor(user.id),
                 ),
-                ReText(
-                  '@${user.username}',
-                  color: AppColors.black1.withOpacity(0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  textAlign: TextAlign.left,
-                  isPersian: false,
-                  maxLines: 1,
-                ).tMargin(2),
-              ],
+              ),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 96,
+              child: ReButton(
+                text: status ?? 'ارسال درخواست',
+                onPressed: isDisabled || _submittingUserID != null
+                    ? null
+                    : () => _submit(user),
+                isLoading: isSubmitting,
+                background: isDisabled ? AppColors.gray2 : AppColors.primary,
+                height: 38,
+                borderRadius: 16,
+                fontSize: 10,
+              ),
             ),
-          ),
-          Container(
-            width: 42,
-            height: 42,
-            margin: const EdgeInsets.only(left: 10),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(100),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ReText(
+                    user.displayName,
+                    color: AppColors.black1,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    maxLines: 1,
+                  ),
+                  ReText(
+                    '@${user.username}',
+                    color: AppColors.black1.withOpacity(0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    textAlign: TextAlign.left,
+                    isPersian: false,
+                    maxLines: 1,
+                  ).tMargin(2),
+                ],
+              ),
             ),
-            child: const Icon(
-              SolarIconsOutline.user,
-              color: AppColors.secondary,
-              size: 20,
+            Container(
+              width: 42,
+              height: 42,
+              margin: const EdgeInsets.only(left: 10),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: const Icon(
+                SolarIconsOutline.user,
+                color: AppColors.secondary,
+                size: 20,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1756,6 +3728,10 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isProfilePage =
+        selectedSection == ProfileContentSection.accountDetails ||
+            selectedSection == ProfileContentSection.settings;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1769,19 +3745,21 @@ class _ProfileHeader extends StatelessWidget {
               onTap: onSectionSelected,
               showBadge: true,
             ),
-            _HeaderActionIcon(
-              icon: SolarIconsOutline.chatRound,
-              section: ProfileContentSection.friends,
-              selectedSection: selectedSection,
-              onTap: onSectionSelected,
-              showBadge: true,
-            ),
-            _HeaderActionIcon(
-              icon: SolarIconsOutline.cupFirst,
-              section: ProfileContentSection.competition,
-              selectedSection: selectedSection,
-              onTap: onSectionSelected,
-            ),
+            if (!isProfilePage) ...[
+              _HeaderActionIcon(
+                icon: SolarIconsOutline.chatRound,
+                section: ProfileContentSection.friends,
+                selectedSection: selectedSection,
+                onTap: onSectionSelected,
+                showBadge: true,
+              ),
+              _HeaderActionIcon(
+                icon: Icons.sports_martial_arts_rounded,
+                section: ProfileContentSection.competition,
+                selectedSection: selectedSection,
+                onTap: onSectionSelected,
+              ),
+            ],
           ],
         ),
         ReText(
@@ -1854,12 +3832,18 @@ class _HeaderActionIcon extends StatelessWidget {
 }
 
 class _ProfileSummaryCard extends StatelessWidget {
-  const _ProfileSummaryCard();
+  const _ProfileSummaryCard({required this.profile});
+
+  final ProfileUser? profile;
 
   @override
   Widget build(BuildContext context) {
+    final isPremium = profile?.isPremium ?? true;
+    final simoCoins = profile?.simoCoins ?? 36;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16).copyWith(top: 15),
+      padding: const EdgeInsets.fromLTRB(10, 16, 10, 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         color: AppColors.gray1,
@@ -1867,206 +3851,179 @@ class _ProfileSummaryCard extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            textDirection: TextDirection.rtl,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const ReText(
-                    'علیرضا یوسفی',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Row(
-                        children: [
-                          ReText(
-                            'تا پایان اشتراک ویژه',
-                            color: AppColors.black1,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                          ),
-                          ReText(
-                            '24 روز',
-                            color: AppColors.black1,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                          ),
-                        ],
-                      ).rMargin(4),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.simoCoin,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: const Row(
-                          children: [
-                            ReText(
-                              'کاربر ویژه',
-                              fontSize: 14,
-                              color: AppColors.white,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            SizedBox(width: 2),
-                            Icon(
-                              SolarIconsOutline.stars,
-                              size: 15,
-                              color: AppColors.white,
-                            ),
-                          ],
-                        ).hMargin(8).vMargin(2),
-                      ),
-                    ],
-                  ).tMargin(5),
-                ],
-              ).rMargin(16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: const ReImage(
                   'assets/images/sample_profile.png',
-                  width: 50,
-                  height: 50,
+                  width: 56,
+                  height: 56,
                 ),
-              ).rMargin(16).vMargin(16),
-            ],
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
-              color: AppColors.white,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(left: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: AppColors.gray2),
-                  ),
-                  child: const Icon(
-                    SolarIconsOutline.infoCircle,
-                    size: 20,
-                  ).vMargin(4).hMargin(4),
-                ),
-                Row(
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    ReText(
+                      profile?.displayName ?? 'علیرضا یوسفی',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Row(
-                          children: [
-                            ReText(
-                              '36',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              isBold: true,
-                            ),
-                            ReText(
-                              '79.',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ],
-                        ).rMargin(8),
-                        const ReText(
-                          'سایموکوین',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.black1,
+                        ReText(
+                          '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه',
+                          color: AppColors.gray,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11.5,
+                        ),
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.simoCoin,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ReText(
+                                isPremium ? 'کاربر ویژه' : 'کاربر عادی',
+                                fontSize: 11.5,
+                                color: AppColors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                SolarIconsOutline.stars,
+                                size: 14,
+                                color: AppColors.white,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    ).rMargin(4),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: AppColors.simoCoin.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                        color: AppColors.simoCoin,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
                     ),
                   ],
-                ).hMargin(16).vMargin(10),
-              ],
-            ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Expanded(
+                child: _ProfileMetricCard(
+                  value: '3×',
+                  label: 'ضریب امتیاز',
+                  color: Color(0xFFFF3040),
+                  icon: Icons.local_fire_department_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ProfileMetricCard(
+                  value: '$simoCoins',
+                  label: 'سیموکوین',
+                  color: const Color(0xFFFFC94C),
+                  icon: Icons.generating_tokens_rounded,
+                ),
+              ),
+            ],
           ),
         ],
-      ).bMargin(12).hMargin(10),
+      ),
     );
   }
 }
 
-class _ProfileItem extends StatelessWidget {
-  const _ProfileItem({
-    required this.title,
+class _ProfileMetricCard extends StatelessWidget {
+  const _ProfileMetricCard({
+    required this.value,
+    required this.label,
+    required this.color,
     required this.icon,
-    required this.itemColor,
-    required this.onTap,
-    this.showSuffixIcon = true,
   });
 
-  final String title;
+  final String value;
+  final String label;
+  final Color color;
   final IconData icon;
-  final Color itemColor;
-  final VoidCallback onTap;
-  final bool showSuffixIcon;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 26),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(100),
-          color: AppColors.white,
-        ),
-        child: Row(
-          mainAxisAlignment: showSuffixIcon
-              ? MainAxisAlignment.spaceBetween
-              : MainAxisAlignment.end,
-          children: [
-            if (showSuffixIcon)
-              Icon(
-                Icons.arrow_back_ios,
-                size: 16,
-                color: itemColor,
+    return Container(
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 27,
+            height: 27,
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.gray2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              SolarIconsOutline.infoCircle,
+              size: 15,
+              color: AppColors.black1,
+            ),
+          ),
+          const Spacer(),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ReText(
+                value,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
               ),
-            Row(
-              children: [
-                ReText(
-                  title,
-                  color: AppColors.black1,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ).rMargin(10),
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: itemColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: itemColor,
-                    size: 16,
-                  ),
+              ReText(
+                label,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                color: AppColors.gray,
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.28),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-          ],
-        ),
+            child: Icon(icon, color: AppColors.white, size: 21),
+          ),
+        ],
       ),
     );
   }
@@ -2077,126 +4034,11 @@ class _FriendsEmptyIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _FriendsEmptyIllustrationPainter(),
-      size: Size.infinite,
+    return const ReImage(
+      'assets/images/empty_list_friends.png',
+      fit: BoxFit.contain,
     );
   }
-}
-
-class _FriendsEmptyIllustrationPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.width / 190;
-    canvas.save();
-    canvas.scale(scale);
-
-    final navy = Paint()
-      ..color = AppColors.black1
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.1
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final blue = Paint()
-      ..color = AppColors.secondary
-      ..style = PaintingStyle.fill;
-    final orange = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.fill;
-    final white = Paint()
-      ..color = AppColors.white
-      ..style = PaintingStyle.fill;
-    final darkFill = Paint()
-      ..color = AppColors.black1
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(const Offset(94, 74), 42, navy);
-    canvas.drawLine(const Offset(66, 45), const Offset(121, 104), navy);
-    canvas.drawLine(const Offset(125, 37), const Offset(94, 74), navy);
-    canvas.drawCircle(const Offset(127, 30), 4, navy);
-
-    final leftHand = Path()
-      ..moveTo(42, 75)
-      ..cubicTo(58, 80, 66, 89, 72, 104)
-      ..cubicTo(58, 102, 50, 95, 42, 84)
-      ..cubicTo(38, 80, 38, 76, 42, 75)
-      ..moveTo(72, 104)
-      ..cubicTo(78, 100, 83, 93, 86, 84);
-    canvas.drawPath(leftHand, white);
-    canvas.drawPath(leftHand, navy);
-
-    final rightHand = Path()
-      ..moveTo(141, 84)
-      ..cubicTo(128, 88, 117, 97, 111, 111)
-      ..cubicTo(126, 109, 138, 101, 146, 91)
-      ..cubicTo(150, 86, 147, 82, 141, 84)
-      ..moveTo(111, 111)
-      ..cubicTo(103, 105, 99, 98, 96, 90);
-    canvas.drawPath(rightHand, white);
-    canvas.drawPath(rightHand, navy);
-
-    final speaker = Path()
-      ..moveTo(34, 40)
-      ..lineTo(54, 31)
-      ..lineTo(55, 63)
-      ..lineTo(35, 55)
-      ..close();
-    canvas.drawPath(speaker, orange);
-    canvas.drawPath(speaker, navy);
-    canvas.drawRect(const Rect.fromLTWH(26, 43, 13, 23), orange);
-    canvas.drawRect(const Rect.fromLTWH(26, 43, 13, 23), navy);
-    canvas.drawLine(const Offset(28, 68), const Offset(21, 90), navy);
-    canvas.drawLine(const Offset(34, 68), const Offset(39, 87), navy);
-
-    final sleeve = Path()
-      ..moveTo(143, 109)
-      ..lineTo(174, 126)
-      ..lineTo(163, 150)
-      ..lineTo(128, 126)
-      ..close();
-    canvas.drawPath(sleeve, darkFill);
-    canvas.drawPath(sleeve, navy);
-
-    final cuff = Path()
-      ..moveTo(127, 126)
-      ..lineTo(141, 137)
-      ..lineTo(135, 146);
-    canvas.drawPath(cuff, blue);
-
-    canvas.drawCircle(const Offset(158, 124), 2, blue);
-    canvas.drawCircle(const Offset(150, 134), 2, blue);
-    canvas.drawCircle(const Offset(43, 24), 3, orange);
-    canvas.drawCircle(const Offset(143, 68), 4, blue);
-    canvas.drawCircle(const Offset(157, 72), 3, blue);
-    canvas.drawLine(const Offset(58, 18), const Offset(68, 31), navy);
-    canvas.drawLine(const Offset(73, 18), const Offset(75, 33), navy);
-
-    final flag1 = Path()
-      ..moveTo(72, 12)
-      ..lineTo(82, 23)
-      ..lineTo(82, 6)
-      ..close();
-    final flag2 = Path()
-      ..moveTo(90, 13)
-      ..lineTo(101, 22)
-      ..lineTo(102, 6)
-      ..close();
-    canvas.drawPath(flag1, orange);
-    canvas.drawPath(flag1, navy);
-    canvas.drawPath(flag2, orange);
-    canvas.drawPath(flag2, navy);
-
-    canvas.drawLine(const Offset(46, 128), const Offset(39, 139), navy);
-    canvas.drawCircle(const Offset(36, 143), 4, navy);
-    canvas.drawLine(const Offset(75, 130), const Offset(69, 145), navy);
-    canvas.drawCircle(const Offset(64, 148), 5, navy);
-    canvas.drawLine(const Offset(88, 125), const Offset(87, 138), navy);
-    canvas.drawLine(const Offset(100, 124), const Offset(107, 136), navy);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 String _friendlyProfileError(Object error) {

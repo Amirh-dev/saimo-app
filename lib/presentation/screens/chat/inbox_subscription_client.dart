@@ -222,6 +222,17 @@ class InboxSubscriptionClient {
         final event = _inboxEventFromPayload(payload);
         _logInbox('raw event typename=${event?.typename ?? 'null'}');
         if (event != null) {
+          if (event
+              case MessageSeenInboxEvent(
+                :final chatID,
+                :final userID,
+                :final readAt,
+              )) {
+            _logInbox(
+              'MessageSeenEvent parsed chatID=$chatID '
+              'userID=$userID readAt=$readAt',
+            );
+          }
           _emitStatus(InboxConnectionStatus.connected);
           try {
             // Keep Ferry's normalized history current even when no chat room
@@ -447,6 +458,11 @@ subscription Inbox {
     ... on MessageDeletedEvent {
       messageID
       chatID
+    }
+    ... on MessageSeenEvent {
+      chatID
+      userID
+      readAt
     }
     ... on UserActivityEvent {
       userID

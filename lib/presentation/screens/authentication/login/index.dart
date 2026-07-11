@@ -97,9 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     color: AppColors.gray2,
                                     textColor: AppColors.black1,
                                     background: AppColors.white,
-                                    isEnabled:
-                                        phoneController.text.length == 11,
-                                    onPressed: _sendOtp,
+                                    isEnabled: !isLoading,
+                                    onPressed: _startRegistration,
                                     fontSize: 16,
                                     text: 'ثبت نام',
                                   ).tMargin(8),
@@ -140,5 +139,9 @@ class _LoginScreenState extends State<LoginScreen> {
     context.read<AuthCubit>().sendOtp(
           _normalizeDigits(phoneController.text),
         );
+  }
+
+  void _startRegistration() {
+    context.read<AuthCubit>().startRegistration();
   }
 }

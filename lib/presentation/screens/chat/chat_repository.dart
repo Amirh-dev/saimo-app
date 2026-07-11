@@ -174,6 +174,16 @@ class ChatRepository {
     throw const GraphQLRawException('حذف پیام ناموفق بود');
   }
 
+  Future<String> markChatRead({required String chatID}) async {
+    final data = await _graphql.rawRequest(
+      query: _markChatReadMutation,
+      variables: {'chatID': chatID},
+    );
+    final readAt = data['markChatRead']?.toString();
+    if (readAt != null && readAt.isNotEmpty) return readAt;
+    throw const GraphQLRawException('ثبت خواندن گفتگو ناموفق بود');
+  }
+
   void applyInboxEventToCache(
     InboxEvent event, {
     int limit = 30,
@@ -216,6 +226,7 @@ class ChatRepository {
           );
         }
         break;
+      case MessageSeenInboxEvent():
       case UserActivityInboxEvent():
       case UnknownInboxEvent():
         break;
@@ -337,3 +348,9 @@ class ChatMessageBatch {
   final List<ChatMessage> messages;
   final DataSource source;
 }
+
+const String _markChatReadMutation = r'''
+mutation MarkChatRead($chatID: UUID!) {
+  markChatRead(chatID: $chatID)
+}
+''';
