@@ -1,4 +1,4 @@
-package com.example.simo_learn
+package app.ravi.saimo
 
 import io.flutter.embedding.android.FlutterActivity
 

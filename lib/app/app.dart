@@ -3,12 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/routes.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
+import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/index.dart';
+import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
+import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
+import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -161,7 +167,9 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     with WidgetsBindingObserver {
   late final AuthCubit _authCubit;
   late final InboxSubscriptionClient _inboxClient;
+  late final ChatRepository _chatRepository;
   StreamSubscription<AuthState>? _authSubscription;
+  StreamSubscription<InboxEvent>? _inboxEventSubscription;
   bool _isAuthenticated = false;
 
   @override
@@ -170,6 +178,12 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     WidgetsBinding.instance.addObserver(this);
     _authCubit = context.read<AuthCubit>();
     _inboxClient = context.read<InboxSubscriptionClient>();
+    _chatRepository = ChatRepository(context.read<GraphQLRepository>());
+    // Tapping a notification (from any app state) brings the user to chat.
+    NotificationService.instance.onOpenChat = _openChatFromNotification;
+    // Surface a notification for every new message that arrives over the live
+    // socket while the user is not reading that exact conversation.
+    _inboxEventSubscription = _inboxClient.events.listen(_handleInboxEvent);
     _handleAuthState(_authCubit.state);
     _authSubscription = _authCubit.stream.listen(_handleAuthState);
   }
@@ -178,20 +192,64 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _authSubscription?.cancel();
+    _inboxEventSubscription?.cancel();
     unawaited(_inboxClient.dispose());
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    ActiveChatTracker.instance.appInForeground =
+        state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed && _isAuthenticated) {
       unawaited(_inboxClient.connect(force: true));
+    }
+  }
+
+  void _handleInboxEvent(InboxEvent event) {
+    if (event is! NewMessageInboxEvent) return;
+    final message = event.message;
+    if (message.content.trim().isEmpty) return;
+    if (!ActiveChatTracker.instance.shouldNotifyForMessageFrom(
+      message.senderID,
+    )) {
+      return;
+    }
+
+    final senderName =
+        ActiveChatTracker.instance.displayNameFor(message.senderID);
+    unawaited(
+      NotificationService.instance.showMessageNotification(
+        title: senderName ?? 'پیام جدید',
+        body: message.content,
+        senderID: message.senderID,
+        chatID: message.chatID,
+      ),
+    );
+  }
+
+  void _openChatFromNotification(String? senderID) {
+    final navigator = _rootNavigatorKey.currentState;
+    if (navigator == null) return;
+    navigator.push<void>(
+      MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
+    );
+  }
+
+  Future<void> _resolveCurrentUser() async {
+    if (ActiveChatTracker.instance.currentUserID != null) return;
+    try {
+      final userID = await _chatRepository.getCurrentUserID();
+      ActiveChatTracker.instance.currentUserID = userID;
+    } catch (_) {
+      // Best-effort; self-message filtering also happens on the chat screen.
     }
   }
 
   void _handleAuthState(AuthState state) {
     if (state is AuthAuthenticated) {
       _isAuthenticated = true;
+      unawaited(_resolveCurrentUser());
       unawaited(
           _inboxClient.connect(force: state.action == AuthAction.refresh));
       return;

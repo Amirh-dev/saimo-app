@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -158,6 +159,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         offset: 0,
       );
       if (!mounted) return;
+      _cacheContactsForNotifications(currentUserID, contacts);
       setState(() {
         _currentUserID = currentUserID;
         _contacts = contacts;
@@ -200,6 +202,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         offset: _contacts.length,
       );
       if (!mounted) return;
+      _cacheContactsForNotifications(currentUserID, more);
       setState(() {
         final existingIDs =
             _contacts.map((contact) => contact.targetUserID).toSet();
@@ -310,9 +313,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     return null;
   }
 
+  /// Feeds the global notification tracker so message notifications can name
+  /// the sender and be suppressed only for the conversation on screen.
+  void _cacheContactsForNotifications(
+    String currentUserID,
+    List<ChatContact> contacts,
+  ) {
+    ActiveChatTracker.instance.currentUserID = currentUserID;
+    ActiveChatTracker.instance.cacheDisplayNames({
+      for (final contact in contacts)
+        contact.targetUserID: contact.displayName,
+    });
+  }
+
   Future<void> _openChat(ChatContact contact) async {
     if (contact.isPending || _openingUserID != null) return;
 
+    ActiveChatTracker.instance.openConversation(contact.targetUserID);
     setState(() {
       _openingUserID = contact.targetUserID;
       _activeChatUserID = contact.targetUserID;
@@ -322,7 +339,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       final chatID = await _chatRepository.createDirectChat(
         contact.targetUserID,
       );
-      if (!mounted) return;
+      if (!mounted) {
+        ActiveChatTracker.instance.closeConversation();
+        return;
+      }
       setState(() {
         _chatUserByChatID[chatID] = contact.targetUserID;
       });
@@ -334,6 +354,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           title: contact.displayName,
         ),
       );
+      // Conversation dismissed: message notifications for this user resume.
+      ActiveChatTracker.instance.closeConversation();
       if (mounted) {
         setState(() {
           _openingUserID = null;
@@ -342,6 +364,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         });
       }
     } catch (error) {
+      ActiveChatTracker.instance.closeConversation();
       if (!mounted) return;
       setState(() {
         _openingUserID = null;

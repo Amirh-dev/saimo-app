@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
@@ -663,9 +664,82 @@ class _ProfileHomeContent extends StatelessWidget {
           ),
           const _AchievementsSection(),
           _ProfileStatusSection(profile: profile),
+          const _FcmTokenTile(),
           const SizedBox(height: 26),
         ],
       ),
+    );
+  }
+}
+
+/// Developer/QA helper: shows this device's FCM token and copies it to the
+/// clipboard on tap, so it can be pasted into the Firebase console's
+/// "Send test message" flow to verify push delivery.
+class _FcmTokenTile extends StatelessWidget {
+  const _FcmTokenTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: NotificationService.instance.tokenNotifier,
+      builder: (context, token, _) {
+        final hasToken = token != null && token.isNotEmpty;
+        return GestureDetector(
+          onTap: hasToken
+              ? () async {
+                  await Clipboard.setData(ClipboardData(text: token));
+                  if (!context.mounted) return;
+                  showReToast(
+                    context,
+                    'توکن نوتیفیکیشن کپی شد',
+                    ReToastType.success,
+                  );
+                }
+              : null,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.gray1),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  hasToken ? SolarIconsOutline.copy : SolarIconsOutline.bell,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ReText(
+                        'توکن نوتیفیکیشن (برای تست)',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: AppColors.black1,
+                      ),
+                      const SizedBox(height: 4),
+                      ReText(
+                        token == null || token.isEmpty
+                            ? 'در حال دریافت توکن نوتیفیکیشن…'
+                            : token,
+                        fontSize: 11,
+                        color: AppColors.gray,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
