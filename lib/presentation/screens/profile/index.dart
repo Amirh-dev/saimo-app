@@ -2,6 +2,7 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
+import 'package:simo_learn/presentation/screens/consultants/intro_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -2379,6 +2381,10 @@ class _FriendsContentState extends State<_FriendsContent>
     showReToast(context, 'درخواست دوستی ارسال شد', ReToastType.success);
   }
 
+  Future<void> _openConsultants() async {
+    await context.to(const ConsultantIntroScreen());
+  }
+
   Future<String?> _sendFriendRequest(UsernameSearchUser user) async {
     final currentUser = _currentUser;
     if (currentUser == null) return 'اطلاعات حساب کاربری در دسترس نیست.';
@@ -2572,9 +2578,10 @@ class _FriendsContentState extends State<_FriendsContent>
     return Column(
       children: [
         _FriendsTopPanel(
-          onAddFriend: _openAddFriendSheet,
+          onSearch: _openAddFriendSheet,
           onSectionSelected: widget.onSectionSelected,
         ),
+        _ConsultationEntry(onTap: _openConsultants),
         Expanded(child: _buildBody()),
       ],
     );
@@ -2662,23 +2669,29 @@ class _FriendsContentState extends State<_FriendsContent>
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(36, 22, 36, 28),
+        padding: const EdgeInsets.fromLTRB(36, 8, 36, 28),
         children: [
           ..._buildFriendSection('درخواست‌های دریافتی', incoming),
           ..._buildFriendSection('درخواست‌های ارسال‌شده', outgoing),
-          ..._buildFriendSection('دوستان', accepted),
+          ..._buildFriendSection(
+            'دوستان',
+            accepted,
+            showFriendsHeading: true,
+          ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildFriendSection(
-    String title,
-    List<FriendshipItem> items,
-  ) {
-    if (items.isEmpty) return const [];
+  List<Widget> _buildFriendSection(String title, List<FriendshipItem> items,
+      {bool showFriendsHeading = false}) {
+    if (items.isEmpty && !showFriendsHeading) return const [];
     return [
-      _FriendSectionTitle(title: title),
+      _FriendSectionTitle(
+        title: title,
+        count: items.length,
+        showIcon: showFriendsHeading,
+      ),
       for (final friend in items) ...[
         _FriendTile(
           friend: friend,
@@ -2693,28 +2706,62 @@ class _FriendsContentState extends State<_FriendsContent>
           onCancel: () => _cancelFriend(friend),
           onDelete: () => _removeFriend(friend),
         ),
-        const SizedBox(height: 12),
+        Divider(
+            height: 1, thickness: 1, color: AppColors.gray2.withOpacity(.7)),
       ],
-      const SizedBox(height: 8),
+      const SizedBox(height: 18),
     ];
   }
 }
 
 class _FriendSectionTitle extends StatelessWidget {
-  const _FriendSectionTitle({required this.title});
+  const _FriendSectionTitle({
+    required this.title,
+    required this.count,
+    this.showIcon = false,
+  });
 
   final String title;
+  final int count;
+  final bool showIcon;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: ReText(
-        title,
-        color: AppColors.black1.withOpacity(0.65),
-        fontSize: 12,
-        fontWeight: FontWeight.w800,
-        textAlign: TextAlign.right,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Row(
+        children: [
+          if (showIcon) ...[
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(.1),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: const Icon(
+                SolarIconsBold.usersGroupRounded,
+                color: AppColors.secondary,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          ReText(
+            title,
+            color: AppColors.black1,
+            fontSize: showIcon ? 16 : 12,
+            fontWeight: FontWeight.w900,
+            textAlign: TextAlign.right,
+          ),
+          const SizedBox(width: 8),
+          ReText(
+            convertToPersianNumbers(count.toString()),
+            color: AppColors.black1.withOpacity(.45),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ],
       ),
     ).bMargin(10);
   }
@@ -2825,23 +2872,13 @@ class _FriendTile extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
-      padding: EdgeInsets.fromLTRB(8, 7, 8, friend.isExpanded ? 10 : 7),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(34),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(friend.isExpanded ? 0.08 : 0.04),
-            blurRadius: friend.isExpanded ? 24 : 18,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.fromLTRB(0, 6, 0, friend.isExpanded ? 10 : 6),
       child: Column(
         children: [
           _FriendTileHeader(
             friend: friend,
             activity: activity,
+            unreadCount: unreadCount,
             onTap: onTap,
             onOpenProfile: onOpenProfile,
           ),
@@ -2871,12 +2908,14 @@ class _FriendTileHeader extends StatelessWidget {
   const _FriendTileHeader({
     required this.friend,
     required this.activity,
+    required this.unreadCount,
     required this.onTap,
     required this.onOpenProfile,
   });
 
   final FriendshipItem friend;
   final UserActivity? activity;
+  final int unreadCount;
   final VoidCallback onTap;
   final VoidCallback onOpenProfile;
 
@@ -2884,33 +2923,47 @@ class _FriendTileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final username = friend.targetUser.usernameLabel;
     return SizedBox(
-      height: username != null && friend.targetUser.hasFullName ? 62 : 50,
+      height: 66,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
             onTap: onTap,
             behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 42,
+            child: SizedBox(
+              width: 52,
               height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
+              child: Row(
+                children: [
+                  Icon(
+                    friend.isExpanded
+                        ? SolarIconsOutline.altArrowUp
+                        : SolarIconsOutline.altArrowLeft,
+                    color: AppColors.black1.withOpacity(0.45),
+                    size: 16,
                   ),
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 24),
+                      height: 24,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: ReText(
+                        convertToPersianNumbers(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        ),
+                        color: AppColors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ],
-              ),
-              child: Icon(
-                friend.isExpanded
-                    ? SolarIconsOutline.altArrowUp
-                    : SolarIconsOutline.altArrowDown,
-                color: AppColors.black1.withOpacity(0.5),
-                size: 17,
               ),
             ),
           ),
@@ -2950,7 +3003,10 @@ class _FriendTileHeader extends StatelessWidget {
                     ).tMargin(2),
                   ],
                 ).rMargin(9),
-                const _FriendAvatar(path: 'assets/images/sample_profile.png'),
+                _FriendAvatar(
+                  path: 'assets/images/sample_profile.png',
+                  isOnline: activity?.isOnline == true,
+                ),
               ],
             ),
           ),
@@ -2963,30 +3019,215 @@ class _FriendTileHeader extends StatelessWidget {
 class _FriendAvatar extends StatelessWidget {
   const _FriendAvatar({
     required this.path,
+    required this.isOnline,
   });
 
   final String path;
+  final bool isOnline;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 54,
+      height: 54,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: ReImage(path, fit: BoxFit.cover),
+            ),
+          ),
+          if (isOnline)
+            Positioned(
+              top: -1,
+              right: 2,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConsultationEntry extends StatelessWidget {
+  const _ConsultationEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(36, 22, 36, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              children: [
+                _ConsultationIcon(),
+                SizedBox(width: 8),
+                ReText(
+                  'مشاور',
+                  color: AppColors.black1,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            key: const ValueKey('open-consultants'),
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: CustomPaint(
+              painter: _DashedRoundedBorderPainter(
+                color: AppColors.black1.withOpacity(.18),
+                radius: 30,
+              ),
+              child: SizedBox(
+                height: 76,
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          SolarIconsOutline.userSpeak,
+                          color: AppColors.primary,
+                          size: 28,
+                        ),
+                      ),
+                      const Expanded(
+                        child: ReText(
+                          'هنوز مشاوری انتخاب نکردی!',
+                          color: AppColors.black1,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ),
+                      Container(
+                        height: 46,
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withOpacity(.035),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const ReText(
+                              'انتخاب',
+                              color: AppColors.black1,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              SolarIconsOutline.altArrowLeft,
+                              color: AppColors.black1.withOpacity(.45),
+                              size: 14,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConsultationIcon extends StatelessWidget {
+  const _ConsultationIcon();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 46,
-      height: 46,
-      padding: const EdgeInsets.all(2),
+      width: 30,
+      height: 30,
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(100),
+        color: AppColors.primary.withOpacity(.1),
+        borderRadius: BorderRadius.circular(9),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(100),
-        child: ReImage(
-          path,
-          width: 42,
-          height: 42,
-          fit: BoxFit.cover,
-        ),
+      child: const Icon(
+        SolarIconsOutline.userSpeak,
+        color: AppColors.primary,
+        size: 18,
       ),
     );
+  }
+}
+
+class _DashedRoundedBorderPainter extends CustomPainter {
+  const _DashedRoundedBorderPainter({
+    required this.color,
+    required this.radius,
+  });
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(radius),
+        ),
+      );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final end = math.min(distance + 5, metric.length);
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance += 9;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRoundedBorderPainter oldDelegate) {
+    return color != oldDelegate.color || radius != oldDelegate.radius;
   }
 }
 
@@ -3732,50 +3973,24 @@ class _SimpleProfileContent extends StatelessWidget {
 
 class _FriendsTopPanel extends StatelessWidget {
   const _FriendsTopPanel({
-    required this.onAddFriend,
+    required this.onSearch,
     required this.onSectionSelected,
   });
 
-  final VoidCallback onAddFriend;
+  final VoidCallback onSearch;
   final ValueChanged<ProfileContentSection> onSectionSelected;
 
   @override
   Widget build(BuildContext context) {
     return _ProfileSectionTopPanel(
-      title: 'دوستان',
+      title: 'پیام‌ها',
       selectedSection: ProfileContentSection.friends,
       onSectionSelected: onSectionSelected,
-      bottom: Row(
-        children: [
-          GestureDetector(
-            onTap: onAddFriend,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.secondary.withOpacity(0.28),
-                    blurRadius: 14,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                SolarIconsOutline.userPlus,
-                color: AppColors.white,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: ReSearchPill(),
-          ),
-        ],
-      ).hMargin(24).tMargin(18),
+      bottom: ReSearchPill(
+        onTap: onSearch,
+        height: 56,
+        horizontalPadding: 22,
+      ).hMargin(36).tMargin(18),
     );
   }
 }
@@ -3904,7 +4119,7 @@ class _HeaderActionIcon extends StatelessWidget {
         height: 40,
         margin: const EdgeInsets.only(right: 2),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.gray1 : Colors.transparent,
+          color: isSelected ? AppColors.black1 : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Stack(
@@ -3913,7 +4128,7 @@ class _HeaderActionIcon extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: AppColors.black1,
+              color: isSelected ? AppColors.white : AppColors.black1,
             ),
             if (showBadge)
               Positioned(
