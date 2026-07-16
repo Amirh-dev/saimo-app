@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -129,10 +130,14 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: AppColors.gray2),
                 ),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 22,
-                  color: AppColors.black1.withOpacity(0.5),
+                child: SvgPicture.asset(
+                  'assets/icons/Plus.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    AppColors.black1.withOpacity(0.5),
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),
@@ -185,18 +190,33 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
                   ),
                 ],
               ),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.percent_rounded,
-                  color: AppColors.white,
-                  size: 16,
-                ),
+              child: Stack(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icons/discount.svg',
+                    width: 24,
+                    height: 24,
+                  ),
+                  // Fakes the inset white highlight (Flutter has no real inset
+                  // shadow): a soft white top-glow clipped to the icon shape.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.center,
+                            colors: [
+                              Colors.white.withOpacity(0.20),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 12),
