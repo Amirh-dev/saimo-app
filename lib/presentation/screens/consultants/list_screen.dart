@@ -8,6 +8,7 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_repositor
 import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
+import 'package:simo_learn/presentation/screens/consultants/success_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -112,9 +113,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     // With sample data (no repo / not from API) there is nothing real to
     // submit; treat it as a successful mock so the preview flow still completes.
     if (repo == null || !_fromApi || consultant.id.isEmpty) {
-      messenger.showSnackBar(
-        _snack('درخواست مشاوره با موفقیت ثبت شد!'),
-      );
+      if (!mounted) return;
+      await showConsultationSuccessSheet(context, duration: duration, plan: plan);
       return;
     }
 
@@ -124,7 +124,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         durationMonths: duration.months,
         planType: plan.planType,
       );
-      messenger.showSnackBar(_snack('درخواست مشاوره با موفقیت ثبت شد!'));
+      if (!mounted) return;
+      await showConsultationSuccessSheet(context, duration: duration, plan: plan);
     } catch (e) {
       messenger.showSnackBar(_snack('ثبت درخواست ناموفق بود: $e', error: true));
     }
