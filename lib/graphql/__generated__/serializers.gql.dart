@@ -14,6 +14,7 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GCreateGoalInput,
         GCreateTaskInput,
         GCursor,
+        GDeviceTokenPlatform,
         GFriendshipStatus,
         GGoalOrder,
         GGoalOrderField,
@@ -73,6 +74,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql
     show GRefreshTokenReq;
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.var.gql.dart'
     show GRefreshTokenVars;
+import 'package:simo_learn/graphql/mutations/__generated__/register_device_token.data.gql.dart'
+    show GRegisterDeviceTokenData;
+import 'package:simo_learn/graphql/mutations/__generated__/register_device_token.req.gql.dart'
+    show GRegisterDeviceTokenReq;
+import 'package:simo_learn/graphql/mutations/__generated__/register_device_token.var.gql.dart'
+    show GRegisterDeviceTokenVars;
 import 'package:simo_learn/graphql/mutations/__generated__/send_message.data.gql.dart'
     show GSendMessageData, GSendMessageData_sendMessage;
 import 'package:simo_learn/graphql/mutations/__generated__/send_message.req.gql.dart'
@@ -85,6 +92,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart
     show GSendOTPReq;
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.var.gql.dart'
     show GSendOTPVars;
+import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.data.gql.dart'
+    show GUnregisterDeviceTokenData;
+import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.req.gql.dart'
+    show GUnregisterDeviceTokenReq;
+import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.var.gql.dart'
+    show GUnregisterDeviceTokenVars;
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.data.gql.dart'
     show
         GVerifyOTPAndLoginData,
@@ -164,6 +177,7 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GDeleteMessageData_deleteMessage,
   GDeleteMessageReq,
   GDeleteMessageVars,
+  GDeviceTokenPlatform,
   GFriendshipStatus,
   GGetChatMessagesData,
   GGetChatMessagesData_getChatMessages,
@@ -200,6 +214,9 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GRefreshTokenInput,
   GRefreshTokenReq,
   GRefreshTokenVars,
+  GRegisterDeviceTokenData,
+  GRegisterDeviceTokenReq,
+  GRegisterDeviceTokenVars,
   GSendMessageData,
   GSendMessageData_sendMessage,
   GSendMessageInput,
@@ -218,6 +235,9 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GTaskWhereInput,
   GTime,
   GUUID,
+  GUnregisterDeviceTokenData,
+  GUnregisterDeviceTokenReq,
+  GUnregisterDeviceTokenVars,
   GUpdateGoalInput,
   GUpdateProfileInput,
   GUpdateTaskInput,

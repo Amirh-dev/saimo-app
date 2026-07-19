@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
+import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
@@ -18,7 +19,7 @@ import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
-import 'package:simo_learn/presentation/screens/consultants/intro_screen.dart';
+import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -1620,10 +1621,101 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
               ],
             ),
           ),
+          const SizedBox(height: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 36),
+            child: ReButton(
+              text: 'خروج از حساب کاربری',
+              icon: Icons.logout_rounded,
+              isOutlined: true,
+              color: AppColors.errorColor,
+              textColor: AppColors.errorColor,
+              iconColor: AppColors.errorColor,
+              height: 52,
+              fontSize: 14,
+              onPressed: _confirmLogout,
+            ),
+          ),
           const SizedBox(height: 24),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout() async {
+    final authCubit = context.read<AuthCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.errorColor.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.errorColor,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const ReText(
+                'خروج از حساب کاربری',
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+              const SizedBox(height: 8),
+              const ReText(
+                'آیا از خروج از حساب کاربری خود مطمئن هستید؟',
+                fontSize: 12.5,
+                color: AppColors.gray,
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.w600,
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: ReButton(
+                      text: 'انصراف',
+                      isOutlined: true,
+                      color: AppColors.gray2,
+                      textColor: AppColors.black1,
+                      height: 48,
+                      fontSize: 13,
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ReButton(
+                      text: 'خروج',
+                      background: AppColors.errorColor,
+                      height: 48,
+                      fontSize: 13,
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed == true) {
+      await authCubit.logout();
+    }
   }
 }
 
@@ -2382,7 +2474,7 @@ class _FriendsContentState extends State<_FriendsContent>
   }
 
   Future<void> _openConsultants() async {
-    await context.to(const ConsultantIntroScreen());
+    await context.to(const ConsultantListScreen());
   }
 
   Future<String?> _sendFriendRequest(UsernameSearchUser user) async {

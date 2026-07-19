@@ -141,16 +141,55 @@ class _PlansSheetState extends State<_PlansSheet> {
 
   Widget _buildHeader() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        ReText(
+          '۲/۳',
+          color: AppColors.black1.withOpacity(0.5),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
         Row(
           children: [
-            ReText(
-              '۲/۳',
-              color: AppColors.black1.withOpacity(0.5),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  widget.title,
+                  color: AppColors.black1,
+                  fontSize: 18,
+                  fontWeight: 1000,
+                  isPersian: false,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ReText(
+                        widget.discount,
+                        color: AppColors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const ReText(
+                      'تخفیف روی همه پلن ها',
+                      color: AppColors.gray,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(width: 12),
             GestureDetector(
@@ -170,48 +209,6 @@ class _PlansSheetState extends State<_PlansSheet> {
                   size: 22,
                   color: AppColors.black1.withOpacity(0.5),
                 ),
-              ),
-            ),
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            ReText(
-              widget.title,
-              color: AppColors.black1,
-              fontSize: 18,
-              fontWeight: 1000,
-              isPersian: false,
-            ),
-            const SizedBox(height: 6),
-            Directionality(
-              textDirection: TextDirection.rtl,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ReText(
-                      widget.discount,
-                      color: AppColors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const ReText(
-                    'تخفیف روی همه پلن ها',
-                    color: AppColors.gray,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ],
               ),
             ),
           ],

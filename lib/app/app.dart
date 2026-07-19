@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
+import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
@@ -168,9 +169,11 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   late final AuthCubit _authCubit;
   late final InboxSubscriptionClient _inboxClient;
   late final ChatRepository _chatRepository;
+  late final DeviceTokenRepository _deviceTokenRepository;
   StreamSubscription<AuthState>? _authSubscription;
   StreamSubscription<InboxEvent>? _inboxEventSubscription;
   bool _isAuthenticated = false;
+  String? _registeredToken;
 
   @override
   void initState() {
@@ -178,9 +181,15 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     WidgetsBinding.instance.addObserver(this);
     _authCubit = context.read<AuthCubit>();
     _inboxClient = context.read<InboxSubscriptionClient>();
-    _chatRepository = ChatRepository(context.read<GraphQLRepository>());
+    final graphql = context.read<GraphQLRepository>();
+    _chatRepository = ChatRepository(graphql);
+    _deviceTokenRepository = DeviceTokenRepository(graphql);
     // Tapping a notification (from any app state) brings the user to chat.
     NotificationService.instance.onOpenChat = _openChatFromNotification;
+    // Register this device's FCM token with the backend so the server can push
+    // to it. Fires on first token fetch and on every refresh; registration only
+    // succeeds once authenticated, so [_handleAuthState] also retries on login.
+    NotificationService.instance.onToken = _registerDeviceToken;
     // Surface a notification for every new message that arrives over the live
     // socket while the user is not reading that exact conversation.
     _inboxEventSubscription = _inboxClient.events.listen(_handleInboxEvent);
@@ -229,11 +238,32 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   }
 
   void _openChatFromNotification(String? senderID) {
-    final navigator = _rootNavigatorKey.currentState;
-    if (navigator == null) return;
-    navigator.push<void>(
-      MaterialPageRoute<void>(builder: (_) => const ChatScreen()),
-    );
+    // Only navigate once logged in; otherwise stash the tap and open it after
+    // login (also covers a cold launch where the UI isn't mounted yet).
+    if (!_isAuthenticated) {
+      NotificationService.instance.setPendingOpenChat(senderID);
+      return;
+    }
+
+    // Defer to the next frame so the root navigator is guaranteed mounted
+    // (matters on cold launch, when this runs before the first build).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigator = _rootNavigatorKey.currentState;
+      if (navigator == null) {
+        NotificationService.instance.setPendingOpenChat(senderID);
+        return;
+      }
+      // Push the inbox with an auto-open target. The conversation opens on top
+      // of the inbox, so back goes room, inbox, then home.
+      navigator.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatScreen(
+            initialChatUserID:
+                (senderID != null && senderID.isNotEmpty) ? senderID : null,
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _resolveCurrentUser() async {
@@ -250,14 +280,52 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     if (state is AuthAuthenticated) {
       _isAuthenticated = true;
       unawaited(_resolveCurrentUser());
+      // The FCM token may have been fetched before login (when registration was
+      // skipped for lack of auth); register it now that we're authenticated.
+      final token = NotificationService.instance.currentToken;
+      if (token != null) unawaited(_registerDeviceToken(token));
+      // A notification tapped before login (or from a cold launch) is opened
+      // now that we're authenticated and can navigate.
+      NotificationService.instance
+          .consumePendingOpenChat(_openChatFromNotification);
       unawaited(
           _inboxClient.connect(force: state.action == AuthAction.refresh));
       return;
     }
 
+    // Logout is the last moment the access token is still valid, so drop this
+    // device's push registration before the session is torn down.
+    if (state is AuthLoading && state.action == AuthAction.logout) {
+      unawaited(_unregisterDeviceToken());
+    }
+
     if (_shouldDisconnectForAuthState(state)) {
       _isAuthenticated = false;
       unawaited(_inboxClient.disconnect());
+    }
+  }
+
+  /// Sends the FCM token to the backend. No-op until authenticated (login
+  /// retries via [_handleAuthState]) and when the token is already registered.
+  Future<void> _registerDeviceToken(String token) async {
+    if (!_isAuthenticated || token.isEmpty || token == _registeredToken) return;
+    try {
+      final accepted = await _deviceTokenRepository.register(token);
+      if (accepted) _registeredToken = token;
+    } catch (_) {
+      // Best-effort: a failed registration just means no push on this device
+      // until the next token refresh or login retries it.
+    }
+  }
+
+  Future<void> _unregisterDeviceToken() async {
+    final token = _registeredToken ?? NotificationService.instance.currentToken;
+    if (token == null || token.isEmpty) return;
+    _registeredToken = null;
+    try {
+      await _deviceTokenRepository.unregister(token);
+    } catch (_) {
+      // Best-effort; on failure the server prunes stale tokens on push failure.
     }
   }
 

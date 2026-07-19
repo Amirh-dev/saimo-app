@@ -71,6 +71,16 @@ type Mutation {
   rejectFriendRequest(targetUserID: UUID!): Boolean!
   cancelFriendRequest(targetUserID: UUID!): Boolean!
   removeFriend(targetUserID: UUID!): Boolean!
+  """Stores an FCM device token against the authenticated user for push."""
+  registerDeviceToken(token: String!, platform: DeviceTokenPlatform!): Boolean!
+  """Removes a previously registered FCM device token (e.g. on logout)."""
+  unregisterDeviceToken(token: String!): Boolean!
+}
+
+enum DeviceTokenPlatform {
+  ANDROID
+  IOS
+  WEB
 }
 
 """

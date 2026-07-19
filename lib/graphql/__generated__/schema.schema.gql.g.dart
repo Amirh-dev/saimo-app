@@ -6,6 +6,33 @@ part of 'schema.schema.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
+const GDeviceTokenPlatform _$gDeviceTokenPlatformANDROID =
+    const GDeviceTokenPlatform._('ANDROID');
+const GDeviceTokenPlatform _$gDeviceTokenPlatformIOS =
+    const GDeviceTokenPlatform._('IOS');
+const GDeviceTokenPlatform _$gDeviceTokenPlatformWEB =
+    const GDeviceTokenPlatform._('WEB');
+
+GDeviceTokenPlatform _$gDeviceTokenPlatformValueOf(String name) {
+  switch (name) {
+    case 'ANDROID':
+      return _$gDeviceTokenPlatformANDROID;
+    case 'IOS':
+      return _$gDeviceTokenPlatformIOS;
+    case 'WEB':
+      return _$gDeviceTokenPlatformWEB;
+    default:
+      throw new ArgumentError(name);
+  }
+}
+
+final BuiltSet<GDeviceTokenPlatform> _$gDeviceTokenPlatformValues =
+    new BuiltSet<GDeviceTokenPlatform>(const <GDeviceTokenPlatform>[
+  _$gDeviceTokenPlatformANDROID,
+  _$gDeviceTokenPlatformIOS,
+  _$gDeviceTokenPlatformWEB,
+]);
+
 const GChatType _$gChatTypeDIRECT = const GChatType._('DIRECT');
 const GChatType _$gChatTypeGROUP = const GChatType._('GROUP');
 
@@ -296,6 +323,8 @@ final BuiltSet<GUserStudyTime> _$gUserStudyTimeValues =
   _$gUserStudyTimeOVER_7_HOURS,
 ]);
 
+Serializer<GDeviceTokenPlatform> _$gDeviceTokenPlatformSerializer =
+    new _$GDeviceTokenPlatformSerializer();
 Serializer<GChatType> _$gChatTypeSerializer = new _$GChatTypeSerializer();
 Serializer<GMessageType> _$gMessageTypeSerializer =
     new _$GMessageTypeSerializer();
@@ -350,6 +379,24 @@ Serializer<GVerifyOTPAndLoginInput> _$gVerifyOTPAndLoginInputSerializer =
     new _$GVerifyOTPAndLoginInputSerializer();
 Serializer<GVerifyOTPAndRegisterInput> _$gVerifyOTPAndRegisterInputSerializer =
     new _$GVerifyOTPAndRegisterInputSerializer();
+
+class _$GDeviceTokenPlatformSerializer
+    implements PrimitiveSerializer<GDeviceTokenPlatform> {
+  @override
+  final Iterable<Type> types = const <Type>[GDeviceTokenPlatform];
+  @override
+  final String wireName = 'GDeviceTokenPlatform';
+
+  @override
+  Object serialize(Serializers serializers, GDeviceTokenPlatform object,
+          {FullType specifiedType = FullType.unspecified}) =>
+      object.name;
+
+  @override
+  GDeviceTokenPlatform deserialize(Serializers serializers, Object serialized,
+          {FullType specifiedType = FullType.unspecified}) =>
+      GDeviceTokenPlatform.valueOf(serialized as String);
+}
 
 class _$GChatTypeSerializer implements PrimitiveSerializer<GChatType> {
   @override

@@ -149,7 +149,7 @@ class ReButton extends StatelessWidget {
                   ? Icon(
                       icon!,
                       color: iconColor ?? resolvedContentColor,
-                      size: iconSize ?? 22,
+                      size: iconSize ?? 20,
                     ).center
                   : hasText
                       ? ReText(

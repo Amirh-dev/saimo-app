@@ -20,7 +20,11 @@ import 'chat_repository.dart';
 import 'inbox_subscription_client.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({super.key, this.initialChatUserID});
+
+  /// When set (e.g. opened from a message notification tap), the conversation
+  /// with this user is opened automatically once contacts finish loading.
+  final String? initialChatUserID;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -48,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   bool _isLoadingMoreContacts = false;
   bool _hasMoreContacts = true;
   String? _openingUserID;
+  bool _autoOpenAttempted = false;
 
   static const int _contactsPageSize = 20;
   static const Duration _connectionGrace = Duration(seconds: 3);
@@ -175,6 +180,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         );
         _isLoading = false;
       });
+      _maybeAutoOpenInitialChat();
     } catch (error) {
       if (!mounted) return;
       if (silent) return;
@@ -183,6 +189,37 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _isLoading = false;
       });
     }
+  }
+
+  /// Opens the conversation requested via [ChatScreen.initialChatUserID] (a
+  /// notification tap) once contacts are loaded. If the sender is not on the
+  /// first contacts page, still try opening by user id so the tap routes to the
+  /// message instead of silently stopping at the inbox.
+  void _maybeAutoOpenInitialChat() {
+    if (_autoOpenAttempted) return;
+    _autoOpenAttempted = true;
+
+    final targetUserID = widget.initialChatUserID;
+    if (targetUserID == null || targetUserID.isEmpty) return;
+
+    ChatContact? match;
+    for (final contact in _contacts) {
+      if (contact.targetUserID == targetUserID) {
+        match = contact;
+        break;
+      }
+    }
+
+    final contact = match ??
+        ChatContact(
+          friendshipID: '',
+          targetUserID: targetUserID,
+          status: 'ACCEPTED',
+          isPending: false,
+        );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_openChat(contact));
+    });
   }
 
   Future<void> _loadMoreContacts() async {
@@ -321,8 +358,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   ) {
     ActiveChatTracker.instance.currentUserID = currentUserID;
     ActiveChatTracker.instance.cacheDisplayNames({
-      for (final contact in contacts)
-        contact.targetUserID: contact.displayName,
+      for (final contact in contacts) contact.targetUserID: contact.displayName,
     });
   }
 

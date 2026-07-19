@@ -48,6 +48,25 @@ abstract class GUUID implements Built<GUUID, GUUIDBuilder> {
       (Object serialized) => GUUID((serialized as String?)));
 }
 
+class GDeviceTokenPlatform extends EnumClass {
+  const GDeviceTokenPlatform._(String name) : super(name);
+
+  static const GDeviceTokenPlatform ANDROID = _$gDeviceTokenPlatformANDROID;
+
+  static const GDeviceTokenPlatform IOS = _$gDeviceTokenPlatformIOS;
+
+  static const GDeviceTokenPlatform WEB = _$gDeviceTokenPlatformWEB;
+
+  static Serializer<GDeviceTokenPlatform> get serializer =>
+      _$gDeviceTokenPlatformSerializer;
+
+  static BuiltSet<GDeviceTokenPlatform> get values =>
+      _$gDeviceTokenPlatformValues;
+
+  static GDeviceTokenPlatform valueOf(String name) =>
+      _$gDeviceTokenPlatformValueOf(name);
+}
+
 class GChatType extends EnumClass {
   const GChatType._(String name) : super(name);
 

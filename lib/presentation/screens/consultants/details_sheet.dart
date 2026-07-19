@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
+import 'package:simo_learn/utils/colors.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// Screen 3 of the consultants flow: "جزئیات مشاوره" — pick consultation
@@ -107,7 +108,7 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Row(
           children: [
@@ -116,6 +117,28 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
               color: AppColors.black1.withOpacity(0.5),
               fontSize: 13,
               fontWeight: FontWeight.w600,
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  'جزئیات مشاوره',
+                  color: AppColors.black1,
+                  fontSize: 18,
+                  fontWeight: 1000,
+                ),
+                SizedBox(height: 4),
+                ReText(
+                  'انتخاب مدت زمان مشاوره',
+                  color: AppColors.gray,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ],
             ),
             const SizedBox(width: 12),
             GestureDetector(
@@ -130,37 +153,15 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: AppColors.gray2),
                 ),
-                child: SvgPicture.asset(
-                  'assets/icons/Plus.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    AppColors.black1.withOpacity(0.5),
-                    BlendMode.srcIn,
-                  ),
+                child: const Icon(
+                  Icons.close,
+                  size: 16,
+                  color: AppColors.black1,
                 ),
               ),
             ),
           ],
-        ),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            ReText(
-              'جزئیات مشاوره',
-              color: AppColors.black1,
-              fontSize: 18,
-              fontWeight: 1000,
-            ),
-            SizedBox(height: 4),
-            ReText(
-              'انتخاب مدت زمان مشاوره',
-              color: AppColors.gray,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ],
-        ),
+        )
       ],
     );
   }
@@ -192,30 +193,18 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
               ),
               child: Stack(
                 children: [
-                  SvgPicture.asset(
-                    'assets/icons/discount.svg',
+                  Container(
                     width: 24,
                     height: 24,
-                  ),
-                  // Fakes the inset white highlight (Flutter has no real inset
-                  // shadow): a soft white top-glow clipped to the icon shape.
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.center,
-                            colors: [
-                              Colors.white.withOpacity(0.20),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFF14922),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(
+                      SolarIconsBold.sale,
+                      color: AppColors.white,
+                      size: 18,
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
@@ -224,7 +213,7 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
               child: ReText(
                 'اگر پلن های بلند مدت رو انتخاب کنی، تخفیف بیشتری میگیری!',
                 color: AppColors.primary,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 textAlign: TextAlign.right,
                 maxLines: 2,
@@ -284,6 +273,7 @@ class _ConsultationDetailsSheetState extends State<_ConsultationDetailsSheet> {
             text: 'لغو',
             icon: Icons.close_rounded,
             isOutlined: true,
+            reverseIconPosition: true,
             color: AppColors.gray2,
             textColor: AppColors.black1,
             iconColor: AppColors.black1,
