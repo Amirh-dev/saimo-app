@@ -91,6 +91,43 @@ void main() {
     expect(find.text('لغو تغییرات'), findsOneWidget);
   });
 
+  testWidgets('friends button opens premium banner and plans screen',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    final repository = _ProfileGraphQLRepository(storage);
+
+    await tester.pumpWidget(
+      RepositoryProvider<GraphQLRepository>.value(
+        value: repository,
+        child: const MaterialApp(home: ProfileScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final friendsButton = find.byKey(const ValueKey('open-friends-list'));
+    await tester.ensureVisible(friendsButton);
+    await tester.tap(friendsButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('برای استفاده از این بخش به\nاشتراک ویژه نیاز دارید!'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('view-premium-plans')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('view-premium-plans')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('اشتراک ویژه'), findsOneWidget);
+    expect(find.text('یک ماهه'), findsOneWidget);
+    expect(find.text('شش ماهه'), findsOneWidget);
+    expect(find.byKey(const ValueKey('purchase-premium-plan')), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(find.text('یک ساله'), findsOneWidget);
+  });
+
   testWidgets('friend profile renders request and accepted friendship states',
       (tester) async {
     SharedPreferences.setMockInitialValues({});

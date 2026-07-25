@@ -20,6 +20,7 @@ import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.d
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
+import 'package:simo_learn/presentation/screens/premium/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -645,8 +646,7 @@ class _ProfileHomeContent extends StatelessWidget {
                 _SelfProfileSummaryCard(
                   profile: profile,
                   onSettings: onOpenSettings,
-                  onFriends: () =>
-                      onSectionSelected(ProfileContentSection.friends),
+                  onFriends: () => showPremiumBanner(context),
                 ),
               ],
             ).bMargin(10),

@@ -7,82 +7,109 @@ import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
-/// Final screen of the consultants flow: success confirmation. Shown as a modal
-/// bottom sheet after the counseling request is submitted, replacing the old
-/// snackbar. Static data driven by the chosen [duration] and [plan].
+/// Final screen of the consultants flow: success confirmation. Shown as a
+/// centered dialog after the counseling request is submitted. Static data
+/// driven by the chosen [duration] and [plan].
 Future<void> showConsultationSuccessSheet(
   BuildContext context, {
   required ConsultationDurationOption duration,
   required ConsultationPlan plan,
 }) {
-  return showModalBottomSheet<void>(
+  return showDialog<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _SuccessSheet(duration: duration, plan: plan),
+    barrierColor: AppColors.white.withOpacity(0.52),
+    builder: (_) => _SuccessDialog(duration: duration, plan: plan),
   );
 }
 
-class _SuccessSheet extends StatelessWidget {
-  const _SuccessSheet({required this.duration, required this.plan});
+class _SuccessDialog extends StatelessWidget {
+  const _SuccessDialog({required this.duration, required this.plan});
 
   final ConsultationDurationOption duration;
   final ConsultationPlan plan;
 
-  // Intrinsic aspect ratio of the banner art (1572x916).
-  static const double _bannerAspect = 1572 / 916;
+  static const double _dialogWidth = 328;
+  static const double _artworkWidth = 390;
+  static const double _artworkAspectRatio = 1572 / 916;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-      child: SafeArea(
-        top: false,
+    return Dialog(
+      alignment: const Alignment(0, 0.18),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: _dialogWidth,
+        decoration: BoxDecoration(
+          color: AppColors.whiteSec,
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black1.withOpacity(0.10),
+              blurRadius: 32,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildBanner(context),
-            const SizedBox(height: 8),
-            _buildSectionTitle(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildSectionTitle(),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildInfoRow(
+                icon: SolarIconsOutline.alarm,
+                iconColor: AppColors.black1,
+                label: 'مدت زمان',
+                value: '${duration.label}ه',
+              ),
+            ),
+            const SizedBox(height: 9),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildInfoRow(
+                icon: SolarIconsBold.userSpeakRounded,
+                iconColor: AppColors.primary,
+                label: 'نوع',
+                value: 'مشاوره ${plan.subtitle}',
+              ),
+            ),
+            const SizedBox(height: 35),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: ReText(
+                'درخواستت برای انتخاب مشاور با موفقیت ثبت و تایید شد. در سریع ترین '
+                'زمان ممکن مشاور اطلاعاتت رو بررسی می کنه و بهت پیام میده!',
+                color: AppColors.gray,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                lineHeight: 1.8,
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildInfoRow(
-              icon: SolarIconsOutline.alarm,
-              iconColor: AppColors.black1,
-              label: 'مدت زمان',
-              value: duration.label,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ReButton(
+                text: 'تایید',
+                height: 56,
+                background: AppColors.secondary,
+                borderRadius: 40,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
             ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              icon: SolarIconsBold.userSpeakRounded,
-              iconColor: AppColors.primary,
-              label: 'نوع',
-              value: 'مشاوره ${plan.subtitle}',
-            ),
-            const SizedBox(height: 20),
-            const ReText(
-              'درخواستت برای انتخاب مشاور با موفقیت ثبت و تایید شد. در سریع ترین '
-              'زمان ممکن مشاور اطلاعاتت رو بررسی می کنه و بهت پیام میده!',
-              color: AppColors.gray,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              lineHeight: 1.8,
-            ),
-            const SizedBox(height: 20),
-            ReButton(
-              text: 'تایید',
-              background: AppColors.secondary,
-              borderRadius: 40,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -90,79 +117,78 @@ class _SuccessSheet extends StatelessWidget {
   }
 
   Widget _buildBanner(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = width / _bannerAspect;
-        return SizedBox(
-          width: width,
-          height: height,
-          child: Stack(
-            children: [
-              Image.asset(
-                'assets/images/done_consult_req.png',
-                width: width,
-                height: height,
-                fit: BoxFit.contain,
-              ),
-              // White circular close button on the green card's top-right,
-              // matching the design.
-              Positioned(
-                top: height * 0.30,
-                right: width * 0.14,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).maybePop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: AppColors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      size: 20,
-                      color: AppColors.black1,
-                    ),
-                  ),
+    return SizedBox(
+      height: 150,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -51,
+            left: (_dialogWidth - _artworkWidth) / 2,
+            child: Image.asset(
+              'assets/images/done_consult_req.png',
+              width: _artworkWidth,
+              height: _artworkWidth / _artworkAspectRatio,
+              fit: BoxFit.contain,
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).maybePop(),
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.whiteSec,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: AppColors.black1,
                 ),
               ),
-            ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
   Widget _buildSectionTitle() {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    return SizedBox(
+      height: 24,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                SolarIconsOutline.infoCircle,
+                size: 16,
+                color: AppColors.secondary,
+              ),
             ),
-            child: const Icon(
-              SolarIconsOutline.infoCircle,
-              size: 16,
-              color: AppColors.secondary,
+            const SizedBox(width: 8),
+            const ReText(
+              'اطلاعات درخواست',
+              color: AppColors.black1,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-          ),
-          const SizedBox(width: 8),
-          const ReText(
-            'اطلاعات درخواست',
-            color: AppColors.black1,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -174,7 +200,7 @@ class _SuccessSheet extends StatelessWidget {
     required String value,
   }) {
     return Container(
-      height: 52,
+      height: 39,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -185,8 +211,8 @@ class _SuccessSheet extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 28,
-              height: 28,
+              width: 24,
+              height: 24,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: iconColor,
@@ -198,15 +224,17 @@ class _SuccessSheet extends StatelessWidget {
             ReText(
               label,
               color: AppColors.black1.withOpacity(0.5),
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
             const Spacer(),
-            ReText(
-              value,
-              color: AppColors.black1,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+            Flexible(
+              child: ReText(
+                value,
+                color: AppColors.black1,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),
