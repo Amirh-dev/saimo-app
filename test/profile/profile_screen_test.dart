@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ferry/ferry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,10 +11,55 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/profile/friendship_models.dart';
+import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 void main() {
+  testWidgets('profile uses shape-matched shimmer until server data arrives',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    final repository = _DelayedProfileGraphQLRepository(storage);
+
+    await tester.pumpWidget(
+      _profileTestApp(repository, const ProfileScreen()),
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-summary-shimmer')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-info-shimmer')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('suggested-profiles-shimmer')),
+      findsOneWidget,
+    );
+    expect(find.text('علیرضا یوسفی'), findsNothing);
+    expect(find.text('علی رضایی'), findsNothing);
+
+    repository.completeProfile();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsNothing,
+    );
+    expect(find.text('علی رضایی'), findsOneWidget);
+  });
+
   testWidgets('account details shows editable username below birth date',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
@@ -20,10 +67,7 @@ void main() {
     final repository = _ProfileGraphQLRepository(storage);
 
     await tester.pumpWidget(
-      RepositoryProvider<GraphQLRepository>.value(
-        value: repository,
-        child: const MaterialApp(home: ProfileScreen()),
-      ),
+      _profileTestApp(repository, const ProfileScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -70,10 +114,7 @@ void main() {
     final repository = _ProfileGraphQLRepository(storage);
 
     await tester.pumpWidget(
-      RepositoryProvider<GraphQLRepository>.value(
-        value: repository,
-        child: const MaterialApp(home: ProfileScreen()),
-      ),
+      _profileTestApp(repository, const ProfileScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -98,10 +139,7 @@ void main() {
     final repository = _ProfileGraphQLRepository(storage);
 
     await tester.pumpWidget(
-      RepositoryProvider<GraphQLRepository>.value(
-        value: repository,
-        child: const MaterialApp(home: ProfileScreen()),
-      ),
+      _profileTestApp(repository, const ProfileScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -126,6 +164,123 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -300));
     await tester.pumpAndSettle();
     expect(find.text('یک ساله'), findsOneWidget);
+  });
+
+  testWidgets('reopening profile reuses the session-cached getMe response',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    final repository = _ProfileGraphQLRepository(storage);
+    final profileCubit = ProfileCubit(repository);
+    addTearDown(profileCubit.close);
+
+    Widget buildApp(Widget home) {
+      return RepositoryProvider<GraphQLRepository>.value(
+        value: repository,
+        child: BlocProvider<ProfileCubit>.value(
+          value: profileCubit,
+          child: MaterialApp(home: home),
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildApp(const ProfileScreen()));
+    await tester.pumpAndSettle();
+    expect(repository.getProfileRequestCount, 1);
+    expect(find.text('علی رضایی'), findsOneWidget);
+
+    await tester.pumpWidget(buildApp(const SizedBox.shrink()));
+    await tester.pump();
+    await tester.pumpWidget(buildApp(const ProfileScreen()));
+    await tester.pumpAndSettle();
+
+    expect(repository.getProfileRequestCount, 1);
+    expect(find.text('علی رضایی'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('pulling down refreshes getMe and replaces the cached profile',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    final repository = _RefreshableProfileGraphQLRepository(storage);
+
+    await tester.pumpWidget(
+      _profileTestApp(repository, const ProfileScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(repository.getProfileRequestCount, 1);
+    expect(find.text('علی رضایی'), findsOneWidget);
+
+    repository.delayNextProfile();
+    repository.profileFullName = 'پروفایل بروزشده';
+    final refreshIndicator = tester.state<RefreshIndicatorState>(
+      find.byKey(const ValueKey('profile-pull-to-refresh')),
+    );
+    unawaited(refreshIndicator.show());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(repository.getProfileRequestCount, 2);
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsOneWidget,
+    );
+
+    repository.completeNextProfile();
+    await tester.pumpAndSettle();
+
+    expect(repository.getProfileRequestCount, 2);
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsNothing,
+    );
+    expect(find.text('پروفایل بروزشده'), findsOneWidget);
+  });
+
+  testWidgets('reselecting the profile tab refreshes getMe and its cache',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await TokenStorage.create();
+    final repository = _RefreshableProfileGraphQLRepository(storage);
+
+    await tester.pumpWidget(
+      _profileTestApp(repository, const ProfileScreen()),
+    );
+    await tester.pumpAndSettle();
+    expect(repository.getProfileRequestCount, 1);
+
+    repository.delayNextProfile();
+    repository.profileFullName = 'اطلاعات جدید';
+    final profileTab = find.descendant(
+      of: find.byType(AppBottomNavigationBar),
+      matching: find.byIcon(SolarIconsBold.user),
+    );
+    expect(profileTab, findsOneWidget);
+    await tester.tap(
+      profileTab,
+    );
+    await tester.pump();
+
+    expect(repository.getProfileRequestCount, 2);
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsOneWidget,
+    );
+
+    repository.completeNextProfile();
+    await tester.pumpAndSettle();
+
+    expect(repository.getProfileRequestCount, 2);
+    expect(
+      find.byKey(const ValueKey('profile-loading-shimmer')),
+      findsNothing,
+    );
+    expect(find.text('اطلاعات جدید'), findsOneWidget);
   });
 
   testWidgets('friend profile renders request and accepted friendship states',
@@ -158,6 +313,19 @@ void main() {
   });
 }
 
+Widget _profileTestApp(
+  GraphQLRepository repository,
+  Widget home,
+) {
+  return RepositoryProvider<GraphQLRepository>.value(
+    value: repository,
+    child: BlocProvider(
+      create: (_) => ProfileCubit(repository),
+      child: MaterialApp(home: home),
+    ),
+  );
+}
+
 class _ProfileGraphQLRepository extends GraphQLRepository {
   _ProfileGraphQLRepository(TokenStorage storage)
       : super(
@@ -172,6 +340,24 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
           ),
         );
 
+  int getProfileRequestCount = 0;
+  String profileFullName = 'علی رضایی';
+
+  Map<String, dynamic> get profileResponse {
+    return {
+      'getMe': {
+        'id': 'user-1',
+        'username': 'ali_rezaei',
+        'fullName': profileFullName,
+        'birthDate': '2001-02-03T00:00:00.000Z',
+        'studyTime': 'BETWEEN_4_AND_7',
+        'simoCoins': 36,
+        'score': 3,
+        'isPremium': true,
+      },
+    };
+  }
+
   @override
   Future<Map<String, dynamic>> rawRequest({
     required String query,
@@ -179,18 +365,8 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
     bool requiresAuth = true,
   }) async {
     if (query.contains('GetProfile')) {
-      return {
-        'getMe': {
-          'id': 'user-1',
-          'username': 'ali_rezaei',
-          'fullName': 'علی رضایی',
-          'birthDate': '2001-02-03T00:00:00.000Z',
-          'studyTime': 'BETWEEN_4_AND_7',
-          'simoCoins': 36,
-          'score': 3,
-          'isPremium': true,
-        },
-      };
+      getProfileRequestCount += 1;
+      return profileResponse;
     }
     if (query.contains('GetUserProfile')) {
       return {
@@ -221,5 +397,66 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
       };
     }
     return const {};
+  }
+}
+
+class _RefreshableProfileGraphQLRepository extends _ProfileGraphQLRepository {
+  _RefreshableProfileGraphQLRepository(super.storage);
+
+  Completer<Map<String, dynamic>>? _nextProfileResponse;
+
+  void delayNextProfile() {
+    _nextProfileResponse = Completer<Map<String, dynamic>>();
+  }
+
+  void completeNextProfile() {
+    final response = _nextProfileResponse;
+    if (response == null) return;
+    _nextProfileResponse = null;
+    response.complete(profileResponse);
+  }
+
+  @override
+  Future<Map<String, dynamic>> rawRequest({
+    required String query,
+    Map<String, dynamic> variables = const {},
+    bool requiresAuth = true,
+  }) {
+    final response = _nextProfileResponse;
+    if (query.contains('GetProfile') && response != null) {
+      getProfileRequestCount += 1;
+      return response.future;
+    }
+    return super.rawRequest(
+      query: query,
+      variables: variables,
+      requiresAuth: requiresAuth,
+    );
+  }
+}
+
+class _DelayedProfileGraphQLRepository extends _ProfileGraphQLRepository {
+  _DelayedProfileGraphQLRepository(super.storage);
+
+  final Completer<Map<String, dynamic>> _profileResponse = Completer();
+
+  void completeProfile() {
+    _profileResponse.complete(
+      super.rawRequest(query: 'GetProfile'),
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> rawRequest({
+    required String query,
+    Map<String, dynamic> variables = const {},
+    bool requiresAuth = true,
+  }) {
+    if (query.contains('GetProfile')) return _profileResponse.future;
+    return super.rawRequest(
+      query: query,
+      variables: variables,
+      requiresAuth: requiresAuth,
+    );
   }
 }

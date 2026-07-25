@@ -13,6 +13,7 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
+import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
@@ -52,15 +53,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late ProfileContentSection _section;
-  late final ProfileRepository _profileRepository;
-  ProfileUser? _profile;
-  bool _isProfileLoading = false;
 
   @override
   void initState() {
     super.initState();
     _section = widget.initialSection;
-    _profileRepository = ProfileRepository(context.read<GraphQLRepository>());
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
   }
 
@@ -78,19 +75,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _loadProfile() async {
-    if (_isProfileLoading) return;
-    setState(() => _isProfileLoading = true);
+  Future<void> _loadProfile({bool forceRefresh = false}) async {
     try {
-      final profile = await _profileRepository.getMe();
-      if (!mounted) return;
-      setState(() {
-        _profile = profile;
-        _isProfileLoading = false;
-      });
+      await context.read<ProfileCubit>().getMe(
+            forceRefresh: forceRefresh,
+          );
     } catch (error) {
       if (!mounted) return;
-      setState(() => _isProfileLoading = false);
       showReToast(context, _friendlyProfileError(error), ReToastType.failed);
     }
   }
@@ -100,22 +91,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String username,
     required DateTime birthDate,
   }) async {
-    final profile = await _profileRepository.updateProfile(
-      fullName: fullName,
-      username: username,
-      birthDate: birthDate,
-    );
-    if (mounted) setState(() => _profile = profile);
-    return profile;
+    return context.read<ProfileCubit>().updateProfile(
+          fullName: fullName,
+          username: username,
+          birthDate: birthDate,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
+    final profileState = context.watch<ProfileCubit>().state;
     return AppBottomNavigationScaffold(
       currentIndex: 4,
       onTap: (index) {
         if (index == 4) {
           _setSection(ProfileContentSection.profile);
+          unawaited(_loadProfile(forceRefresh: true));
           return;
         }
         navigateToIndex(context, index);
@@ -126,20 +117,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
           bottom: false,
           child: ColoredBox(
             color: AppColors.gray1,
-            child: _buildSection(),
+            child: _buildSection(profileState),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSection() {
+  Widget _buildSection(ProfileState profileState) {
+    final profile = profileState.profile;
     switch (_section) {
       case ProfileContentSection.profile:
         return _ProfileHomeContent(
-          profile: _profile,
-          isRefreshing: _isProfileLoading,
-          onRefresh: _loadProfile,
+          profile: profile,
+          isRefreshing: profileState.isLoading,
+          onRefresh: () => _loadProfile(forceRefresh: true),
           onOpenAccountDetails: () =>
               _setSection(ProfileContentSection.accountDetails),
           onOpenSettings: () => _setSection(ProfileContentSection.settings),
@@ -170,14 +162,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       case ProfileContentSection.accountDetails:
         return _AccountDetailsContent(
-          profile: _profile,
+          profile: profile,
           onBack: () => _setSection(ProfileContentSection.profile),
           onSectionSelected: _setSection,
           onSave: _updateProfile,
         );
       case ProfileContentSection.settings:
         return _ProfileSettingsContent(
-          profile: _profile,
+          profile: profile,
           onBack: () => _setSection(ProfileContentSection.profile),
           onSectionSelected: _setSection,
         );
@@ -617,15 +609,114 @@ class _ProfileHomeContent extends StatelessWidget {
 
   final ProfileUser? profile;
   final bool isRefreshing;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
   final VoidCallback onOpenAccountDetails;
   final VoidCallback onOpenSettings;
   final ValueChanged<ProfileContentSection> onSectionSelected;
 
   @override
   Widget build(BuildContext context) {
+    final loadedProfile = profile;
+    if (loadedProfile == null || isRefreshing) {
+      return _ProfileHomeShimmer(
+        onSectionSelected: onSectionSelected,
+      );
+    }
+
+    return RefreshIndicator(
+      key: const ValueKey('profile-pull-to-refresh'),
+      color: AppColors.secondary,
+      onRefresh: onRefresh,
+      child: SingleChildScrollView(
+        key: const ValueKey('profile-scroll-view'),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        child: Column(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(42),
+                  bottomRight: Radius.circular(42),
+                ),
+              ),
+              child: Column(
+                children: [
+                  _ProfileHeader(
+                    title: 'پروفایل',
+                    selectedSection: ProfileContentSection.profile,
+                    onSectionSelected: onSectionSelected,
+                  ).tMargin(20).hMargin(36),
+                  _SelfProfileSummaryCard(
+                    profile: loadedProfile,
+                    onSettings: onOpenSettings,
+                    onFriends: () => showPremiumBanner(context),
+                  ),
+                ],
+              ).bMargin(10),
+            ),
+            _ProfileInfoSections(
+              profile: loadedProfile,
+              canEdit: true,
+              onEditBiography: onOpenAccountDetails,
+              onEditInterests: () => showReToast(
+                context,
+                'ویرایش علایق به‌زودی اضافه می‌شود',
+                ReToastType.info,
+              ),
+            ),
+            _SuggestedProfilesSection(
+              isRefreshing: isRefreshing,
+              onRefresh: onRefresh,
+            ),
+            const _AchievementsSection(),
+            _ProfileStatusSection(profile: loadedProfile),
+            const _FcmTokenTile(),
+            const SizedBox(height: 26),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileHomeShimmer extends StatefulWidget {
+  const _ProfileHomeShimmer({
+    required this.onSectionSelected,
+  });
+
+  final ValueChanged<ProfileContentSection> onSectionSelected;
+
+  @override
+  State<_ProfileHomeShimmer> createState() => _ProfileHomeShimmerState();
+}
+
+class _ProfileHomeShimmerState extends State<_ProfileHomeShimmer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1350),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _animation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      key: const ValueKey('profile-loading-shimmer'),
+      physics: const NeverScrollableScrollPhysics(),
       child: Column(
         children: [
           Container(
@@ -641,35 +732,368 @@ class _ProfileHomeContent extends StatelessWidget {
                 _ProfileHeader(
                   title: 'پروفایل',
                   selectedSection: ProfileContentSection.profile,
-                  onSectionSelected: onSectionSelected,
+                  onSectionSelected: widget.onSectionSelected,
                 ).tMargin(20).hMargin(36),
-                _SelfProfileSummaryCard(
-                  profile: profile,
-                  onSettings: onOpenSettings,
-                  onFriends: () => showPremiumBanner(context),
-                ),
+                _ProfileSummaryShimmer(animation: _animation),
               ],
             ).bMargin(10),
           ),
-          _ProfileInfoSections(
-            profile: profile,
-            canEdit: true,
-            onEditBiography: onOpenAccountDetails,
-            onEditInterests: () => showReToast(
-              context,
-              'ویرایش علایق به‌زودی اضافه می‌شود',
-              ReToastType.info,
-            ),
-          ),
-          _SuggestedProfilesSection(
-            isRefreshing: isRefreshing,
-            onRefresh: onRefresh,
-          ),
-          const _AchievementsSection(),
-          _ProfileStatusSection(profile: profile),
-          const _FcmTokenTile(),
+          _ProfileInfoShimmer(animation: _animation),
+          _SuggestedProfilesShimmer(animation: _animation),
           const SizedBox(height: 26),
         ],
+      ),
+    );
+  }
+}
+
+class _ProfileSummaryShimmer extends StatelessWidget {
+  const _ProfileSummaryShimmer({required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('profile-summary-shimmer'),
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: _ProfileShimmerShader(
+        animation: animation,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const _ProfileShimmerBox(
+                  width: 44,
+                  height: 44,
+                  borderRadius: 100,
+                ),
+                Row(
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    const _ProfileShimmerBox(
+                      width: 50,
+                      height: 50,
+                      borderRadius: 100,
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: const [
+                        _ProfileShimmerBox(
+                          width: 106,
+                          height: 14,
+                          borderRadius: 7,
+                        ),
+                        SizedBox(height: 7),
+                        _ProfileShimmerBox(
+                          width: 74,
+                          height: 20,
+                          borderRadius: 100,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Expanded(
+                  child: _ProfileShimmerBox(
+                    height: 62,
+                    borderRadius: 30,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: _ProfileShimmerBox(
+                    height: 62,
+                    borderRadius: 30,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const _ProfileShimmerBox(
+              height: 48,
+              borderRadius: 26,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileInfoShimmer extends StatelessWidget {
+  const _ProfileInfoShimmer({required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('profile-info-shimmer'),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(36, 20, 36, 18),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(38),
+          bottomRight: Radius.circular(38),
+        ),
+      ),
+      child: _ProfileShimmerShader(
+        animation: animation,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _ProfileSectionHeadingShimmer(),
+            const SizedBox(height: 10),
+            const _ProfileShimmerBox(height: 9, borderRadius: 6),
+            const SizedBox(height: 5),
+            const FractionallySizedBox(
+              alignment: Alignment.centerRight,
+              widthFactor: 0.88,
+              child: _ProfileShimmerBox(height: 9, borderRadius: 6),
+            ),
+            const SizedBox(height: 5),
+            const FractionallySizedBox(
+              alignment: Alignment.centerRight,
+              widthFactor: 0.68,
+              child: _ProfileShimmerBox(height: 9, borderRadius: 6),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: _ProfileShimmerBox(height: 1, borderRadius: 1),
+            ),
+            const _ProfileSectionHeadingShimmer(),
+            const SizedBox(height: 10),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _ProfileShimmerBox(
+                  width: 58,
+                  height: 28,
+                  borderRadius: 100,
+                ),
+                SizedBox(width: 8),
+                _ProfileShimmerBox(
+                  width: 52,
+                  height: 28,
+                  borderRadius: 100,
+                ),
+                SizedBox(width: 8),
+                _ProfileShimmerBox(
+                  width: 62,
+                  height: 28,
+                  borderRadius: 100,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSectionHeadingShimmer extends StatelessWidget {
+  const _ProfileSectionHeadingShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 30,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _ProfileShimmerBox(
+            width: 72,
+            height: 30,
+            borderRadius: 100,
+          ),
+          Row(
+            children: [
+              _ProfileShimmerBox(
+                width: 76,
+                height: 14,
+                borderRadius: 7,
+              ),
+              SizedBox(width: 7),
+              _ProfileShimmerBox(
+                width: 17,
+                height: 17,
+                borderRadius: 100,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestedProfilesShimmer extends StatelessWidget {
+  const _SuggestedProfilesShimmer({required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const ValueKey('suggested-profiles-shimmer'),
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 8),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 36),
+            child: _ProfileShimmerShader(
+              animation: animation,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _ProfileShimmerBox(
+                    width: 86,
+                    height: 30,
+                    borderRadius: 100,
+                  ),
+                  _ProfileShimmerBox(
+                    width: 62,
+                    height: 15,
+                    borderRadius: 8,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 180,
+            child: ListView.separated(
+              reverse: true,
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, __) => _SuggestedProfileShimmerCard(
+                animation: animation,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestedProfileShimmerCard extends StatelessWidget {
+  const _SuggestedProfileShimmerCard({required this.animation});
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: _ProfileShimmerShader(
+        animation: animation,
+        child: const Column(
+          children: [
+            _ProfileShimmerBox(
+              width: 48,
+              height: 48,
+              borderRadius: 100,
+            ),
+            SizedBox(height: 8),
+            _ProfileShimmerBox(
+              width: 86,
+              height: 11,
+              borderRadius: 6,
+            ),
+            Spacer(),
+            _ProfileShimmerBox(height: 34, borderRadius: 100),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileShimmerShader extends StatelessWidget {
+  const _ProfileShimmerShader({
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final travel = animation.value * 3;
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) => LinearGradient(
+            begin: Alignment(-1.5 + travel, 0),
+            end: Alignment(-0.5 + travel, 0),
+            colors: const [
+              Color(0xFFE3E5EA),
+              Color(0xFFF8F9FB),
+              Color(0xFFE3E5EA),
+            ],
+            stops: const [0.18, 0.5, 0.82],
+          ).createShader(bounds),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class _ProfileShimmerBox extends StatelessWidget {
+  const _ProfileShimmerBox({
+    this.width,
+    required this.height,
+    required this.borderRadius,
+  });
+
+  final double? width;
+  final double height;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.gray2,
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
   }
@@ -754,7 +1178,7 @@ class _SelfProfileSummaryCard extends StatelessWidget {
     required this.onFriends,
   });
 
-  final ProfileUser? profile;
+  final ProfileUser profile;
   final VoidCallback onSettings;
   final VoidCallback onFriends;
 
@@ -811,7 +1235,7 @@ class _SelfProfileSummaryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       ReText(
-                        profile?.displayName ?? 'علیرضا یوسفی',
+                        profile.displayName,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
@@ -822,20 +1246,22 @@ class _SelfProfileSummaryCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.simoCoin,
+                          color: profile.isPremium
+                              ? AppColors.simoCoin
+                              : AppColors.gray,
                           borderRadius: BorderRadius.circular(100),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ReText(
-                              'کاربر ویژه',
+                              profile.isPremium ? 'کاربر ویژه' : 'کاربر عادی',
                               color: AppColors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                             ),
-                            SizedBox(width: 3),
-                            Icon(
+                            const SizedBox(width: 3),
+                            const Icon(
                               SolarIconsOutline.stars,
                               color: AppColors.white,
                               size: 12,
@@ -852,9 +1278,9 @@ class _SelfProfileSummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: _ProfileMetricCard(
-                  value: '3×',
+                  value: '${profile.score}×',
                   label: 'ضریب امتیاز',
                   color: Color(0xFFFF3040),
                   icon: Icons.local_fire_department_rounded,
@@ -863,7 +1289,7 @@ class _SelfProfileSummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _ProfileMetricCard(
-                  value: '${profile?.simoCoins ?? 36}',
+                  value: '${profile.simoCoins}',
                   label: 'سیموکوین',
                   color: const Color(0xFFFFC94C),
                   icon: Icons.generating_tokens_rounded,
@@ -1250,10 +1676,14 @@ class _AchievementsSection extends StatelessWidget {
                 icon: Icons.arrow_back_ios_new_rounded,
                 onTap: _noop,
               ),
-              const ReText(
-                'دستاورد ها 33',
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
+              const SizedBox(width: 8),
+              const Expanded(
+                child: ReText(
+                  'دستاورد ها 33',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  maxLines: 1,
+                ),
               ),
             ],
           ),
@@ -4399,23 +4829,27 @@ class _ProfileMetricCard extends StatelessWidget {
               color: AppColors.black1,
             ),
           ),
-          const Spacer(),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ReText(
-                value,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-              ReText(
-                label,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-                color: AppColors.gray,
-              ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ReText(
+                  value,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  maxLines: 1,
+                ),
+                ReText(
+                  label,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.gray,
+                  maxLines: 1,
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 8),
           Container(

@@ -12,6 +12,7 @@ import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
+import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 
@@ -41,7 +42,25 @@ void main() {
       graphQLRepository: graphqlRepository,
       tokenStorage: tokenStorage,
     );
-    final profileCubit = ProfileCubit(graphqlRepository);
+    final profileCubit = ProfileCubit.withRepository(
+      ProfileRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        return {
+          'getMe': {
+            'id': 'user-1',
+            'username': 'ali_rezaei',
+            'fullName': 'علی رضایی',
+            'simoCoins': 36,
+            'score': 3,
+            'isPremium': true,
+          },
+        };
+      }),
+    );
+    await profileCubit.getMe();
     final inboxClient = InboxSubscriptionClient(
       graphqlRepository: graphqlRepository,
       tokenStorage: tokenStorage,
@@ -86,6 +105,8 @@ void main() {
     expect(await tokenStorage.getAccessToken(), isNull);
     expect(await tokenStorage.getRefreshToken(), isNull);
     expect(await tokenStorage.getAccessTokenSavedAt(), isNull);
+    expect(profileCubit.cachedProfile, isNull);
+    expect(profileCubit.state, isA<ProfileInitial>());
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
