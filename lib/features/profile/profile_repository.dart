@@ -13,6 +13,7 @@ class ProfileUser {
     required this.simoCoins,
     required this.score,
     required this.isPremium,
+    this.phoneNumber,
     this.fullName,
     this.birthDate,
     this.studyTime,
@@ -23,6 +24,7 @@ class ProfileUser {
 
   final String id;
   final String username;
+  final String? phoneNumber;
   final String? fullName;
   final DateTime? birthDate;
   final String? studyTime;
@@ -42,6 +44,7 @@ class ProfileUser {
     return ProfileUser(
       id: json['id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
+      phoneNumber: json['phoneNumber']?.toString(),
       fullName: json['fullName']?.toString(),
       birthDate: DateTime.tryParse(json['birthDate']?.toString() ?? ''),
       studyTime: json['studyTime']?.toString(),
@@ -84,6 +87,7 @@ class ProfileRepository {
     required String fullName,
     required String username,
     required DateTime birthDate,
+    String? major,
   }) async {
     final dateOnly = DateTime.utc(
       birthDate.year,
@@ -97,6 +101,7 @@ class ProfileRepository {
           'fullName': fullName.trim(),
           'username': username.trim(),
           'birthDate': dateOnly.toIso8601String(),
+          if (major != null) 'major': major.trim(),
         },
       },
     );
@@ -121,6 +126,7 @@ class ProfileRepository {
 const _profileFields = r'''
 id
 username
+phoneNumber
 fullName
 birthDate
 studyTime

@@ -10,7 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
-import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
@@ -90,11 +89,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String fullName,
     required String username,
     required DateTime birthDate,
+    String? major,
   }) async {
     return context.read<ProfileCubit>().updateProfile(
           fullName: fullName,
           username: username,
           birthDate: birthDate,
+          major: major,
         );
   }
 
@@ -379,7 +380,6 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                         ),
                         _ProfileInfoSections(
                           profile: _profile,
-                          canEdit: false,
                         ),
                         const _AchievementsSection(),
                         _ProfileStatusSection(profile: _profile),
@@ -625,7 +625,7 @@ class _ProfileHomeContent extends StatelessWidget {
 
     return RefreshIndicator(
       key: const ValueKey('profile-pull-to-refresh'),
-      color: AppColors.secondary,
+      color: AppColors.primary,
       onRefresh: onRefresh,
       child: SingleChildScrollView(
         key: const ValueKey('profile-scroll-view'),
@@ -634,47 +634,230 @@ class _ProfileHomeContent extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(42),
-                  bottomRight: Radius.circular(42),
-                ),
-              ),
-              child: Column(
-                children: [
-                  _ProfileHeader(
-                    title: 'پروفایل',
-                    selectedSection: ProfileContentSection.profile,
-                    onSectionSelected: onSectionSelected,
-                  ).tMargin(20).hMargin(36),
-                  _SelfProfileSummaryCard(
-                    profile: loadedProfile,
-                    onSettings: onOpenSettings,
-                    onFriends: () => showPremiumBanner(context),
-                  ),
-                ],
-              ).bMargin(10),
-            ),
-            _ProfileInfoSections(
+            _ProfileTopCard(
               profile: loadedProfile,
-              canEdit: true,
-              onEditBiography: onOpenAccountDetails,
-              onEditInterests: () => showReToast(
-                context,
-                'ویرایش علایق به‌زودی اضافه می‌شود',
-                ReToastType.info,
-              ),
+              selectedSection: ProfileContentSection.profile,
+              onSectionSelected: onSectionSelected,
             ),
-            _SuggestedProfilesSection(
+            _ProfileAccountMenu(
               isRefreshing: isRefreshing,
               onRefresh: onRefresh,
+              onPremium: () => context.to(const PremiumPlansScreen()),
+              onAccountDetails: onOpenAccountDetails,
+              onSettings: onOpenSettings,
+              onSupport: () => showReToast(
+                context,
+                'پشتیبانی به‌زودی در دسترس قرار می‌گیرد',
+                ReToastType.info,
+              ),
+              onLogout: () => _confirmProfileLogout(context),
             ),
-            const _AchievementsSection(),
-            _ProfileStatusSection(profile: loadedProfile),
-            const _FcmTokenTile(),
-            const SizedBox(height: 26),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAccountMenu extends StatelessWidget {
+  const _ProfileAccountMenu({
+    required this.isRefreshing,
+    required this.onRefresh,
+    required this.onPremium,
+    required this.onAccountDetails,
+    required this.onSettings,
+    required this.onSupport,
+    required this.onLogout,
+  });
+
+  final bool isRefreshing;
+  final Future<void> Function() onRefresh;
+  final VoidCallback onPremium;
+  final VoidCallback onAccountDetails;
+  final VoidCallback onSettings;
+  final VoidCallback onSupport;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _OutlinedProfileAction(
+                title: 'بروزرسانی',
+                icon: Icons.refresh_rounded,
+                onTap: isRefreshing ? () {} : onRefresh,
+              ),
+              const Flexible(
+                child: ReText(
+                  'حساب کاربری',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _ProfileAccountMenuTile(
+            key: const ValueKey('open-premium-subscription'),
+            title: 'اشتراک ویژه',
+            icon: SolarIconsOutline.user,
+            onTap: onPremium,
+          ),
+          const SizedBox(height: 10),
+          _ProfileAccountMenuTile(
+            key: const ValueKey('open-account-details'),
+            title: 'مشخصات حساب',
+            icon: SolarIconsOutline.user,
+            onTap: onAccountDetails,
+          ),
+          const SizedBox(height: 10),
+          _ProfileAccountMenuTile(
+            key: const ValueKey('open-profile-settings'),
+            title: 'تنظیمات',
+            icon: SolarIconsOutline.settings,
+            onTap: onSettings,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ProfileAccountCompactAction(
+                  title: 'پشتیبانی',
+                  icon: SolarIconsOutline.headphonesRound,
+                  onTap: onSupport,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ProfileAccountCompactAction(
+                  title: 'خروج',
+                  icon: Icons.logout_rounded,
+                  iconColor: AppColors.primary,
+                  onTap: onLogout,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileAccountMenuTile extends StatelessWidget {
+  const _ProfileAccountMenuTile({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 72,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(36),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 13,
+              color: AppColors.secondary,
+            ),
+            const Spacer(),
+            ReText(
+              title,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF0FF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.secondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAccountCompactAction extends StatelessWidget {
+  const _ProfileAccountCompactAction({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.iconColor = AppColors.black1,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(35),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 13,
+              color: AppColors.black1,
+            ),
+            Expanded(
+              child: ReText(
+                title,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: iconColor == AppColors.primary
+                    ? const Color(0xFFFFECE8)
+                    : AppColors.gray1,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
           ],
         ),
       ),
@@ -738,9 +921,8 @@ class _ProfileHomeShimmerState extends State<_ProfileHomeShimmer>
               ],
             ).bMargin(10),
           ),
-          _ProfileInfoShimmer(animation: _animation),
-          _SuggestedProfilesShimmer(animation: _animation),
-          const SizedBox(height: 26),
+          _ProfileAccountMenuShimmer(animation: _animation),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -756,61 +938,57 @@ class _ProfileSummaryShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       key: const ValueKey('profile-summary-shimmer'),
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.fromLTRB(16, 15, 16, 0),
+      padding: const EdgeInsets.fromLTRB(10, 16, 10, 12),
       decoration: BoxDecoration(
         color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withOpacity(0.06),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(32),
       ),
       child: _ProfileShimmerShader(
         animation: animation,
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const Row(
+              textDirection: TextDirection.rtl,
               children: [
-                const _ProfileShimmerBox(
-                  width: 44,
-                  height: 44,
-                  borderRadius: 100,
+                _ProfileShimmerBox(
+                  width: 56,
+                  height: 56,
+                  borderRadius: 12,
                 ),
-                Row(
-                  textDirection: TextDirection.rtl,
-                  children: [
-                    const _ProfileShimmerBox(
-                      width: 50,
-                      height: 50,
-                      borderRadius: 100,
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: const [
-                        _ProfileShimmerBox(
-                          width: 106,
-                          height: 14,
-                          borderRadius: 7,
-                        ),
-                        SizedBox(height: 7),
-                        _ProfileShimmerBox(
-                          width: 74,
-                          height: 20,
-                          borderRadius: 100,
-                        ),
-                      ],
-                    ),
-                  ],
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _ProfileShimmerBox(
+                        width: 112,
+                        height: 14,
+                        borderRadius: 7,
+                      ),
+                      SizedBox(height: 9),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          _ProfileShimmerBox(
+                            width: 118,
+                            height: 10,
+                            borderRadius: 5,
+                          ),
+                          SizedBox(width: 10),
+                          _ProfileShimmerBox(
+                            width: 82,
+                            height: 26,
+                            borderRadius: 100,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             const Row(
               children: [
                 Expanded(
@@ -828,11 +1006,6 @@ class _ProfileSummaryShimmer extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const _ProfileShimmerBox(
-              height: 48,
-              borderRadius: 26,
-            ),
           ],
         ),
       ),
@@ -840,199 +1013,53 @@ class _ProfileSummaryShimmer extends StatelessWidget {
   }
 }
 
-class _ProfileInfoShimmer extends StatelessWidget {
-  const _ProfileInfoShimmer({required this.animation});
-
-  final Animation<double> animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      key: const ValueKey('profile-info-shimmer'),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(36, 20, 36, 18),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(38),
-          bottomRight: Radius.circular(38),
-        ),
-      ),
-      child: _ProfileShimmerShader(
-        animation: animation,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _ProfileSectionHeadingShimmer(),
-            const SizedBox(height: 10),
-            const _ProfileShimmerBox(height: 9, borderRadius: 6),
-            const SizedBox(height: 5),
-            const FractionallySizedBox(
-              alignment: Alignment.centerRight,
-              widthFactor: 0.88,
-              child: _ProfileShimmerBox(height: 9, borderRadius: 6),
-            ),
-            const SizedBox(height: 5),
-            const FractionallySizedBox(
-              alignment: Alignment.centerRight,
-              widthFactor: 0.68,
-              child: _ProfileShimmerBox(height: 9, borderRadius: 6),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 14),
-              child: _ProfileShimmerBox(height: 1, borderRadius: 1),
-            ),
-            const _ProfileSectionHeadingShimmer(),
-            const SizedBox(height: 10),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _ProfileShimmerBox(
-                  width: 58,
-                  height: 28,
-                  borderRadius: 100,
-                ),
-                SizedBox(width: 8),
-                _ProfileShimmerBox(
-                  width: 52,
-                  height: 28,
-                  borderRadius: 100,
-                ),
-                SizedBox(width: 8),
-                _ProfileShimmerBox(
-                  width: 62,
-                  height: 28,
-                  borderRadius: 100,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileSectionHeadingShimmer extends StatelessWidget {
-  const _ProfileSectionHeadingShimmer();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 30,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _ProfileShimmerBox(
-            width: 72,
-            height: 30,
-            borderRadius: 100,
-          ),
-          Row(
-            children: [
-              _ProfileShimmerBox(
-                width: 76,
-                height: 14,
-                borderRadius: 7,
-              ),
-              SizedBox(width: 7),
-              _ProfileShimmerBox(
-                width: 17,
-                height: 17,
-                borderRadius: 100,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuggestedProfilesShimmer extends StatelessWidget {
-  const _SuggestedProfilesShimmer({required this.animation});
+class _ProfileAccountMenuShimmer extends StatelessWidget {
+  const _ProfileAccountMenuShimmer({required this.animation});
 
   final Animation<double> animation;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      key: const ValueKey('suggested-profiles-shimmer'),
-      padding: const EdgeInsets.fromLTRB(0, 20, 0, 8),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
-            child: _ProfileShimmerShader(
-              animation: animation,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _ProfileShimmerBox(
-                    width: 86,
-                    height: 30,
-                    borderRadius: 100,
-                  ),
-                  _ProfileShimmerBox(
-                    width: 62,
-                    height: 15,
-                    borderRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 180,
-            child: ListView.separated(
-              reverse: true,
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-              itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, __) => _SuggestedProfileShimmerCard(
-                animation: animation,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuggestedProfileShimmerCard extends StatelessWidget {
-  const _SuggestedProfileShimmerCard({required this.animation});
-
-  final Animation<double> animation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(24),
-      ),
+      key: const ValueKey('profile-account-menu-shimmer'),
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
       child: _ProfileShimmerShader(
         animation: animation,
         child: const Column(
           children: [
-            _ProfileShimmerBox(
-              width: 48,
-              height: 48,
-              borderRadius: 100,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _ProfileShimmerBox(
+                  width: 92,
+                  height: 36,
+                  borderRadius: 100,
+                ),
+                _ProfileShimmerBox(
+                  width: 86,
+                  height: 17,
+                  borderRadius: 9,
+                ),
+              ],
             ),
-            SizedBox(height: 8),
-            _ProfileShimmerBox(
-              width: 86,
-              height: 11,
-              borderRadius: 6,
+            SizedBox(height: 14),
+            _ProfileShimmerBox(height: 72, borderRadius: 36),
+            SizedBox(height: 10),
+            _ProfileShimmerBox(height: 72, borderRadius: 36),
+            SizedBox(height: 10),
+            _ProfileShimmerBox(height: 72, borderRadius: 36),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _ProfileShimmerBox(height: 70, borderRadius: 35),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: _ProfileShimmerBox(height: 70, borderRadius: 35),
+                ),
+              ],
             ),
-            Spacer(),
-            _ProfileShimmerBox(height: 34, borderRadius: 100),
           ],
         ),
       ),
@@ -1099,265 +1126,6 @@ class _ProfileShimmerBox extends StatelessWidget {
   }
 }
 
-/// Developer/QA helper: shows this device's FCM token and copies it to the
-/// clipboard on tap, so it can be pasted into the Firebase console's
-/// "Send test message" flow to verify push delivery.
-class _FcmTokenTile extends StatelessWidget {
-  const _FcmTokenTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: NotificationService.instance.tokenNotifier,
-      builder: (context, token, _) {
-        final hasToken = token != null && token.isNotEmpty;
-        return GestureDetector(
-          onTap: hasToken
-              ? () async {
-                  await Clipboard.setData(ClipboardData(text: token));
-                  if (!context.mounted) return;
-                  showReToast(
-                    context,
-                    'توکن نوتیفیکیشن کپی شد',
-                    ReToastType.success,
-                  );
-                }
-              : null,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.gray1),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  hasToken ? SolarIconsOutline.copy : SolarIconsOutline.bell,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const ReText(
-                        'توکن نوتیفیکیشن (برای تست)',
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: AppColors.black1,
-                      ),
-                      const SizedBox(height: 4),
-                      ReText(
-                        token == null || token.isEmpty
-                            ? 'در حال دریافت توکن نوتیفیکیشن…'
-                            : token,
-                        fontSize: 11,
-                        color: AppColors.gray,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SelfProfileSummaryCard extends StatelessWidget {
-  const _SelfProfileSummaryCard({
-    required this.profile,
-    required this.onSettings,
-    required this.onFriends,
-  });
-
-  final ProfileUser profile;
-  final VoidCallback onSettings;
-  final VoidCallback onFriends;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withOpacity(0.06),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                key: const ValueKey('open-profile-settings'),
-                onTap: onSettings,
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppColors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    SolarIconsOutline.settings,
-                    size: 20,
-                    color: AppColors.black1,
-                  ),
-                ),
-              ),
-              Row(
-                textDirection: TextDirection.rtl,
-                children: [
-                  ClipOval(
-                    child: const ReImage(
-                      'assets/images/sample_profile.png',
-                      width: 50,
-                      height: 50,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      ReText(
-                        profile.displayName,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: profile.isPremium
-                              ? AppColors.simoCoin
-                              : AppColors.gray,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ReText(
-                              profile.isPremium ? 'کاربر ویژه' : 'کاربر عادی',
-                              color: AppColors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            const SizedBox(width: 3),
-                            const Icon(
-                              SolarIconsOutline.stars,
-                              color: AppColors.white,
-                              size: 12,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ProfileMetricCard(
-                  value: '${profile.score}×',
-                  label: 'ضریب امتیاز',
-                  color: Color(0xFFFF3040),
-                  icon: Icons.local_fire_department_rounded,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ProfileMetricCard(
-                  value: '${profile.simoCoins}',
-                  label: 'سیموکوین',
-                  color: const Color(0xFFFFC94C),
-                  icon: Icons.generating_tokens_rounded,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            key: const ValueKey('open-friends-list'),
-            onTap: onFriends,
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(26),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gray2),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          size: 11,
-                          color: AppColors.gray,
-                        ),
-                        SizedBox(width: 7),
-                        ReText(
-                          'دوستان',
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Row(
-                    children: [
-                      ReText(
-                        '+33',
-                        color: AppColors.secondary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      SizedBox(width: 8),
-                      _MiniAvatarStack(),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MiniAvatarStack extends StatelessWidget {
   const _MiniAvatarStack();
 
@@ -1402,15 +1170,9 @@ class _MiniAvatarStack extends StatelessWidget {
 class _ProfileInfoSections extends StatelessWidget {
   const _ProfileInfoSections({
     required this.profile,
-    required this.canEdit,
-    this.onEditBiography,
-    this.onEditInterests,
   });
 
   final ProfileUser? profile;
-  final bool canEdit;
-  final VoidCallback? onEditBiography;
-  final VoidCallback? onEditInterests;
 
   @override
   Widget build(BuildContext context) {
@@ -1432,9 +1194,6 @@ class _ProfileInfoSections extends StatelessWidget {
           _ProfileSectionHeading(
             title: 'بیوگرافی',
             icon: SolarIconsOutline.infoCircle,
-            actionText: canEdit ? 'ویرایش' : null,
-            actionKey: canEdit ? const ValueKey('open-account-details') : null,
-            onAction: onEditBiography,
           ),
           ReText(
             profile?.bio?.trim().isNotEmpty == true
@@ -1451,8 +1210,6 @@ class _ProfileInfoSections extends StatelessWidget {
             title: 'علاقه مندی ها',
             icon: SolarIconsOutline.heart,
             iconColor: AppColors.errorColor,
-            actionText: canEdit ? 'ویرایش' : null,
-            onAction: onEditInterests,
           ),
           Wrap(
             alignment: WrapAlignment.end,
@@ -1489,52 +1246,17 @@ class _ProfileSectionHeading extends StatelessWidget {
     required this.title,
     required this.icon,
     this.iconColor = AppColors.secondary,
-    this.actionText,
-    this.actionKey,
-    this.onAction,
   });
 
   final String title;
   final IconData icon;
   final Color iconColor;
-  final String? actionText;
-  final Key? actionKey;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (actionText != null)
-          GestureDetector(
-            key: actionKey,
-            onTap: onAction,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: AppColors.gray2),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    SolarIconsOutline.pen,
-                    size: 13,
-                    color: AppColors.gray,
-                  ),
-                  const SizedBox(width: 6),
-                  ReText(
-                    actionText!,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          const SizedBox.shrink(),
         Row(
           children: [
             ReText(
@@ -1881,6 +1603,80 @@ class _ProfileStatusCard extends StatelessWidget {
 
 void _noop() {}
 
+Future<void> _confirmProfileLogout(BuildContext context) async {
+  final authCubit = context.read<AuthCubit>();
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.errorColor.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.errorColor,
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const ReText(
+              'خروج از حساب کاربری',
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+            const SizedBox(height: 8),
+            const ReText(
+              'آیا از خروج از حساب کاربری خود مطمئن هستید؟',
+              fontSize: 12.5,
+              color: AppColors.gray,
+              textAlign: TextAlign.center,
+              fontWeight: FontWeight.w600,
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: ReButton(
+                    text: 'انصراف',
+                    isOutlined: true,
+                    color: AppColors.gray2,
+                    textColor: AppColors.black1,
+                    height: 48,
+                    fontSize: 13,
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ReButton(
+                    text: 'خروج',
+                    background: AppColors.errorColor,
+                    height: 48,
+                    fontSize: 13,
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (confirmed == true) await authCubit.logout();
+}
+
 class _ProfileSettingsContent extends StatefulWidget {
   const _ProfileSettingsContent({
     required this.profile,
@@ -1948,38 +1744,47 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
             onSectionSelected: widget.onSectionSelected,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(36, 24, 36, 18),
+            padding: const EdgeInsets.fromLTRB(28, 24, 28, 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                  onTap: _reset,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: AppColors.gray2),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.replay_rounded,
-                          size: 16,
-                          color: AppColors.gray,
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: _reset,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
                         ),
-                        SizedBox(width: 8),
-                        ReText(
-                          'بازگشت به پیش فرض',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(color: AppColors.gray2),
                         ),
-                      ],
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.replay_rounded,
+                                size: 16,
+                                color: AppColors.gray,
+                              ),
+                              SizedBox(width: 7),
+                              ReText(
+                                'بازگشت به پیش فرض',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 12),
                 const ReText(
                   'تنظیمات',
                   fontSize: 17,
@@ -1989,7 +1794,7 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
             ),
           ),
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 36),
+            margin: const EdgeInsets.symmetric(horizontal: 28),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.white,
@@ -2024,7 +1829,7 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
                 ),
                 const SizedBox(height: 10),
                 const _SettingsRow(
-                  title: 'نسخه 1.0.0',
+                  title: 'نسخه 1.0.1',
                   subtitle: 'نسخه اپلیکیشن',
                 ),
                 const SizedBox(height: 14),
@@ -2051,101 +1856,10 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
-            child: ReButton(
-              text: 'خروج از حساب کاربری',
-              icon: Icons.logout_rounded,
-              isOutlined: true,
-              color: AppColors.errorColor,
-              textColor: AppColors.errorColor,
-              iconColor: AppColors.errorColor,
-              height: 52,
-              fontSize: 14,
-              onPressed: _confirmLogout,
-            ),
-          ),
           const SizedBox(height: 24),
         ],
       ),
     );
-  }
-
-  Future<void> _confirmLogout() async {
-    final authCubit = context.read<AuthCubit>();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.errorColor.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.logout_rounded,
-                  color: AppColors.errorColor,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const ReText(
-                'خروج از حساب کاربری',
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-              const SizedBox(height: 8),
-              const ReText(
-                'آیا از خروج از حساب کاربری خود مطمئن هستید؟',
-                fontSize: 12.5,
-                color: AppColors.gray,
-                textAlign: TextAlign.center,
-                fontWeight: FontWeight.w600,
-              ),
-              const SizedBox(height: 22),
-              Row(
-                children: [
-                  Expanded(
-                    child: ReButton(
-                      text: 'انصراف',
-                      isOutlined: true,
-                      color: AppColors.gray2,
-                      textColor: AppColors.black1,
-                      height: 48,
-                      fontSize: 13,
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ReButton(
-                      text: 'خروج',
-                      background: AppColors.errorColor,
-                      height: 48,
-                      fontSize: 13,
-                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (confirmed == true) {
-      await authCubit.logout();
-    }
   }
 }
 
@@ -2164,6 +1878,7 @@ class _AccountDetailsContent extends StatefulWidget {
     required String fullName,
     required String username,
     required DateTime birthDate,
+    String? major,
   }) onSave;
 
   @override
@@ -2171,44 +1886,189 @@ class _AccountDetailsContent extends StatefulWidget {
 }
 
 class _AccountDetailsContentState extends State<_AccountDetailsContent> {
-  late final TextEditingController _fullNameController;
-  late final TextEditingController _usernameController;
-  late final UsernameRepository _usernameRepository;
+  Future<void> _showEditSheet() async {
+    final profile = widget.profile;
+    if (profile == null) return;
+    await showReModalBottomSheet<void>(
+      context: context,
+      barrierColor: AppColors.white.withOpacity(0.56),
+      builder: (sheetContext) => _ProfileEditSheet(
+        profile: profile,
+        onSave: widget.onSave,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = widget.profile;
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      child: Column(
+        children: [
+          _ProfileTopCard(
+            profile: profile,
+            selectedSection: ProfileContentSection.accountDetails,
+            onSectionSelected: widget.onSectionSelected,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 24, 28, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _OutlinedProfileAction(
+                  key: const ValueKey('open-profile-edit-sheet'),
+                  title: 'ویرایش',
+                  icon: SolarIconsOutline.pen,
+                  onTap: _showEditSheet,
+                ),
+                const ReText(
+                  'مشخصات حساب',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              children: [
+                _ProfileDetailsRow(
+                  title: 'نام و نام خانوادگی',
+                  value: profile?.displayName ?? '—',
+                ),
+                const SizedBox(height: 8),
+                _ProfileDetailsRow(
+                  title: 'شماره تماس',
+                  value: _profilePhoneLabel(profile?.phoneNumber),
+                ),
+                const SizedBox(height: 8),
+                _ProfileDetailsRow(
+                  title: 'رشته، شغل، حوزه و ...',
+                  value: profile?.major?.trim().isNotEmpty == true
+                      ? profile!.major!.trim()
+                      : 'ثبت نشده',
+                ),
+                const SizedBox(height: 8),
+                _ProfileDetailsRow(
+                  title: 'تاریخ تولد',
+                  value: _profileBirthDateLabel(profile?.birthDate),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDetailsRow extends StatelessWidget {
+  const _ProfileDetailsRow({
+    required this.title,
+    required this.value,
+  });
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 78,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          ReText(
+            title,
+            fontSize: 11.5,
+            color: AppColors.gray,
+            fontWeight: FontWeight.w600,
+          ),
+          const SizedBox(height: 4),
+          ReText(
+            value,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w800,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileEditSheet extends StatefulWidget {
+  const _ProfileEditSheet({
+    required this.profile,
+    required this.onSave,
+  });
+
+  final ProfileUser profile;
+  final Future<ProfileUser> Function({
+    required String fullName,
+    required String username,
+    required DateTime birthDate,
+    String? major,
+  }) onSave;
+
+  @override
+  State<_ProfileEditSheet> createState() => _ProfileEditSheetState();
+}
+
+class _ProfileEditSheetState extends State<_ProfileEditSheet> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
   DateTime? _birthDate;
-  String? _fullNameError;
-  String? _usernameError;
+  String? _major;
+  String? _nameError;
   String? _birthDateError;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _fullNameController = TextEditingController();
-    _usernameController = TextEditingController();
-    _usernameRepository = UsernameRepository(context.read<GraphQLRepository>());
-    _applyProfile(widget.profile);
-  }
-
-  @override
-  void didUpdateWidget(covariant _AccountDetailsContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.profile == null && widget.profile != null) {
-      _applyProfile(widget.profile);
-    }
-  }
-
-  void _applyProfile(ProfileUser? profile) {
-    if (profile == null) return;
-    _fullNameController.text = profile.fullName ?? '';
-    _usernameController.text = profile.username;
-    _birthDate = profile.birthDate?.toLocal();
+    final parts = _profileFullNameParts(widget.profile.fullName);
+    _firstNameController = TextEditingController(text: parts.$1);
+    _lastNameController = TextEditingController(text: parts.$2);
+    _birthDate = widget.profile.birthDate?.toLocal();
   }
 
   @override
   void dispose() {
-    _fullNameController.dispose();
-    _usernameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickMajor() async {
+    final selected = await showReModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: false,
+      builder: (sheetContext) => _ProfileMajorPicker(
+        selected: _major ?? widget.profile.major,
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => _major = selected);
   }
 
   Future<void> _pickBirthDate() async {
@@ -2228,213 +2088,515 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
 
   Future<void> _save() async {
     if (_isSaving) return;
-    final fullName = _fullNameController.text.trim();
-    final username = _usernameController.text.trim();
+    final fullName = [
+      _firstNameController.text.trim(),
+      _lastNameController.text.trim(),
+    ].where((part) => part.isNotEmpty).join(' ');
     final birthDate = _birthDate;
 
     setState(() {
-      _fullNameError = isValidPersianFullName(fullName)
+      _nameError = isValidPersianFullName(fullName)
           ? null
           : 'نام و نام خانوادگی را به فارسی وارد کنید.';
-      _usernameError =
-          username.length >= 3 && hasValidUsernameCharacters(username)
-              ? null
-              : 'نام کاربری باید حداقل ۳ حرف انگلیسی، عدد یا _ باشد.';
       _birthDateError = birthDate == null ? 'تاریخ تولد را انتخاب کنید.' : null;
     });
-    if (_fullNameError != null ||
-        _usernameError != null ||
-        _birthDateError != null) {
-      return;
-    }
+    if (_nameError != null || _birthDateError != null) return;
 
     setState(() => _isSaving = true);
     try {
-      if (username != widget.profile?.username) {
-        final availability =
-            await _usernameRepository.checkUsernameAvailability(username);
-        if (!availability.available) {
-          if (!mounted) return;
-          setState(() {
-            _usernameError = availability.suggestion == null
-                ? 'این نام کاربری قبلاً انتخاب شده است.'
-                : 'این نام کاربری آزاد نیست؛ پیشنهاد: ${availability.suggestion}';
-          });
-          return;
-        }
-      }
-
-      final updated = await widget.onSave(
+      await widget.onSave(
         fullName: fullName,
-        username: username,
+        username: widget.profile.username,
         birthDate: birthDate!,
+        major: _major ?? widget.profile.major,
       );
       if (!mounted) return;
-      _applyProfile(updated);
       showReToast(context, 'مشخصات حساب ذخیره شد', ReToastType.success);
+      Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
       showReToast(context, _friendlyProfileError(error), ReToastType.failed);
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      setState(() => _isSaving = false);
     }
-  }
-
-  String get _birthDateLabel {
-    final date = _birthDate;
-    if (date == null) return 'تاریخ تولد';
-    final jalali = Jalali.fromDateTime(date);
-    return '${jalali.year}/${jalali.month.toString().padLeft(2, '0')}/'
-        '${jalali.day.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        children: [
-          _ProfileTopCard(
-            profile: widget.profile,
-            selectedSection: ProfileContentSection.accountDetails,
-            onSectionSelected: widget.onSectionSelected,
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final sheetHeight = math.min(
+      610.0,
+      math.max(480.0, screenHeight * 0.63 - keyboardHeight),
+    );
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: keyboardHeight),
+      child: Container(
+        key: const ValueKey('profile-edit-sheet'),
+        height: sheetHeight,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(34),
+            topRight: Radius.circular(34),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(36, 24, 36, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _OutlinedProfileAction(
-                  title: 'بازگشت',
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  onTap: widget.onBack,
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Container(
+                width: 62,
+                height: 5,
+                margin: const EdgeInsets.only(top: 0),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                const ReText(
-                  'مشخصات حساب',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 36),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Column(
-              children: [
-                _ProfileFieldLabel(
-                  title: 'نام و نام خانوادگی',
-                  error: _fullNameError,
-                  child: ReTextField(
-                    key: const ValueKey('profile-full-name-field'),
-                    controller: _fullNameController,
-                    placeholder: 'نام و نام خانوادگی',
-                    maxLength: 80,
-                    backgroundColor: AppColors.gray1,
-                    onChanged: (_) => setState(() => _fullNameError = null),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _ProfileFieldLabel(
-                  title: 'تاریخ تولد',
-                  error: _birthDateError,
-                  child: GestureDetector(
-                    key: const ValueKey('profile-birth-date-field'),
-                    onTap: _pickBirthDate,
-                    child: Container(
-                      height: 55,
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      decoration: BoxDecoration(
-                        color: AppColors.gray1,
-                        borderRadius: BorderRadius.circular(100),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
+                  child: Column(
+                    children: [
+                      _ProfileEditSheetHeader(
+                        onClose: () => Navigator.of(context).pop(),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(height: 20),
+                      Row(
                         children: [
-                          const Icon(
-                            SolarIconsOutline.calendar,
-                            color: AppColors.gray,
-                            size: 20,
+                          Expanded(
+                            child: ReTextField(
+                              key: const ValueKey('profile-last-name-field'),
+                              controller: _lastNameController,
+                              placeholder: 'نام خانوادگی',
+                              maxLength: 40,
+                              height: 56,
+                              borderRadius: 100,
+                              backgroundColor: AppColors.gray1,
+                              showFocusShadow: false,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 18),
+                              onChanged: (_) =>
+                                  setState(() => _nameError = null),
+                            ),
                           ),
-                          ReText(
-                            _birthDateLabel,
-                            color: _birthDate == null
-                                ? AppColors.gray
-                                : AppColors.black1,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ReTextField(
+                              key: const ValueKey('profile-first-name-field'),
+                              controller: _firstNameController,
+                              placeholder: 'نام',
+                              maxLength: 40,
+                              height: 56,
+                              borderRadius: 100,
+                              backgroundColor: AppColors.gray1,
+                              showFocusShadow: false,
+                              contentPadding:
+                                  const EdgeInsets.symmetric(horizontal: 18),
+                              onChanged: (_) =>
+                                  setState(() => _nameError = null),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _ProfileFieldLabel(
-                  title: 'نام کاربری',
-                  error: _usernameError,
-                  child: ReTextField(
-                    key: const ValueKey('profile-username-field'),
-                    controller: _usernameController,
-                    placeholder: 'نام کاربری',
-                    inputTextAlign: TextAlign.left,
-                    placeholderAlign: TextAlign.left,
-                    textInputAction: TextInputAction.done,
-                    maxLength: 30,
-                    backgroundColor: AppColors.gray1,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'[A-Za-z0-9_]'),
+                      if (_nameError != null)
+                        ReText(
+                          _nameError!,
+                          color: AppColors.errorColor,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                        ).tMargin(5),
+                      const SizedBox(height: 10),
+                      _ProfileEditReadOnlyField(
+                        key: const ValueKey('profile-phone-number-field'),
+                        label: 'شماره تماس',
+                        value: _profilePhoneLabel(widget.profile.phoneNumber),
                       ),
-                      LengthLimitingTextInputFormatter(30),
+                      const SizedBox(height: 10),
+                      _ProfileEditSelector(
+                        key: const ValueKey('profile-major-field'),
+                        label: _major ?? 'انتخاب رشته، شغل و ...',
+                        onTap: _pickMajor,
+                      ),
+                      const SizedBox(height: 10),
+                      _ProfileBirthDateEditor(
+                        key: const ValueKey('profile-birth-date-field'),
+                        onTap: _pickBirthDate,
+                      ),
+                      if (_birthDateError != null)
+                        ReText(
+                          _birthDateError!,
+                          color: AppColors.errorColor,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                        ).tMargin(5),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ReButton(
+                              key: const ValueKey('save-profile-edit'),
+                              text: 'افزودن',
+                              icon: Icons.add_rounded,
+                              reverseIconPosition: true,
+                              isLoading: _isSaving,
+                              onPressed: _save,
+                              height: 54,
+                              borderRadius: 100,
+                              background: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 112,
+                            child: ReButton(
+                              text: 'لغو',
+                              icon: Icons.close_rounded,
+                              reverseIconPosition: true,
+                              onPressed: () => Navigator.of(context).pop(),
+                              height: 54,
+                              borderRadius: 100,
+                              isOutlined: true,
+                              background: AppColors.white,
+                              color: AppColors.gray2,
+                              textColor: AppColors.black1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
-                    onChanged: (_) => setState(() => _usernameError = null),
                   ),
                 ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ReButton(
-                        text: 'ذخیره',
-                        icon: SolarIconsOutline.checkSquare,
-                        reverseIconPosition: true,
-                        isLoading: _isSaving,
-                        onPressed: _save,
-                        height: 50,
-                        borderRadius: 100,
-                        background: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ReButton(
-                        text: 'لغو تغییرات',
-                        icon: Icons.close_rounded,
-                        reverseIconPosition: true,
-                        onPressed: widget.onBack,
-                        height: 50,
-                        borderRadius: 100,
-                        isOutlined: true,
-                        background: AppColors.white,
-                        color: AppColors.gray2,
-                        textColor: AppColors.black1,
-                      ),
-                    ),
-                  ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileEditSheetHeader extends StatelessWidget {
+  const _ProfileEditSheetHeader({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            right: 0,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.gray2),
                 ),
-              ],
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: AppColors.gray,
+                  size: 18,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+          const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ReText(
+                'ویرایش مشخصات',
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+              SizedBox(height: 4),
+              ReText(
+                'مشخصات حساب کاربری خود را ویرایش کنید.',
+                color: AppColors.gray,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+}
+
+class _ProfileEditReadOnlyField extends StatelessWidget {
+  const _ProfileEditReadOnlyField({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Row(
+        children: [
+          ReText(
+            value,
+            isPersian: false,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+          const Spacer(),
+          ReText(
+            label,
+            color: AppColors.gray,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileEditSelector extends StatelessWidget {
+  const _ProfileEditSelector({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 19,
+              color: AppColors.black1,
+            ),
+            const Spacer(),
+            ReText(
+              label,
+              color: AppColors.gray,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileBirthDateEditor extends StatelessWidget {
+  const _ProfileBirthDateEditor({
+    super.key,
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 112,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const ReText(
+              'تاریخ تولد',
+              color: AppColors.gray,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ).rMargin(8),
+            const SizedBox(height: 12),
+            const Row(
+              children: [
+                Expanded(child: _ProfileDatePart(label: 'سال')),
+                SizedBox(width: 8),
+                Expanded(child: _ProfileDatePart(label: 'ماه')),
+                SizedBox(width: 8),
+                Expanded(child: _ProfileDatePart(label: 'روز')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileDatePart extends StatelessWidget {
+  const _ProfileDatePart({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 18,
+            color: AppColors.black1,
+          ),
+          const Spacer(),
+          ReText(
+            label,
+            color: AppColors.gray,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileMajorPicker extends StatelessWidget {
+  const _ProfileMajorPicker({required this.selected});
+
+  final String? selected;
+
+  static const _options = [
+    'ریاضی فیزیک',
+    'علوم تجربی',
+    'علوم انسانی',
+    'هنر',
+    'شاغل',
+    'سایر',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+            const ReText(
+              'انتخاب رشته، شغل یا حوزه',
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ).vMargin(18),
+            for (final option in _options)
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(option),
+                child: Container(
+                  height: 48,
+                  margin: const EdgeInsets.only(bottom: 7),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: option == selected
+                        ? AppColors.primary.withOpacity(0.08)
+                        : AppColors.gray1,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ReText(
+                        option,
+                        color: option == selected
+                            ? AppColors.primary
+                            : AppColors.black1,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+(String, String) _profileFullNameParts(String? fullName) {
+  final parts = (fullName ?? '')
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return ('', '');
+  if (parts.length == 1) return (parts.first, '');
+  return (parts.first, parts.skip(1).join(' '));
+}
+
+String _profilePhoneLabel(String? phoneNumber) {
+  final value = phoneNumber?.trim() ?? '';
+  return value.isEmpty ? 'ثبت نشده' : value;
+}
+
+String _profileBirthDateLabel(DateTime? birthDate) {
+  if (birthDate == null) return 'ثبت نشده';
+  final jalali = Jalali.fromDateTime(birthDate.toLocal());
+  return '${jalali.year}/${jalali.month}/${jalali.day}';
 }
 
 class _ProfileTopCard extends StatelessWidget {
@@ -2599,12 +2761,15 @@ class _SettingsActionButton extends StatelessWidget {
               size: 16,
               color: isPrimary ? AppColors.primary : AppColors.gray,
             ),
-            const SizedBox(width: 8),
-            ReText(
-              title,
-              color: isPrimary ? AppColors.primary : AppColors.black1,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+            const SizedBox(width: 6),
+            Flexible(
+              child: ReText(
+                title,
+                color: isPrimary ? AppColors.primary : AppColors.black1,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                maxLines: 1,
+              ),
             ),
           ],
         ),
@@ -2615,6 +2780,7 @@ class _SettingsActionButton extends StatelessWidget {
 
 class _OutlinedProfileAction extends StatelessWidget {
   const _OutlinedProfileAction({
+    super.key,
     required this.title,
     required this.icon,
     required this.onTap,
@@ -2646,41 +2812,6 @@ class _OutlinedProfileAction extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ProfileFieldLabel extends StatelessWidget {
-  const _ProfileFieldLabel({
-    required this.title,
-    required this.child,
-    this.error,
-  });
-
-  final String title;
-  final Widget child;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        ReText(
-          title,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ).bMargin(7),
-        child,
-        if (error != null)
-          ReText(
-            error!,
-            color: AppColors.errorColor,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            maxLines: 2,
-          ).tMargin(5),
-      ],
     );
   }
 }
@@ -4569,8 +4700,9 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isProfilePage =
-        selectedSection == ProfileContentSection.accountDetails ||
+    final usesCompactProfileHeader =
+        selectedSection == ProfileContentSection.profile ||
+            selectedSection == ProfileContentSection.accountDetails ||
             selectedSection == ProfileContentSection.settings;
 
     return Row(
@@ -4586,7 +4718,7 @@ class _ProfileHeader extends StatelessWidget {
               onTap: onSectionSelected,
               showBadge: true,
             ),
-            if (!isProfilePage) ...[
+            if (!usesCompactProfileHeader) ...[
               _HeaderActionIcon(
                 icon: SolarIconsOutline.chatRound,
                 section: ProfileContentSection.friends,
@@ -4679,8 +4811,9 @@ class _ProfileSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPremium = profile?.isPremium ?? true;
-    final simoCoins = profile?.simoCoins ?? 36;
+    final isPremium = profile?.isPremium ?? false;
+    final simoCoins = profile?.simoCoins ?? 0;
+    final score = profile?.score ?? 0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16).copyWith(top: 15),
@@ -4716,11 +4849,16 @@ class _ProfileSummaryCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        ReText(
-                          '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه',
-                          color: AppColors.gray,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11.5,
+                        Expanded(
+                          child: ReText(
+                            '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه',
+                            color: AppColors.gray,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Container(
@@ -4760,9 +4898,9 @@ class _ProfileSummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: _ProfileMetricCard(
-                  value: '3×',
+                  value: '$score×',
                   label: 'ضریب امتیاز',
                   color: Color(0xFFFF3040),
                   icon: Icons.local_fire_department_rounded,

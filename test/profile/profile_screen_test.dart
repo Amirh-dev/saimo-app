@@ -40,11 +40,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('profile-info-shimmer')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('suggested-profiles-shimmer')),
+      find.byKey(const ValueKey('profile-account-menu-shimmer')),
       findsOneWidget,
     );
     expect(find.text('علیرضا یوسفی'), findsNothing);
@@ -60,8 +56,9 @@ void main() {
     expect(find.text('علی رضایی'), findsOneWidget);
   });
 
-  testWidgets('account details shows editable username below birth date',
-      (tester) async {
+  testWidgets('account details opens the reference edit sheet', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     SharedPreferences.setMockInitialValues({});
     final storage = await TokenStorage.create();
     final repository = _ProfileGraphQLRepository(storage);
@@ -79,36 +76,54 @@ void main() {
     await tester.tap(accountDetails);
     await tester.pumpAndSettle();
 
-    final birthDate = find.byKey(
-      const ValueKey('profile-birth-date-field'),
+    expect(find.text('مشخصات حساب'), findsOneWidget);
+    expect(find.text('علی رضایی'), findsWidgets);
+    expect(find.text('۰۹۳۸۰۶۱۹۱۹۵'), findsOneWidget);
+    expect(find.text('ریاضی فیزیک'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('open-profile-edit-sheet')),
     );
-    final username = find.byKey(
-      const ValueKey('profile-username-field'),
-    );
-    expect(birthDate, findsOneWidget);
-    expect(username, findsOneWidget);
+    await tester.pumpAndSettle();
+
     expect(
-      tester.getTopLeft(username).dy,
-      greaterThan(tester.getTopLeft(birthDate).dy),
+      find.byKey(const ValueKey('profile-edit-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('ویرایش مشخصات'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('profile-phone-number-field')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-major-field')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('profile-birth-date-field')),
+      findsOneWidget,
     );
 
-    final usernameField = tester.widget<TextFormField>(
+    final firstNameField = tester.widget<TextFormField>(
       find.descendant(
-        of: username,
+        of: find.byKey(const ValueKey('profile-first-name-field')),
         matching: find.byType(TextFormField),
       ),
     );
-    expect(usernameField.controller?.text, 'ali_rezaei');
-
-    await tester.enterText(
-      find.descendant(of: username, matching: find.byType(TextFormField)),
-      'ali_new',
+    final lastNameField = tester.widget<TextFormField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('profile-last-name-field')),
+        matching: find.byType(TextFormField),
+      ),
     );
-    expect(usernameField.controller?.text, 'ali_new');
+    expect(firstNameField.controller?.text, 'علی');
+    expect(lastNameField.controller?.text, 'رضایی');
   });
 
   testWidgets('settings item opens the reference settings panel',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     SharedPreferences.setMockInitialValues({});
     final storage = await TokenStorage.create();
     final repository = _ProfileGraphQLRepository(storage);
@@ -127,13 +142,12 @@ void main() {
     expect(find.text('بازگشت به پیش فرض'), findsOneWidget);
     expect(find.text('اعلان ها'), findsOneWidget);
     expect(find.text('اخبار ها'), findsOneWidget);
-    expect(find.text('نسخه ۱.۰.۰'), findsOneWidget);
+    expect(find.text('نسخه ۱.۰.۱'), findsOneWidget);
     expect(find.text('ذخیره'), findsOneWidget);
     expect(find.text('لغو تغییرات'), findsOneWidget);
   });
 
-  testWidgets('friends button opens premium banner and plans screen',
-      (tester) async {
+  testWidgets('premium account row opens the plans screen', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final storage = await TokenStorage.create();
     final repository = _ProfileGraphQLRepository(storage);
@@ -143,18 +157,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final friendsButton = find.byKey(const ValueKey('open-friends-list'));
-    await tester.ensureVisible(friendsButton);
-    await tester.tap(friendsButton);
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('برای استفاده از این بخش به\nاشتراک ویژه نیاز دارید!'),
-      findsOneWidget,
+    final premium = find.byKey(
+      const ValueKey('open-premium-subscription'),
     );
-    expect(find.byKey(const ValueKey('view-premium-plans')), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('view-premium-plans')));
+    await tester.ensureVisible(premium);
+    await tester.tap(premium);
     await tester.pumpAndSettle();
 
     expect(find.text('اشتراک ویژه'), findsOneWidget);
@@ -348,9 +355,11 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
       'getMe': {
         'id': 'user-1',
         'username': 'ali_rezaei',
+        'phoneNumber': '09380619195',
         'fullName': profileFullName,
         'birthDate': '2001-02-03T00:00:00.000Z',
         'studyTime': 'BETWEEN_4_AND_7',
+        'major': 'ریاضی فیزیک',
         'simoCoins': 36,
         'score': 3,
         'isPremium': true,

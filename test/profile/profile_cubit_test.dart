@@ -129,10 +129,12 @@ Map<String, dynamic> _profileJson({
   return {
     'id': 'user-1',
     'username': username,
+    'phoneNumber': '09380619195',
     'fullName': fullName,
     'birthDate': '2001-02-03T00:00:00.000Z',
     'simoCoins': 36,
     'score': 3,
     'isPremium': true,
+    'major': 'ریاضی فیزیک',
   };
 }

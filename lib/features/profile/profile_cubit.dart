@@ -72,11 +72,13 @@ class ProfileCubit extends Cubit<ProfileState> {
     required String fullName,
     required String username,
     required DateTime birthDate,
+    String? major,
   }) async {
     final profile = await _repository.updateProfile(
       fullName: fullName,
       username: username,
       birthDate: birthDate,
+      major: major,
     );
     _cacheRevision += 1;
     _cachedProfile = profile;

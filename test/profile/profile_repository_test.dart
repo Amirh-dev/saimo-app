@@ -14,6 +14,7 @@ void main() {
         'getMe': {
           'id': 'user-1',
           'username': 'ali_rezaei',
+          'phoneNumber': '09380619195',
           'fullName': 'علی رضایی',
           'birthDate': '2001-02-03T00:00:00.000Z',
           'studyTime': 'BETWEEN_4_AND_7',
@@ -28,6 +29,7 @@ void main() {
 
     expect(profile.id, 'user-1');
     expect(profile.username, 'ali_rezaei');
+    expect(profile.phoneNumber, '09380619195');
     expect(profile.displayName, 'علی رضایی');
     expect(profile.birthDate, DateTime.utc(2001, 2, 3));
     expect(profile.simoCoins, 36);
