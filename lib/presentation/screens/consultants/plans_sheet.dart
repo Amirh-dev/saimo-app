@@ -42,7 +42,7 @@ const List<ConsultationPlan> kPlans = [
     subtitle: 'معمولی',
     price: '۴۴۹,۰۰۰',
     oldPrice: '۴۹۹,۰۰۰',
-    color: AppColors.primary,
+    color: AppColors.secondary,
     planType: 'NORMAL',
     benefits: _kBenefits,
   ),
@@ -60,7 +60,7 @@ const List<ConsultationPlan> kPlans = [
     subtitle: 'پیشرفته',
     price: '۵,۹۴۹,۰۰۰',
     oldPrice: '۶,۴۹۹,۰۰۰',
-    color: AppColors.primary,
+    color: AppColors.simoCoin,
     planType: 'ADVANCED',
     benefits: _kBenefits,
   ),
@@ -71,21 +71,19 @@ const List<ConsultationPlan> kPlans = [
 Future<ConsultationPlan?> showPlansSheet(
   BuildContext context, {
   required String title,
-  required String discount,
 }) {
   return showModalBottomSheet<ConsultationPlan>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _PlansSheet(title: title, discount: discount),
+    builder: (_) => _PlansSheet(title: title),
   );
 }
 
 class _PlansSheet extends StatefulWidget {
-  const _PlansSheet({required this.title, required this.discount});
+  const _PlansSheet({required this.title});
 
   final String title;
-  final String discount;
 
   @override
   State<_PlansSheet> createState() => _PlansSheetState();
@@ -162,32 +160,12 @@ class _PlansSheetState extends State<_PlansSheet> {
                   fontWeight: 1000,
                   isPersian: false,
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ReText(
-                        widget.discount,
-                        color: AppColors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const ReText(
-                      'تخفیف روی همه پلن ها',
-                      color: AppColors.gray,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                const ReText(
+                  'انتخاب پلن مورد نظر',
+                  color: AppColors.gray,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                 ),
               ],
             ),
@@ -239,6 +217,7 @@ class _PlansSheetState extends State<_PlansSheet> {
             text: 'لغو',
             icon: Icons.close_rounded,
             isOutlined: true,
+            reverseIconPosition: true,
             color: AppColors.gray2,
             textColor: AppColors.black1,
             iconColor: AppColors.black1,
@@ -252,7 +231,7 @@ class _PlansSheetState extends State<_PlansSheet> {
   }
 }
 
-class _PlanCard extends StatelessWidget {
+class _PlanCard extends StatefulWidget {
   const _PlanCard({
     required this.plan,
     required this.selected,
@@ -264,10 +243,23 @@ class _PlanCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_PlanCard> createState() => _PlanCardState();
+}
+
+class _PlanCardState extends State<_PlanCard> {
+  // Benefits list starts collapsed, matching the design.
+  bool _expanded = false;
+
+  ConsultationPlan get plan => widget.plan;
+  bool get selected => widget.selected;
+
+  @override
   Widget build(BuildContext context) {
+    // Only the selected card reveals the "مزایای مشاوره" section.
+    final showBenefits = selected && plan.benefits.isNotEmpty;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTap: widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
@@ -286,7 +278,7 @@ class _PlanCard extends StatelessWidget {
         child: Column(
           children: [
             _buildTopRow(),
-            if (plan.benefits.isNotEmpty) ...[
+            if (showBenefits) ...[
               const SizedBox(height: 16),
               _buildBenefits(),
             ],
@@ -359,7 +351,7 @@ class _PlanCard extends StatelessWidget {
     );
   }
 
-  /// Renders the price with black digits and separators tinted [color].
+  /// Renders the price tinted [color], with slightly bolder separators.
   Widget _priceNumber(String price, Color color) {
     final parts = price.split(',');
     final children = <Widget>[];
@@ -367,7 +359,7 @@ class _PlanCard extends StatelessWidget {
       children.add(
         ReText(
           parts[i],
-          color: AppColors.black1,
+          color: color,
           fontSize: 16,
           fontWeight: 900,
           textDirection: TextDirection.ltr,
@@ -395,44 +387,59 @@ class _PlanCard extends StatelessWidget {
   Widget _buildBenefits() {
     return Column(
       children: [
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: Row(
-            children: [
-              const ReText(
-                'مزایای مشاوره',
-                color: AppColors.black1,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.gray2,
-                  borderRadius: BorderRadius.circular(8),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.gray2,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    SolarIconsOutline.infoCircle,
+                    size: 14,
+                    color: AppColors.black1,
+                  ),
                 ),
-                child: const Icon(
-                  SolarIconsOutline.infoCircle,
-                  size: 14,
+                const SizedBox(width: 8),
+                const ReText(
+                  'مزایای مشاوره',
                   color: AppColors.black1,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              const Spacer(),
-            ],
+                const Spacer(),
+                AnimatedRotation(
+                  duration: const Duration(milliseconds: 200),
+                  turns: _expanded ? 0.5 : 0,
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                    color: AppColors.black1.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 12),
-        for (var i = 0; i < plan.benefits.length; i++) ...[
-          _buildBenefitRow(plan.benefits[i]),
-          if (i != plan.benefits.length - 1)
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColors.gray2.withOpacity(0.6),
-            ),
+        if (_expanded) ...[
+          const SizedBox(height: 12),
+          for (var i = 0; i < plan.benefits.length; i++) ...[
+            _buildBenefitRow(plan.benefits[i]),
+            if (i != plan.benefits.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.gray2.withOpacity(0.6),
+              ),
+          ],
         ],
       ],
     );
@@ -496,7 +503,7 @@ class PlanAvatar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(
-        SolarIconsBold.stars,
+        SolarIconsBold.userSpeakRounded,
         color: color,
         size: 24,
       ),

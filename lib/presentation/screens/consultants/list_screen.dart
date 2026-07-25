@@ -91,7 +91,6 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     final plan = await showPlansSheet(
       context,
       title: duration.planTitle,
-      discount: duration.discount,
     );
     if (plan == null || !context.mounted) return;
 

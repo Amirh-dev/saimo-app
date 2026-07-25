@@ -60,7 +60,7 @@ class _InvoiceSheet extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -150,7 +150,7 @@ class _InvoiceSheet extends StatelessWidget {
             ReText(
               'مدت زمان',
               color: AppColors.black1.withOpacity(0.5),
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
             const Spacer(),
@@ -171,8 +171,8 @@ class _InvoiceSheet extends StatelessWidget {
             ReText(
               duration.label,
               color: AppColors.black1,
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ],
         ),
@@ -273,11 +273,11 @@ class _InvoiceSheet extends StatelessWidget {
       );
       if (i != parts.length - 1) {
         children.add(
-          ReText(
+          const ReText(
             ',',
-            color: color,
+            color: AppColors.black1,
             fontSize: 16,
-            fontWeight: 1000,
+            fontWeight: 900,
             textDirection: TextDirection.ltr,
           ),
         );
@@ -312,6 +312,7 @@ class _InvoiceSheet extends StatelessWidget {
             text: 'لغو',
             icon: Icons.close_rounded,
             isOutlined: true,
+            reverseIconPosition: true,
             color: AppColors.gray2,
             textColor: AppColors.black1,
             iconColor: AppColors.black1,
