@@ -1,7 +1,7 @@
 export 'package:simo_learn/app/app.dart';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
@@ -21,9 +21,12 @@ Future<void> main() async {
 
   // Firebase + push/local notifications. Initialized before the app renders so
   // an FCM token is available and background messages are handled from launch.
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await NotificationService.instance.initialize();
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
+
+  // FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  // await NotificationService.instance.initialize();
 
   final tokenStorage = await TokenStorage.create();
   final ferryClient = createFerryClient(

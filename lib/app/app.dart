@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
@@ -17,8 +18,13 @@ import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
+import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
+import 'package:flutter_localization/flutter_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -61,6 +67,15 @@ class MyApp extends StatelessWidget {
           });
         },
         child: MaterialApp(
+          supportedLocales: const [
+            Locale("fa", "IR"),
+            Locale("en", "US"),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           navigatorKey: _rootNavigatorKey,
           title: AppStrings.appName,
           debugShowCheckedModeBanner: false,
@@ -69,7 +84,7 @@ class MyApp extends StatelessWidget {
             fontFamily: AppFonts.iranSansVar,
             useMaterial3: true,
           ),
-          home: const _AuthGate(),
+          home: const StatisticsScreen(),
         ),
       ),
     );

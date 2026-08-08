@@ -59,3 +59,20 @@ class ReText extends StatelessWidget {
     );
   }
 }
+
+String toPersianNumber(String value) {
+  const english = '0123456789';
+  const persian = '۰۱۲۳۴۵۶۷۸۹';
+
+  // Add thousands separators before converting digits.
+  final formatted = value.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (_) => ',',
+  );
+
+  // Convert English digits to Persian.
+  return formatted.split('').map((char) {
+    final index = english.indexOf(char);
+    return index == -1 ? char : persian[index];
+  }).join();
+}
