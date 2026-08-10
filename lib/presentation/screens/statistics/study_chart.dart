@@ -10,29 +10,37 @@ enum Performance { good, medium, weak, none }
 class ChartData {
   final String topLabel;
   final String day;
-  final String month;
+  final String label;
   final double hoursValue; // Max 8.0
   final Performance performance;
-  final String tooltipLine1;
-  final String tooltipLine2;
-  final String tooltipLine3;
+  final String tasksCount;
+  final String dayOfWeek;
+  final String dayOfMonth;
+  final String hours;
+  final String minutes;
+  final String year;
 
   ChartData({
     required this.topLabel,
     required this.day,
-    required this.month,
+    required this.label,
     required this.hoursValue,
     required this.performance,
-    this.tooltipLine1 = '',
-    this.tooltipLine2 = '',
-    this.tooltipLine3 = '',
+    this.tasksCount = '',
+    this.dayOfWeek = '',
+    this.hours = '',
+    this.minutes = '',
+    this.dayOfMonth = '',
+    this.year = '',
   });
 }
 
 // --- Main Widget ---
 
 class StudyChart extends StatefulWidget {
-  const StudyChart({super.key});
+  final bool isDateChart;
+
+  const StudyChart({required this.isDateChart, super.key});
 
   @override
   State<StudyChart> createState() => _StudyChartState();
@@ -42,76 +50,206 @@ class _StudyChartState extends State<StudyChart> {
   int? _selectedIndex;
   Timer? _closeTimer;
 
-  // Added sample data for all columns to ensure tooltips have content
-  final List<ChartData> _data = [
+  final List<ChartData> _dateData = [
     ChartData(
       topLabel: '۲:۱۲"',
       day: '۲۸',
-      month: 'فروردین',
+      label: 'فروردین',
       hoursValue: 2.2,
       performance: Performance.medium,
-      tooltipLine1: '۲ تسک',
-      tooltipLine2: 'دوشنبه ۲۸ فروردین',
-      tooltipLine3: '۲ ساعت و ۱۲ دقیقه',
+      tasksCount: '۲',
+      dayOfWeek: 'دوشنبه',
+      dayOfMonth: '۲۸ فروردین',
+      hours: '۲',
+      minutes: '۱۲',
+      year: '۱۴۰۴',
     ),
     ChartData(
       topLabel: '۵:۴۵"',
       day: '۲۹',
-      month: 'فروردین',
+      label: 'فروردین',
       hoursValue: 5.75,
       performance: Performance.good,
-      tooltipLine1: '۵ تسک',
-      tooltipLine2: 'سه‌شنبه ۲۹ فروردین',
-      tooltipLine3: '۵ ساعت و ۴۵ دقیقه',
+      tasksCount: '۵',
+      dayOfWeek: 'سه‌شنبه',
+      dayOfMonth: '۲۹ فروردین',
+      hours: '۵',
+      minutes: '۴۵',
+      year: '۱۴۰۴',
     ),
     ChartData(
       topLabel: '۳:۳۲"',
       day: '۳۰',
-      month: 'فروردین',
+      label: 'فروردین',
       hoursValue: 3.5,
       performance: Performance.medium,
-      tooltipLine1: '۳ تسک',
-      tooltipLine2: 'چهارشنبه ۳۰ فروردین',
-      tooltipLine3: '۳ ساعت و ۳۲ دقیقه',
+      tasksCount: '۳',
+      dayOfWeek: 'چهارشنبه',
+      dayOfMonth: '۳۰ فروردین',
+      hours: '۳',
+      minutes: '۳۲',
+      year: '۱۴۰۴',
     ),
     ChartData(
-      topLabel: '۳\':۰۰',
+      topLabel: '۳:۰۰"',
       day: '۳۱',
-      month: 'فروردین',
+      label: 'فروردین',
       hoursValue: 1.0,
       performance: Performance.weak,
-      tooltipLine1: '۱ تسک',
-      tooltipLine2: 'پنج‌شنبه ۳۱ فروردین',
-      tooltipLine3: '۱ ساعت',
+      tasksCount: '۱',
+      dayOfWeek: 'پنج‌شنبه',
+      dayOfMonth: '۳۱ فروردین',
+      hours: '۱',
+      minutes: '۰',
+      year: '۱۴۰۴',
     ),
     ChartData(
       topLabel: '۱:۱۵"',
       day: '۱',
-      month: 'اردیبهشت',
+      label: 'اردیبهشت',
       hoursValue: 1.25,
       performance: Performance.weak,
-      tooltipLine1: '۱ تسک',
-      tooltipLine2: 'جمعه ۱ اردیبهشت',
-      tooltipLine3: '۱ ساعت و ۱۵ دقیقه',
+      tasksCount: '۱',
+      dayOfWeek: 'جمعه',
+      dayOfMonth: '۱ اردیبهشت',
+      hours: '۱',
+      minutes: '۱۵',
+      year: '۱۴۰۴',
     ),
     ChartData(
       topLabel: '۰',
       day: '۲',
-      month: 'اردیبهشت',
+      label: 'اردیبهشت',
       hoursValue: 0.0,
       performance: Performance.none,
-      tooltipLine1: '۴ تسک',
-      tooltipLine2: 'شنبه ۲ اردیبهشت',
-      tooltipLine3: '۴ ساعت و ۱۰ دقیقه',
+      tasksCount: '۴',
+      dayOfWeek: 'شنبه',
+      dayOfMonth: '۲ اردیبهشت',
+      hours: '۴',
+      minutes: '۱۰',
+      year: '۱۴۰۴',
     ),
     ChartData(
-      topLabel: '۰', // Example of a 0 value to demonstrate it won't open
+      topLabel: '۰',
       day: '۳',
-      month: 'اردیبهشت',
+      label: 'اردیبهشت',
       hoursValue: 0.0,
       performance: Performance.none,
+      tasksCount: '۰',
+      dayOfWeek: 'یکشنبه',
+      dayOfMonth: '۳ اردیبهشت',
+      hours: '۰',
+      minutes: '۰',
+      year: '۱۴۰۴',
     ),
   ];
+
+  final List<ChartData> _tagData = [
+    ChartData(
+      topLabel: '۲:۱۲"',
+      day: '۲۸',
+      label: 'عربی',
+      hoursValue: 2.2,
+      performance: Performance.medium,
+      tasksCount: '۲',
+      dayOfWeek: 'دوشنبه',
+      dayOfMonth: '۲۸ فروردین',
+      hours: '۲',
+      minutes: '۱۲',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۵:۴۵"',
+      day: '۲۹',
+      label: 'ریاضی',
+      hoursValue: 5.75,
+      performance: Performance.good,
+      tasksCount: '۵',
+      dayOfWeek: 'سه‌شنبه',
+      dayOfMonth: '۲۹ فروردین',
+      hours: '۵',
+      minutes: '۴۵',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۳:۳۲"',
+      day: '۳۰',
+      label: 'انگلیسی',
+      hoursValue: 3.5,
+      performance: Performance.medium,
+      tasksCount: '۳',
+      dayOfWeek: 'چهارشنبه',
+      dayOfMonth: '۳۰ فروردین',
+      hours: '۳',
+      minutes: '۳۲',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۳:۰۰"',
+      day: '۳۱',
+      label: 'فارسی',
+      hoursValue: 1.0,
+      performance: Performance.weak,
+      tasksCount: '۱',
+      dayOfWeek: 'پنج‌شنبه',
+      dayOfMonth: '۳۱ فروردین',
+      hours: '۱',
+      minutes: '۰',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۱:۱۵"',
+      day: '۱',
+      label: 'کتاب',
+      hoursValue: 1.25,
+      performance: Performance.weak,
+      tasksCount: '۱',
+      dayOfWeek: 'جمعه',
+      dayOfMonth: '۱ اردیبهشت',
+      hours: '۱',
+      minutes: '۱۵',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۰',
+      day: '۲',
+      label: 'شیمی',
+      hoursValue: 0.0,
+      performance: Performance.none,
+      tasksCount: '۴',
+      dayOfWeek: 'شنبه',
+      dayOfMonth: '۲ اردیبهشت',
+      hours: '۴',
+      minutes: '۱۰',
+      year: '۱۴۰۴',
+    ),
+    ChartData(
+      topLabel: '۰',
+      day: '۳',
+      label: 'فیزیک',
+      hoursValue: 0.0,
+      performance: Performance.none,
+      tasksCount: '۰',
+      dayOfWeek: 'یکشنبه',
+      dayOfMonth: '۳ اردیبهشت',
+      hours: '۰',
+      minutes: '۰',
+      year: '۱۴۰۴',
+    ),
+  ];
+
+  List<ChartData> get _currentData =>
+      widget.isDateChart ? _dateData : _tagData;
+
+  @override
+  void didUpdateWidget(covariant StudyChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.isDateChart != widget.isDateChart) {
+      _selectedIndex = null;
+      _closeTimer?.cancel();
+    }
+  }
 
   @override
   void dispose() {
@@ -120,7 +258,7 @@ class _StudyChartState extends State<StudyChart> {
   }
 
   void _handleTap(int index) {
-    final item = _data[index];
+    final item = _currentData[index];
 
     // Prevent opening popup for 0 data columns
     if (item.hoursValue <= 0) return;
@@ -163,9 +301,9 @@ class _StudyChartState extends State<StudyChart> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
-        height: 300,
+        height: 270,
         decoration: BoxDecoration(
-          color: AppColors.gray2,
+          color: const Color(0xfffafafa),
           borderRadius: BorderRadius.circular(32),
         ),
         child: Column(
@@ -175,9 +313,12 @@ class _StudyChartState extends State<StudyChart> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(32),
                   color: AppColors.white,
+                  boxShadow: [
+                    BoxShadow(blurRadius: 10, color: AppColors.black1.withAlpha(15)),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  padding: const EdgeInsets.only(right: 24, left: 24, top: 32, bottom: 10),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     textDirection: TextDirection.ltr,
@@ -193,8 +334,7 @@ class _StudyChartState extends State<StudyChart> {
                                 _buildGridLines(),
                                 _buildAxesLines(),
                                 _buildBars(constraints),
-                                if (_selectedIndex != null)
-                                  _buildTooltip(constraints),
+                                if (_selectedIndex != null) _buildTooltip(constraints),
                               ],
                             );
                           },
@@ -217,11 +357,11 @@ class _StudyChartState extends State<StudyChart> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text('۸ ساعت', style: TextStyle(color: Colors.grey, fontSize: 8)),
-        Text('۶ ساعت', style: TextStyle(color: Colors.grey, fontSize: 8)),
-        Text('۴ ساعت', style: TextStyle(color: Colors.grey, fontSize: 8)),
-        Text('۲ ساعت', style: TextStyle(color: Colors.grey, fontSize: 8)),
-        Text('۰ ساعت', style: TextStyle(color: Colors.grey, fontSize: 8)),
+        Text('۸ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+        Text('۶ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+        Text('۴ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+        Text('۲ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+        Text('۰ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
         SizedBox(height: 18),
       ],
     );
@@ -264,14 +404,12 @@ class _StudyChartState extends State<StudyChart> {
         textDirection: TextDirection.ltr,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(_data.length, (index) {
-            final item = _data[index];
+          children: List.generate(_currentData.length, (index) {
+            final item = _currentData[index];
             final chartHeight = constraints.maxHeight - 48;
 
             // Minimum height for 0 values to show the grey dot
-            final barHeight = item.hoursValue > 0
-                ? (item.hoursValue / 8.0) * chartHeight
-                : 12.0;
+            final barHeight = item.hoursValue > 0 ? (item.hoursValue / 8.0) * chartHeight : 12.0;
 
             final isSelected = _selectedIndex == index;
 
@@ -297,20 +435,23 @@ class _StudyChartState extends State<StudyChart> {
                     ),
                     const SizedBox(height: 8),
                     AnimatedContainer(
+                      margin: EdgeInsets.only(bottom: isSelected ? 4 : 0),
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutCubic,
                       width: 12,
                       height: barHeight,
                       decoration: BoxDecoration(
                         color: _getColor(item.performance),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: isSelected ? [
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                        boxShadow: isSelected
+                            ? [
                           BoxShadow(
                             color: _getColor(item.performance).withOpacity(0.4),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           )
-                        ] : [],
+                        ]
+                            : [],
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -322,14 +463,14 @@ class _StudyChartState extends State<StudyChart> {
                             item.day,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 10,
                             ),
                           ),
                           Text(
-                            item.month,
+                            item.label,
                             style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 8,
+                              color: AppColors.black1,
+                              fontSize: 6,
                             ),
                           ),
                         ],
@@ -348,8 +489,8 @@ class _StudyChartState extends State<StudyChart> {
   Widget _buildTooltip(BoxConstraints constraints) {
     if (_selectedIndex == null) return const SizedBox.shrink();
 
-    final item = _data[_selectedIndex!];
-    final double columnWidth = constraints.maxWidth / _data.length;
+    final item = _currentData[_selectedIndex!];
+    final double columnWidth = constraints.maxWidth / _currentData.length;
 
     final double leftPosition = (_selectedIndex! * columnWidth) + (columnWidth / 2) + 12;
 
@@ -390,23 +531,56 @@ class _StudyChartState extends State<StudyChart> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.tooltipLine1,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                Row(
+                  children: [
+                    Text(
+                      item.tasksCount,
+                      style: const TextStyle(color: AppColors.white, fontSize: 12),
+                    ),
+                    const Text(
+                      ' تسک',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  item.tooltipLine2,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14),
+                Row(
+                  children: [
+                    Text(
+                      item.dayOfWeek,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                    Text(
+                      ' ${item.dayOfMonth} ',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Text(
+                      item.year,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  item.tooltipLine3,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
+                Row(
+                  children: [
+                    Text(
+                      item.hours,
+                      style: const TextStyle(color: AppColors.white, fontSize: 12),
+                    ),
+                    const Text(
+                      ' ساعت و ',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Text(
+                      item.minutes,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    const Text(
+                      ' دقیقه',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                )
               ],
             ),
           ),
@@ -434,16 +608,16 @@ class _StudyChartState extends State<StudyChart> {
   Widget _legendItem(String title, Color color) {
     return Row(
       children: [
-        Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(width: 8),
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
         ),
+        const SizedBox(width: 6),
+        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.black1)),
       ],
     );
   }

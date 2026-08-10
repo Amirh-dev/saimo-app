@@ -8,8 +8,15 @@ import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/fonts.dart' show AppFonts;
 
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
+
+  @override
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen> {
+  bool _isDateStudyChart = true;
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +25,12 @@ class StatisticsScreen extends StatelessWidget {
       body: Column(
         children: [
           _statisticsAppBar(),
-          const Expanded(
+          Expanded(
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _StatsGrid(
+                  const _StatsGrid(
                     data: {
                       'commitment': "89٪",
                       'commitmentChanges': 6,
@@ -35,7 +42,7 @@ class StatisticsScreen extends StatelessWidget {
                       'correctTestsChanges': -4,
                     },
                   ),
-                  Padding(
+                  const Padding(
                     padding:  EdgeInsets.symmetric(horizontal: 32),
                     child: ReText(
                       'نمودار میزان مطالعه',
@@ -43,15 +50,22 @@ class StatisticsScreen extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  _StudyTabs(),
-                  SizedBox(height: 8),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.0),
-                    child: StudyChart(),
+                  const SizedBox(height: 8),
+                  _StudyTabs(
+                    onChanged: (final int selected){
+                      debugPrint(selected.toString());
+                      setState(() {
+                        _isDateStudyChart = selected == 0;
+                      });
+                    },
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: StudyChart(isDateChart: _isDateStudyChart),
+                  ),
+                  const SizedBox(height: 16),
+                  const Padding(
                     padding:  EdgeInsets.symmetric(horizontal: 32),
                     child: ReText(
                       'نمودار تعداد تست',
@@ -59,12 +73,12 @@ class StatisticsScreen extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  SizedBox(height: 8),
-                  Padding(
+                  const SizedBox(height: 8),
+                  const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32.0),
                     child: TestChart(),
                   ),
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
                 ],
               ),
             ),
@@ -165,12 +179,12 @@ class _PeriodTabsState extends State<_PeriodTabs> {
   }
 
   TextStyle _style(bool selected) => TextStyle(
-        fontFamily: widget.fontFamily,
-        fontSize: 13,
-        height: 1,
-        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-        color: _black,
-      );
+    fontFamily: widget.fontFamily,
+    fontSize: 13,
+    height: 1,
+    fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+    color: _black,
+  );
 
   // Measured with the bold style so slots never resize mid-animation.
   double _slot(String text, TextScaler scaler) =>
@@ -181,7 +195,7 @@ class _PeriodTabsState extends State<_PeriodTabs> {
         maxLines: 1,
       )..layout())
           .width +
-      _pad * 2;
+          _pad * 2;
 
   @override
   Widget build(BuildContext context) {
@@ -447,14 +461,14 @@ class _StatIcon extends StatelessWidget {
       ),
       child: icon != null
           ? Icon(
-              icon,
-              size: 16,
-              color: iconColor ?? Colors.white,
-            )
+        icon,
+        size: 16,
+        color: iconColor ?? Colors.white,
+      )
           : Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: SvgPicture.asset(iconSvg!, color: const Color(0xffb25a22)),
-            ),
+        padding: const EdgeInsets.all(6.0),
+        child: SvgPicture.asset(iconSvg!, color: const Color(0xffb25a22)),
+      ),
     );
   }
 }
@@ -525,13 +539,13 @@ class _StatItem {
 class _StudyTabs extends StatefulWidget {
   const _StudyTabs({
     super.key,
-    this.initialIndex = 1,
+    this.initialIndex = 0,
     this.onChanged,
     this.fontFamily = AppFonts.iranSansVar,
   });
 
   final int initialIndex;
-  final ValueChanged? onChanged;
+  final Function(int)? onChanged;
   final String? fontFamily;
 
   @override
