@@ -13,7 +13,8 @@ abstract class GDeleteMessageVars
     implements Built<GDeleteMessageVars, GDeleteMessageVarsBuilder> {
   GDeleteMessageVars._();
 
-  factory GDeleteMessageVars([Function(GDeleteMessageVarsBuilder b) updates]) =
+  factory GDeleteMessageVars(
+          [void Function(GDeleteMessageVarsBuilder b) updates]) =
       _$GDeleteMessageVars;
 
   _i1.GUUID get messageID;

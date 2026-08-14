@@ -13,7 +13,8 @@ abstract class GDeleteMessageData
     implements Built<GDeleteMessageData, GDeleteMessageDataBuilder> {
   GDeleteMessageData._();
 
-  factory GDeleteMessageData([Function(GDeleteMessageDataBuilder b) updates]) =
+  factory GDeleteMessageData(
+          [void Function(GDeleteMessageDataBuilder b) updates]) =
       _$GDeleteMessageData;
 
   static void _initializeBuilder(GDeleteMessageDataBuilder b) =>
@@ -44,7 +45,7 @@ abstract class GDeleteMessageData_deleteMessage
   GDeleteMessageData_deleteMessage._();
 
   factory GDeleteMessageData_deleteMessage(
-          [Function(GDeleteMessageData_deleteMessageBuilder b) updates]) =
+          [void Function(GDeleteMessageData_deleteMessageBuilder b) updates]) =
       _$GDeleteMessageData_deleteMessage;
 
   static void _initializeBuilder(GDeleteMessageData_deleteMessageBuilder b) =>

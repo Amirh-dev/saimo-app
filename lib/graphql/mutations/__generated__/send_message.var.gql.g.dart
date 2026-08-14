@@ -7,7 +7,7 @@ part of 'send_message.var.gql.dart';
 // **************************************************************************
 
 Serializer<GSendMessageVars> _$gSendMessageVarsSerializer =
-    new _$GSendMessageVarsSerializer();
+    _$GSendMessageVarsSerializer();
 
 class _$GSendMessageVarsSerializer
     implements StructuredSerializer<GSendMessageVars> {
@@ -32,7 +32,7 @@ class _$GSendMessageVarsSerializer
   GSendMessageVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendMessageVarsBuilder();
+    final result = GSendMessageVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -58,19 +58,16 @@ class _$GSendMessageVars extends GSendMessageVars {
 
   factory _$GSendMessageVars(
           [void Function(GSendMessageVarsBuilder)? updates]) =>
-      (new GSendMessageVarsBuilder()..update(updates))._build();
+      (GSendMessageVarsBuilder()..update(updates))._build();
 
-  _$GSendMessageVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(input, r'GSendMessageVars', 'input');
-  }
-
+  _$GSendMessageVars._({required this.input}) : super._();
   @override
   GSendMessageVars rebuild(void Function(GSendMessageVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GSendMessageVarsBuilder toBuilder() =>
-      new GSendMessageVarsBuilder()..replace(this);
+      GSendMessageVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -100,7 +97,7 @@ class GSendMessageVarsBuilder
 
   _i1.GSendMessageInputBuilder? _input;
   _i1.GSendMessageInputBuilder get input =>
-      _$this._input ??= new _i1.GSendMessageInputBuilder();
+      _$this._input ??= _i1.GSendMessageInputBuilder();
   set input(_i1.GSendMessageInputBuilder? input) => _$this._input = input;
 
   GSendMessageVarsBuilder();
@@ -116,7 +113,6 @@ class GSendMessageVarsBuilder
 
   @override
   void replace(GSendMessageVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendMessageVars;
   }
 
@@ -131,14 +127,17 @@ class GSendMessageVarsBuilder
   _$GSendMessageVars _build() {
     _$GSendMessageVars _$result;
     try {
-      _$result = _$v ?? new _$GSendMessageVars._(input: input.build());
+      _$result = _$v ??
+          _$GSendMessageVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendMessageVars', _$failedField, e.toString());
       }
       rethrow;

@@ -12,7 +12,8 @@ abstract class GRefreshTokenData
     implements Built<GRefreshTokenData, GRefreshTokenDataBuilder> {
   GRefreshTokenData._();
 
-  factory GRefreshTokenData([Function(GRefreshTokenDataBuilder b) updates]) =
+  factory GRefreshTokenData(
+          [void Function(GRefreshTokenDataBuilder b) updates]) =
       _$GRefreshTokenData;
 
   static void _initializeBuilder(GRefreshTokenDataBuilder b) =>
@@ -43,7 +44,7 @@ abstract class GRefreshTokenData_refreshToken
   GRefreshTokenData_refreshToken._();
 
   factory GRefreshTokenData_refreshToken(
-          [Function(GRefreshTokenData_refreshTokenBuilder b) updates]) =
+          [void Function(GRefreshTokenData_refreshTokenBuilder b) updates]) =
       _$GRefreshTokenData_refreshToken;
 
   static void _initializeBuilder(GRefreshTokenData_refreshTokenBuilder b) =>
@@ -76,8 +77,8 @@ abstract class GRefreshTokenData_refreshToken_user
   GRefreshTokenData_refreshToken_user._();
 
   factory GRefreshTokenData_refreshToken_user(
-          [Function(GRefreshTokenData_refreshToken_userBuilder b) updates]) =
-      _$GRefreshTokenData_refreshToken_user;
+      [void Function(GRefreshTokenData_refreshToken_userBuilder b)
+          updates]) = _$GRefreshTokenData_refreshToken_user;
 
   static void _initializeBuilder(
           GRefreshTokenData_refreshToken_userBuilder b) =>

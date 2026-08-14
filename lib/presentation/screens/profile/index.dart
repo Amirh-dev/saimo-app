@@ -7,6 +7,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -28,6 +30,10 @@ import 'package:solar_icons/solar_icons.dart';
 
 import 'friendship_models.dart';
 import 'friendship_repository.dart';
+import 'dart:typed_data';
+
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 
 enum ProfileContentSection {
   profile,
@@ -110,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           unawaited(_loadProfile(forceRefresh: true));
           return;
         }
-        navigateToIndex(context, index);
+        navigateToIndex(context, index, 4);
       },
       body: ColoredBox(
         color: AppColors.white,
@@ -133,8 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           profile: profile,
           isRefreshing: profileState.isLoading,
           onRefresh: () => _loadProfile(forceRefresh: true),
-          onOpenAccountDetails: () =>
-              _setSection(ProfileContentSection.accountDetails),
+          onOpenAccountDetails: () => _setSection(ProfileContentSection.accountDetails),
           onOpenSettings: () => _setSection(ProfileContentSection.settings),
           onSectionSelected: _setSection,
         );
@@ -155,8 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return _SimpleProfileContent(
           title: 'مسابقه',
           emptyTitle: 'مسابقه‌ای فعال نیست!',
-          emptyDescription:
-              'مسابقه‌ها و رتبه‌بندی‌ها به‌زودی اینجا قرار می‌گیرند.',
+          emptyDescription: 'مسابقه‌ها و رتبه‌بندی‌ها به‌زودی اینجا قرار می‌گیرند.',
           icon: SolarIconsOutline.cupFirst,
           onSectionSelected: _setSection,
           selectedSection: _section,
@@ -218,8 +222,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   @override
   void didUpdateWidget(covariant FriendProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.userID != widget.userID ||
-        oldWidget.initialRelation != widget.initialRelation) {
+    if (oldWidget.userID != widget.userID || oldWidget.initialRelation != widget.initialRelation) {
       _relation = widget.initialRelation;
       if (oldWidget.userID != widget.userID) {
         _profile = null;
@@ -290,9 +293,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
   Future<void> _openChat() async {
     final currentUser = _currentUser;
-    if (_isBusy ||
-        currentUser == null ||
-        _relation != FriendshipRelation.accepted) {
+    if (_isBusy || currentUser == null || _relation != FriendshipRelation.accepted) {
       return;
     }
     setState(() => _isBusy = true);
@@ -323,15 +324,13 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         null => 'درخواست دوستی',
       };
 
-  bool get _isDestructiveAction =>
-      _relation == FriendshipRelation.accepted ||
-      _relation == FriendshipRelation.outgoingPending;
+  bool get _isDestructiveAction => _relation == FriendshipRelation.accepted || _relation == FriendshipRelation.outgoingPending;
 
   @override
   Widget build(BuildContext context) {
     return AppBottomNavigationScaffold(
       currentIndex: 4,
-      onTap: (index) => navigateToIndex(context, index),
+      onTap: (index) => navigateToIndex(context, index, 4),
       body: ColoredBox(
         color: AppColors.white,
         child: SafeArea(
@@ -353,21 +352,13 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                           child: ReButton(
                             key: const ValueKey('friendship-action'),
                             text: _actionTitle,
-                            icon: _isDestructiveAction
-                                ? SolarIconsOutline.userMinus
-                                : SolarIconsOutline.userPlus,
+                            icon: _isDestructiveAction ? SolarIconsOutline.userMinus : SolarIconsOutline.userPlus,
                             reverseIconPosition: true,
                             isLoading: _isBusy,
                             isOutlined: _isDestructiveAction,
-                            background: _isDestructiveAction
-                                ? AppColors.white
-                                : AppColors.secondary,
-                            textColor: _isDestructiveAction
-                                ? AppColors.black1
-                                : AppColors.white,
-                            color: _isDestructiveAction
-                                ? AppColors.gray2
-                                : AppColors.secondary,
+                            background: _isDestructiveAction ? AppColors.white : AppColors.secondary,
+                            textColor: _isDestructiveAction ? AppColors.black1 : AppColors.white,
+                            color: _isDestructiveAction ? AppColors.gray2 : AppColors.secondary,
                             onPressed: _changeFriendship,
                             height: 52,
                             borderRadius: 100,
@@ -432,7 +423,7 @@ class _FriendProfileHeader extends StatelessWidget {
               const SizedBox(width: 8),
               const ClipOval(
                 child: ReImage(
-                  'assets/images/sample_profile.png',
+                  'Assets.profilePlaceholder',
                   width: 46,
                   height: 46,
                 ),
@@ -504,12 +495,12 @@ class _FriendProfileSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: _ProfileMetricCard(
                   value: '3×',
                   label: 'ضریب امتیاز',
-                  color: Color(0xFFFF3040),
-                  icon: Icons.local_fire_department_rounded,
+                  color: const Color(0xFFFF3040),
+                  icon: SvgPicture.asset('assets/icons/flame.svg'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -518,7 +509,7 @@ class _FriendProfileSummaryCard extends StatelessWidget {
                   value: '${profile?.simoCoins ?? 36}',
                   label: 'سیموکوین',
                   color: const Color(0xFFFFC94C),
-                  icon: Icons.generating_tokens_rounded,
+                  icon: SvgPicture.asset('assets/icons/simo_coin.svg', color: Color(0xffe56929)),
                 ),
               ),
             ],
@@ -851,9 +842,7 @@ class _ProfileAccountCompactAction extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: iconColor == AppColors.primary
-                    ? const Color(0xFFFFECE8)
-                    : AppColors.gray1,
+                color: iconColor == AppColors.primary ? const Color(0xFFFFECE8) : AppColors.gray1,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, size: 18, color: iconColor),
@@ -876,8 +865,7 @@ class _ProfileHomeShimmer extends StatefulWidget {
   State<_ProfileHomeShimmer> createState() => _ProfileHomeShimmerState();
 }
 
-class _ProfileHomeShimmerState extends State<_ProfileHomeShimmer>
-    with SingleTickerProviderStateMixin {
+class _ProfileHomeShimmerState extends State<_ProfileHomeShimmer> with SingleTickerProviderStateMixin {
   late final AnimationController _animation;
 
   @override
@@ -1155,7 +1143,7 @@ class _MiniAvatarStack extends StatelessWidget {
                       )
                     : const ClipOval(
                         child: ReImage(
-                          'assets/images/sample_profile.png',
+                          'Assets.profilePlaceholder',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -1176,9 +1164,7 @@ class _ProfileInfoSections extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final interests = profile?.interests.isNotEmpty == true
-        ? profile!.interests
-        : const ['ریاضی', 'ورزش', 'هنر'];
+    final interests = profile?.interests.isNotEmpty == true ? profile!.interests : const ['ریاضی', 'ورزش', 'هنر'];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(36, 20, 36, 18),
@@ -1196,9 +1182,7 @@ class _ProfileInfoSections extends StatelessWidget {
             icon: SolarIconsOutline.infoCircle,
           ),
           ReText(
-            profile?.bio?.trim().isNotEmpty == true
-                ? profile!.bio!.trim()
-                : 'سلام! ${profile?.displayName ?? 'علیرضا یوسفی'} هستم. دانش آموز رشته ریاضی فیزیک! از مدرسه خواجه نصیر شهرستان چهرم.',
+            profile?.bio?.trim().isNotEmpty == true ? profile!.bio!.trim() : 'سلام! ${profile?.displayName ?? 'علیرضا یوسفی'} هستم. دانش آموز رشته ریاضی فیزیک! از مدرسه خواجه نصیر شهرستان چهرم.',
             color: AppColors.gray,
             fontSize: 10.5,
             fontWeight: FontWeight.w500,
@@ -1342,7 +1326,7 @@ class _SuggestedProfileCard extends StatelessWidget {
         children: [
           ClipOval(
             child: const ReImage(
-              'assets/images/sample_profile.png',
+              'Assets.profilePlaceholder',
               width: 48,
               height: 48,
             ),
@@ -1689,8 +1673,7 @@ class _ProfileSettingsContent extends StatefulWidget {
   final ValueChanged<ProfileContentSection> onSectionSelected;
 
   @override
-  State<_ProfileSettingsContent> createState() =>
-      _ProfileSettingsContentState();
+  State<_ProfileSettingsContent> createState() => _ProfileSettingsContentState();
 }
 
 class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
@@ -1814,8 +1797,7 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
                   subtitle: 'نمایش یا عدم نمایش اعلان ها',
                   trailing: _SettingsToggle(
                     value: _notificationsEnabled,
-                    onChanged: (value) =>
-                        setState(() => _notificationsEnabled = value),
+                    onChanged: (value) => setState(() => _notificationsEnabled = value),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1921,7 +1903,7 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
                 _OutlinedProfileAction(
                   key: const ValueKey('open-profile-edit-sheet'),
                   title: 'ویرایش',
-                  icon: SolarIconsOutline.pen,
+                  icon: IconsaxPlusLinear.edit,
                   onTap: _showEditSheet,
                 ),
                 const ReText(
@@ -1953,9 +1935,7 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
                 const SizedBox(height: 8),
                 _ProfileDetailsRow(
                   title: 'رشته، شغل، حوزه و ...',
-                  value: profile?.major?.trim().isNotEmpty == true
-                      ? profile!.major!.trim()
-                      : 'ثبت نشده',
+                  value: profile?.major?.trim().isNotEmpty == true ? profile!.major!.trim() : 'ثبت نشده',
                 ),
                 const SizedBox(height: 8),
                 _ProfileDetailsRow(
@@ -2072,8 +2052,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   }
 
   Future<void> _pickBirthDate() async {
-    final initialDate =
-        _birthDate == null ? Jalali.now() : Jalali.fromDateTime(_birthDate!);
+    final initialDate = _birthDate == null ? Jalali.now() : Jalali.fromDateTime(_birthDate!);
     final selected = await showReModalBottomSheet<Jalali>(
       context: context,
       isScrollControlled: false,
@@ -2095,9 +2074,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
     final birthDate = _birthDate;
 
     setState(() {
-      _nameError = isValidPersianFullName(fullName)
-          ? null
-          : 'نام و نام خانوادگی را به فارسی وارد کنید.';
+      _nameError = isValidPersianFullName(fullName) ? null : 'نام و نام خانوادگی را به فارسی وارد کنید.';
       _birthDateError = birthDate == null ? 'تاریخ تولد را انتخاب کنید.' : null;
     });
     if (_nameError != null || _birthDateError != null) return;
@@ -2178,10 +2155,8 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                               borderRadius: 100,
                               backgroundColor: AppColors.gray1,
                               showFocusShadow: false,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 18),
-                              onChanged: (_) =>
-                                  setState(() => _nameError = null),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+                              onChanged: (_) => setState(() => _nameError = null),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -2195,10 +2170,8 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                               borderRadius: 100,
                               backgroundColor: AppColors.gray1,
                               showFocusShadow: false,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(horizontal: 18),
-                              onChanged: (_) =>
-                                  setState(() => _nameError = null),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+                              onChanged: (_) => setState(() => _nameError = null),
                             ),
                           ),
                         ],
@@ -2226,6 +2199,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                       _ProfileBirthDateEditor(
                         key: const ValueKey('profile-birth-date-field'),
                         onTap: _pickBirthDate,
+                        currentDate: _birthDate ?? DateTime.now(),
                       ),
                       if (_birthDateError != null)
                         ReText(
@@ -2289,45 +2263,50 @@ class _ProfileEditSheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 58,
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Positioned(
-            right: 0,
-            child: GestureDetector(
-              onTap: onClose,
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.gray2),
-                ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: AppColors.gray,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-          const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Stack(
+            alignment: Alignment.center,
             children: [
-              ReText(
-                'ویرایش مشخصات',
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-              SizedBox(height: 4),
-              ReText(
-                'مشخصات حساب کاربری خود را ویرایش کنید.',
-                color: AppColors.gray,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w600,
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ReText(
+                    'ویرایش مشخصات',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  SizedBox(height: 4),
+                  ReText(
+                    'مشخصات حساب کاربری خود را ویرایش کنید.',
+                    color: AppColors.gray,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ],
               ),
             ],
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onClose,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.gray2),
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.gray,
+                size: 18,
+              ),
+            ),
           ),
         ],
       ),
@@ -2422,9 +2401,11 @@ class _ProfileBirthDateEditor extends StatelessWidget {
   const _ProfileBirthDateEditor({
     super.key,
     required this.onTap,
+    required this.currentDate,
   });
 
   final VoidCallback onTap;
+  final DateTime currentDate;
 
   @override
   Widget build(BuildContext context) {
@@ -2448,13 +2429,13 @@ class _ProfileBirthDateEditor extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ).rMargin(8),
             const SizedBox(height: 12),
-            const Row(
+            Row(
               children: [
-                Expanded(child: _ProfileDatePart(label: 'سال')),
-                SizedBox(width: 8),
-                Expanded(child: _ProfileDatePart(label: 'ماه')),
-                SizedBox(width: 8),
-                Expanded(child: _ProfileDatePart(label: 'روز')),
+                Expanded(child: _ProfileDatePart(label: 'سال: ${Jalali.fromDateTime(currentDate).year}')),
+                const SizedBox(width: 8),
+                Expanded(child: _ProfileDatePart(label: 'ماه: ${Jalali.fromDateTime(currentDate).month}')),
+                const SizedBox(width: 8),
+                Expanded(child: _ProfileDatePart(label: 'روز: ${Jalali.fromDateTime(currentDate).day}')),
               ],
             ),
           ],
@@ -2550,9 +2531,7 @@ class _ProfileMajorPicker extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 7),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: option == selected
-                        ? AppColors.primary.withOpacity(0.08)
-                        : AppColors.gray1,
+                    color: option == selected ? AppColors.primary.withOpacity(0.08) : AppColors.gray1,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
@@ -2560,9 +2539,7 @@ class _ProfileMajorPicker extends StatelessWidget {
                     children: [
                       ReText(
                         option,
-                        color: option == selected
-                            ? AppColors.primary
-                            : AppColors.black1,
+                        color: option == selected ? AppColors.primary : AppColors.black1,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2578,11 +2555,7 @@ class _ProfileMajorPicker extends StatelessWidget {
 }
 
 (String, String) _profileFullNameParts(String? fullName) {
-  final parts = (fullName ?? '')
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
+  final parts = (fullName ?? '').trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
   if (parts.isEmpty) return ('', '');
   if (parts.length == 1) return (parts.first, '');
   return (parts.first, parts.skip(1).join(' '));
@@ -2744,13 +2717,10 @@ class _SettingsActionButton extends StatelessWidget {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color:
-              isPrimary ? AppColors.primary.withOpacity(0.10) : AppColors.white,
+          color: isPrimary ? AppColors.primary.withOpacity(0.10) : AppColors.white,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: isPrimary
-                ? AppColors.primary.withOpacity(0.08)
-                : AppColors.gray2,
+            color: isPrimary ? AppColors.primary.withOpacity(0.08) : AppColors.gray2,
           ),
         ),
         child: Row(
@@ -2827,8 +2797,7 @@ class _FriendsContent extends StatefulWidget {
   State<_FriendsContent> createState() => _FriendsContentState();
 }
 
-class _FriendsContentState extends State<_FriendsContent>
-    with WidgetsBindingObserver {
+class _FriendsContentState extends State<_FriendsContent> with WidgetsBindingObserver {
   final TextEditingController _usernameController = TextEditingController();
   late final FriendshipRepository _friendshipRepository;
   late final ChatRepository _chatRepository;
@@ -2914,9 +2883,7 @@ class _FriendsContentState extends State<_FriendsContent>
     final currentUserID = _currentUser?.id;
     if (currentUserID == null || message.senderID == currentUserID) return;
     final isAcceptedFriend = _friends.any(
-      (friend) =>
-          friend.relation == FriendshipRelation.accepted &&
-          friend.targetUserID == message.senderID,
+      (friend) => friend.relation == FriendshipRelation.accepted && friend.targetUserID == message.senderID,
     );
     if (!isAcceptedFriend) return;
 
@@ -2925,8 +2892,7 @@ class _FriendsContentState extends State<_FriendsContent>
       if (message.senderID == _activeChatUserID) {
         _unreadByUserID.remove(message.senderID);
       } else {
-        _unreadByUserID[message.senderID] =
-            (_unreadByUserID[message.senderID] ?? 0) + 1;
+        _unreadByUserID[message.senderID] = (_unreadByUserID[message.senderID] ?? 0) + 1;
       }
     });
   }
@@ -2971,8 +2937,7 @@ class _FriendsContentState extends State<_FriendsContent>
     }
 
     try {
-      final currentUser =
-          _currentUser ?? await _friendshipRepository.getCurrentUser();
+      final currentUser = _currentUser ?? await _friendshipRepository.getCurrentUser();
       String? expandedID;
       for (final friend in _friends) {
         if (friend.isExpanded) {
@@ -2980,19 +2945,14 @@ class _FriendsContentState extends State<_FriendsContent>
           break;
         }
       }
-      final friendships =
-          await _friendshipRepository.getFriendships(currentUser.id);
+      final friendships = await _friendshipRepository.getFriendships(currentUser.id);
       if (!mounted) return;
       setState(() {
         _currentUser = currentUser;
         _friends = [
-          for (final friendship in friendships)
-            friendship.copyWith(isExpanded: friendship.id == expandedID),
+          for (final friendship in friendships) friendship.copyWith(isExpanded: friendship.id == expandedID),
         ];
-        final acceptedIDs = friendships
-            .where((friend) => friend.relation == FriendshipRelation.accepted)
-            .map((friend) => friend.targetUserID)
-            .toSet();
+        final acceptedIDs = friendships.where((friend) => friend.relation == FriendshipRelation.accepted).map((friend) => friend.targetUserID).toSet();
         _unreadByUserID.removeWhere(
           (userID, _) => !acceptedIDs.contains(userID),
         );
@@ -3128,9 +3088,7 @@ class _FriendsContentState extends State<_FriendsContent>
 
   Future<void> _openChat(FriendshipItem friend) async {
     final currentUser = _currentUser;
-    if (currentUser == null ||
-        _busyTargetID != null ||
-        friend.relation != FriendshipRelation.accepted) {
+    if (currentUser == null || _busyTargetID != null || friend.relation != FriendshipRelation.accepted) {
       return;
     }
 
@@ -3140,8 +3098,7 @@ class _FriendsContentState extends State<_FriendsContent>
       _unreadByUserID.remove(friend.targetUserID);
     });
     try {
-      final chatID =
-          await _chatRepository.createDirectChat(friend.targetUserID);
+      final chatID = await _chatRepository.createDirectChat(friend.targetUserID);
       if (!mounted) return;
       setState(() {
         _chatUserByChatID[chatID] = friend.targetUserID;
@@ -3305,15 +3262,9 @@ class _FriendsContentState extends State<_FriendsContent>
   }
 
   Widget _buildList() {
-    final incoming = _friends
-        .where((item) => item.relation == FriendshipRelation.incomingPending)
-        .toList();
-    final outgoing = _friends
-        .where((item) => item.relation == FriendshipRelation.outgoingPending)
-        .toList();
-    final accepted = _friends
-        .where((item) => item.relation == FriendshipRelation.accepted)
-        .toList();
+    final incoming = _friends.where((item) => item.relation == FriendshipRelation.incomingPending).toList();
+    final outgoing = _friends.where((item) => item.relation == FriendshipRelation.outgoingPending).toList();
+    final accepted = _friends.where((item) => item.relation == FriendshipRelation.accepted).toList();
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -3336,8 +3287,7 @@ class _FriendsContentState extends State<_FriendsContent>
     );
   }
 
-  List<Widget> _buildFriendSection(String title, List<FriendshipItem> items,
-      {bool showFriendsHeading = false}) {
+  List<Widget> _buildFriendSection(String title, List<FriendshipItem> items, {bool showFriendsHeading = false}) {
     if (items.isEmpty && !showFriendsHeading) return const [];
     return [
       _FriendSectionTitle(
@@ -3359,8 +3309,7 @@ class _FriendsContentState extends State<_FriendsContent>
           onCancel: () => _cancelFriend(friend),
           onDelete: () => _removeFriend(friend),
         ),
-        Divider(
-            height: 1, thickness: 1, color: AppColors.gray2.withOpacity(.7)),
+        Divider(height: 1, thickness: 1, color: AppColors.gray2.withOpacity(.7)),
       ],
       const SizedBox(height: 18),
     ];
@@ -3589,9 +3538,7 @@ class _FriendTileHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    friend.isExpanded
-                        ? SolarIconsOutline.altArrowUp
-                        : SolarIconsOutline.altArrowLeft,
+                    friend.isExpanded ? SolarIconsOutline.altArrowUp : SolarIconsOutline.altArrowLeft,
                     color: AppColors.black1.withOpacity(0.45),
                     size: 16,
                   ),
@@ -3657,7 +3604,7 @@ class _FriendTileHeader extends StatelessWidget {
                   ],
                 ).rMargin(9),
                 _FriendAvatar(
-                  path: 'assets/images/sample_profile.png',
+                  path: 'Assets.profilePlaceholder',
                   isOnline: activity?.isOnline == true,
                 ),
               ],
@@ -4146,8 +4093,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
   String get _query => widget.controller.text.trim();
 
   Map<String, FriendshipRelation> get _relationsByUserID => {
-        for (final friendship in widget.friendships)
-          friendship.targetUserID: friendship.relation,
+        for (final friendship in widget.friendships) friendship.targetUserID: friendship.relation,
       };
 
   void _scheduleSearch(String value) {
@@ -4155,8 +4101,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
     _searchRevision += 1;
     final query = value.trim();
 
-    if (query.length < _minimumQueryLength ||
-        !hasValidUsernameCharacters(query)) {
+    if (query.length < _minimumQueryLength || !hasValidUsernameCharacters(query)) {
       setState(() {
         _results = const [];
         _error = null;
@@ -4212,8 +4157,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
     if (!_canMakeSearchRequest()) {
       setState(() {
         _isSearching = false;
-        _error =
-            'تعداد جست‌وجوها زیاد شده است؛ لطفاً یک دقیقه دیگر دوباره تلاش کنید.';
+        _error = 'تعداد جست‌وجوها زیاد شده است؛ لطفاً یک دقیقه دیگر دوباره تلاش کنید.';
       });
       return;
     }
@@ -4289,8 +4233,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final availableHeight =
-        mediaQuery.size.height - mediaQuery.viewInsets.bottom;
+    final availableHeight = mediaQuery.size.height - mediaQuery.viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
       child: Container(
@@ -4329,8 +4272,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
                 onFieldSubmitted: (value) {
                   _searchTimer?.cancel();
                   final query = value.trim();
-                  if (query.length < _minimumQueryLength ||
-                      !hasValidUsernameCharacters(query)) {
+                  if (query.length < _minimumQueryLength || !hasValidUsernameCharacters(query)) {
                     return;
                   }
                   _search(
@@ -4379,9 +4321,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
         Align(
           alignment: Alignment.topRight,
           child: GestureDetector(
-            onTap: _submittingUserID == null
-                ? () => Navigator.of(context).pop(false)
-                : null,
+            onTap: _submittingUserID == null ? () => Navigator.of(context).pop(false) : null,
             child: Container(
               width: 44,
               height: 44,
@@ -4439,8 +4379,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
     return Center(
       child: ReText(
         text,
-        color:
-            isError ? AppColors.errorColor : AppColors.black1.withOpacity(0.55),
+        color: isError ? AppColors.errorColor : AppColors.black1.withOpacity(0.55),
         fontSize: 12,
         fontWeight: FontWeight.w600,
         textAlign: TextAlign.center,
@@ -4477,9 +4416,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
               width: 96,
               child: ReButton(
                 text: status ?? 'ارسال درخواست',
-                onPressed: isDisabled || _submittingUserID != null
-                    ? null
-                    : () => _submit(user),
+                onPressed: isDisabled || _submittingUserID != null ? null : () => _submit(user),
                 isLoading: isSubmitting,
                 background: isDisabled ? AppColors.gray2 : AppColors.primary,
                 height: 38,
@@ -4700,10 +4637,7 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usesCompactProfileHeader =
-        selectedSection == ProfileContentSection.profile ||
-            selectedSection == ProfileContentSection.accountDetails ||
-            selectedSection == ProfileContentSection.settings;
+    final usesCompactProfileHeader = selectedSection == ProfileContentSection.profile || selectedSection == ProfileContentSection.accountDetails || selectedSection == ProfileContentSection.settings;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4716,7 +4650,7 @@ class _ProfileHeader extends StatelessWidget {
               section: ProfileContentSection.notifications,
               selectedSection: selectedSection,
               onTap: onSectionSelected,
-              showBadge: true,
+              showBadge: false,
             ),
             if (!usesCompactProfileHeader) ...[
               _HeaderActionIcon(
@@ -4827,12 +4761,45 @@ class _ProfileSummaryCard extends StatelessWidget {
           Row(
             textDirection: TextDirection.rtl,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: const ReImage(
-                  'assets/images/sample_profile.png',
-                  width: 56,
-                  height: 56,
+              GestureDetector(
+                onTap: () async {
+                  final avatarUrl = await showReModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) {
+                      return ProfileAvatarBottomSheet(
+                        currentImageUrl: profile?.avatarURL ?? 'Assets.profilePlaceholder',
+                        onUpload: ({
+                          required Uint8List imageBytes,
+                          required String fileName,
+                        }) {
+                          return context.read<ProfileCubit>().uploadProfileImage(
+                                imageBytes: imageBytes,
+                                fileName: fileName,
+                              );
+                        },
+                      );
+                    },
+                  );
+                },
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: ReImage(
+                        profile?.avatarURL ?? Assets.profilePlaceholder,
+                        fit: BoxFit.cover,
+                        width: 56,
+                        height: 56,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      margin: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(color: AppColors.white.withAlpha(100), borderRadius: BorderRadius.circular(10)),
+                      child: Icon(IconsaxPlusBroken.edit, size: 16),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 14),
@@ -4843,7 +4810,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                     ReText(
                       profile?.displayName ?? 'علیرضا یوسفی',
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                     const SizedBox(height: 7),
                     Row(
@@ -4851,7 +4818,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: ReText(
-                            '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه',
+                            isPremium ? '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه' : 'اشتراک ندارید',
                             color: AppColors.gray,
                             fontWeight: FontWeight.w500,
                             fontSize: 11,
@@ -4903,16 +4870,16 @@ class _ProfileSummaryCard extends StatelessWidget {
                   value: '$score×',
                   label: 'ضریب امتیاز',
                   color: Color(0xFFFF3040),
-                  icon: Icons.local_fire_department_rounded,
+                  icon: SvgPicture.asset('assets/icons/flame.svg'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _ProfileMetricCard(
                   value: '$simoCoins',
-                  label: 'سیموکوین',
+                  label: 'سایموکوین',
                   color: const Color(0xFFFFC94C),
-                  icon: Icons.generating_tokens_rounded,
+                  icon: SvgPicture.asset('assets/icons/simo_coin.svg', color: Color(0xffe56929)),
                 ),
               ),
             ],
@@ -4934,7 +4901,7 @@ class _ProfileMetricCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
-  final IconData icon;
+  final Widget icon;
 
   @override
   Widget build(BuildContext context) {
@@ -4993,6 +4960,7 @@ class _ProfileMetricCard extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
@@ -5004,7 +4972,7 @@ class _ProfileMetricCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(icon, color: AppColors.white, size: 21),
+            child: icon,
           ),
         ],
       ),
@@ -5030,13 +4998,10 @@ String _friendlyProfileError(Object error) {
   if (text.contains('Unauthorized') || text.contains('Authentication')) {
     return 'برای ادامه دوباره وارد حساب شوید.';
   }
-  if (upperText.contains('RATE_LIMIT') ||
-      upperText.contains('TOO MANY REQUESTS') ||
-      upperText.contains('429')) {
+  if (upperText.contains('RATE_LIMIT') || upperText.contains('TOO MANY REQUESTS') || upperText.contains('429')) {
     return 'تعداد درخواست‌ها زیاد شده است؛ لطفاً یک دقیقه دیگر تلاش کنید.';
   }
-  if (upperText.contains('USER_NOT_FOUND') ||
-      upperText.contains('USER NOT FOUND')) {
+  if (upperText.contains('USER_NOT_FOUND') || upperText.contains('USER NOT FOUND')) {
     return 'کاربری با این نام کاربری پیدا نشد.';
   }
   if (upperText.contains('CANNOT_ADD_SELF')) {
@@ -5053,4 +5018,464 @@ String _friendlyProfileError(Object error) {
   }
   if (text.trim().isEmpty) return 'خطای ناشناخته رخ داد.';
   return text.replaceFirst('Exception: ', '');
+}
+
+class ProfileAvatarBottomSheet extends StatefulWidget {
+  const ProfileAvatarBottomSheet({
+    super.key,
+    required this.currentImageUrl,
+    required this.onUpload,
+  });
+
+  final String? currentImageUrl;
+
+  /// Receives the cropped image bytes and returns the uploaded avatar URL.
+  final Future<String> Function({
+    required Uint8List imageBytes,
+    required String fileName,
+  }) onUpload;
+
+  @override
+  State<ProfileAvatarBottomSheet> createState() => _ProfileAvatarBottomSheetState();
+}
+
+class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
+  final ImagePicker _imagePicker = ImagePicker();
+
+  Uint8List? _newImageBytes;
+  String? _newFileName;
+
+  bool _isPicking = false;
+  bool _isSaving = false;
+
+  bool get _hasChanges => _newImageBytes != null;
+
+  Future<void> _editImage() async {
+    if (_isPicking || _isSaving) return;
+
+    setState(() => _isPicking = true);
+
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 100,
+      );
+
+      if (pickedFile == null) {
+        if (mounted) {
+          setState(() => _isPicking = false);
+        }
+        return;
+      }
+
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        compressQuality: 90,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'ویرایش تصویر',
+            toolbarColor: AppColors.white,
+            toolbarWidgetColor: AppColors.black1,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            title: 'ویرایش تصویر',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+          WebUiSettings(
+            context: context,
+            presentStyle: WebPresentStyle.dialog,
+            size: const CropperSize(
+              width: 500,
+              height: 500,
+            ),
+          ),
+        ],
+      );
+
+      if (croppedFile == null) {
+        if (mounted) {
+          setState(() => _isPicking = false);
+        }
+        return;
+      }
+
+      final bytes = await croppedFile.readAsBytes();
+
+      if (!mounted) return;
+
+      setState(() {
+        _newImageBytes = bytes;
+        _newFileName = pickedFile.name;
+        _isPicking = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() => _isPicking = false);
+
+      showReToast(
+        context,
+        'انتخاب تصویر با خطا مواجه شد',
+        ReToastType.failed,
+      );
+    }
+  }
+
+  Future<void> _save() async {
+    if (_isSaving || _newImageBytes == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final avatarUrl = await widget.onUpload(
+        imageBytes: _newImageBytes!,
+        fileName: _newFileName ?? 'avatar.jpg',
+      );
+
+      if (!mounted) return;
+
+      showReToast(
+        context,
+        'تصویر پروفایل با موفقیت ذخیره شد',
+        ReToastType.success,
+      );
+
+      try {
+        await context.read<ProfileCubit>().getMe(
+          forceRefresh: true,
+        );
+      } catch (error) {
+        if (!mounted) return;
+        showReToast(context, _friendlyProfileError(error), ReToastType.failed);
+      }
+
+      Navigator.of(context).pop(avatarUrl);
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() => _isSaving = false);
+
+      showReToast(
+        context,
+        _friendlyAvatarError(error),
+        ReToastType.failed,
+      );
+    }
+  }
+
+  String _friendlyAvatarError(Object error) {
+    final message = error.toString();
+
+    if (message.contains('Access token')) {
+      return 'نشست شما منقضی شده است.';
+    }
+
+    if (message.contains('Failed to upload')) {
+      return 'آپلود تصویر با خطا مواجه شد.';
+    }
+
+    return 'ذخیره تصویر با خطا مواجه شد.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
+
+    final sheetHeight = screenHeight < 700 ? screenHeight * 0.78 : math.min(620.0, screenHeight * 0.68);
+
+    return Container(
+      height: sheetHeight,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(34),
+          topRight: Radius.circular(34),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // Drag handle
+            Container(
+              width: 62,
+              height: 5,
+              margin: const EdgeInsets.only(top: 0),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  28,
+                  22,
+                  28,
+                  20,
+                ),
+                child: Column(
+                  children: [
+                    _ProfileAvatarSheetHeader(
+                      onClose: () => Navigator.of(context).pop(),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // Avatar
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: _AvatarPreview(
+                        key: ValueKey(
+                          _newImageBytes != null ? 'new-avatar' : 'current-avatar',
+                        ),
+                        imageUrl: widget.currentImageUrl,
+                        imageBytes: _newImageBytes,
+                        isLoading: _isPicking,
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    ReText(
+                      _hasChanges ? 'تصویر جدید آماده ذخیره است' : 'تصویر پروفایل',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+
+                    const SizedBox(height: 7),
+
+                    ReText(
+                      _hasChanges ? 'در صورت تأیید، تصویر جدید برای پروفایل شما ذخیره می‌شود.' : 'تصویر پروفایل خود را انتخاب یا ویرایش کنید.',
+                      color: AppColors.gray,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ReButton(
+                            key: ValueKey(
+                              _hasChanges ? 'save-avatar' : 'edit-avatar',
+                            ),
+                            text: _hasChanges ? 'ذخیره' : 'ویرایش',
+                            icon: _hasChanges ? Icons.check_rounded : Icons.edit_rounded,
+                            reverseIconPosition: true,
+                            isLoading: _isSaving || _isPicking,
+                            onPressed: _hasChanges ? _save : _editImage,
+                            height: 54,
+                            borderRadius: 100,
+                            background: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 112,
+                          child: ReButton(
+                            text: 'لغو',
+                            icon: Icons.close_rounded,
+                            reverseIconPosition: true,
+                            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+                            height: 54,
+                            borderRadius: 100,
+                            isOutlined: true,
+                            background: AppColors.white,
+                            color: AppColors.gray2,
+                            textColor: AppColors.black1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarPreview extends StatelessWidget {
+  const _AvatarPreview({
+    super.key,
+    required this.imageUrl,
+    required this.imageBytes,
+    required this.isLoading,
+  });
+
+  final String? imageUrl;
+  final Uint8List? imageBytes;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget image;
+
+    if (imageBytes != null) {
+      image = Image.memory(
+        imageBytes!,
+        width: 250,
+        height: 250,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+      );
+    } else if (imageUrl != null && imageUrl!.isNotEmpty) {
+      image = imageUrl?.startsWith('http') ?? false
+          ? Image.network(
+              imageUrl!,
+              width: 250,
+              height: 250,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return const _DefaultAvatar();
+              },
+            )
+          : Image.asset(
+              imageUrl!,
+              width: 250,
+              height: 250,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) {
+                return const _DefaultAvatar();
+              },
+            );
+    } else {
+      image = const _DefaultAvatar();
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.gray2,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+                color: Colors.black.withOpacity(0.08),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: image,
+          ),
+        ),
+        if (isLoading)
+          Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.35),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _DefaultAvatar extends StatelessWidget {
+  const _DefaultAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.gray1,
+      child: const Center(
+        child: Icon(
+          Icons.person_rounded,
+          size: 90,
+          color: AppColors.gray,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAvatarSheetHeader extends StatelessWidget {
+  const _ProfileAvatarSheetHeader({
+    required this.onClose,
+  });
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                ReText(
+                  'تصویر پروفایل',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+                SizedBox(height: 4),
+                ReText(
+                  'تصویر پروفایل خود را تغییر دهید.',
+                  color: AppColors.gray,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onClose,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.gray2,
+                ),
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.gray,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

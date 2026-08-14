@@ -14,7 +14,7 @@ abstract class GGetChatMessagesVars
   GGetChatMessagesVars._();
 
   factory GGetChatMessagesVars(
-          [Function(GGetChatMessagesVarsBuilder b) updates]) =
+          [void Function(GGetChatMessagesVarsBuilder b) updates]) =
       _$GGetChatMessagesVars;
 
   _i1.GUUID get chatID;

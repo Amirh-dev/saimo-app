@@ -22,7 +22,7 @@ abstract class GGetMeReq
         _i1.OperationRequest<_i2.GGetMeData, _i3.GGetMeVars> {
   GGetMeReq._();
 
-  factory GGetMeReq([Function(GGetMeReqBuilder b) updates]) = _$GGetMeReq;
+  factory GGetMeReq([void Function(GGetMeReqBuilder b) updates]) = _$GGetMeReq;
 
   static void _initializeBuilder(GGetMeReqBuilder b) => b
     ..operation = _i4.Operation(
@@ -39,6 +39,7 @@ abstract class GGetMeReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -60,8 +61,22 @@ abstract class GGetMeReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GGetMeData? parseData(Map<String, dynamic> json) =>
       _i2.GGetMeData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GGetMeData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GGetMeData, _i3.GGetMeVars> transformOperation(
+          _i4.Operation Function(_i4.Operation) transform) =>
+      this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GGetMeReq> get serializer => _$gGetMeReqSerializer;
 

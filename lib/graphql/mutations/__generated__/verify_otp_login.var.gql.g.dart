@@ -7,7 +7,7 @@ part of 'verify_otp_login.var.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndLoginVars> _$gVerifyOTPAndLoginVarsSerializer =
-    new _$GVerifyOTPAndLoginVarsSerializer();
+    _$GVerifyOTPAndLoginVarsSerializer();
 
 class _$GVerifyOTPAndLoginVarsSerializer
     implements StructuredSerializer<GVerifyOTPAndLoginVars> {
@@ -36,7 +36,7 @@ class _$GVerifyOTPAndLoginVarsSerializer
   GVerifyOTPAndLoginVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginVarsBuilder();
+    final result = GVerifyOTPAndLoginVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -62,13 +62,9 @@ class _$GVerifyOTPAndLoginVars extends GVerifyOTPAndLoginVars {
 
   factory _$GVerifyOTPAndLoginVars(
           [void Function(GVerifyOTPAndLoginVarsBuilder)? updates]) =>
-      (new GVerifyOTPAndLoginVarsBuilder()..update(updates))._build();
+      (GVerifyOTPAndLoginVarsBuilder()..update(updates))._build();
 
-  _$GVerifyOTPAndLoginVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        input, r'GVerifyOTPAndLoginVars', 'input');
-  }
-
+  _$GVerifyOTPAndLoginVars._({required this.input}) : super._();
   @override
   GVerifyOTPAndLoginVars rebuild(
           void Function(GVerifyOTPAndLoginVarsBuilder) updates) =>
@@ -76,7 +72,7 @@ class _$GVerifyOTPAndLoginVars extends GVerifyOTPAndLoginVars {
 
   @override
   GVerifyOTPAndLoginVarsBuilder toBuilder() =>
-      new GVerifyOTPAndLoginVarsBuilder()..replace(this);
+      GVerifyOTPAndLoginVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -106,7 +102,7 @@ class GVerifyOTPAndLoginVarsBuilder
 
   _i1.GVerifyOTPAndLoginInputBuilder? _input;
   _i1.GVerifyOTPAndLoginInputBuilder get input =>
-      _$this._input ??= new _i1.GVerifyOTPAndLoginInputBuilder();
+      _$this._input ??= _i1.GVerifyOTPAndLoginInputBuilder();
   set input(_i1.GVerifyOTPAndLoginInputBuilder? input) => _$this._input = input;
 
   GVerifyOTPAndLoginVarsBuilder();
@@ -122,7 +118,6 @@ class GVerifyOTPAndLoginVarsBuilder
 
   @override
   void replace(GVerifyOTPAndLoginVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginVars;
   }
 
@@ -137,14 +132,17 @@ class GVerifyOTPAndLoginVarsBuilder
   _$GVerifyOTPAndLoginVars _build() {
     _$GVerifyOTPAndLoginVars _$result;
     try {
-      _$result = _$v ?? new _$GVerifyOTPAndLoginVars._(input: input.build());
+      _$result = _$v ??
+          _$GVerifyOTPAndLoginVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndLoginVars', _$failedField, e.toString());
       }
       rethrow;

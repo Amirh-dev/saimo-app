@@ -7,7 +7,7 @@ part of 'create_task.req.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateTaskReq> _$gCreateTaskReqSerializer =
-    new _$GCreateTaskReqSerializer();
+    _$GCreateTaskReqSerializer();
 
 class _$GCreateTaskReqSerializer
     implements StructuredSerializer<GCreateTaskReq> {
@@ -74,7 +74,7 @@ class _$GCreateTaskReqSerializer
   GCreateTaskReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskReqBuilder();
+    final result = GCreateTaskReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -147,9 +147,11 @@ class _$GCreateTaskReq extends GCreateTaskReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GCreateTaskReq([void Function(GCreateTaskReqBuilder)? updates]) =>
-      (new GCreateTaskReqBuilder()..update(updates))._build();
+      (GCreateTaskReqBuilder()..update(updates))._build();
 
   _$GCreateTaskReq._(
       {required this.vars,
@@ -160,22 +162,15 @@ class _$GCreateTaskReq extends GCreateTaskReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GCreateTaskReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GCreateTaskReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GCreateTaskReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GCreateTaskReq rebuild(void Function(GCreateTaskReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GCreateTaskReqBuilder toBuilder() =>
-      new GCreateTaskReqBuilder()..replace(this);
+  GCreateTaskReqBuilder toBuilder() => GCreateTaskReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -190,7 +185,8 @@ class _$GCreateTaskReq extends GCreateTaskReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -205,6 +201,7 @@ class _$GCreateTaskReq extends GCreateTaskReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -220,7 +217,8 @@ class _$GCreateTaskReq extends GCreateTaskReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -231,7 +229,7 @@ class GCreateTaskReqBuilder
 
   _i3.GCreateTaskVarsBuilder? _vars;
   _i3.GCreateTaskVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GCreateTaskVarsBuilder();
+      _$this._vars ??= _i3.GCreateTaskVarsBuilder();
   set vars(_i3.GCreateTaskVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -254,7 +252,7 @@ class GCreateTaskReqBuilder
 
   _i2.GCreateTaskDataBuilder? _optimisticResponse;
   _i2.GCreateTaskDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GCreateTaskDataBuilder();
+      _$this._optimisticResponse ??= _i2.GCreateTaskDataBuilder();
   set optimisticResponse(_i2.GCreateTaskDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -280,6 +278,10 @@ class GCreateTaskReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GCreateTaskReqBuilder() {
     GCreateTaskReq._initializeBuilder(this);
   }
@@ -296,6 +298,7 @@ class GCreateTaskReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -303,7 +306,6 @@ class GCreateTaskReqBuilder
 
   @override
   void replace(GCreateTaskReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskReq;
   }
 
@@ -319,18 +321,20 @@ class GCreateTaskReqBuilder
     _$GCreateTaskReq _$result;
     try {
       _$result = _$v ??
-          new _$GCreateTaskReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GCreateTaskReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GCreateTaskReq', 'executeOnListen'));
+          _$GCreateTaskReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GCreateTaskReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GCreateTaskReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -340,7 +344,7 @@ class GCreateTaskReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateTaskReq', _$failedField, e.toString());
       }
       rethrow;

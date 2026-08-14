@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -5,7 +7,12 @@ import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
-Row authHeaderWidget(BuildContext context, {required Enum authType}) {
+Row authHeaderWidget(
+    BuildContext context, {
+      required Enum authType,
+      VoidCallback? onBack,
+      bool backButton = false,
+    }) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     crossAxisAlignment: CrossAxisAlignment.end,
@@ -27,10 +34,8 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          GestureDetector(
-            onTap: () {
-              context.back();
-            },
+          backButton ? GestureDetector(
+            onTap: onBack ?? () => context.back(),
             child: Container(
               width: 48,
               height: 48,
@@ -44,7 +49,7 @@ Row authHeaderWidget(BuildContext context, {required Enum authType}) {
                 color: AppColors.gray,
               ).hMargin(15).vMargin(15),
             ),
-          ),
+          ) : const SizedBox(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

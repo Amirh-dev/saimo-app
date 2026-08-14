@@ -13,7 +13,7 @@ abstract class GCreateDirectChatData
   GCreateDirectChatData._();
 
   factory GCreateDirectChatData(
-          [Function(GCreateDirectChatDataBuilder b) updates]) =
+          [void Function(GCreateDirectChatDataBuilder b) updates]) =
       _$GCreateDirectChatData;
 
   static void _initializeBuilder(GCreateDirectChatDataBuilder b) =>
@@ -44,8 +44,8 @@ abstract class GCreateDirectChatData_createDirectChat
   GCreateDirectChatData_createDirectChat._();
 
   factory GCreateDirectChatData_createDirectChat(
-          [Function(GCreateDirectChatData_createDirectChatBuilder b) updates]) =
-      _$GCreateDirectChatData_createDirectChat;
+      [void Function(GCreateDirectChatData_createDirectChatBuilder b)
+          updates]) = _$GCreateDirectChatData_createDirectChat;
 
   static void _initializeBuilder(
           GCreateDirectChatData_createDirectChatBuilder b) =>

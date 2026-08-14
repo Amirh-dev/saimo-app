@@ -6,7 +6,7 @@ part of 'send_otp.req.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GSendOTPReq> _$gSendOTPReqSerializer = new _$GSendOTPReqSerializer();
+Serializer<GSendOTPReq> _$gSendOTPReqSerializer = _$GSendOTPReqSerializer();
 
 class _$GSendOTPReqSerializer implements StructuredSerializer<GSendOTPReq> {
   @override
@@ -71,7 +71,7 @@ class _$GSendOTPReqSerializer implements StructuredSerializer<GSendOTPReq> {
   @override
   GSendOTPReq deserialize(Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendOTPReqBuilder();
+    final result = GSendOTPReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -144,9 +144,11 @@ class _$GSendOTPReq extends GSendOTPReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GSendOTPReq([void Function(GSendOTPReqBuilder)? updates]) =>
-      (new GSendOTPReqBuilder()..update(updates))._build();
+      (GSendOTPReqBuilder()..update(updates))._build();
 
   _$GSendOTPReq._(
       {required this.vars,
@@ -157,21 +159,15 @@ class _$GSendOTPReq extends GSendOTPReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GSendOTPReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GSendOTPReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GSendOTPReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GSendOTPReq rebuild(void Function(GSendOTPReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GSendOTPReqBuilder toBuilder() => new GSendOTPReqBuilder()..replace(this);
+  GSendOTPReqBuilder toBuilder() => GSendOTPReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -186,7 +182,8 @@ class _$GSendOTPReq extends GSendOTPReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -201,6 +198,7 @@ class _$GSendOTPReq extends GSendOTPReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -216,7 +214,8 @@ class _$GSendOTPReq extends GSendOTPReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -226,7 +225,7 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
 
   _i3.GSendOTPVarsBuilder? _vars;
   _i3.GSendOTPVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GSendOTPVarsBuilder();
+      _$this._vars ??= _i3.GSendOTPVarsBuilder();
   set vars(_i3.GSendOTPVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -248,7 +247,7 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
 
   _i2.GSendOTPDataBuilder? _optimisticResponse;
   _i2.GSendOTPDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GSendOTPDataBuilder();
+      _$this._optimisticResponse ??= _i2.GSendOTPDataBuilder();
   set optimisticResponse(_i2.GSendOTPDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -274,6 +273,10 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GSendOTPReqBuilder() {
     GSendOTPReq._initializeBuilder(this);
   }
@@ -290,6 +293,7 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -297,7 +301,6 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
 
   @override
   void replace(GSendOTPReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendOTPReq;
   }
 
@@ -313,18 +316,20 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
     _$GSendOTPReq _$result;
     try {
       _$result = _$v ??
-          new _$GSendOTPReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GSendOTPReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GSendOTPReq', 'executeOnListen'));
+          _$GSendOTPReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GSendOTPReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GSendOTPReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -334,7 +339,7 @@ class GSendOTPReqBuilder implements Builder<GSendOTPReq, GSendOTPReqBuilder> {
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendOTPReq', _$failedField, e.toString());
       }
       rethrow;

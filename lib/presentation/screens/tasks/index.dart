@@ -12,6 +12,7 @@ import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart'
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
+import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
@@ -1131,8 +1132,8 @@ class _TasksScreenState extends State<TasksScreen>
       child: Scaffold(
         backgroundColor: AppColors.gray1,
         bottomNavigationBar: AppBottomNavigationBar(
-          currentIndex: 2,
-          onTap: _onBottomNavigationTap,
+          currentIndex: 1,
+          onTap: (index) => navigateToIndex(context, index, 1),
         ),
         body: SafeArea(
           child: Column(
@@ -1278,24 +1279,6 @@ class _TasksScreenState extends State<TasksScreen>
         ),
       ),
     );
-  }
-
-  void _onBottomNavigationTap(int index) {
-    if (index == 2) return;
-    switch (index) {
-      case 0:
-        context.toOff(const GoalScreen());
-        break;
-      case 1:
-        context.toOff(const TrophiesScreen());
-        break;
-      case 3:
-        context.toOff(const TimerScreen());
-        break;
-      case 4:
-        context.toOff(const ProfileScreen());
-        break;
-    }
   }
 
   Future<void> _openAddTaskScreen() async {

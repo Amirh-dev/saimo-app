@@ -136,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _sendOtp() {
+    debugPrint(_normalizeDigits(phoneController.text));
     context.read<AuthCubit>().sendOtp(
           _normalizeDigits(phoneController.text),
         );

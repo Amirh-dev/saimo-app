@@ -7,6 +7,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
+import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:vibration/vibration.dart';
 
@@ -357,16 +358,20 @@ String formatTime(int seconds) {
 //   } else {
 //     throw 'Could not launch $phoneUri';
 //   }
-  void  navigateToIndex(BuildContext context, int index) {
+  void  navigateToIndex(BuildContext context, int index, currentIndex) {
+    if(index == currentIndex) return;
     switch (index) {
       case 0:
         context.toOff(const GoalScreen());
         break;
       case 1:
-        context.toOff(const TrophiesScreen());
+        context.toOff(const TasksScreen());
         break;
       case 2:
-        context.toOff(const TasksScreen());
+        context.toOff(const GoalScreen());
+        break;
+      case 3:
+        context.toOff(const StatisticsScreen());
         break;
       case 4:
         context.toOff(const ProfileScreen());

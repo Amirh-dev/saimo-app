@@ -6,7 +6,7 @@ part of 'serializers.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializers _$serializers = (new Serializers().toBuilder()
+Serializers _$serializers = (Serializers().toBuilder()
       ..add(FetchPolicy.serializer)
       ..add(GChatType.serializer)
       ..add(GCreateDirectChatData.serializer)
@@ -110,302 +110,302 @@ Serializers _$serializers = (new Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(GCreateTaskData_createTask_tags)]),
-          () => new ListBuilder<GCreateTaskData_createTask_tags>())
+          () => ListBuilder<GCreateTaskData_createTask_tags>())
       ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(GGetChatMessagesData_getChatMessages)]),
-          () => new ListBuilder<GGetChatMessagesData_getChatMessages>())
+          () => ListBuilder<GGetChatMessagesData_getChatMessages>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GGetFriendsData_getFriends)]),
-          () => new ListBuilder<GGetFriendsData_getFriends>())
+          () => ListBuilder<GGetFriendsData_getFriends>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GGetTasksData_getTasks)]),
-          () => new ListBuilder<GGetTasksData_getTasks>())
+          () => ListBuilder<GGetTasksData_getTasks>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GGetTasksData_getTasks_tags)]),
-          () => new ListBuilder<GGetTasksData_getTasks_tags>())
+          () => ListBuilder<GGetTasksData_getTasks_tags>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
-          () => new ListBuilder<GGoalWhereInput>())
+          () => ListBuilder<GGoalWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
-          () => new ListBuilder<GGoalWhereInput>())
+          () => ListBuilder<GGoalWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalStatus)]),
-          () => new ListBuilder<GGoalStatus>())
+          () => ListBuilder<GGoalStatus>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalStatus)]),
-          () => new ListBuilder<GGoalStatus>())
+          () => ListBuilder<GGoalStatus>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
-          () => new ListBuilder<GUserWhereInput>())
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => new ListBuilder<GTaskWhereInput>())
+          () => ListBuilder<GTaskWhereInput>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GInterestWhereInput)]),
-          () => new ListBuilder<GInterestWhereInput>())
+          () => ListBuilder<GInterestWhereInput>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GInterestWhereInput)]),
-          () => new ListBuilder<GInterestWhereInput>())
+          () => ListBuilder<GInterestWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
-          () => new ListBuilder<GUserWhereInput>())
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
-          () => new ListBuilder<GTagWhereInput>())
+          () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
-          () => new ListBuilder<GTagWhereInput>())
+          () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => new ListBuilder<GTaskWhereInput>())
+          () => ListBuilder<GTaskWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => new ListBuilder<GTaskWhereInput>())
+          () => ListBuilder<GTaskWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => new ListBuilder<GTaskWhereInput>())
+          () => ListBuilder<GTaskWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskType)]),
-          () => new ListBuilder<GTaskType>())
+          () => ListBuilder<GTaskType>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskType)]),
-          () => new ListBuilder<GTaskType>())
+          () => ListBuilder<GTaskType>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskStatus)]),
-          () => new ListBuilder<GTaskStatus>())
+          () => ListBuilder<GTaskStatus>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskStatus)]),
-          () => new ListBuilder<GTaskStatus>())
+          () => ListBuilder<GTaskStatus>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
-          () => new ListBuilder<GUserWhereInput>())
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
-          () => new ListBuilder<GGoalWhereInput>())
+          () => ListBuilder<GGoalWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
-          () => new ListBuilder<GTagWhereInput>())
+          () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
-          () => new ListBuilder<GUserWhereInput>())
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
-          () => new ListBuilder<GUserWhereInput>())
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
-          () => new ListBuilder<GTime>())
+          () => ListBuilder<GTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserStudyTime)]),
-          () => new ListBuilder<GUserStudyTime>())
+          () => ListBuilder<GUserStudyTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserStudyTime)]),
-          () => new ListBuilder<GUserStudyTime>())
+          () => ListBuilder<GUserStudyTime>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserRole)]),
-          () => new ListBuilder<GUserRole>())
+          () => ListBuilder<GUserRole>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserRole)]),
-          () => new ListBuilder<GUserRole>())
+          () => ListBuilder<GUserRole>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(int)]),
-          () => new ListBuilder<int>())
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GInterestWhereInput)]),
-          () => new ListBuilder<GInterestWhereInput>())
+          () => ListBuilder<GInterestWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
-          () => new ListBuilder<GGoalWhereInput>())
+          () => ListBuilder<GGoalWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => new ListBuilder<GTaskWhereInput>())
+          () => ListBuilder<GTaskWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>())
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
-          () => new ListBuilder<String>()))
+          () => ListBuilder<String>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

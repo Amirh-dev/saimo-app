@@ -11,7 +11,8 @@ part 'get_me.data.gql.g.dart';
 abstract class GGetMeData implements Built<GGetMeData, GGetMeDataBuilder> {
   GGetMeData._();
 
-  factory GGetMeData([Function(GGetMeDataBuilder b) updates]) = _$GGetMeData;
+  factory GGetMeData([void Function(GGetMeDataBuilder b) updates]) =
+      _$GGetMeData;
 
   static void _initializeBuilder(GGetMeDataBuilder b) =>
       b..G__typename = 'Query';
@@ -37,7 +38,7 @@ abstract class GGetMeData_getMe
     implements Built<GGetMeData_getMe, GGetMeData_getMeBuilder> {
   GGetMeData_getMe._();
 
-  factory GGetMeData_getMe([Function(GGetMeData_getMeBuilder b) updates]) =
+  factory GGetMeData_getMe([void Function(GGetMeData_getMeBuilder b) updates]) =
       _$GGetMeData_getMe;
 
   static void _initializeBuilder(GGetMeData_getMeBuilder b) =>

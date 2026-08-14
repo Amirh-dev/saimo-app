@@ -7,7 +7,7 @@ part of 'create_task.var.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateTaskVars> _$gCreateTaskVarsSerializer =
-    new _$GCreateTaskVarsSerializer();
+    _$GCreateTaskVarsSerializer();
 
 class _$GCreateTaskVarsSerializer
     implements StructuredSerializer<GCreateTaskVars> {
@@ -32,7 +32,7 @@ class _$GCreateTaskVarsSerializer
   GCreateTaskVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskVarsBuilder();
+    final result = GCreateTaskVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -57,19 +57,15 @@ class _$GCreateTaskVars extends GCreateTaskVars {
   final _i1.GCreateTaskInput input;
 
   factory _$GCreateTaskVars([void Function(GCreateTaskVarsBuilder)? updates]) =>
-      (new GCreateTaskVarsBuilder()..update(updates))._build();
+      (GCreateTaskVarsBuilder()..update(updates))._build();
 
-  _$GCreateTaskVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(input, r'GCreateTaskVars', 'input');
-  }
-
+  _$GCreateTaskVars._({required this.input}) : super._();
   @override
   GCreateTaskVars rebuild(void Function(GCreateTaskVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GCreateTaskVarsBuilder toBuilder() =>
-      new GCreateTaskVarsBuilder()..replace(this);
+  GCreateTaskVarsBuilder toBuilder() => GCreateTaskVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -99,7 +95,7 @@ class GCreateTaskVarsBuilder
 
   _i1.GCreateTaskInputBuilder? _input;
   _i1.GCreateTaskInputBuilder get input =>
-      _$this._input ??= new _i1.GCreateTaskInputBuilder();
+      _$this._input ??= _i1.GCreateTaskInputBuilder();
   set input(_i1.GCreateTaskInputBuilder? input) => _$this._input = input;
 
   GCreateTaskVarsBuilder();
@@ -115,7 +111,6 @@ class GCreateTaskVarsBuilder
 
   @override
   void replace(GCreateTaskVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskVars;
   }
 
@@ -130,14 +125,17 @@ class GCreateTaskVarsBuilder
   _$GCreateTaskVars _build() {
     _$GCreateTaskVars _$result;
     try {
-      _$result = _$v ?? new _$GCreateTaskVars._(input: input.build());
+      _$result = _$v ??
+          _$GCreateTaskVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateTaskVars', _$failedField, e.toString());
       }
       rethrow;

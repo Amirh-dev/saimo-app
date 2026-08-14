@@ -7,7 +7,7 @@ part of 'verify_otp_register.var.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndRegisterVars> _$gVerifyOTPAndRegisterVarsSerializer =
-    new _$GVerifyOTPAndRegisterVarsSerializer();
+    _$GVerifyOTPAndRegisterVarsSerializer();
 
 class _$GVerifyOTPAndRegisterVarsSerializer
     implements StructuredSerializer<GVerifyOTPAndRegisterVars> {
@@ -36,7 +36,7 @@ class _$GVerifyOTPAndRegisterVarsSerializer
   GVerifyOTPAndRegisterVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndRegisterVarsBuilder();
+    final result = GVerifyOTPAndRegisterVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -63,13 +63,9 @@ class _$GVerifyOTPAndRegisterVars extends GVerifyOTPAndRegisterVars {
 
   factory _$GVerifyOTPAndRegisterVars(
           [void Function(GVerifyOTPAndRegisterVarsBuilder)? updates]) =>
-      (new GVerifyOTPAndRegisterVarsBuilder()..update(updates))._build();
+      (GVerifyOTPAndRegisterVarsBuilder()..update(updates))._build();
 
-  _$GVerifyOTPAndRegisterVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        input, r'GVerifyOTPAndRegisterVars', 'input');
-  }
-
+  _$GVerifyOTPAndRegisterVars._({required this.input}) : super._();
   @override
   GVerifyOTPAndRegisterVars rebuild(
           void Function(GVerifyOTPAndRegisterVarsBuilder) updates) =>
@@ -77,7 +73,7 @@ class _$GVerifyOTPAndRegisterVars extends GVerifyOTPAndRegisterVars {
 
   @override
   GVerifyOTPAndRegisterVarsBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterVarsBuilder()..replace(this);
+      GVerifyOTPAndRegisterVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -108,7 +104,7 @@ class GVerifyOTPAndRegisterVarsBuilder
 
   _i1.GVerifyOTPAndRegisterInputBuilder? _input;
   _i1.GVerifyOTPAndRegisterInputBuilder get input =>
-      _$this._input ??= new _i1.GVerifyOTPAndRegisterInputBuilder();
+      _$this._input ??= _i1.GVerifyOTPAndRegisterInputBuilder();
   set input(_i1.GVerifyOTPAndRegisterInputBuilder? input) =>
       _$this._input = input;
 
@@ -125,7 +121,6 @@ class GVerifyOTPAndRegisterVarsBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterVars;
   }
 
@@ -140,14 +135,17 @@ class GVerifyOTPAndRegisterVarsBuilder
   _$GVerifyOTPAndRegisterVars _build() {
     _$GVerifyOTPAndRegisterVars _$result;
     try {
-      _$result = _$v ?? new _$GVerifyOTPAndRegisterVars._(input: input.build());
+      _$result = _$v ??
+          _$GVerifyOTPAndRegisterVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndRegisterVars', _$failedField, e.toString());
       }
       rethrow;

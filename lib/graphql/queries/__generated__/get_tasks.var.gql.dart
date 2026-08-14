@@ -13,7 +13,7 @@ abstract class GGetTasksVars
     implements Built<GGetTasksVars, GGetTasksVarsBuilder> {
   GGetTasksVars._();
 
-  factory GGetTasksVars([Function(GGetTasksVarsBuilder b) updates]) =
+  factory GGetTasksVars([void Function(GGetTasksVarsBuilder b) updates]) =
       _$GGetTasksVars;
 
   _i1.GTime? get date;

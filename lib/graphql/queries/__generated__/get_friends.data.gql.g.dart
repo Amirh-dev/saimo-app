@@ -7,15 +7,15 @@ part of 'get_friends.data.gql.dart';
 // **************************************************************************
 
 Serializer<GGetFriendsData> _$gGetFriendsDataSerializer =
-    new _$GGetFriendsDataSerializer();
+    _$GGetFriendsDataSerializer();
 Serializer<GGetFriendsData_getFriends> _$gGetFriendsDataGetFriendsSerializer =
-    new _$GGetFriendsData_getFriendsSerializer();
+    _$GGetFriendsData_getFriendsSerializer();
 Serializer<GGetFriendsData_getFriends_requester>
     _$gGetFriendsDataGetFriendsRequesterSerializer =
-    new _$GGetFriendsData_getFriends_requesterSerializer();
+    _$GGetFriendsData_getFriends_requesterSerializer();
 Serializer<GGetFriendsData_getFriends_receiver>
     _$gGetFriendsDataGetFriendsReceiverSerializer =
-    new _$GGetFriendsData_getFriends_receiverSerializer();
+    _$GGetFriendsData_getFriends_receiverSerializer();
 
 class _$GGetFriendsDataSerializer
     implements StructuredSerializer<GGetFriendsData> {
@@ -44,7 +44,7 @@ class _$GGetFriendsDataSerializer
   GGetFriendsData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsDataBuilder();
+    final result = GGetFriendsDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -119,7 +119,7 @@ class _$GGetFriendsData_getFriendsSerializer
   GGetFriendsData_getFriends deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsData_getFriendsBuilder();
+    final result = GGetFriendsData_getFriendsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -214,7 +214,7 @@ class _$GGetFriendsData_getFriends_requesterSerializer
   GGetFriendsData_getFriends_requester deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsData_getFriends_requesterBuilder();
+    final result = GGetFriendsData_getFriends_requesterBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -284,7 +284,7 @@ class _$GGetFriendsData_getFriends_receiverSerializer
   GGetFriendsData_getFriends_receiver deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsData_getFriends_receiverBuilder();
+    final result = GGetFriendsData_getFriends_receiverBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -322,23 +322,16 @@ class _$GGetFriendsData extends GGetFriendsData {
   final BuiltList<GGetFriendsData_getFriends> getFriends;
 
   factory _$GGetFriendsData([void Function(GGetFriendsDataBuilder)? updates]) =>
-      (new GGetFriendsDataBuilder()..update(updates))._build();
+      (GGetFriendsDataBuilder()..update(updates))._build();
 
   _$GGetFriendsData._({required this.G__typename, required this.getFriends})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetFriendsData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        getFriends, r'GGetFriendsData', 'getFriends');
-  }
-
+      : super._();
   @override
   GGetFriendsData rebuild(void Function(GGetFriendsDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetFriendsDataBuilder toBuilder() =>
-      new GGetFriendsDataBuilder()..replace(this);
+  GGetFriendsDataBuilder toBuilder() => GGetFriendsDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -376,7 +369,7 @@ class GGetFriendsDataBuilder
 
   ListBuilder<GGetFriendsData_getFriends>? _getFriends;
   ListBuilder<GGetFriendsData_getFriends> get getFriends =>
-      _$this._getFriends ??= new ListBuilder<GGetFriendsData_getFriends>();
+      _$this._getFriends ??= ListBuilder<GGetFriendsData_getFriends>();
   set getFriends(ListBuilder<GGetFriendsData_getFriends>? getFriends) =>
       _$this._getFriends = getFriends;
 
@@ -396,7 +389,6 @@ class GGetFriendsDataBuilder
 
   @override
   void replace(GGetFriendsData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsData;
   }
 
@@ -412,17 +404,18 @@ class GGetFriendsDataBuilder
     _$GGetFriendsData _$result;
     try {
       _$result = _$v ??
-          new _$GGetFriendsData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GGetFriendsData', 'G__typename'),
-              getFriends: getFriends.build());
+          _$GGetFriendsData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GGetFriendsData', 'G__typename'),
+            getFriends: getFriends.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'getFriends';
         getFriends.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetFriendsData', _$failedField, e.toString());
       }
       rethrow;
@@ -454,7 +447,7 @@ class _$GGetFriendsData_getFriends extends GGetFriendsData_getFriends {
 
   factory _$GGetFriendsData_getFriends(
           [void Function(GGetFriendsData_getFriendsBuilder)? updates]) =>
-      (new GGetFriendsData_getFriendsBuilder()..update(updates))._build();
+      (GGetFriendsData_getFriendsBuilder()..update(updates))._build();
 
   _$GGetFriendsData_getFriends._(
       {required this.G__typename,
@@ -466,27 +459,7 @@ class _$GGetFriendsData_getFriends extends GGetFriendsData_getFriends {
       required this.userHighID,
       required this.requester,
       required this.receiver})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetFriendsData_getFriends', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetFriendsData_getFriends', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        status, r'GGetFriendsData_getFriends', 'status');
-    BuiltValueNullFieldError.checkNotNull(
-        requesterID, r'GGetFriendsData_getFriends', 'requesterID');
-    BuiltValueNullFieldError.checkNotNull(
-        receiverID, r'GGetFriendsData_getFriends', 'receiverID');
-    BuiltValueNullFieldError.checkNotNull(
-        userLowID, r'GGetFriendsData_getFriends', 'userLowID');
-    BuiltValueNullFieldError.checkNotNull(
-        userHighID, r'GGetFriendsData_getFriends', 'userHighID');
-    BuiltValueNullFieldError.checkNotNull(
-        requester, r'GGetFriendsData_getFriends', 'requester');
-    BuiltValueNullFieldError.checkNotNull(
-        receiver, r'GGetFriendsData_getFriends', 'receiver');
-  }
-
+      : super._();
   @override
   GGetFriendsData_getFriends rebuild(
           void Function(GGetFriendsData_getFriendsBuilder) updates) =>
@@ -494,7 +467,7 @@ class _$GGetFriendsData_getFriends extends GGetFriendsData_getFriends {
 
   @override
   GGetFriendsData_getFriendsBuilder toBuilder() =>
-      new GGetFriendsData_getFriendsBuilder()..replace(this);
+      GGetFriendsData_getFriendsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -569,25 +542,23 @@ class GGetFriendsData_getFriendsBuilder
   set receiverID(String? receiverID) => _$this._receiverID = receiverID;
 
   _i2.GUUIDBuilder? _userLowID;
-  _i2.GUUIDBuilder get userLowID =>
-      _$this._userLowID ??= new _i2.GUUIDBuilder();
+  _i2.GUUIDBuilder get userLowID => _$this._userLowID ??= _i2.GUUIDBuilder();
   set userLowID(_i2.GUUIDBuilder? userLowID) => _$this._userLowID = userLowID;
 
   _i2.GUUIDBuilder? _userHighID;
-  _i2.GUUIDBuilder get userHighID =>
-      _$this._userHighID ??= new _i2.GUUIDBuilder();
+  _i2.GUUIDBuilder get userHighID => _$this._userHighID ??= _i2.GUUIDBuilder();
   set userHighID(_i2.GUUIDBuilder? userHighID) =>
       _$this._userHighID = userHighID;
 
   GGetFriendsData_getFriends_requesterBuilder? _requester;
   GGetFriendsData_getFriends_requesterBuilder get requester =>
-      _$this._requester ??= new GGetFriendsData_getFriends_requesterBuilder();
+      _$this._requester ??= GGetFriendsData_getFriends_requesterBuilder();
   set requester(GGetFriendsData_getFriends_requesterBuilder? requester) =>
       _$this._requester = requester;
 
   GGetFriendsData_getFriends_receiverBuilder? _receiver;
   GGetFriendsData_getFriends_receiverBuilder get receiver =>
-      _$this._receiver ??= new GGetFriendsData_getFriends_receiverBuilder();
+      _$this._receiver ??= GGetFriendsData_getFriends_receiverBuilder();
   set receiver(GGetFriendsData_getFriends_receiverBuilder? receiver) =>
       _$this._receiver = receiver;
 
@@ -614,7 +585,6 @@ class GGetFriendsData_getFriendsBuilder
 
   @override
   void replace(GGetFriendsData_getFriends other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsData_getFriends;
   }
 
@@ -630,21 +600,22 @@ class GGetFriendsData_getFriendsBuilder
     _$GGetFriendsData_getFriends _$result;
     try {
       _$result = _$v ??
-          new _$GGetFriendsData_getFriends._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GGetFriendsData_getFriends', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GGetFriendsData_getFriends', 'id'),
-              status: BuiltValueNullFieldError.checkNotNull(
-                  status, r'GGetFriendsData_getFriends', 'status'),
-              requesterID: BuiltValueNullFieldError.checkNotNull(
-                  requesterID, r'GGetFriendsData_getFriends', 'requesterID'),
-              receiverID: BuiltValueNullFieldError.checkNotNull(
-                  receiverID, r'GGetFriendsData_getFriends', 'receiverID'),
-              userLowID: userLowID.build(),
-              userHighID: userHighID.build(),
-              requester: requester.build(),
-              receiver: receiver.build());
+          _$GGetFriendsData_getFriends._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GGetFriendsData_getFriends', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GGetFriendsData_getFriends', 'id'),
+            status: BuiltValueNullFieldError.checkNotNull(
+                status, r'GGetFriendsData_getFriends', 'status'),
+            requesterID: BuiltValueNullFieldError.checkNotNull(
+                requesterID, r'GGetFriendsData_getFriends', 'requesterID'),
+            receiverID: BuiltValueNullFieldError.checkNotNull(
+                receiverID, r'GGetFriendsData_getFriends', 'receiverID'),
+            userLowID: userLowID.build(),
+            userHighID: userHighID.build(),
+            requester: requester.build(),
+            receiver: receiver.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -657,7 +628,7 @@ class GGetFriendsData_getFriendsBuilder
         _$failedField = 'receiver';
         receiver.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetFriendsData_getFriends', _$failedField, e.toString());
       }
       rethrow;
@@ -681,23 +652,14 @@ class _$GGetFriendsData_getFriends_requester
   factory _$GGetFriendsData_getFriends_requester(
           [void Function(GGetFriendsData_getFriends_requesterBuilder)?
               updates]) =>
-      (new GGetFriendsData_getFriends_requesterBuilder()..update(updates))
-          ._build();
+      (GGetFriendsData_getFriends_requesterBuilder()..update(updates))._build();
 
   _$GGetFriendsData_getFriends_requester._(
       {required this.G__typename,
       required this.id,
       this.fullName,
       required this.username})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetFriendsData_getFriends_requester', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetFriendsData_getFriends_requester', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        username, r'GGetFriendsData_getFriends_requester', 'username');
-  }
-
+      : super._();
   @override
   GGetFriendsData_getFriends_requester rebuild(
           void Function(GGetFriendsData_getFriends_requesterBuilder) updates) =>
@@ -705,7 +667,7 @@ class _$GGetFriendsData_getFriends_requester
 
   @override
   GGetFriendsData_getFriends_requesterBuilder toBuilder() =>
-      new GGetFriendsData_getFriends_requesterBuilder()..replace(this);
+      GGetFriendsData_getFriends_requesterBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -779,7 +741,6 @@ class GGetFriendsData_getFriends_requesterBuilder
 
   @override
   void replace(GGetFriendsData_getFriends_requester other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsData_getFriends_requester;
   }
 
@@ -794,14 +755,15 @@ class GGetFriendsData_getFriends_requesterBuilder
 
   _$GGetFriendsData_getFriends_requester _build() {
     final _$result = _$v ??
-        new _$GGetFriendsData_getFriends_requester._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                r'GGetFriendsData_getFriends_requester', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GGetFriendsData_getFriends_requester', 'id'),
-            fullName: fullName,
-            username: BuiltValueNullFieldError.checkNotNull(
-                username, r'GGetFriendsData_getFriends_requester', 'username'));
+        _$GGetFriendsData_getFriends_requester._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GGetFriendsData_getFriends_requester', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GGetFriendsData_getFriends_requester', 'id'),
+          fullName: fullName,
+          username: BuiltValueNullFieldError.checkNotNull(
+              username, r'GGetFriendsData_getFriends_requester', 'username'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -821,23 +783,14 @@ class _$GGetFriendsData_getFriends_receiver
   factory _$GGetFriendsData_getFriends_receiver(
           [void Function(GGetFriendsData_getFriends_receiverBuilder)?
               updates]) =>
-      (new GGetFriendsData_getFriends_receiverBuilder()..update(updates))
-          ._build();
+      (GGetFriendsData_getFriends_receiverBuilder()..update(updates))._build();
 
   _$GGetFriendsData_getFriends_receiver._(
       {required this.G__typename,
       required this.id,
       this.fullName,
       required this.username})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetFriendsData_getFriends_receiver', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetFriendsData_getFriends_receiver', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        username, r'GGetFriendsData_getFriends_receiver', 'username');
-  }
-
+      : super._();
   @override
   GGetFriendsData_getFriends_receiver rebuild(
           void Function(GGetFriendsData_getFriends_receiverBuilder) updates) =>
@@ -845,7 +798,7 @@ class _$GGetFriendsData_getFriends_receiver
 
   @override
   GGetFriendsData_getFriends_receiverBuilder toBuilder() =>
-      new GGetFriendsData_getFriends_receiverBuilder()..replace(this);
+      GGetFriendsData_getFriends_receiverBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -919,7 +872,6 @@ class GGetFriendsData_getFriends_receiverBuilder
 
   @override
   void replace(GGetFriendsData_getFriends_receiver other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsData_getFriends_receiver;
   }
 
@@ -934,14 +886,15 @@ class GGetFriendsData_getFriends_receiverBuilder
 
   _$GGetFriendsData_getFriends_receiver _build() {
     final _$result = _$v ??
-        new _$GGetFriendsData_getFriends_receiver._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                r'GGetFriendsData_getFriends_receiver', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GGetFriendsData_getFriends_receiver', 'id'),
-            fullName: fullName,
-            username: BuiltValueNullFieldError.checkNotNull(
-                username, r'GGetFriendsData_getFriends_receiver', 'username'));
+        _$GGetFriendsData_getFriends_receiver._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GGetFriendsData_getFriends_receiver', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GGetFriendsData_getFriends_receiver', 'id'),
+          fullName: fullName,
+          username: BuiltValueNullFieldError.checkNotNull(
+              username, r'GGetFriendsData_getFriends_receiver', 'username'),
+        );
     replace(_$result);
     return _$result;
   }

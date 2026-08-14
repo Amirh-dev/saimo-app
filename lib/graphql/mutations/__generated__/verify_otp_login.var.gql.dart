@@ -14,7 +14,7 @@ abstract class GVerifyOTPAndLoginVars
   GVerifyOTPAndLoginVars._();
 
   factory GVerifyOTPAndLoginVars(
-          [Function(GVerifyOTPAndLoginVarsBuilder b) updates]) =
+          [void Function(GVerifyOTPAndLoginVarsBuilder b) updates]) =
       _$GVerifyOTPAndLoginVars;
 
   _i1.GVerifyOTPAndLoginInput get input;

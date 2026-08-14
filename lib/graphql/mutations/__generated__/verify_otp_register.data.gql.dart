@@ -14,7 +14,7 @@ abstract class GVerifyOTPAndRegisterData
   GVerifyOTPAndRegisterData._();
 
   factory GVerifyOTPAndRegisterData(
-          [Function(GVerifyOTPAndRegisterDataBuilder b) updates]) =
+          [void Function(GVerifyOTPAndRegisterDataBuilder b) updates]) =
       _$GVerifyOTPAndRegisterData;
 
   static void _initializeBuilder(GVerifyOTPAndRegisterDataBuilder b) =>
@@ -45,7 +45,7 @@ abstract class GVerifyOTPAndRegisterData_verifyOTPAndRegister
   GVerifyOTPAndRegisterData_verifyOTPAndRegister._();
 
   factory GVerifyOTPAndRegisterData_verifyOTPAndRegister(
-      [Function(GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder b)
+      [void Function(GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder b)
           updates]) = _$GVerifyOTPAndRegisterData_verifyOTPAndRegister;
 
   static void _initializeBuilder(
@@ -81,7 +81,8 @@ abstract class GVerifyOTPAndRegisterData_verifyOTPAndRegister_user
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_user._();
 
   factory GVerifyOTPAndRegisterData_verifyOTPAndRegister_user(
-      [Function(GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder b)
+      [void Function(
+              GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder b)
           updates]) = _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user;
 
   static void _initializeBuilder(

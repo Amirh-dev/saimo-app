@@ -7,7 +7,7 @@ part of 'verify_otp_register.req.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndRegisterReq> _$gVerifyOTPAndRegisterReqSerializer =
-    new _$GVerifyOTPAndRegisterReqSerializer();
+    _$GVerifyOTPAndRegisterReqSerializer();
 
 class _$GVerifyOTPAndRegisterReqSerializer
     implements StructuredSerializer<GVerifyOTPAndRegisterReq> {
@@ -78,7 +78,7 @@ class _$GVerifyOTPAndRegisterReqSerializer
   GVerifyOTPAndRegisterReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndRegisterReqBuilder();
+    final result = GVerifyOTPAndRegisterReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -152,10 +152,12 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GVerifyOTPAndRegisterReq(
           [void Function(GVerifyOTPAndRegisterReqBuilder)? updates]) =>
-      (new GVerifyOTPAndRegisterReqBuilder()..update(updates))._build();
+      (GVerifyOTPAndRegisterReqBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndRegisterReq._(
       {required this.vars,
@@ -166,16 +168,9 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        vars, r'GVerifyOTPAndRegisterReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GVerifyOTPAndRegisterReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GVerifyOTPAndRegisterReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GVerifyOTPAndRegisterReq rebuild(
           void Function(GVerifyOTPAndRegisterReqBuilder) updates) =>
@@ -183,7 +178,7 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
 
   @override
   GVerifyOTPAndRegisterReqBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterReqBuilder()..replace(this);
+      GVerifyOTPAndRegisterReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -198,7 +193,8 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -213,6 +209,7 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -228,7 +225,8 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -240,7 +238,7 @@ class GVerifyOTPAndRegisterReqBuilder
 
   _i3.GVerifyOTPAndRegisterVarsBuilder? _vars;
   _i3.GVerifyOTPAndRegisterVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GVerifyOTPAndRegisterVarsBuilder();
+      _$this._vars ??= _i3.GVerifyOTPAndRegisterVarsBuilder();
   set vars(_i3.GVerifyOTPAndRegisterVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -266,7 +264,7 @@ class GVerifyOTPAndRegisterReqBuilder
 
   _i2.GVerifyOTPAndRegisterDataBuilder? _optimisticResponse;
   _i2.GVerifyOTPAndRegisterDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GVerifyOTPAndRegisterDataBuilder();
+      _$this._optimisticResponse ??= _i2.GVerifyOTPAndRegisterDataBuilder();
   set optimisticResponse(
           _i2.GVerifyOTPAndRegisterDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
@@ -293,6 +291,10 @@ class GVerifyOTPAndRegisterReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GVerifyOTPAndRegisterReqBuilder() {
     GVerifyOTPAndRegisterReq._initializeBuilder(this);
   }
@@ -309,6 +311,7 @@ class GVerifyOTPAndRegisterReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -316,7 +319,6 @@ class GVerifyOTPAndRegisterReqBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterReq;
   }
 
@@ -332,20 +334,22 @@ class GVerifyOTPAndRegisterReqBuilder
     _$GVerifyOTPAndRegisterReq _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndRegisterReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GVerifyOTPAndRegisterReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen,
-                  r'GVerifyOTPAndRegisterReq',
-                  'executeOnListen'));
+          _$GVerifyOTPAndRegisterReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GVerifyOTPAndRegisterReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen,
+                r'GVerifyOTPAndRegisterReq',
+                'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -355,7 +359,7 @@ class GVerifyOTPAndRegisterReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndRegisterReq', _$failedField, e.toString());
       }
       rethrow;

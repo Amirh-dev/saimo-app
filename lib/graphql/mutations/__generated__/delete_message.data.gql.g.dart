@@ -7,10 +7,10 @@ part of 'delete_message.data.gql.dart';
 // **************************************************************************
 
 Serializer<GDeleteMessageData> _$gDeleteMessageDataSerializer =
-    new _$GDeleteMessageDataSerializer();
+    _$GDeleteMessageDataSerializer();
 Serializer<GDeleteMessageData_deleteMessage>
     _$gDeleteMessageDataDeleteMessageSerializer =
-    new _$GDeleteMessageData_deleteMessageSerializer();
+    _$GDeleteMessageData_deleteMessageSerializer();
 
 class _$GDeleteMessageDataSerializer
     implements StructuredSerializer<GDeleteMessageData> {
@@ -39,7 +39,7 @@ class _$GDeleteMessageDataSerializer
   GDeleteMessageData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GDeleteMessageDataBuilder();
+    final result = GDeleteMessageDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -128,7 +128,7 @@ class _$GDeleteMessageData_deleteMessageSerializer
   GDeleteMessageData_deleteMessage deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GDeleteMessageData_deleteMessageBuilder();
+    final result = GDeleteMessageData_deleteMessageBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -196,17 +196,11 @@ class _$GDeleteMessageData extends GDeleteMessageData {
 
   factory _$GDeleteMessageData(
           [void Function(GDeleteMessageDataBuilder)? updates]) =>
-      (new GDeleteMessageDataBuilder()..update(updates))._build();
+      (GDeleteMessageDataBuilder()..update(updates))._build();
 
   _$GDeleteMessageData._(
       {required this.G__typename, required this.deleteMessage})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GDeleteMessageData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        deleteMessage, r'GDeleteMessageData', 'deleteMessage');
-  }
-
+      : super._();
   @override
   GDeleteMessageData rebuild(
           void Function(GDeleteMessageDataBuilder) updates) =>
@@ -214,7 +208,7 @@ class _$GDeleteMessageData extends GDeleteMessageData {
 
   @override
   GDeleteMessageDataBuilder toBuilder() =>
-      new GDeleteMessageDataBuilder()..replace(this);
+      GDeleteMessageDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -252,7 +246,7 @@ class GDeleteMessageDataBuilder
 
   GDeleteMessageData_deleteMessageBuilder? _deleteMessage;
   GDeleteMessageData_deleteMessageBuilder get deleteMessage =>
-      _$this._deleteMessage ??= new GDeleteMessageData_deleteMessageBuilder();
+      _$this._deleteMessage ??= GDeleteMessageData_deleteMessageBuilder();
   set deleteMessage(GDeleteMessageData_deleteMessageBuilder? deleteMessage) =>
       _$this._deleteMessage = deleteMessage;
 
@@ -272,7 +266,6 @@ class GDeleteMessageDataBuilder
 
   @override
   void replace(GDeleteMessageData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GDeleteMessageData;
   }
 
@@ -288,17 +281,18 @@ class GDeleteMessageDataBuilder
     _$GDeleteMessageData _$result;
     try {
       _$result = _$v ??
-          new _$GDeleteMessageData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GDeleteMessageData', 'G__typename'),
-              deleteMessage: deleteMessage.build());
+          _$GDeleteMessageData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GDeleteMessageData', 'G__typename'),
+            deleteMessage: deleteMessage.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'deleteMessage';
         deleteMessage.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GDeleteMessageData', _$failedField, e.toString());
       }
       rethrow;
@@ -335,7 +329,7 @@ class _$GDeleteMessageData_deleteMessage
 
   factory _$GDeleteMessageData_deleteMessage(
           [void Function(GDeleteMessageData_deleteMessageBuilder)? updates]) =>
-      (new GDeleteMessageData_deleteMessageBuilder()..update(updates))._build();
+      (GDeleteMessageData_deleteMessageBuilder()..update(updates))._build();
 
   _$GDeleteMessageData_deleteMessage._(
       {required this.G__typename,
@@ -349,27 +343,7 @@ class _$GDeleteMessageData_deleteMessage
       this.deletedAt,
       required this.createdAt,
       required this.updatedAt})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GDeleteMessageData_deleteMessage', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GDeleteMessageData_deleteMessage', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        content, r'GDeleteMessageData_deleteMessage', 'content');
-    BuiltValueNullFieldError.checkNotNull(
-        type, r'GDeleteMessageData_deleteMessage', 'type');
-    BuiltValueNullFieldError.checkNotNull(
-        chatID, r'GDeleteMessageData_deleteMessage', 'chatID');
-    BuiltValueNullFieldError.checkNotNull(
-        senderID, r'GDeleteMessageData_deleteMessage', 'senderID');
-    BuiltValueNullFieldError.checkNotNull(
-        isDeleted, r'GDeleteMessageData_deleteMessage', 'isDeleted');
-    BuiltValueNullFieldError.checkNotNull(
-        createdAt, r'GDeleteMessageData_deleteMessage', 'createdAt');
-    BuiltValueNullFieldError.checkNotNull(
-        updatedAt, r'GDeleteMessageData_deleteMessage', 'updatedAt');
-  }
-
+      : super._();
   @override
   GDeleteMessageData_deleteMessage rebuild(
           void Function(GDeleteMessageData_deleteMessageBuilder) updates) =>
@@ -377,7 +351,7 @@ class _$GDeleteMessageData_deleteMessage
 
   @override
   GDeleteMessageData_deleteMessageBuilder toBuilder() =>
-      new GDeleteMessageData_deleteMessageBuilder()..replace(this);
+      GDeleteMessageData_deleteMessageBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -471,18 +445,15 @@ class GDeleteMessageData_deleteMessageBuilder
   set isDeleted(bool? isDeleted) => _$this._isDeleted = isDeleted;
 
   _i2.GTimeBuilder? _deletedAt;
-  _i2.GTimeBuilder get deletedAt =>
-      _$this._deletedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get deletedAt => _$this._deletedAt ??= _i2.GTimeBuilder();
   set deletedAt(_i2.GTimeBuilder? deletedAt) => _$this._deletedAt = deletedAt;
 
   _i2.GTimeBuilder? _createdAt;
-  _i2.GTimeBuilder get createdAt =>
-      _$this._createdAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get createdAt => _$this._createdAt ??= _i2.GTimeBuilder();
   set createdAt(_i2.GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   _i2.GTimeBuilder? _updatedAt;
-  _i2.GTimeBuilder get updatedAt =>
-      _$this._updatedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get updatedAt => _$this._updatedAt ??= _i2.GTimeBuilder();
   set updatedAt(_i2.GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GDeleteMessageData_deleteMessageBuilder() {
@@ -510,7 +481,6 @@ class GDeleteMessageData_deleteMessageBuilder
 
   @override
   void replace(GDeleteMessageData_deleteMessage other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GDeleteMessageData_deleteMessage;
   }
 
@@ -526,25 +496,26 @@ class GDeleteMessageData_deleteMessageBuilder
     _$GDeleteMessageData_deleteMessage _$result;
     try {
       _$result = _$v ??
-          new _$GDeleteMessageData_deleteMessage._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                  r'GDeleteMessageData_deleteMessage', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GDeleteMessageData_deleteMessage', 'id'),
-              content: BuiltValueNullFieldError.checkNotNull(
-                  content, r'GDeleteMessageData_deleteMessage', 'content'),
-              type: BuiltValueNullFieldError.checkNotNull(
-                  type, r'GDeleteMessageData_deleteMessage', 'type'),
-              chatID: BuiltValueNullFieldError.checkNotNull(
-                  chatID, r'GDeleteMessageData_deleteMessage', 'chatID'),
-              senderID: BuiltValueNullFieldError.checkNotNull(
-                  senderID, r'GDeleteMessageData_deleteMessage', 'senderID'),
-              replyToID: replyToID,
-              isDeleted: BuiltValueNullFieldError.checkNotNull(
-                  isDeleted, r'GDeleteMessageData_deleteMessage', 'isDeleted'),
-              deletedAt: _deletedAt?.build(),
-              createdAt: createdAt.build(),
-              updatedAt: updatedAt.build());
+          _$GDeleteMessageData_deleteMessage._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+                r'GDeleteMessageData_deleteMessage', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GDeleteMessageData_deleteMessage', 'id'),
+            content: BuiltValueNullFieldError.checkNotNull(
+                content, r'GDeleteMessageData_deleteMessage', 'content'),
+            type: BuiltValueNullFieldError.checkNotNull(
+                type, r'GDeleteMessageData_deleteMessage', 'type'),
+            chatID: BuiltValueNullFieldError.checkNotNull(
+                chatID, r'GDeleteMessageData_deleteMessage', 'chatID'),
+            senderID: BuiltValueNullFieldError.checkNotNull(
+                senderID, r'GDeleteMessageData_deleteMessage', 'senderID'),
+            replyToID: replyToID,
+            isDeleted: BuiltValueNullFieldError.checkNotNull(
+                isDeleted, r'GDeleteMessageData_deleteMessage', 'isDeleted'),
+            deletedAt: _deletedAt?.build(),
+            createdAt: createdAt.build(),
+            updatedAt: updatedAt.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -555,7 +526,7 @@ class GDeleteMessageData_deleteMessageBuilder
         _$failedField = 'updatedAt';
         updatedAt.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GDeleteMessageData_deleteMessage', _$failedField, e.toString());
       }
       rethrow;

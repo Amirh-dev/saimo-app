@@ -14,7 +14,7 @@ abstract class GCreateTaskData
     implements Built<GCreateTaskData, GCreateTaskDataBuilder> {
   GCreateTaskData._();
 
-  factory GCreateTaskData([Function(GCreateTaskDataBuilder b) updates]) =
+  factory GCreateTaskData([void Function(GCreateTaskDataBuilder b) updates]) =
       _$GCreateTaskData;
 
   static void _initializeBuilder(GCreateTaskDataBuilder b) =>
@@ -44,7 +44,7 @@ abstract class GCreateTaskData_createTask
   GCreateTaskData_createTask._();
 
   factory GCreateTaskData_createTask(
-          [Function(GCreateTaskData_createTaskBuilder b) updates]) =
+          [void Function(GCreateTaskData_createTaskBuilder b) updates]) =
       _$GCreateTaskData_createTask;
 
   static void _initializeBuilder(GCreateTaskData_createTaskBuilder b) =>
@@ -86,7 +86,7 @@ abstract class GCreateTaskData_createTask_tags
   GCreateTaskData_createTask_tags._();
 
   factory GCreateTaskData_createTask_tags(
-          [Function(GCreateTaskData_createTask_tagsBuilder b) updates]) =
+          [void Function(GCreateTaskData_createTask_tagsBuilder b) updates]) =
       _$GCreateTaskData_createTask_tags;
 
   static void _initializeBuilder(GCreateTaskData_createTask_tagsBuilder b) =>

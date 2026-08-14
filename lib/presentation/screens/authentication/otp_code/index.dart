@@ -68,6 +68,10 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
                             authHeaderWidget(
                               context,
                               authType: AuthMode.otpCode,
+                              backButton: true,
+                              onBack: () {
+                                context.read<AuthCubit>().logout();
+                              },
                             ).tMargin(130),
                             Container(
                               height: 230,

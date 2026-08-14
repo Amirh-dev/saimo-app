@@ -12,7 +12,7 @@ abstract class GSendOTPData
     implements Built<GSendOTPData, GSendOTPDataBuilder> {
   GSendOTPData._();
 
-  factory GSendOTPData([Function(GSendOTPDataBuilder b) updates]) =
+  factory GSendOTPData([void Function(GSendOTPDataBuilder b) updates]) =
       _$GSendOTPData;
 
   static void _initializeBuilder(GSendOTPDataBuilder b) =>
@@ -40,7 +40,7 @@ abstract class GSendOTPData_sendOTP
   GSendOTPData_sendOTP._();
 
   factory GSendOTPData_sendOTP(
-          [Function(GSendOTPData_sendOTPBuilder b) updates]) =
+          [void Function(GSendOTPData_sendOTPBuilder b) updates]) =
       _$GSendOTPData_sendOTP;
 
   static void _initializeBuilder(GSendOTPData_sendOTPBuilder b) =>

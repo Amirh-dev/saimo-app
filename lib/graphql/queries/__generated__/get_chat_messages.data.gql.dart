@@ -15,7 +15,7 @@ abstract class GGetChatMessagesData
   GGetChatMessagesData._();
 
   factory GGetChatMessagesData(
-          [Function(GGetChatMessagesDataBuilder b) updates]) =
+          [void Function(GGetChatMessagesDataBuilder b) updates]) =
       _$GGetChatMessagesData;
 
   static void _initializeBuilder(GGetChatMessagesDataBuilder b) =>
@@ -46,8 +46,8 @@ abstract class GGetChatMessagesData_getChatMessages
   GGetChatMessagesData_getChatMessages._();
 
   factory GGetChatMessagesData_getChatMessages(
-          [Function(GGetChatMessagesData_getChatMessagesBuilder b) updates]) =
-      _$GGetChatMessagesData_getChatMessages;
+      [void Function(GGetChatMessagesData_getChatMessagesBuilder b)
+          updates]) = _$GGetChatMessagesData_getChatMessages;
 
   static void _initializeBuilder(
           GGetChatMessagesData_getChatMessagesBuilder b) =>
@@ -90,7 +90,7 @@ abstract class GGetChatMessagesData_getChatMessages_replyTo
   GGetChatMessagesData_getChatMessages_replyTo._();
 
   factory GGetChatMessagesData_getChatMessages_replyTo(
-      [Function(GGetChatMessagesData_getChatMessages_replyToBuilder b)
+      [void Function(GGetChatMessagesData_getChatMessages_replyToBuilder b)
           updates]) = _$GGetChatMessagesData_getChatMessages_replyTo;
 
   static void _initializeBuilder(
@@ -126,7 +126,7 @@ abstract class GGetChatMessagesData_getChatMessages_sender
   GGetChatMessagesData_getChatMessages_sender._();
 
   factory GGetChatMessagesData_getChatMessages_sender(
-      [Function(GGetChatMessagesData_getChatMessages_senderBuilder b)
+      [void Function(GGetChatMessagesData_getChatMessages_senderBuilder b)
           updates]) = _$GGetChatMessagesData_getChatMessages_sender;
 
   static void _initializeBuilder(

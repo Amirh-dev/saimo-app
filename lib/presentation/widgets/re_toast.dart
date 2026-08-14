@@ -22,16 +22,16 @@ class _AnimatedReToast extends StatefulWidget {
     required this.title,
     required this.backgroundColor,
     required this.contentColor,
-    required this.icon,
     required this.slideDuration,
     required this.showDuration,
     required this.onDismissed,
+    this.icon,
   });
 
   final String title;
   final Color backgroundColor;
   final Color contentColor;
-  final IconData icon;
+  final IconData? icon;
   final Duration slideDuration;
   final Duration showDuration;
   final VoidCallback onDismissed;
@@ -117,14 +117,14 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
               child: Row(
                 textDirection: TextDirection.ltr,
                 children: [
-                  _ToastCircle(
+                  widget.icon != null ? _ToastCircle(
                     backgroundColor: AppColors.white,
                     child: Icon(
                       widget.icon,
                       color: widget.backgroundColor,
                       size: 28,
                     ),
-                  ),
+                  ) : const SizedBox(),
                   const SizedBox(width: 10),
                   Expanded(
                     child: ReText(
@@ -207,7 +207,7 @@ void showReToast(
     ReToastType.error => (
         backgroundColor: AppColors.toastError,
         contentColor: AppColors.white,
-        icon: Icons.close_rounded,
+        icon: Icons.error_outline,
       ),
     ReToastType.info => (
         backgroundColor: AppColors.toastInfo,

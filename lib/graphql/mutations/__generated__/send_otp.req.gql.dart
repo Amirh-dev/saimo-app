@@ -22,7 +22,8 @@ abstract class GSendOTPReq
         _i1.OperationRequest<_i2.GSendOTPData, _i3.GSendOTPVars> {
   GSendOTPReq._();
 
-  factory GSendOTPReq([Function(GSendOTPReqBuilder b) updates]) = _$GSendOTPReq;
+  factory GSendOTPReq([void Function(GSendOTPReqBuilder b) updates]) =
+      _$GSendOTPReq;
 
   static void _initializeBuilder(GSendOTPReqBuilder b) => b
     ..operation = _i4.Operation(
@@ -39,6 +40,7 @@ abstract class GSendOTPReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -60,8 +62,22 @@ abstract class GSendOTPReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GSendOTPData? parseData(Map<String, dynamic> json) =>
       _i2.GSendOTPData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GSendOTPData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GSendOTPData, _i3.GSendOTPVars> transformOperation(
+          _i4.Operation Function(_i4.Operation) transform) =>
+      this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GSendOTPReq> get serializer => _$gSendOTPReqSerializer;
 

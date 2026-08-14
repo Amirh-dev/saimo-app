@@ -7,13 +7,13 @@ part of 'refresh_token.data.gql.dart';
 // **************************************************************************
 
 Serializer<GRefreshTokenData> _$gRefreshTokenDataSerializer =
-    new _$GRefreshTokenDataSerializer();
+    _$GRefreshTokenDataSerializer();
 Serializer<GRefreshTokenData_refreshToken>
     _$gRefreshTokenDataRefreshTokenSerializer =
-    new _$GRefreshTokenData_refreshTokenSerializer();
+    _$GRefreshTokenData_refreshTokenSerializer();
 Serializer<GRefreshTokenData_refreshToken_user>
     _$gRefreshTokenDataRefreshTokenUserSerializer =
-    new _$GRefreshTokenData_refreshToken_userSerializer();
+    _$GRefreshTokenData_refreshToken_userSerializer();
 
 class _$GRefreshTokenDataSerializer
     implements StructuredSerializer<GRefreshTokenData> {
@@ -41,7 +41,7 @@ class _$GRefreshTokenDataSerializer
   GRefreshTokenData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRefreshTokenDataBuilder();
+    final result = GRefreshTokenDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -102,7 +102,7 @@ class _$GRefreshTokenData_refreshTokenSerializer
   GRefreshTokenData_refreshToken deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRefreshTokenData_refreshTokenBuilder();
+    final result = GRefreshTokenData_refreshTokenBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -164,7 +164,7 @@ class _$GRefreshTokenData_refreshToken_userSerializer
   GRefreshTokenData_refreshToken_user deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRefreshTokenData_refreshToken_userBuilder();
+    final result = GRefreshTokenData_refreshToken_userBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -195,23 +195,17 @@ class _$GRefreshTokenData extends GRefreshTokenData {
 
   factory _$GRefreshTokenData(
           [void Function(GRefreshTokenDataBuilder)? updates]) =>
-      (new GRefreshTokenDataBuilder()..update(updates))._build();
+      (GRefreshTokenDataBuilder()..update(updates))._build();
 
   _$GRefreshTokenData._({required this.G__typename, required this.refreshToken})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GRefreshTokenData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        refreshToken, r'GRefreshTokenData', 'refreshToken');
-  }
-
+      : super._();
   @override
   GRefreshTokenData rebuild(void Function(GRefreshTokenDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GRefreshTokenDataBuilder toBuilder() =>
-      new GRefreshTokenDataBuilder()..replace(this);
+      GRefreshTokenDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -249,7 +243,7 @@ class GRefreshTokenDataBuilder
 
   GRefreshTokenData_refreshTokenBuilder? _refreshToken;
   GRefreshTokenData_refreshTokenBuilder get refreshToken =>
-      _$this._refreshToken ??= new GRefreshTokenData_refreshTokenBuilder();
+      _$this._refreshToken ??= GRefreshTokenData_refreshTokenBuilder();
   set refreshToken(GRefreshTokenData_refreshTokenBuilder? refreshToken) =>
       _$this._refreshToken = refreshToken;
 
@@ -269,7 +263,6 @@ class GRefreshTokenDataBuilder
 
   @override
   void replace(GRefreshTokenData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRefreshTokenData;
   }
 
@@ -285,17 +278,18 @@ class GRefreshTokenDataBuilder
     _$GRefreshTokenData _$result;
     try {
       _$result = _$v ??
-          new _$GRefreshTokenData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GRefreshTokenData', 'G__typename'),
-              refreshToken: refreshToken.build());
+          _$GRefreshTokenData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GRefreshTokenData', 'G__typename'),
+            refreshToken: refreshToken.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'refreshToken';
         refreshToken.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GRefreshTokenData', _$failedField, e.toString());
       }
       rethrow;
@@ -317,24 +311,14 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
 
   factory _$GRefreshTokenData_refreshToken(
           [void Function(GRefreshTokenData_refreshTokenBuilder)? updates]) =>
-      (new GRefreshTokenData_refreshTokenBuilder()..update(updates))._build();
+      (GRefreshTokenData_refreshTokenBuilder()..update(updates))._build();
 
   _$GRefreshTokenData_refreshToken._(
       {required this.G__typename,
       required this.accessToken,
       required this.refreshToken,
       required this.user})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GRefreshTokenData_refreshToken', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        accessToken, r'GRefreshTokenData_refreshToken', 'accessToken');
-    BuiltValueNullFieldError.checkNotNull(
-        refreshToken, r'GRefreshTokenData_refreshToken', 'refreshToken');
-    BuiltValueNullFieldError.checkNotNull(
-        user, r'GRefreshTokenData_refreshToken', 'user');
-  }
-
+      : super._();
   @override
   GRefreshTokenData_refreshToken rebuild(
           void Function(GRefreshTokenData_refreshTokenBuilder) updates) =>
@@ -342,7 +326,7 @@ class _$GRefreshTokenData_refreshToken extends GRefreshTokenData_refreshToken {
 
   @override
   GRefreshTokenData_refreshTokenBuilder toBuilder() =>
-      new GRefreshTokenData_refreshTokenBuilder()..replace(this);
+      GRefreshTokenData_refreshTokenBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -396,7 +380,7 @@ class GRefreshTokenData_refreshTokenBuilder
 
   GRefreshTokenData_refreshToken_userBuilder? _user;
   GRefreshTokenData_refreshToken_userBuilder get user =>
-      _$this._user ??= new GRefreshTokenData_refreshToken_userBuilder();
+      _$this._user ??= GRefreshTokenData_refreshToken_userBuilder();
   set user(GRefreshTokenData_refreshToken_userBuilder? user) =>
       _$this._user = user;
 
@@ -418,7 +402,6 @@ class GRefreshTokenData_refreshTokenBuilder
 
   @override
   void replace(GRefreshTokenData_refreshToken other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRefreshTokenData_refreshToken;
   }
 
@@ -434,21 +417,22 @@ class GRefreshTokenData_refreshTokenBuilder
     _$GRefreshTokenData_refreshToken _$result;
     try {
       _$result = _$v ??
-          new _$GRefreshTokenData_refreshToken._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                  r'GRefreshTokenData_refreshToken', 'G__typename'),
-              accessToken: BuiltValueNullFieldError.checkNotNull(accessToken,
-                  r'GRefreshTokenData_refreshToken', 'accessToken'),
-              refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
-                  r'GRefreshTokenData_refreshToken', 'refreshToken'),
-              user: user.build());
+          _$GRefreshTokenData_refreshToken._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GRefreshTokenData_refreshToken', 'G__typename'),
+            accessToken: BuiltValueNullFieldError.checkNotNull(
+                accessToken, r'GRefreshTokenData_refreshToken', 'accessToken'),
+            refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
+                r'GRefreshTokenData_refreshToken', 'refreshToken'),
+            user: user.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'user';
         user.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GRefreshTokenData_refreshToken', _$failedField, e.toString());
       }
       rethrow;
@@ -468,18 +452,11 @@ class _$GRefreshTokenData_refreshToken_user
   factory _$GRefreshTokenData_refreshToken_user(
           [void Function(GRefreshTokenData_refreshToken_userBuilder)?
               updates]) =>
-      (new GRefreshTokenData_refreshToken_userBuilder()..update(updates))
-          ._build();
+      (GRefreshTokenData_refreshToken_userBuilder()..update(updates))._build();
 
   _$GRefreshTokenData_refreshToken_user._(
       {required this.G__typename, required this.id})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GRefreshTokenData_refreshToken_user', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GRefreshTokenData_refreshToken_user', 'id');
-  }
-
+      : super._();
   @override
   GRefreshTokenData_refreshToken_user rebuild(
           void Function(GRefreshTokenData_refreshToken_userBuilder) updates) =>
@@ -487,7 +464,7 @@ class _$GRefreshTokenData_refreshToken_user
 
   @override
   GRefreshTokenData_refreshToken_userBuilder toBuilder() =>
-      new GRefreshTokenData_refreshToken_userBuilder()..replace(this);
+      GRefreshTokenData_refreshToken_userBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -545,7 +522,6 @@ class GRefreshTokenData_refreshToken_userBuilder
 
   @override
   void replace(GRefreshTokenData_refreshToken_user other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRefreshTokenData_refreshToken_user;
   }
 
@@ -560,11 +536,12 @@ class GRefreshTokenData_refreshToken_userBuilder
 
   _$GRefreshTokenData_refreshToken_user _build() {
     final _$result = _$v ??
-        new _$GRefreshTokenData_refreshToken_user._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                r'GRefreshTokenData_refreshToken_user', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GRefreshTokenData_refreshToken_user', 'id'));
+        _$GRefreshTokenData_refreshToken_user._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GRefreshTokenData_refreshToken_user', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GRefreshTokenData_refreshToken_user', 'id'),
+        );
     replace(_$result);
     return _$result;
   }

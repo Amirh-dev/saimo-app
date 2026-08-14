@@ -61,7 +61,10 @@ class AuthCubit extends Cubit<AuthState> {
       await _tokenStorage.clearTokens();
       final response = await _graphql.requestOnce(
         GSendOTPReq(
-          (request) => request.vars.input.phoneNumber = phoneNumber,
+          (request) {
+            request.vars.input.phoneNumber = phoneNumber;
+            request.vars.input.client = GDeviceTokenPlatform.WEB;
+          }
         ),
         requiresAuth: false,
       );
@@ -136,7 +139,6 @@ class AuthCubit extends Cubit<AuthState> {
     required bool isRegistered,
   }) async {
     emit(AuthLoading(isRegistered ? AuthAction.login : AuthAction.verifyOtp));
-
     try {
       final pendingRegistration = _pendingRegistration;
       if (!isRegistered &&
@@ -154,7 +156,6 @@ class AuthCubit extends Cubit<AuthState> {
         );
         return;
       }
-
       final loggedIn = await _tryCompleteLogin(
         phoneNumber: phoneNumber,
         code: code,
@@ -164,58 +165,64 @@ class AuthCubit extends Cubit<AuthState> {
         if (loggedIn) _pendingRegistration = null;
         return;
       }
-
-      final temporaryUsername = await _suggestTemporaryUsername();
-      final response = await _graphql.requestOnce(
-        GVerifyOTPAndRegisterReq(
-          (request) => request.vars.input
-            ..phoneNumber = phoneNumber
-            ..code = code
-            ..fullName = _temporaryFullName
-            ..username = temporaryUsername
-            ..birthDate.value = DateTime.utc(2000).toIso8601String()
-            ..studyTime = GUserStudyTime.UNDER_4_HOURS,
-        ),
-        requiresAuth: false,
-      );
-
-      if (response.hasErrors) {
-        emit(
-          AuthFailure(
-            _extractGraphQLErrorMessage(
-              response,
-              fallbackMessage: 'Invalid verification code',
-            ),
-            action: AuthAction.verifyOtp,
-          ),
-        );
-        return;
-      }
-
-      final payload = response.data?.verifyOTPAndRegister;
-      if (payload == null ||
-          payload.accessToken.isEmpty ||
-          payload.refreshToken.isEmpty) {
-        emit(
-          const AuthFailure(
-            'Invalid verification code',
-            action: AuthAction.verifyOtp,
-          ),
-        );
-        return;
-      }
-
-      await _tokenStorage.saveTokenPair(
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        issuedAt: DateTime.now().toUtc(),
-      );
       emit(
-        AuthNeedsRegistration(
-          phoneNumber: phoneNumber,
-          completeProfileOnly: true,
+        const AuthFailure(
+          'این شماره ثبت نام نشده است.',
+          action: AuthAction.verifyOtp,
         ),
       );
+
+      // final temporaryUsername = await _suggestTemporaryUsername();
+      // final response = await _graphql.requestOnce(
+      //   GVerifyOTPAndRegisterReq(
+      //     (request) => request.vars.input
+      //       ..phoneNumber = phoneNumber
+      //       ..code = code
+      //       ..fullName = _temporaryFullName
+      //       ..username = temporaryUsername
+      //       ..birthDate.value = DateTime.utc(2000).toIso8601String()
+      //       ..studyTime = GUserStudyTime.UNDER_4_HOURS,
+      //   ),
+      //   requiresAuth: false,
+      // );
+
+      // if (response.hasErrors) {
+      //   emit(
+      //     AuthFailure(
+      //       _extractGraphQLErrorMessage(
+      //         response,
+      //         fallbackMessage: 'Invalid verification code',
+      //       ),
+      //       action: AuthAction.verifyOtp,
+      //     ),
+      //   );
+      //   return;
+      // }
+      //
+      // final payload = response.data?.verifyOTPAndRegister;
+      // if (payload == null ||
+      //     payload.accessToken.isEmpty ||
+      //     payload.refreshToken.isEmpty) {
+      //   emit(
+      //     const AuthFailure(
+      //       'Invalid verification code',
+      //       action: AuthAction.verifyOtp,
+      //     ),
+      //   );
+      //   return;
+      // }
+      //
+      // await _tokenStorage.saveTokenPair(
+      //   accessToken: payload.accessToken,
+      //   refreshToken: payload.refreshToken,
+      //   issuedAt: DateTime.now().toUtc(),
+      // );
+      // emit(
+      //   AuthNeedsRegistration(
+      //     phoneNumber: phoneNumber,
+      //     completeProfileOnly: true,
+      //   ),
+      // );
     } catch (error) {
       emit(
         AuthFailure(
@@ -534,8 +541,12 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     );
 
     if (response.hasErrors) {
-      if (response.linkException != null) throw response.linkException!;
+      if (response.linkException != null) {
+        throw response.linkException!;
+      }
       if (emitFailure) {
+        debugPrint("ER2");
+        debugPrint(response.graphqlErrors.toString());
         emit(
           AuthFailure(
             _extractGraphQLErrorMessage(
@@ -548,7 +559,6 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       }
       return false;
     }
-
     final payload = response.data?.verifyOTPAndLogin;
     if (payload == null ||
         payload.accessToken.isEmpty ||

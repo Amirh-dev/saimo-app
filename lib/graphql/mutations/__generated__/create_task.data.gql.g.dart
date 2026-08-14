@@ -7,12 +7,12 @@ part of 'create_task.data.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateTaskData> _$gCreateTaskDataSerializer =
-    new _$GCreateTaskDataSerializer();
+    _$GCreateTaskDataSerializer();
 Serializer<GCreateTaskData_createTask> _$gCreateTaskDataCreateTaskSerializer =
-    new _$GCreateTaskData_createTaskSerializer();
+    _$GCreateTaskData_createTaskSerializer();
 Serializer<GCreateTaskData_createTask_tags>
     _$gCreateTaskDataCreateTaskTagsSerializer =
-    new _$GCreateTaskData_createTask_tagsSerializer();
+    _$GCreateTaskData_createTask_tagsSerializer();
 
 class _$GCreateTaskDataSerializer
     implements StructuredSerializer<GCreateTaskData> {
@@ -40,7 +40,7 @@ class _$GCreateTaskDataSerializer
   GCreateTaskData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskDataBuilder();
+    final result = GCreateTaskDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -150,7 +150,7 @@ class _$GCreateTaskData_createTaskSerializer
   GCreateTaskData_createTask deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskData_createTaskBuilder();
+    final result = GCreateTaskData_createTaskBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -251,7 +251,7 @@ class _$GCreateTaskData_createTask_tagsSerializer
   GCreateTaskData_createTask_tags deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskData_createTask_tagsBuilder();
+    final result = GCreateTaskData_createTask_tagsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -285,23 +285,16 @@ class _$GCreateTaskData extends GCreateTaskData {
   final GCreateTaskData_createTask createTask;
 
   factory _$GCreateTaskData([void Function(GCreateTaskDataBuilder)? updates]) =>
-      (new GCreateTaskDataBuilder()..update(updates))._build();
+      (GCreateTaskDataBuilder()..update(updates))._build();
 
   _$GCreateTaskData._({required this.G__typename, required this.createTask})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GCreateTaskData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        createTask, r'GCreateTaskData', 'createTask');
-  }
-
+      : super._();
   @override
   GCreateTaskData rebuild(void Function(GCreateTaskDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GCreateTaskDataBuilder toBuilder() =>
-      new GCreateTaskDataBuilder()..replace(this);
+  GCreateTaskDataBuilder toBuilder() => GCreateTaskDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -339,7 +332,7 @@ class GCreateTaskDataBuilder
 
   GCreateTaskData_createTaskBuilder? _createTask;
   GCreateTaskData_createTaskBuilder get createTask =>
-      _$this._createTask ??= new GCreateTaskData_createTaskBuilder();
+      _$this._createTask ??= GCreateTaskData_createTaskBuilder();
   set createTask(GCreateTaskData_createTaskBuilder? createTask) =>
       _$this._createTask = createTask;
 
@@ -359,7 +352,6 @@ class GCreateTaskDataBuilder
 
   @override
   void replace(GCreateTaskData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskData;
   }
 
@@ -375,17 +367,18 @@ class GCreateTaskDataBuilder
     _$GCreateTaskData _$result;
     try {
       _$result = _$v ??
-          new _$GCreateTaskData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GCreateTaskData', 'G__typename'),
-              createTask: createTask.build());
+          _$GCreateTaskData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GCreateTaskData', 'G__typename'),
+            createTask: createTask.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'createTask';
         createTask.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateTaskData', _$failedField, e.toString());
       }
       rethrow;
@@ -425,7 +418,7 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
 
   factory _$GCreateTaskData_createTask(
           [void Function(GCreateTaskData_createTaskBuilder)? updates]) =>
-      (new GCreateTaskData_createTaskBuilder()..update(updates))._build();
+      (GCreateTaskData_createTaskBuilder()..update(updates))._build();
 
   _$GCreateTaskData_createTask._(
       {required this.G__typename,
@@ -441,23 +434,7 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
       this.recurringDays,
       required this.status,
       this.tags})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GCreateTaskData_createTask', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GCreateTaskData_createTask', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        title, r'GCreateTaskData_createTask', 'title');
-    BuiltValueNullFieldError.checkNotNull(
-        type, r'GCreateTaskData_createTask', 'type');
-    BuiltValueNullFieldError.checkNotNull(
-        date, r'GCreateTaskData_createTask', 'date');
-    BuiltValueNullFieldError.checkNotNull(
-        hasReminder, r'GCreateTaskData_createTask', 'hasReminder');
-    BuiltValueNullFieldError.checkNotNull(
-        status, r'GCreateTaskData_createTask', 'status');
-  }
-
+      : super._();
   @override
   GCreateTaskData_createTask rebuild(
           void Function(GCreateTaskData_createTaskBuilder) updates) =>
@@ -465,7 +442,7 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
 
   @override
   GCreateTaskData_createTaskBuilder toBuilder() =>
-      new GCreateTaskData_createTaskBuilder()..replace(this);
+      GCreateTaskData_createTaskBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -557,7 +534,7 @@ class GCreateTaskData_createTaskBuilder
   set type(_i2.GTaskType? type) => _$this._type = type;
 
   _i2.GTimeBuilder? _date;
-  _i2.GTimeBuilder get date => _$this._date ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get date => _$this._date ??= _i2.GTimeBuilder();
   set date(_i2.GTimeBuilder? date) => _$this._date = date;
 
   int? _durationM;
@@ -570,7 +547,7 @@ class GCreateTaskData_createTaskBuilder
 
   _i2.GTimeBuilder? _reminderTime;
   _i2.GTimeBuilder get reminderTime =>
-      _$this._reminderTime ??= new _i2.GTimeBuilder();
+      _$this._reminderTime ??= _i2.GTimeBuilder();
   set reminderTime(_i2.GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
@@ -585,7 +562,7 @@ class GCreateTaskData_createTaskBuilder
 
   ListBuilder<GCreateTaskData_createTask_tags>? _tags;
   ListBuilder<GCreateTaskData_createTask_tags> get tags =>
-      _$this._tags ??= new ListBuilder<GCreateTaskData_createTask_tags>();
+      _$this._tags ??= ListBuilder<GCreateTaskData_createTask_tags>();
   set tags(ListBuilder<GCreateTaskData_createTask_tags>? tags) =>
       _$this._tags = tags;
 
@@ -616,7 +593,6 @@ class GCreateTaskData_createTaskBuilder
 
   @override
   void replace(GCreateTaskData_createTask other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskData_createTask;
   }
 
@@ -632,26 +608,27 @@ class GCreateTaskData_createTaskBuilder
     _$GCreateTaskData_createTask _$result;
     try {
       _$result = _$v ??
-          new _$GCreateTaskData_createTask._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GCreateTaskData_createTask', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GCreateTaskData_createTask', 'id'),
-              title: BuiltValueNullFieldError.checkNotNull(
-                  title, r'GCreateTaskData_createTask', 'title'),
-              shortDescription: shortDescription,
-              note: note,
-              type: BuiltValueNullFieldError.checkNotNull(
-                  type, r'GCreateTaskData_createTask', 'type'),
-              date: date.build(),
-              durationM: durationM,
-              hasReminder: BuiltValueNullFieldError.checkNotNull(
-                  hasReminder, r'GCreateTaskData_createTask', 'hasReminder'),
-              reminderTime: _reminderTime?.build(),
-              recurringDays: recurringDays,
-              status: BuiltValueNullFieldError.checkNotNull(
-                  status, r'GCreateTaskData_createTask', 'status'),
-              tags: _tags?.build());
+          _$GCreateTaskData_createTask._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GCreateTaskData_createTask', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GCreateTaskData_createTask', 'id'),
+            title: BuiltValueNullFieldError.checkNotNull(
+                title, r'GCreateTaskData_createTask', 'title'),
+            shortDescription: shortDescription,
+            note: note,
+            type: BuiltValueNullFieldError.checkNotNull(
+                type, r'GCreateTaskData_createTask', 'type'),
+            date: date.build(),
+            durationM: durationM,
+            hasReminder: BuiltValueNullFieldError.checkNotNull(
+                hasReminder, r'GCreateTaskData_createTask', 'hasReminder'),
+            reminderTime: _reminderTime?.build(),
+            recurringDays: recurringDays,
+            status: BuiltValueNullFieldError.checkNotNull(
+                status, r'GCreateTaskData_createTask', 'status'),
+            tags: _tags?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -664,7 +641,7 @@ class GCreateTaskData_createTaskBuilder
         _$failedField = 'tags';
         _tags?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateTaskData_createTask', _$failedField, e.toString());
       }
       rethrow;
@@ -685,19 +662,11 @@ class _$GCreateTaskData_createTask_tags
 
   factory _$GCreateTaskData_createTask_tags(
           [void Function(GCreateTaskData_createTask_tagsBuilder)? updates]) =>
-      (new GCreateTaskData_createTask_tagsBuilder()..update(updates))._build();
+      (GCreateTaskData_createTask_tagsBuilder()..update(updates))._build();
 
   _$GCreateTaskData_createTask_tags._(
       {required this.G__typename, required this.id, required this.name})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GCreateTaskData_createTask_tags', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GCreateTaskData_createTask_tags', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        name, r'GCreateTaskData_createTask_tags', 'name');
-  }
-
+      : super._();
   @override
   GCreateTaskData_createTask_tags rebuild(
           void Function(GCreateTaskData_createTask_tagsBuilder) updates) =>
@@ -705,7 +674,7 @@ class _$GCreateTaskData_createTask_tags
 
   @override
   GCreateTaskData_createTask_tagsBuilder toBuilder() =>
-      new GCreateTaskData_createTask_tagsBuilder()..replace(this);
+      GCreateTaskData_createTask_tagsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -771,7 +740,6 @@ class GCreateTaskData_createTask_tagsBuilder
 
   @override
   void replace(GCreateTaskData_createTask_tags other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskData_createTask_tags;
   }
 
@@ -785,13 +753,14 @@ class GCreateTaskData_createTask_tagsBuilder
 
   _$GCreateTaskData_createTask_tags _build() {
     final _$result = _$v ??
-        new _$GCreateTaskData_createTask_tags._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GCreateTaskData_createTask_tags', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GCreateTaskData_createTask_tags', 'id'),
-            name: BuiltValueNullFieldError.checkNotNull(
-                name, r'GCreateTaskData_createTask_tags', 'name'));
+        _$GCreateTaskData_createTask_tags._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GCreateTaskData_createTask_tags', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GCreateTaskData_createTask_tags', 'id'),
+          name: BuiltValueNullFieldError.checkNotNull(
+              name, r'GCreateTaskData_createTask_tags', 'name'),
+        );
     replace(_$result);
     return _$result;
   }

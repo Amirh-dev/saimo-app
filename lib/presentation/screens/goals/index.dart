@@ -1151,8 +1151,8 @@ class _GoalScreenState extends State<GoalScreen> {
     return Scaffold(
       backgroundColor: AppColors.gray1,
       bottomNavigationBar: AppBottomNavigationBar(
-        currentIndex: 0,
-        onTap: (index) => navigateToIndex(context, index),
+        currentIndex: 2,
+        onTap: (index) => navigateToIndex(context, index, 2),
       ),
       body: SafeArea(
         child: Column(

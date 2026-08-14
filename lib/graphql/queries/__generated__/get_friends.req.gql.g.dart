@@ -7,7 +7,7 @@ part of 'get_friends.req.gql.dart';
 // **************************************************************************
 
 Serializer<GGetFriendsReq> _$gGetFriendsReqSerializer =
-    new _$GGetFriendsReqSerializer();
+    _$GGetFriendsReqSerializer();
 
 class _$GGetFriendsReqSerializer
     implements StructuredSerializer<GGetFriendsReq> {
@@ -74,7 +74,7 @@ class _$GGetFriendsReqSerializer
   GGetFriendsReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsReqBuilder();
+    final result = GGetFriendsReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -147,9 +147,11 @@ class _$GGetFriendsReq extends GGetFriendsReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GGetFriendsReq([void Function(GGetFriendsReqBuilder)? updates]) =>
-      (new GGetFriendsReqBuilder()..update(updates))._build();
+      (GGetFriendsReqBuilder()..update(updates))._build();
 
   _$GGetFriendsReq._(
       {required this.vars,
@@ -160,22 +162,15 @@ class _$GGetFriendsReq extends GGetFriendsReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GGetFriendsReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GGetFriendsReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GGetFriendsReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GGetFriendsReq rebuild(void Function(GGetFriendsReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetFriendsReqBuilder toBuilder() =>
-      new GGetFriendsReqBuilder()..replace(this);
+  GGetFriendsReqBuilder toBuilder() => GGetFriendsReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -190,7 +185,8 @@ class _$GGetFriendsReq extends GGetFriendsReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -205,6 +201,7 @@ class _$GGetFriendsReq extends GGetFriendsReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -220,7 +217,8 @@ class _$GGetFriendsReq extends GGetFriendsReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -231,7 +229,7 @@ class GGetFriendsReqBuilder
 
   _i3.GGetFriendsVarsBuilder? _vars;
   _i3.GGetFriendsVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GGetFriendsVarsBuilder();
+      _$this._vars ??= _i3.GGetFriendsVarsBuilder();
   set vars(_i3.GGetFriendsVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -254,7 +252,7 @@ class GGetFriendsReqBuilder
 
   _i2.GGetFriendsDataBuilder? _optimisticResponse;
   _i2.GGetFriendsDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GGetFriendsDataBuilder();
+      _$this._optimisticResponse ??= _i2.GGetFriendsDataBuilder();
   set optimisticResponse(_i2.GGetFriendsDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -280,6 +278,10 @@ class GGetFriendsReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GGetFriendsReqBuilder() {
     GGetFriendsReq._initializeBuilder(this);
   }
@@ -296,6 +298,7 @@ class GGetFriendsReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -303,7 +306,6 @@ class GGetFriendsReqBuilder
 
   @override
   void replace(GGetFriendsReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsReq;
   }
 
@@ -319,18 +321,20 @@ class GGetFriendsReqBuilder
     _$GGetFriendsReq _$result;
     try {
       _$result = _$v ??
-          new _$GGetFriendsReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GGetFriendsReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GGetFriendsReq', 'executeOnListen'));
+          _$GGetFriendsReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GGetFriendsReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GGetFriendsReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -340,7 +344,7 @@ class GGetFriendsReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetFriendsReq', _$failedField, e.toString());
       }
       rethrow;

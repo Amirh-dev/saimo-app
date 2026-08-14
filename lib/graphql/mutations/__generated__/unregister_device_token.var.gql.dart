@@ -14,7 +14,7 @@ abstract class GUnregisterDeviceTokenVars
   GUnregisterDeviceTokenVars._();
 
   factory GUnregisterDeviceTokenVars(
-          [Function(GUnregisterDeviceTokenVarsBuilder b) updates]) =
+          [void Function(GUnregisterDeviceTokenVarsBuilder b) updates]) =
       _$GUnregisterDeviceTokenVars;
 
   String get token;

@@ -14,7 +14,7 @@ abstract class GGetFriendsData
     implements Built<GGetFriendsData, GGetFriendsDataBuilder> {
   GGetFriendsData._();
 
-  factory GGetFriendsData([Function(GGetFriendsDataBuilder b) updates]) =
+  factory GGetFriendsData([void Function(GGetFriendsDataBuilder b) updates]) =
       _$GGetFriendsData;
 
   static void _initializeBuilder(GGetFriendsDataBuilder b) =>
@@ -44,7 +44,7 @@ abstract class GGetFriendsData_getFriends
   GGetFriendsData_getFriends._();
 
   factory GGetFriendsData_getFriends(
-          [Function(GGetFriendsData_getFriendsBuilder b) updates]) =
+          [void Function(GGetFriendsData_getFriendsBuilder b) updates]) =
       _$GGetFriendsData_getFriends;
 
   static void _initializeBuilder(GGetFriendsData_getFriendsBuilder b) =>
@@ -82,8 +82,8 @@ abstract class GGetFriendsData_getFriends_requester
   GGetFriendsData_getFriends_requester._();
 
   factory GGetFriendsData_getFriends_requester(
-          [Function(GGetFriendsData_getFriends_requesterBuilder b) updates]) =
-      _$GGetFriendsData_getFriends_requester;
+      [void Function(GGetFriendsData_getFriends_requesterBuilder b)
+          updates]) = _$GGetFriendsData_getFriends_requester;
 
   static void _initializeBuilder(
           GGetFriendsData_getFriends_requesterBuilder b) =>
@@ -117,8 +117,8 @@ abstract class GGetFriendsData_getFriends_receiver
   GGetFriendsData_getFriends_receiver._();
 
   factory GGetFriendsData_getFriends_receiver(
-          [Function(GGetFriendsData_getFriends_receiverBuilder b) updates]) =
-      _$GGetFriendsData_getFriends_receiver;
+      [void Function(GGetFriendsData_getFriends_receiverBuilder b)
+          updates]) = _$GGetFriendsData_getFriends_receiver;
 
   static void _initializeBuilder(
           GGetFriendsData_getFriends_receiverBuilder b) =>

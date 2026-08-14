@@ -13,7 +13,7 @@ abstract class GCreateTaskVars
     implements Built<GCreateTaskVars, GCreateTaskVarsBuilder> {
   GCreateTaskVars._();
 
-  factory GCreateTaskVars([Function(GCreateTaskVarsBuilder b) updates]) =
+  factory GCreateTaskVars([void Function(GCreateTaskVarsBuilder b) updates]) =
       _$GCreateTaskVars;
 
   _i1.GCreateTaskInput get input;

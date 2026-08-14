@@ -7,7 +7,7 @@ part of 'unregister_device_token.req.gql.dart';
 // **************************************************************************
 
 Serializer<GUnregisterDeviceTokenReq> _$gUnregisterDeviceTokenReqSerializer =
-    new _$GUnregisterDeviceTokenReqSerializer();
+    _$GUnregisterDeviceTokenReqSerializer();
 
 class _$GUnregisterDeviceTokenReqSerializer
     implements StructuredSerializer<GUnregisterDeviceTokenReq> {
@@ -78,7 +78,7 @@ class _$GUnregisterDeviceTokenReqSerializer
   GUnregisterDeviceTokenReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUnregisterDeviceTokenReqBuilder();
+    final result = GUnregisterDeviceTokenReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -154,10 +154,12 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GUnregisterDeviceTokenReq(
           [void Function(GUnregisterDeviceTokenReqBuilder)? updates]) =>
-      (new GUnregisterDeviceTokenReqBuilder()..update(updates))._build();
+      (GUnregisterDeviceTokenReqBuilder()..update(updates))._build();
 
   _$GUnregisterDeviceTokenReq._(
       {required this.vars,
@@ -168,16 +170,9 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        vars, r'GUnregisterDeviceTokenReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GUnregisterDeviceTokenReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GUnregisterDeviceTokenReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GUnregisterDeviceTokenReq rebuild(
           void Function(GUnregisterDeviceTokenReqBuilder) updates) =>
@@ -185,7 +180,7 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
 
   @override
   GUnregisterDeviceTokenReqBuilder toBuilder() =>
-      new GUnregisterDeviceTokenReqBuilder()..replace(this);
+      GUnregisterDeviceTokenReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -200,7 +195,8 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -215,6 +211,7 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -230,7 +227,8 @@ class _$GUnregisterDeviceTokenReq extends GUnregisterDeviceTokenReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -242,7 +240,7 @@ class GUnregisterDeviceTokenReqBuilder
 
   _i3.GUnregisterDeviceTokenVarsBuilder? _vars;
   _i3.GUnregisterDeviceTokenVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GUnregisterDeviceTokenVarsBuilder();
+      _$this._vars ??= _i3.GUnregisterDeviceTokenVarsBuilder();
   set vars(_i3.GUnregisterDeviceTokenVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -268,8 +266,7 @@ class GUnregisterDeviceTokenReqBuilder
 
   _i2.GUnregisterDeviceTokenDataBuilder? _optimisticResponse;
   _i2.GUnregisterDeviceTokenDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??=
-          new _i2.GUnregisterDeviceTokenDataBuilder();
+      _$this._optimisticResponse ??= _i2.GUnregisterDeviceTokenDataBuilder();
   set optimisticResponse(
           _i2.GUnregisterDeviceTokenDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
@@ -296,6 +293,10 @@ class GUnregisterDeviceTokenReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GUnregisterDeviceTokenReqBuilder() {
     GUnregisterDeviceTokenReq._initializeBuilder(this);
   }
@@ -312,6 +313,7 @@ class GUnregisterDeviceTokenReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -319,7 +321,6 @@ class GUnregisterDeviceTokenReqBuilder
 
   @override
   void replace(GUnregisterDeviceTokenReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUnregisterDeviceTokenReq;
   }
 
@@ -335,20 +336,22 @@ class GUnregisterDeviceTokenReqBuilder
     _$GUnregisterDeviceTokenReq _$result;
     try {
       _$result = _$v ??
-          new _$GUnregisterDeviceTokenReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GUnregisterDeviceTokenReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen,
-                  r'GUnregisterDeviceTokenReq',
-                  'executeOnListen'));
+          _$GUnregisterDeviceTokenReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GUnregisterDeviceTokenReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen,
+                r'GUnregisterDeviceTokenReq',
+                'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -358,7 +361,7 @@ class GUnregisterDeviceTokenReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GUnregisterDeviceTokenReq', _$failedField, e.toString());
       }
       rethrow;

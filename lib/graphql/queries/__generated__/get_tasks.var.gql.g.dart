@@ -7,7 +7,7 @@ part of 'get_tasks.var.gql.dart';
 // **************************************************************************
 
 Serializer<GGetTasksVars> _$gGetTasksVarsSerializer =
-    new _$GGetTasksVarsSerializer();
+    _$GGetTasksVarsSerializer();
 
 class _$GGetTasksVarsSerializer implements StructuredSerializer<GGetTasksVars> {
   @override
@@ -60,7 +60,7 @@ class _$GGetTasksVarsSerializer implements StructuredSerializer<GGetTasksVars> {
   GGetTasksVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksVarsBuilder();
+    final result = GGetTasksVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -109,18 +109,17 @@ class _$GGetTasksVars extends GGetTasksVars {
   final int? offset;
 
   factory _$GGetTasksVars([void Function(GGetTasksVarsBuilder)? updates]) =>
-      (new GGetTasksVarsBuilder()..update(updates))._build();
+      (GGetTasksVarsBuilder()..update(updates))._build();
 
   _$GGetTasksVars._(
       {this.date, this.status, this.goalID, this.limit, this.offset})
       : super._();
-
   @override
   GGetTasksVars rebuild(void Function(GGetTasksVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetTasksVarsBuilder toBuilder() => new GGetTasksVarsBuilder()..replace(this);
+  GGetTasksVarsBuilder toBuilder() => GGetTasksVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -162,7 +161,7 @@ class GGetTasksVarsBuilder
   _$GGetTasksVars? _$v;
 
   _i1.GTimeBuilder? _date;
-  _i1.GTimeBuilder get date => _$this._date ??= new _i1.GTimeBuilder();
+  _i1.GTimeBuilder get date => _$this._date ??= _i1.GTimeBuilder();
   set date(_i1.GTimeBuilder? date) => _$this._date = date;
 
   _i1.GTaskStatus? _status;
@@ -198,7 +197,6 @@ class GGetTasksVarsBuilder
 
   @override
   void replace(GGetTasksVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksVars;
   }
 
@@ -214,19 +212,20 @@ class GGetTasksVarsBuilder
     _$GGetTasksVars _$result;
     try {
       _$result = _$v ??
-          new _$GGetTasksVars._(
-              date: _date?.build(),
-              status: status,
-              goalID: goalID,
-              limit: limit,
-              offset: offset);
+          _$GGetTasksVars._(
+            date: _date?.build(),
+            status: status,
+            goalID: goalID,
+            limit: limit,
+            offset: offset,
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'date';
         _date?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetTasksVars', _$failedField, e.toString());
       }
       rethrow;

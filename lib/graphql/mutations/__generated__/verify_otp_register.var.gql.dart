@@ -15,7 +15,7 @@ abstract class GVerifyOTPAndRegisterVars
   GVerifyOTPAndRegisterVars._();
 
   factory GVerifyOTPAndRegisterVars(
-          [Function(GVerifyOTPAndRegisterVarsBuilder b) updates]) =
+          [void Function(GVerifyOTPAndRegisterVarsBuilder b) updates]) =
       _$GVerifyOTPAndRegisterVars;
 
   _i1.GVerifyOTPAndRegisterInput get input;

@@ -22,7 +22,7 @@ abstract class GRefreshTokenReq
         _i1.OperationRequest<_i2.GRefreshTokenData, _i3.GRefreshTokenVars> {
   GRefreshTokenReq._();
 
-  factory GRefreshTokenReq([Function(GRefreshTokenReqBuilder b) updates]) =
+  factory GRefreshTokenReq([void Function(GRefreshTokenReqBuilder b) updates]) =
       _$GRefreshTokenReq;
 
   static void _initializeBuilder(GRefreshTokenReqBuilder b) => b
@@ -40,6 +40,7 @@ abstract class GRefreshTokenReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -61,8 +62,22 @@ abstract class GRefreshTokenReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GRefreshTokenData? parseData(Map<String, dynamic> json) =>
       _i2.GRefreshTokenData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GRefreshTokenData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GRefreshTokenData, _i3.GRefreshTokenVars>
+      transformOperation(_i4.Operation Function(_i4.Operation) transform) =>
+          this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GRefreshTokenReq> get serializer =>
       _$gRefreshTokenReqSerializer;

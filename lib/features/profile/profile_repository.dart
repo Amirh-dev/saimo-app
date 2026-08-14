@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 
 typedef ProfileGraphQLRequest = Future<Map<String, dynamic>> Function({
@@ -19,6 +20,7 @@ class ProfileUser {
     this.studyTime,
     this.major,
     this.bio,
+    this.avatarURL,
     this.interests = const [],
   });
 
@@ -30,6 +32,7 @@ class ProfileUser {
   final String? studyTime;
   final String? major;
   final String? bio;
+  final String? avatarURL;
   final List<String> interests;
   final int simoCoins;
   final int score;
@@ -45,6 +48,7 @@ class ProfileUser {
       id: json['id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       phoneNumber: json['phoneNumber']?.toString(),
+      avatarURL: json['avatarURL']?.toString(),
       fullName: json['fullName']?.toString(),
       birthDate: DateTime.tryParse(json['birthDate']?.toString() ?? ''),
       studyTime: json['studyTime']?.toString(),
@@ -72,6 +76,8 @@ class ProfileRepository {
 
   Future<ProfileUser> getMe() async {
     final data = await _request(query: _getProfileQuery);
+    debugPrint('DATA');
+    debugPrint(data['getMe'].toString());
     return _parseProfile(data['getMe'], 'دریافت پروفایل ناموفق بود');
   }
 
@@ -127,6 +133,7 @@ const _profileFields = r'''
 id
 username
 phoneNumber
+avatarURL
 fullName
 birthDate
 studyTime

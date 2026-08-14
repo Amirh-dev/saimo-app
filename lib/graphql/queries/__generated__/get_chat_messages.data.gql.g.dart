@@ -7,16 +7,16 @@ part of 'get_chat_messages.data.gql.dart';
 // **************************************************************************
 
 Serializer<GGetChatMessagesData> _$gGetChatMessagesDataSerializer =
-    new _$GGetChatMessagesDataSerializer();
+    _$GGetChatMessagesDataSerializer();
 Serializer<GGetChatMessagesData_getChatMessages>
     _$gGetChatMessagesDataGetChatMessagesSerializer =
-    new _$GGetChatMessagesData_getChatMessagesSerializer();
+    _$GGetChatMessagesData_getChatMessagesSerializer();
 Serializer<GGetChatMessagesData_getChatMessages_replyTo>
     _$gGetChatMessagesDataGetChatMessagesReplyToSerializer =
-    new _$GGetChatMessagesData_getChatMessages_replyToSerializer();
+    _$GGetChatMessagesData_getChatMessages_replyToSerializer();
 Serializer<GGetChatMessagesData_getChatMessages_sender>
     _$gGetChatMessagesDataGetChatMessagesSenderSerializer =
-    new _$GGetChatMessagesData_getChatMessages_senderSerializer();
+    _$GGetChatMessagesData_getChatMessages_senderSerializer();
 
 class _$GGetChatMessagesDataSerializer
     implements StructuredSerializer<GGetChatMessagesData> {
@@ -49,7 +49,7 @@ class _$GGetChatMessagesDataSerializer
   GGetChatMessagesData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesDataBuilder();
+    final result = GGetChatMessagesDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -150,7 +150,7 @@ class _$GGetChatMessagesData_getChatMessagesSerializer
   GGetChatMessagesData_getChatMessages deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesData_getChatMessagesBuilder();
+    final result = GGetChatMessagesData_getChatMessagesBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -261,7 +261,7 @@ class _$GGetChatMessagesData_getChatMessages_replyToSerializer
   GGetChatMessagesData_getChatMessages_replyTo deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesData_getChatMessages_replyToBuilder();
+    final result = GGetChatMessagesData_getChatMessages_replyToBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -326,7 +326,7 @@ class _$GGetChatMessagesData_getChatMessages_senderSerializer
   GGetChatMessagesData_getChatMessages_sender deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesData_getChatMessages_senderBuilder();
+    final result = GGetChatMessagesData_getChatMessages_senderBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -357,17 +357,11 @@ class _$GGetChatMessagesData extends GGetChatMessagesData {
 
   factory _$GGetChatMessagesData(
           [void Function(GGetChatMessagesDataBuilder)? updates]) =>
-      (new GGetChatMessagesDataBuilder()..update(updates))._build();
+      (GGetChatMessagesDataBuilder()..update(updates))._build();
 
   _$GGetChatMessagesData._(
       {required this.G__typename, required this.getChatMessages})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetChatMessagesData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        getChatMessages, r'GGetChatMessagesData', 'getChatMessages');
-  }
-
+      : super._();
   @override
   GGetChatMessagesData rebuild(
           void Function(GGetChatMessagesDataBuilder) updates) =>
@@ -375,7 +369,7 @@ class _$GGetChatMessagesData extends GGetChatMessagesData {
 
   @override
   GGetChatMessagesDataBuilder toBuilder() =>
-      new GGetChatMessagesDataBuilder()..replace(this);
+      GGetChatMessagesDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -414,7 +408,7 @@ class GGetChatMessagesDataBuilder
   ListBuilder<GGetChatMessagesData_getChatMessages>? _getChatMessages;
   ListBuilder<GGetChatMessagesData_getChatMessages> get getChatMessages =>
       _$this._getChatMessages ??=
-          new ListBuilder<GGetChatMessagesData_getChatMessages>();
+          ListBuilder<GGetChatMessagesData_getChatMessages>();
   set getChatMessages(
           ListBuilder<GGetChatMessagesData_getChatMessages>? getChatMessages) =>
       _$this._getChatMessages = getChatMessages;
@@ -435,7 +429,6 @@ class GGetChatMessagesDataBuilder
 
   @override
   void replace(GGetChatMessagesData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesData;
   }
 
@@ -451,17 +444,18 @@ class GGetChatMessagesDataBuilder
     _$GGetChatMessagesData _$result;
     try {
       _$result = _$v ??
-          new _$GGetChatMessagesData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GGetChatMessagesData', 'G__typename'),
-              getChatMessages: getChatMessages.build());
+          _$GGetChatMessagesData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GGetChatMessagesData', 'G__typename'),
+            getChatMessages: getChatMessages.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'getChatMessages';
         getChatMessages.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetChatMessagesData', _$failedField, e.toString());
       }
       rethrow;
@@ -503,8 +497,7 @@ class _$GGetChatMessagesData_getChatMessages
   factory _$GGetChatMessagesData_getChatMessages(
           [void Function(GGetChatMessagesData_getChatMessagesBuilder)?
               updates]) =>
-      (new GGetChatMessagesData_getChatMessagesBuilder()..update(updates))
-          ._build();
+      (GGetChatMessagesData_getChatMessagesBuilder()..update(updates))._build();
 
   _$GGetChatMessagesData_getChatMessages._(
       {required this.G__typename,
@@ -520,29 +513,7 @@ class _$GGetChatMessagesData_getChatMessages
       required this.updatedAt,
       this.replyTo,
       required this.sender})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetChatMessagesData_getChatMessages', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetChatMessagesData_getChatMessages', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        content, r'GGetChatMessagesData_getChatMessages', 'content');
-    BuiltValueNullFieldError.checkNotNull(
-        type, r'GGetChatMessagesData_getChatMessages', 'type');
-    BuiltValueNullFieldError.checkNotNull(
-        chatID, r'GGetChatMessagesData_getChatMessages', 'chatID');
-    BuiltValueNullFieldError.checkNotNull(
-        senderID, r'GGetChatMessagesData_getChatMessages', 'senderID');
-    BuiltValueNullFieldError.checkNotNull(
-        isDeleted, r'GGetChatMessagesData_getChatMessages', 'isDeleted');
-    BuiltValueNullFieldError.checkNotNull(
-        createdAt, r'GGetChatMessagesData_getChatMessages', 'createdAt');
-    BuiltValueNullFieldError.checkNotNull(
-        updatedAt, r'GGetChatMessagesData_getChatMessages', 'updatedAt');
-    BuiltValueNullFieldError.checkNotNull(
-        sender, r'GGetChatMessagesData_getChatMessages', 'sender');
-  }
-
+      : super._();
   @override
   GGetChatMessagesData_getChatMessages rebuild(
           void Function(GGetChatMessagesData_getChatMessagesBuilder) updates) =>
@@ -550,7 +521,7 @@ class _$GGetChatMessagesData_getChatMessages
 
   @override
   GGetChatMessagesData_getChatMessagesBuilder toBuilder() =>
-      new GGetChatMessagesData_getChatMessagesBuilder()..replace(this);
+      GGetChatMessagesData_getChatMessagesBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -650,31 +621,26 @@ class GGetChatMessagesData_getChatMessagesBuilder
   set isDeleted(bool? isDeleted) => _$this._isDeleted = isDeleted;
 
   _i2.GTimeBuilder? _deletedAt;
-  _i2.GTimeBuilder get deletedAt =>
-      _$this._deletedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get deletedAt => _$this._deletedAt ??= _i2.GTimeBuilder();
   set deletedAt(_i2.GTimeBuilder? deletedAt) => _$this._deletedAt = deletedAt;
 
   _i2.GTimeBuilder? _createdAt;
-  _i2.GTimeBuilder get createdAt =>
-      _$this._createdAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get createdAt => _$this._createdAt ??= _i2.GTimeBuilder();
   set createdAt(_i2.GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   _i2.GTimeBuilder? _updatedAt;
-  _i2.GTimeBuilder get updatedAt =>
-      _$this._updatedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get updatedAt => _$this._updatedAt ??= _i2.GTimeBuilder();
   set updatedAt(_i2.GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GGetChatMessagesData_getChatMessages_replyToBuilder? _replyTo;
   GGetChatMessagesData_getChatMessages_replyToBuilder get replyTo =>
-      _$this._replyTo ??=
-          new GGetChatMessagesData_getChatMessages_replyToBuilder();
+      _$this._replyTo ??= GGetChatMessagesData_getChatMessages_replyToBuilder();
   set replyTo(GGetChatMessagesData_getChatMessages_replyToBuilder? replyTo) =>
       _$this._replyTo = replyTo;
 
   GGetChatMessagesData_getChatMessages_senderBuilder? _sender;
   GGetChatMessagesData_getChatMessages_senderBuilder get sender =>
-      _$this._sender ??=
-          new GGetChatMessagesData_getChatMessages_senderBuilder();
+      _$this._sender ??= GGetChatMessagesData_getChatMessages_senderBuilder();
   set sender(GGetChatMessagesData_getChatMessages_senderBuilder? sender) =>
       _$this._sender = sender;
 
@@ -705,7 +671,6 @@ class GGetChatMessagesData_getChatMessagesBuilder
 
   @override
   void replace(GGetChatMessagesData_getChatMessages other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesData_getChatMessages;
   }
 
@@ -722,27 +687,28 @@ class GGetChatMessagesData_getChatMessagesBuilder
     _$GGetChatMessagesData_getChatMessages _$result;
     try {
       _$result = _$v ??
-          new _$GGetChatMessagesData_getChatMessages._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                  r'GGetChatMessagesData_getChatMessages', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GGetChatMessagesData_getChatMessages', 'id'),
-              content: BuiltValueNullFieldError.checkNotNull(
-                  content, r'GGetChatMessagesData_getChatMessages', 'content'),
-              type: BuiltValueNullFieldError.checkNotNull(
-                  type, r'GGetChatMessagesData_getChatMessages', 'type'),
-              chatID: BuiltValueNullFieldError.checkNotNull(
-                  chatID, r'GGetChatMessagesData_getChatMessages', 'chatID'),
-              senderID: BuiltValueNullFieldError.checkNotNull(
-                  senderID, r'GGetChatMessagesData_getChatMessages', 'senderID'),
-              replyToID: replyToID,
-              isDeleted: BuiltValueNullFieldError.checkNotNull(
-                  isDeleted, r'GGetChatMessagesData_getChatMessages', 'isDeleted'),
-              deletedAt: _deletedAt?.build(),
-              createdAt: createdAt.build(),
-              updatedAt: updatedAt.build(),
-              replyTo: _replyTo?.build(),
-              sender: sender.build());
+          _$GGetChatMessagesData_getChatMessages._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+                r'GGetChatMessagesData_getChatMessages', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GGetChatMessagesData_getChatMessages', 'id'),
+            content: BuiltValueNullFieldError.checkNotNull(
+                content, r'GGetChatMessagesData_getChatMessages', 'content'),
+            type: BuiltValueNullFieldError.checkNotNull(
+                type, r'GGetChatMessagesData_getChatMessages', 'type'),
+            chatID: BuiltValueNullFieldError.checkNotNull(
+                chatID, r'GGetChatMessagesData_getChatMessages', 'chatID'),
+            senderID: BuiltValueNullFieldError.checkNotNull(
+                senderID, r'GGetChatMessagesData_getChatMessages', 'senderID'),
+            replyToID: replyToID,
+            isDeleted: BuiltValueNullFieldError.checkNotNull(isDeleted,
+                r'GGetChatMessagesData_getChatMessages', 'isDeleted'),
+            deletedAt: _deletedAt?.build(),
+            createdAt: createdAt.build(),
+            updatedAt: updatedAt.build(),
+            replyTo: _replyTo?.build(),
+            sender: sender.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -757,7 +723,7 @@ class GGetChatMessagesData_getChatMessagesBuilder
         _$failedField = 'sender';
         sender.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetChatMessagesData_getChatMessages',
             _$failedField,
             e.toString());
@@ -785,8 +751,7 @@ class _$GGetChatMessagesData_getChatMessages_replyTo
   factory _$GGetChatMessagesData_getChatMessages_replyTo(
           [void Function(GGetChatMessagesData_getChatMessages_replyToBuilder)?
               updates]) =>
-      (new GGetChatMessagesData_getChatMessages_replyToBuilder()
-            ..update(updates))
+      (GGetChatMessagesData_getChatMessages_replyToBuilder()..update(updates))
           ._build();
 
   _$GGetChatMessagesData_getChatMessages_replyTo._(
@@ -795,19 +760,7 @@ class _$GGetChatMessagesData_getChatMessages_replyTo
       required this.content,
       required this.senderID,
       required this.createdAt})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GGetChatMessagesData_getChatMessages_replyTo', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetChatMessagesData_getChatMessages_replyTo', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        content, r'GGetChatMessagesData_getChatMessages_replyTo', 'content');
-    BuiltValueNullFieldError.checkNotNull(
-        senderID, r'GGetChatMessagesData_getChatMessages_replyTo', 'senderID');
-    BuiltValueNullFieldError.checkNotNull(createdAt,
-        r'GGetChatMessagesData_getChatMessages_replyTo', 'createdAt');
-  }
-
+      : super._();
   @override
   GGetChatMessagesData_getChatMessages_replyTo rebuild(
           void Function(GGetChatMessagesData_getChatMessages_replyToBuilder)
@@ -816,7 +769,7 @@ class _$GGetChatMessagesData_getChatMessages_replyTo
 
   @override
   GGetChatMessagesData_getChatMessages_replyToBuilder toBuilder() =>
-      new GGetChatMessagesData_getChatMessages_replyToBuilder()..replace(this);
+      GGetChatMessagesData_getChatMessages_replyToBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -877,8 +830,7 @@ class GGetChatMessagesData_getChatMessages_replyToBuilder
   set senderID(String? senderID) => _$this._senderID = senderID;
 
   _i2.GTimeBuilder? _createdAt;
-  _i2.GTimeBuilder get createdAt =>
-      _$this._createdAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get createdAt => _$this._createdAt ??= _i2.GTimeBuilder();
   set createdAt(_i2.GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   GGetChatMessagesData_getChatMessages_replyToBuilder() {
@@ -900,7 +852,6 @@ class GGetChatMessagesData_getChatMessages_replyToBuilder
 
   @override
   void replace(GGetChatMessagesData_getChatMessages_replyTo other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesData_getChatMessages_replyTo;
   }
 
@@ -918,25 +869,24 @@ class GGetChatMessagesData_getChatMessages_replyToBuilder
     _$GGetChatMessagesData_getChatMessages_replyTo _$result;
     try {
       _$result = _$v ??
-          new _$GGetChatMessagesData_getChatMessages_replyTo._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename,
-                  r'GGetChatMessagesData_getChatMessages_replyTo',
-                  'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GGetChatMessagesData_getChatMessages_replyTo', 'id'),
-              content: BuiltValueNullFieldError.checkNotNull(content,
-                  r'GGetChatMessagesData_getChatMessages_replyTo', 'content'),
-              senderID: BuiltValueNullFieldError.checkNotNull(senderID,
-                  r'GGetChatMessagesData_getChatMessages_replyTo', 'senderID'),
-              createdAt: createdAt.build());
+          _$GGetChatMessagesData_getChatMessages_replyTo._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+                r'GGetChatMessagesData_getChatMessages_replyTo', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GGetChatMessagesData_getChatMessages_replyTo', 'id'),
+            content: BuiltValueNullFieldError.checkNotNull(content,
+                r'GGetChatMessagesData_getChatMessages_replyTo', 'content'),
+            senderID: BuiltValueNullFieldError.checkNotNull(senderID,
+                r'GGetChatMessagesData_getChatMessages_replyTo', 'senderID'),
+            createdAt: createdAt.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'createdAt';
         createdAt.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetChatMessagesData_getChatMessages_replyTo',
             _$failedField,
             e.toString());
@@ -958,19 +908,12 @@ class _$GGetChatMessagesData_getChatMessages_sender
   factory _$GGetChatMessagesData_getChatMessages_sender(
           [void Function(GGetChatMessagesData_getChatMessages_senderBuilder)?
               updates]) =>
-      (new GGetChatMessagesData_getChatMessages_senderBuilder()
-            ..update(updates))
+      (GGetChatMessagesData_getChatMessages_senderBuilder()..update(updates))
           ._build();
 
   _$GGetChatMessagesData_getChatMessages_sender._(
       {required this.G__typename, required this.id})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GGetChatMessagesData_getChatMessages_sender', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetChatMessagesData_getChatMessages_sender', 'id');
-  }
-
+      : super._();
   @override
   GGetChatMessagesData_getChatMessages_sender rebuild(
           void Function(GGetChatMessagesData_getChatMessages_senderBuilder)
@@ -979,7 +922,7 @@ class _$GGetChatMessagesData_getChatMessages_sender
 
   @override
   GGetChatMessagesData_getChatMessages_senderBuilder toBuilder() =>
-      new GGetChatMessagesData_getChatMessages_senderBuilder()..replace(this);
+      GGetChatMessagesData_getChatMessages_senderBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -1038,7 +981,6 @@ class GGetChatMessagesData_getChatMessages_senderBuilder
 
   @override
   void replace(GGetChatMessagesData_getChatMessages_sender other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesData_getChatMessages_sender;
   }
 
@@ -1054,11 +996,12 @@ class GGetChatMessagesData_getChatMessages_senderBuilder
 
   _$GGetChatMessagesData_getChatMessages_sender _build() {
     final _$result = _$v ??
-        new _$GGetChatMessagesData_getChatMessages_sender._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                r'GGetChatMessagesData_getChatMessages_sender', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GGetChatMessagesData_getChatMessages_sender', 'id'));
+        _$GGetChatMessagesData_getChatMessages_sender._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GGetChatMessagesData_getChatMessages_sender', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GGetChatMessagesData_getChatMessages_sender', 'id'),
+        );
     replace(_$result);
     return _$result;
   }

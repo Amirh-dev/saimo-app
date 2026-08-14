@@ -8,7 +8,7 @@ class ConsultantRepository {
 
   final GraphQLRepository _graphql;
 
-  static const String _sampleAvatar = 'assets/images/sample_profile.png';
+  static const String _sampleAvatar = 'Assets.profilePlaceholder';
 
   static const String _counselorsQuery = r'''
     query Counselors($limit: Int, $offset: Int) {

@@ -7,7 +7,7 @@ part of 'register_device_token.data.gql.dart';
 // **************************************************************************
 
 Serializer<GRegisterDeviceTokenData> _$gRegisterDeviceTokenDataSerializer =
-    new _$GRegisterDeviceTokenDataSerializer();
+    _$GRegisterDeviceTokenDataSerializer();
 
 class _$GRegisterDeviceTokenDataSerializer
     implements StructuredSerializer<GRegisterDeviceTokenData> {
@@ -39,7 +39,7 @@ class _$GRegisterDeviceTokenDataSerializer
   GRegisterDeviceTokenData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRegisterDeviceTokenDataBuilder();
+    final result = GRegisterDeviceTokenDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -70,17 +70,11 @@ class _$GRegisterDeviceTokenData extends GRegisterDeviceTokenData {
 
   factory _$GRegisterDeviceTokenData(
           [void Function(GRegisterDeviceTokenDataBuilder)? updates]) =>
-      (new GRegisterDeviceTokenDataBuilder()..update(updates))._build();
+      (GRegisterDeviceTokenDataBuilder()..update(updates))._build();
 
   _$GRegisterDeviceTokenData._(
       {required this.G__typename, required this.registerDeviceToken})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GRegisterDeviceTokenData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(registerDeviceToken,
-        r'GRegisterDeviceTokenData', 'registerDeviceToken');
-  }
-
+      : super._();
   @override
   GRegisterDeviceTokenData rebuild(
           void Function(GRegisterDeviceTokenDataBuilder) updates) =>
@@ -88,7 +82,7 @@ class _$GRegisterDeviceTokenData extends GRegisterDeviceTokenData {
 
   @override
   GRegisterDeviceTokenDataBuilder toBuilder() =>
-      new GRegisterDeviceTokenDataBuilder()..replace(this);
+      GRegisterDeviceTokenDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -146,7 +140,6 @@ class GRegisterDeviceTokenDataBuilder
 
   @override
   void replace(GRegisterDeviceTokenData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRegisterDeviceTokenData;
   }
 
@@ -160,13 +153,14 @@ class GRegisterDeviceTokenDataBuilder
 
   _$GRegisterDeviceTokenData _build() {
     final _$result = _$v ??
-        new _$GRegisterDeviceTokenData._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GRegisterDeviceTokenData', 'G__typename'),
-            registerDeviceToken: BuiltValueNullFieldError.checkNotNull(
-                registerDeviceToken,
-                r'GRegisterDeviceTokenData',
-                'registerDeviceToken'));
+        _$GRegisterDeviceTokenData._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GRegisterDeviceTokenData', 'G__typename'),
+          registerDeviceToken: BuiltValueNullFieldError.checkNotNull(
+              registerDeviceToken,
+              r'GRegisterDeviceTokenData',
+              'registerDeviceToken'),
+        );
     replace(_$result);
     return _$result;
   }

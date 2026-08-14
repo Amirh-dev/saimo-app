@@ -7,10 +7,10 @@ part of 'send_message.data.gql.dart';
 // **************************************************************************
 
 Serializer<GSendMessageData> _$gSendMessageDataSerializer =
-    new _$GSendMessageDataSerializer();
+    _$GSendMessageDataSerializer();
 Serializer<GSendMessageData_sendMessage>
     _$gSendMessageDataSendMessageSerializer =
-    new _$GSendMessageData_sendMessageSerializer();
+    _$GSendMessageData_sendMessageSerializer();
 
 class _$GSendMessageDataSerializer
     implements StructuredSerializer<GSendMessageData> {
@@ -38,7 +38,7 @@ class _$GSendMessageDataSerializer
   GSendMessageData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendMessageDataBuilder();
+    final result = GSendMessageDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -126,7 +126,7 @@ class _$GSendMessageData_sendMessageSerializer
   GSendMessageData_sendMessage deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendMessageData_sendMessageBuilder();
+    final result = GSendMessageData_sendMessageBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -194,23 +194,17 @@ class _$GSendMessageData extends GSendMessageData {
 
   factory _$GSendMessageData(
           [void Function(GSendMessageDataBuilder)? updates]) =>
-      (new GSendMessageDataBuilder()..update(updates))._build();
+      (GSendMessageDataBuilder()..update(updates))._build();
 
   _$GSendMessageData._({required this.G__typename, required this.sendMessage})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GSendMessageData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        sendMessage, r'GSendMessageData', 'sendMessage');
-  }
-
+      : super._();
   @override
   GSendMessageData rebuild(void Function(GSendMessageDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GSendMessageDataBuilder toBuilder() =>
-      new GSendMessageDataBuilder()..replace(this);
+      GSendMessageDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -248,7 +242,7 @@ class GSendMessageDataBuilder
 
   GSendMessageData_sendMessageBuilder? _sendMessage;
   GSendMessageData_sendMessageBuilder get sendMessage =>
-      _$this._sendMessage ??= new GSendMessageData_sendMessageBuilder();
+      _$this._sendMessage ??= GSendMessageData_sendMessageBuilder();
   set sendMessage(GSendMessageData_sendMessageBuilder? sendMessage) =>
       _$this._sendMessage = sendMessage;
 
@@ -268,7 +262,6 @@ class GSendMessageDataBuilder
 
   @override
   void replace(GSendMessageData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendMessageData;
   }
 
@@ -284,17 +277,18 @@ class GSendMessageDataBuilder
     _$GSendMessageData _$result;
     try {
       _$result = _$v ??
-          new _$GSendMessageData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GSendMessageData', 'G__typename'),
-              sendMessage: sendMessage.build());
+          _$GSendMessageData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GSendMessageData', 'G__typename'),
+            sendMessage: sendMessage.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'sendMessage';
         sendMessage.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendMessageData', _$failedField, e.toString());
       }
       rethrow;
@@ -330,7 +324,7 @@ class _$GSendMessageData_sendMessage extends GSendMessageData_sendMessage {
 
   factory _$GSendMessageData_sendMessage(
           [void Function(GSendMessageData_sendMessageBuilder)? updates]) =>
-      (new GSendMessageData_sendMessageBuilder()..update(updates))._build();
+      (GSendMessageData_sendMessageBuilder()..update(updates))._build();
 
   _$GSendMessageData_sendMessage._(
       {required this.G__typename,
@@ -344,27 +338,7 @@ class _$GSendMessageData_sendMessage extends GSendMessageData_sendMessage {
       this.deletedAt,
       required this.createdAt,
       required this.updatedAt})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GSendMessageData_sendMessage', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GSendMessageData_sendMessage', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        content, r'GSendMessageData_sendMessage', 'content');
-    BuiltValueNullFieldError.checkNotNull(
-        type, r'GSendMessageData_sendMessage', 'type');
-    BuiltValueNullFieldError.checkNotNull(
-        chatID, r'GSendMessageData_sendMessage', 'chatID');
-    BuiltValueNullFieldError.checkNotNull(
-        senderID, r'GSendMessageData_sendMessage', 'senderID');
-    BuiltValueNullFieldError.checkNotNull(
-        isDeleted, r'GSendMessageData_sendMessage', 'isDeleted');
-    BuiltValueNullFieldError.checkNotNull(
-        createdAt, r'GSendMessageData_sendMessage', 'createdAt');
-    BuiltValueNullFieldError.checkNotNull(
-        updatedAt, r'GSendMessageData_sendMessage', 'updatedAt');
-  }
-
+      : super._();
   @override
   GSendMessageData_sendMessage rebuild(
           void Function(GSendMessageData_sendMessageBuilder) updates) =>
@@ -372,7 +346,7 @@ class _$GSendMessageData_sendMessage extends GSendMessageData_sendMessage {
 
   @override
   GSendMessageData_sendMessageBuilder toBuilder() =>
-      new GSendMessageData_sendMessageBuilder()..replace(this);
+      GSendMessageData_sendMessageBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -466,18 +440,15 @@ class GSendMessageData_sendMessageBuilder
   set isDeleted(bool? isDeleted) => _$this._isDeleted = isDeleted;
 
   _i2.GTimeBuilder? _deletedAt;
-  _i2.GTimeBuilder get deletedAt =>
-      _$this._deletedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get deletedAt => _$this._deletedAt ??= _i2.GTimeBuilder();
   set deletedAt(_i2.GTimeBuilder? deletedAt) => _$this._deletedAt = deletedAt;
 
   _i2.GTimeBuilder? _createdAt;
-  _i2.GTimeBuilder get createdAt =>
-      _$this._createdAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get createdAt => _$this._createdAt ??= _i2.GTimeBuilder();
   set createdAt(_i2.GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   _i2.GTimeBuilder? _updatedAt;
-  _i2.GTimeBuilder get updatedAt =>
-      _$this._updatedAt ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get updatedAt => _$this._updatedAt ??= _i2.GTimeBuilder();
   set updatedAt(_i2.GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GSendMessageData_sendMessageBuilder() {
@@ -505,7 +476,6 @@ class GSendMessageData_sendMessageBuilder
 
   @override
   void replace(GSendMessageData_sendMessage other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendMessageData_sendMessage;
   }
 
@@ -521,25 +491,26 @@ class GSendMessageData_sendMessageBuilder
     _$GSendMessageData_sendMessage _$result;
     try {
       _$result = _$v ??
-          new _$GSendMessageData_sendMessage._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GSendMessageData_sendMessage', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GSendMessageData_sendMessage', 'id'),
-              content: BuiltValueNullFieldError.checkNotNull(
-                  content, r'GSendMessageData_sendMessage', 'content'),
-              type: BuiltValueNullFieldError.checkNotNull(
-                  type, r'GSendMessageData_sendMessage', 'type'),
-              chatID: BuiltValueNullFieldError.checkNotNull(
-                  chatID, r'GSendMessageData_sendMessage', 'chatID'),
-              senderID: BuiltValueNullFieldError.checkNotNull(
-                  senderID, r'GSendMessageData_sendMessage', 'senderID'),
-              replyToID: replyToID,
-              isDeleted: BuiltValueNullFieldError.checkNotNull(
-                  isDeleted, r'GSendMessageData_sendMessage', 'isDeleted'),
-              deletedAt: _deletedAt?.build(),
-              createdAt: createdAt.build(),
-              updatedAt: updatedAt.build());
+          _$GSendMessageData_sendMessage._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GSendMessageData_sendMessage', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GSendMessageData_sendMessage', 'id'),
+            content: BuiltValueNullFieldError.checkNotNull(
+                content, r'GSendMessageData_sendMessage', 'content'),
+            type: BuiltValueNullFieldError.checkNotNull(
+                type, r'GSendMessageData_sendMessage', 'type'),
+            chatID: BuiltValueNullFieldError.checkNotNull(
+                chatID, r'GSendMessageData_sendMessage', 'chatID'),
+            senderID: BuiltValueNullFieldError.checkNotNull(
+                senderID, r'GSendMessageData_sendMessage', 'senderID'),
+            replyToID: replyToID,
+            isDeleted: BuiltValueNullFieldError.checkNotNull(
+                isDeleted, r'GSendMessageData_sendMessage', 'isDeleted'),
+            deletedAt: _deletedAt?.build(),
+            createdAt: createdAt.build(),
+            updatedAt: updatedAt.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -550,7 +521,7 @@ class GSendMessageData_sendMessageBuilder
         _$failedField = 'updatedAt';
         updatedAt.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendMessageData_sendMessage', _$failedField, e.toString());
       }
       rethrow;

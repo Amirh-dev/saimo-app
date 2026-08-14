@@ -7,7 +7,7 @@ part of 'unregister_device_token.data.gql.dart';
 // **************************************************************************
 
 Serializer<GUnregisterDeviceTokenData> _$gUnregisterDeviceTokenDataSerializer =
-    new _$GUnregisterDeviceTokenDataSerializer();
+    _$GUnregisterDeviceTokenDataSerializer();
 
 class _$GUnregisterDeviceTokenDataSerializer
     implements StructuredSerializer<GUnregisterDeviceTokenData> {
@@ -39,7 +39,7 @@ class _$GUnregisterDeviceTokenDataSerializer
   GUnregisterDeviceTokenData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUnregisterDeviceTokenDataBuilder();
+    final result = GUnregisterDeviceTokenDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -70,17 +70,11 @@ class _$GUnregisterDeviceTokenData extends GUnregisterDeviceTokenData {
 
   factory _$GUnregisterDeviceTokenData(
           [void Function(GUnregisterDeviceTokenDataBuilder)? updates]) =>
-      (new GUnregisterDeviceTokenDataBuilder()..update(updates))._build();
+      (GUnregisterDeviceTokenDataBuilder()..update(updates))._build();
 
   _$GUnregisterDeviceTokenData._(
       {required this.G__typename, required this.unregisterDeviceToken})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GUnregisterDeviceTokenData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(unregisterDeviceToken,
-        r'GUnregisterDeviceTokenData', 'unregisterDeviceToken');
-  }
-
+      : super._();
   @override
   GUnregisterDeviceTokenData rebuild(
           void Function(GUnregisterDeviceTokenDataBuilder) updates) =>
@@ -88,7 +82,7 @@ class _$GUnregisterDeviceTokenData extends GUnregisterDeviceTokenData {
 
   @override
   GUnregisterDeviceTokenDataBuilder toBuilder() =>
-      new GUnregisterDeviceTokenDataBuilder()..replace(this);
+      GUnregisterDeviceTokenDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -146,7 +140,6 @@ class GUnregisterDeviceTokenDataBuilder
 
   @override
   void replace(GUnregisterDeviceTokenData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUnregisterDeviceTokenData;
   }
 
@@ -160,13 +153,14 @@ class GUnregisterDeviceTokenDataBuilder
 
   _$GUnregisterDeviceTokenData _build() {
     final _$result = _$v ??
-        new _$GUnregisterDeviceTokenData._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GUnregisterDeviceTokenData', 'G__typename'),
-            unregisterDeviceToken: BuiltValueNullFieldError.checkNotNull(
-                unregisterDeviceToken,
-                r'GUnregisterDeviceTokenData',
-                'unregisterDeviceToken'));
+        _$GUnregisterDeviceTokenData._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GUnregisterDeviceTokenData', 'G__typename'),
+          unregisterDeviceToken: BuiltValueNullFieldError.checkNotNull(
+              unregisterDeviceToken,
+              r'GUnregisterDeviceTokenData',
+              'unregisterDeviceToken'),
+        );
     replace(_$result);
     return _$result;
   }

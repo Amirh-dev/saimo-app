@@ -84,7 +84,7 @@ class MyApp extends StatelessWidget {
             fontFamily: AppFonts.iranSansVar,
             useMaterial3: true,
           ),
-          home: const StatisticsScreen(),
+          home: const _AuthGate(),
         ),
       ),
     );

@@ -7,7 +7,7 @@ part of 'delete_message.var.gql.dart';
 // **************************************************************************
 
 Serializer<GDeleteMessageVars> _$gDeleteMessageVarsSerializer =
-    new _$GDeleteMessageVarsSerializer();
+    _$GDeleteMessageVarsSerializer();
 
 class _$GDeleteMessageVarsSerializer
     implements StructuredSerializer<GDeleteMessageVars> {
@@ -33,7 +33,7 @@ class _$GDeleteMessageVarsSerializer
   GDeleteMessageVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GDeleteMessageVarsBuilder();
+    final result = GDeleteMessageVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -58,13 +58,9 @@ class _$GDeleteMessageVars extends GDeleteMessageVars {
 
   factory _$GDeleteMessageVars(
           [void Function(GDeleteMessageVarsBuilder)? updates]) =>
-      (new GDeleteMessageVarsBuilder()..update(updates))._build();
+      (GDeleteMessageVarsBuilder()..update(updates))._build();
 
-  _$GDeleteMessageVars._({required this.messageID}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        messageID, r'GDeleteMessageVars', 'messageID');
-  }
-
+  _$GDeleteMessageVars._({required this.messageID}) : super._();
   @override
   GDeleteMessageVars rebuild(
           void Function(GDeleteMessageVarsBuilder) updates) =>
@@ -72,7 +68,7 @@ class _$GDeleteMessageVars extends GDeleteMessageVars {
 
   @override
   GDeleteMessageVarsBuilder toBuilder() =>
-      new GDeleteMessageVarsBuilder()..replace(this);
+      GDeleteMessageVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -101,8 +97,7 @@ class GDeleteMessageVarsBuilder
   _$GDeleteMessageVars? _$v;
 
   _i1.GUUIDBuilder? _messageID;
-  _i1.GUUIDBuilder get messageID =>
-      _$this._messageID ??= new _i1.GUUIDBuilder();
+  _i1.GUUIDBuilder get messageID => _$this._messageID ??= _i1.GUUIDBuilder();
   set messageID(_i1.GUUIDBuilder? messageID) => _$this._messageID = messageID;
 
   GDeleteMessageVarsBuilder();
@@ -118,7 +113,6 @@ class GDeleteMessageVarsBuilder
 
   @override
   void replace(GDeleteMessageVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GDeleteMessageVars;
   }
 
@@ -133,15 +127,17 @@ class GDeleteMessageVarsBuilder
   _$GDeleteMessageVars _build() {
     _$GDeleteMessageVars _$result;
     try {
-      _$result =
-          _$v ?? new _$GDeleteMessageVars._(messageID: messageID.build());
+      _$result = _$v ??
+          _$GDeleteMessageVars._(
+            messageID: messageID.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'messageID';
         messageID.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GDeleteMessageVars', _$failedField, e.toString());
       }
       rethrow;

@@ -6,7 +6,7 @@ part of 'get_me.var.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GGetMeVars> _$gGetMeVarsSerializer = new _$GGetMeVarsSerializer();
+Serializer<GGetMeVars> _$gGetMeVarsSerializer = _$GGetMeVarsSerializer();
 
 class _$GGetMeVarsSerializer implements StructuredSerializer<GGetMeVars> {
   @override
@@ -23,22 +23,21 @@ class _$GGetMeVarsSerializer implements StructuredSerializer<GGetMeVars> {
   @override
   GGetMeVars deserialize(Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    return new GGetMeVarsBuilder().build();
+    return GGetMeVarsBuilder().build();
   }
 }
 
 class _$GGetMeVars extends GGetMeVars {
   factory _$GGetMeVars([void Function(GGetMeVarsBuilder)? updates]) =>
-      (new GGetMeVarsBuilder()..update(updates))._build();
+      (GGetMeVarsBuilder()..update(updates))._build();
 
   _$GGetMeVars._() : super._();
-
   @override
   GGetMeVars rebuild(void Function(GGetMeVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetMeVarsBuilder toBuilder() => new GGetMeVarsBuilder()..replace(this);
+  GGetMeVarsBuilder toBuilder() => GGetMeVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -64,7 +63,6 @@ class GGetMeVarsBuilder implements Builder<GGetMeVars, GGetMeVarsBuilder> {
 
   @override
   void replace(GGetMeVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetMeVars;
   }
 
@@ -77,7 +75,7 @@ class GGetMeVarsBuilder implements Builder<GGetMeVars, GGetMeVarsBuilder> {
   GGetMeVars build() => _build();
 
   _$GGetMeVars _build() {
-    final _$result = _$v ?? new _$GGetMeVars._();
+    final _$result = _$v ?? _$GGetMeVars._();
     replace(_$result);
     return _$result;
   }

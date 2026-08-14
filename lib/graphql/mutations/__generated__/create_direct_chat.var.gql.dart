@@ -14,7 +14,7 @@ abstract class GCreateDirectChatVars
   GCreateDirectChatVars._();
 
   factory GCreateDirectChatVars(
-          [Function(GCreateDirectChatVarsBuilder b) updates]) =
+          [void Function(GCreateDirectChatVarsBuilder b) updates]) =
       _$GCreateDirectChatVars;
 
   _i1.GCreateDirectChatInput get input;

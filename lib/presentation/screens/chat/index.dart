@@ -2829,7 +2829,7 @@ class _ChatAvatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: ReImage(
-          'assets/images/sample_profile.png',
+          'Assets.profilePlaceholder',
           width: size - 4,
           height: size - 4,
           fit: BoxFit.cover,

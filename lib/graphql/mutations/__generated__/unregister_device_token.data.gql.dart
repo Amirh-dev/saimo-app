@@ -14,7 +14,7 @@ abstract class GUnregisterDeviceTokenData
   GUnregisterDeviceTokenData._();
 
   factory GUnregisterDeviceTokenData(
-          [Function(GUnregisterDeviceTokenDataBuilder b) updates]) =
+          [void Function(GUnregisterDeviceTokenDataBuilder b) updates]) =
       _$GUnregisterDeviceTokenData;
 
   static void _initializeBuilder(GUnregisterDeviceTokenDataBuilder b) =>

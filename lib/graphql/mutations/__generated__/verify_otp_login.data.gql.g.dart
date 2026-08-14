@@ -7,13 +7,13 @@ part of 'verify_otp_login.data.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndLoginData> _$gVerifyOTPAndLoginDataSerializer =
-    new _$GVerifyOTPAndLoginDataSerializer();
+    _$GVerifyOTPAndLoginDataSerializer();
 Serializer<GVerifyOTPAndLoginData_verifyOTPAndLogin>
     _$gVerifyOTPAndLoginDataVerifyOTPAndLoginSerializer =
-    new _$GVerifyOTPAndLoginData_verifyOTPAndLoginSerializer();
+    _$GVerifyOTPAndLoginData_verifyOTPAndLoginSerializer();
 Serializer<GVerifyOTPAndLoginData_verifyOTPAndLogin_user>
     _$gVerifyOTPAndLoginDataVerifyOTPAndLoginUserSerializer =
-    new _$GVerifyOTPAndLoginData_verifyOTPAndLogin_userSerializer();
+    _$GVerifyOTPAndLoginData_verifyOTPAndLogin_userSerializer();
 
 class _$GVerifyOTPAndLoginDataSerializer
     implements StructuredSerializer<GVerifyOTPAndLoginData> {
@@ -46,7 +46,7 @@ class _$GVerifyOTPAndLoginDataSerializer
   GVerifyOTPAndLoginData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginDataBuilder();
+    final result = GVerifyOTPAndLoginDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -108,7 +108,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLoginSerializer
   GVerifyOTPAndLoginData_verifyOTPAndLogin deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder();
+    final result = GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -171,7 +171,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin_userSerializer
   GVerifyOTPAndLoginData_verifyOTPAndLogin_user deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder();
+    final result = GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -202,17 +202,11 @@ class _$GVerifyOTPAndLoginData extends GVerifyOTPAndLoginData {
 
   factory _$GVerifyOTPAndLoginData(
           [void Function(GVerifyOTPAndLoginDataBuilder)? updates]) =>
-      (new GVerifyOTPAndLoginDataBuilder()..update(updates))._build();
+      (GVerifyOTPAndLoginDataBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndLoginData._(
       {required this.G__typename, required this.verifyOTPAndLogin})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GVerifyOTPAndLoginData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        verifyOTPAndLogin, r'GVerifyOTPAndLoginData', 'verifyOTPAndLogin');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndLoginData rebuild(
           void Function(GVerifyOTPAndLoginDataBuilder) updates) =>
@@ -220,7 +214,7 @@ class _$GVerifyOTPAndLoginData extends GVerifyOTPAndLoginData {
 
   @override
   GVerifyOTPAndLoginDataBuilder toBuilder() =>
-      new GVerifyOTPAndLoginDataBuilder()..replace(this);
+      GVerifyOTPAndLoginDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -259,7 +253,7 @@ class GVerifyOTPAndLoginDataBuilder
   GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder? _verifyOTPAndLogin;
   GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder get verifyOTPAndLogin =>
       _$this._verifyOTPAndLogin ??=
-          new GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder();
+          GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder();
   set verifyOTPAndLogin(
           GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder? verifyOTPAndLogin) =>
       _$this._verifyOTPAndLogin = verifyOTPAndLogin;
@@ -280,7 +274,6 @@ class GVerifyOTPAndLoginDataBuilder
 
   @override
   void replace(GVerifyOTPAndLoginData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginData;
   }
 
@@ -296,17 +289,18 @@ class GVerifyOTPAndLoginDataBuilder
     _$GVerifyOTPAndLoginData _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndLoginData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GVerifyOTPAndLoginData', 'G__typename'),
-              verifyOTPAndLogin: verifyOTPAndLogin.build());
+          _$GVerifyOTPAndLoginData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GVerifyOTPAndLoginData', 'G__typename'),
+            verifyOTPAndLogin: verifyOTPAndLogin.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'verifyOTPAndLogin';
         verifyOTPAndLogin.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndLoginData', _$failedField, e.toString());
       }
       rethrow;
@@ -330,7 +324,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
   factory _$GVerifyOTPAndLoginData_verifyOTPAndLogin(
           [void Function(GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder)?
               updates]) =>
-      (new GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder()..update(updates))
+      (GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder()..update(updates))
           ._build();
 
   _$GVerifyOTPAndLoginData_verifyOTPAndLogin._(
@@ -338,17 +332,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
       required this.accessToken,
       required this.refreshToken,
       required this.user})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(accessToken,
-        r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'accessToken');
-    BuiltValueNullFieldError.checkNotNull(refreshToken,
-        r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'refreshToken');
-    BuiltValueNullFieldError.checkNotNull(
-        user, r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'user');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndLoginData_verifyOTPAndLogin rebuild(
           void Function(GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder)
@@ -357,7 +341,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin
 
   @override
   GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder toBuilder() =>
-      new GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder()..replace(this);
+      GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -412,8 +396,7 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
 
   GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder? _user;
   GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder get user =>
-      _$this._user ??=
-          new GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder();
+      _$this._user ??= GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder();
   set user(GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder? user) =>
       _$this._user = user;
 
@@ -435,7 +418,6 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
 
   @override
   void replace(GVerifyOTPAndLoginData_verifyOTPAndLogin other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginData_verifyOTPAndLogin;
   }
 
@@ -452,21 +434,22 @@ class GVerifyOTPAndLoginData_verifyOTPAndLoginBuilder
     _$GVerifyOTPAndLoginData_verifyOTPAndLogin _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndLoginData_verifyOTPAndLogin._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                  r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'G__typename'),
-              accessToken: BuiltValueNullFieldError.checkNotNull(accessToken,
-                  r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'accessToken'),
-              refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
-                  r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'refreshToken'),
-              user: user.build());
+          _$GVerifyOTPAndLoginData_verifyOTPAndLogin._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+                r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'G__typename'),
+            accessToken: BuiltValueNullFieldError.checkNotNull(accessToken,
+                r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'accessToken'),
+            refreshToken: BuiltValueNullFieldError.checkNotNull(refreshToken,
+                r'GVerifyOTPAndLoginData_verifyOTPAndLogin', 'refreshToken'),
+            user: user.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'user';
         user.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndLoginData_verifyOTPAndLogin',
             _$failedField,
             e.toString());
@@ -488,19 +471,12 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user
   factory _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user(
           [void Function(GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder)?
               updates]) =>
-      (new GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder()
-            ..update(updates))
+      (GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder()..update(updates))
           ._build();
 
   _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user._(
       {required this.G__typename, required this.id})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user', 'id');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndLoginData_verifyOTPAndLogin_user rebuild(
           void Function(GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder)
@@ -509,7 +485,7 @@ class _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user
 
   @override
   GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder toBuilder() =>
-      new GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder()..replace(this);
+      GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -568,7 +544,6 @@ class GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder
 
   @override
   void replace(GVerifyOTPAndLoginData_verifyOTPAndLogin_user other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user;
   }
 
@@ -584,13 +559,12 @@ class GVerifyOTPAndLoginData_verifyOTPAndLogin_userBuilder
 
   _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user _build() {
     final _$result = _$v ??
-        new _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename,
-                r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user',
-                'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user', 'id'));
+        _$GVerifyOTPAndLoginData_verifyOTPAndLogin_user._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GVerifyOTPAndLoginData_verifyOTPAndLogin_user', 'id'),
+        );
     replace(_$result);
     return _$result;
   }

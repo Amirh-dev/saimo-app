@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/goals/index.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/study_chart.dart';
 import 'package:simo_learn/presentation/screens/statistics/test_chart.dart';
+import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/colors.dart';
+import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/fonts.dart' show AppFonts;
 
 class StatisticsScreen extends StatefulWidget {
@@ -21,6 +27,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: AppBottomNavigationBar(
+        currentIndex: 3,
+        onTap: (index) => navigateToIndex(context, index, 3),
+      ),
       backgroundColor: const Color(0xffF5F5F9),
       body: Column(
         children: [
@@ -131,6 +141,24 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
       ),
     );
+  }
+
+  void _onBottomNavigationTap(int index) {
+    if (index == 2) return;
+    switch (index) {
+      case 0:
+        context.toOff(const GoalScreen());
+        break;
+      case 1:
+        context.toOff(const TrophiesScreen());
+        break;
+      case 3:
+        context.toOff(const StatisticsScreen());
+        break;
+      case 4:
+        context.toOff(const ProfileScreen());
+        break;
+    }
   }
 }
 

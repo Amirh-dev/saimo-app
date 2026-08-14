@@ -7,7 +7,7 @@ part of 'unregister_device_token.var.gql.dart';
 // **************************************************************************
 
 Serializer<GUnregisterDeviceTokenVars> _$gUnregisterDeviceTokenVarsSerializer =
-    new _$GUnregisterDeviceTokenVarsSerializer();
+    _$GUnregisterDeviceTokenVarsSerializer();
 
 class _$GUnregisterDeviceTokenVarsSerializer
     implements StructuredSerializer<GUnregisterDeviceTokenVars> {
@@ -36,7 +36,7 @@ class _$GUnregisterDeviceTokenVarsSerializer
   GUnregisterDeviceTokenVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUnregisterDeviceTokenVarsBuilder();
+    final result = GUnregisterDeviceTokenVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -61,13 +61,9 @@ class _$GUnregisterDeviceTokenVars extends GUnregisterDeviceTokenVars {
 
   factory _$GUnregisterDeviceTokenVars(
           [void Function(GUnregisterDeviceTokenVarsBuilder)? updates]) =>
-      (new GUnregisterDeviceTokenVarsBuilder()..update(updates))._build();
+      (GUnregisterDeviceTokenVarsBuilder()..update(updates))._build();
 
-  _$GUnregisterDeviceTokenVars._({required this.token}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        token, r'GUnregisterDeviceTokenVars', 'token');
-  }
-
+  _$GUnregisterDeviceTokenVars._({required this.token}) : super._();
   @override
   GUnregisterDeviceTokenVars rebuild(
           void Function(GUnregisterDeviceTokenVarsBuilder) updates) =>
@@ -75,7 +71,7 @@ class _$GUnregisterDeviceTokenVars extends GUnregisterDeviceTokenVars {
 
   @override
   GUnregisterDeviceTokenVarsBuilder toBuilder() =>
-      new GUnregisterDeviceTokenVarsBuilder()..replace(this);
+      GUnregisterDeviceTokenVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -121,7 +117,6 @@ class GUnregisterDeviceTokenVarsBuilder
 
   @override
   void replace(GUnregisterDeviceTokenVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUnregisterDeviceTokenVars;
   }
 
@@ -135,9 +130,10 @@ class GUnregisterDeviceTokenVarsBuilder
 
   _$GUnregisterDeviceTokenVars _build() {
     final _$result = _$v ??
-        new _$GUnregisterDeviceTokenVars._(
-            token: BuiltValueNullFieldError.checkNotNull(
-                token, r'GUnregisterDeviceTokenVars', 'token'));
+        _$GUnregisterDeviceTokenVars._(
+          token: BuiltValueNullFieldError.checkNotNull(
+              token, r'GUnregisterDeviceTokenVars', 'token'),
+        );
     replace(_$result);
     return _$result;
   }

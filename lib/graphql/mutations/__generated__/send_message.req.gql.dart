@@ -22,7 +22,7 @@ abstract class GSendMessageReq
         _i1.OperationRequest<_i2.GSendMessageData, _i3.GSendMessageVars> {
   GSendMessageReq._();
 
-  factory GSendMessageReq([Function(GSendMessageReqBuilder b) updates]) =
+  factory GSendMessageReq([void Function(GSendMessageReqBuilder b) updates]) =
       _$GSendMessageReq;
 
   static void _initializeBuilder(GSendMessageReqBuilder b) => b
@@ -40,6 +40,7 @@ abstract class GSendMessageReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -61,8 +62,22 @@ abstract class GSendMessageReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GSendMessageData? parseData(Map<String, dynamic> json) =>
       _i2.GSendMessageData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GSendMessageData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GSendMessageData, _i3.GSendMessageVars>
+      transformOperation(_i4.Operation Function(_i4.Operation) transform) =>
+          this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GSendMessageReq> get serializer =>
       _$gSendMessageReqSerializer;

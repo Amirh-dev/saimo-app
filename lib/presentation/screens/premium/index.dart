@@ -75,7 +75,7 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
           Navigator.of(context).maybePop();
           return;
         }
-        navigateToIndex(context, index);
+        navigateToIndex(context, index, 6);
       },
       body: ColoredBox(
         color: AppColors.white,

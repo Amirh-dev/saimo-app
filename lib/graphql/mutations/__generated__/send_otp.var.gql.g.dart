@@ -6,8 +6,7 @@ part of 'send_otp.var.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GSendOTPVars> _$gSendOTPVarsSerializer =
-    new _$GSendOTPVarsSerializer();
+Serializer<GSendOTPVars> _$gSendOTPVarsSerializer = _$GSendOTPVarsSerializer();
 
 class _$GSendOTPVarsSerializer implements StructuredSerializer<GSendOTPVars> {
   @override
@@ -31,7 +30,7 @@ class _$GSendOTPVarsSerializer implements StructuredSerializer<GSendOTPVars> {
   GSendOTPVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendOTPVarsBuilder();
+    final result = GSendOTPVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -56,18 +55,15 @@ class _$GSendOTPVars extends GSendOTPVars {
   final _i1.GSendOTPInput input;
 
   factory _$GSendOTPVars([void Function(GSendOTPVarsBuilder)? updates]) =>
-      (new GSendOTPVarsBuilder()..update(updates))._build();
+      (GSendOTPVarsBuilder()..update(updates))._build();
 
-  _$GSendOTPVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(input, r'GSendOTPVars', 'input');
-  }
-
+  _$GSendOTPVars._({required this.input}) : super._();
   @override
   GSendOTPVars rebuild(void Function(GSendOTPVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GSendOTPVarsBuilder toBuilder() => new GSendOTPVarsBuilder()..replace(this);
+  GSendOTPVarsBuilder toBuilder() => GSendOTPVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -96,7 +92,7 @@ class GSendOTPVarsBuilder
 
   _i1.GSendOTPInputBuilder? _input;
   _i1.GSendOTPInputBuilder get input =>
-      _$this._input ??= new _i1.GSendOTPInputBuilder();
+      _$this._input ??= _i1.GSendOTPInputBuilder();
   set input(_i1.GSendOTPInputBuilder? input) => _$this._input = input;
 
   GSendOTPVarsBuilder();
@@ -112,7 +108,6 @@ class GSendOTPVarsBuilder
 
   @override
   void replace(GSendOTPVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendOTPVars;
   }
 
@@ -127,14 +122,17 @@ class GSendOTPVarsBuilder
   _$GSendOTPVars _build() {
     _$GSendOTPVars _$result;
     try {
-      _$result = _$v ?? new _$GSendOTPVars._(input: input.build());
+      _$result = _$v ??
+          _$GSendOTPVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendOTPVars', _$failedField, e.toString());
       }
       rethrow;

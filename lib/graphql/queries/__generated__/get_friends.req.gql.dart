@@ -22,7 +22,7 @@ abstract class GGetFriendsReq
         _i1.OperationRequest<_i2.GGetFriendsData, _i3.GGetFriendsVars> {
   GGetFriendsReq._();
 
-  factory GGetFriendsReq([Function(GGetFriendsReqBuilder b) updates]) =
+  factory GGetFriendsReq([void Function(GGetFriendsReqBuilder b) updates]) =
       _$GGetFriendsReq;
 
   static void _initializeBuilder(GGetFriendsReqBuilder b) => b
@@ -40,6 +40,7 @@ abstract class GGetFriendsReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -61,8 +62,22 @@ abstract class GGetFriendsReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GGetFriendsData? parseData(Map<String, dynamic> json) =>
       _i2.GGetFriendsData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GGetFriendsData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GGetFriendsData, _i3.GGetFriendsVars>
+      transformOperation(_i4.Operation Function(_i4.Operation) transform) =>
+          this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GGetFriendsReq> get serializer =>
       _$gGetFriendsReqSerializer;

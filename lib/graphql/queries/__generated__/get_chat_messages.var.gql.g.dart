@@ -7,7 +7,7 @@ part of 'get_chat_messages.var.gql.dart';
 // **************************************************************************
 
 Serializer<GGetChatMessagesVars> _$gGetChatMessagesVarsSerializer =
-    new _$GGetChatMessagesVarsSerializer();
+    _$GGetChatMessagesVarsSerializer();
 
 class _$GGetChatMessagesVarsSerializer
     implements StructuredSerializer<GGetChatMessagesVars> {
@@ -48,7 +48,7 @@ class _$GGetChatMessagesVarsSerializer
   GGetChatMessagesVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesVarsBuilder();
+    final result = GGetChatMessagesVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -85,14 +85,10 @@ class _$GGetChatMessagesVars extends GGetChatMessagesVars {
 
   factory _$GGetChatMessagesVars(
           [void Function(GGetChatMessagesVarsBuilder)? updates]) =>
-      (new GGetChatMessagesVarsBuilder()..update(updates))._build();
+      (GGetChatMessagesVarsBuilder()..update(updates))._build();
 
   _$GGetChatMessagesVars._({required this.chatID, this.limit, this.offset})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        chatID, r'GGetChatMessagesVars', 'chatID');
-  }
-
+      : super._();
   @override
   GGetChatMessagesVars rebuild(
           void Function(GGetChatMessagesVarsBuilder) updates) =>
@@ -100,7 +96,7 @@ class _$GGetChatMessagesVars extends GGetChatMessagesVars {
 
   @override
   GGetChatMessagesVarsBuilder toBuilder() =>
-      new GGetChatMessagesVarsBuilder()..replace(this);
+      GGetChatMessagesVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -136,7 +132,7 @@ class GGetChatMessagesVarsBuilder
   _$GGetChatMessagesVars? _$v;
 
   _i1.GUUIDBuilder? _chatID;
-  _i1.GUUIDBuilder get chatID => _$this._chatID ??= new _i1.GUUIDBuilder();
+  _i1.GUUIDBuilder get chatID => _$this._chatID ??= _i1.GUUIDBuilder();
   set chatID(_i1.GUUIDBuilder? chatID) => _$this._chatID = chatID;
 
   int? _limit;
@@ -162,7 +158,6 @@ class GGetChatMessagesVarsBuilder
 
   @override
   void replace(GGetChatMessagesVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesVars;
   }
 
@@ -178,15 +173,18 @@ class GGetChatMessagesVarsBuilder
     _$GGetChatMessagesVars _$result;
     try {
       _$result = _$v ??
-          new _$GGetChatMessagesVars._(
-              chatID: chatID.build(), limit: limit, offset: offset);
+          _$GGetChatMessagesVars._(
+            chatID: chatID.build(),
+            limit: limit,
+            offset: offset,
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'chatID';
         chatID.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetChatMessagesVars', _$failedField, e.toString());
       }
       rethrow;

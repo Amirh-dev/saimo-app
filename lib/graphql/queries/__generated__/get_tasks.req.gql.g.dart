@@ -6,8 +6,7 @@ part of 'get_tasks.req.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GGetTasksReq> _$gGetTasksReqSerializer =
-    new _$GGetTasksReqSerializer();
+Serializer<GGetTasksReq> _$gGetTasksReqSerializer = _$GGetTasksReqSerializer();
 
 class _$GGetTasksReqSerializer implements StructuredSerializer<GGetTasksReq> {
   @override
@@ -73,7 +72,7 @@ class _$GGetTasksReqSerializer implements StructuredSerializer<GGetTasksReq> {
   GGetTasksReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksReqBuilder();
+    final result = GGetTasksReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -146,9 +145,11 @@ class _$GGetTasksReq extends GGetTasksReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GGetTasksReq([void Function(GGetTasksReqBuilder)? updates]) =>
-      (new GGetTasksReqBuilder()..update(updates))._build();
+      (GGetTasksReqBuilder()..update(updates))._build();
 
   _$GGetTasksReq._(
       {required this.vars,
@@ -159,21 +160,15 @@ class _$GGetTasksReq extends GGetTasksReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GGetTasksReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GGetTasksReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GGetTasksReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GGetTasksReq rebuild(void Function(GGetTasksReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetTasksReqBuilder toBuilder() => new GGetTasksReqBuilder()..replace(this);
+  GGetTasksReqBuilder toBuilder() => GGetTasksReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -188,7 +183,8 @@ class _$GGetTasksReq extends GGetTasksReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -203,6 +199,7 @@ class _$GGetTasksReq extends GGetTasksReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -218,7 +215,8 @@ class _$GGetTasksReq extends GGetTasksReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -229,7 +227,7 @@ class GGetTasksReqBuilder
 
   _i3.GGetTasksVarsBuilder? _vars;
   _i3.GGetTasksVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GGetTasksVarsBuilder();
+      _$this._vars ??= _i3.GGetTasksVarsBuilder();
   set vars(_i3.GGetTasksVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -251,7 +249,7 @@ class GGetTasksReqBuilder
 
   _i2.GGetTasksDataBuilder? _optimisticResponse;
   _i2.GGetTasksDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GGetTasksDataBuilder();
+      _$this._optimisticResponse ??= _i2.GGetTasksDataBuilder();
   set optimisticResponse(_i2.GGetTasksDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -277,6 +275,10 @@ class GGetTasksReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GGetTasksReqBuilder() {
     GGetTasksReq._initializeBuilder(this);
   }
@@ -293,6 +295,7 @@ class GGetTasksReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -300,7 +303,6 @@ class GGetTasksReqBuilder
 
   @override
   void replace(GGetTasksReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksReq;
   }
 
@@ -316,18 +318,20 @@ class GGetTasksReqBuilder
     _$GGetTasksReq _$result;
     try {
       _$result = _$v ??
-          new _$GGetTasksReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GGetTasksReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GGetTasksReq', 'executeOnListen'));
+          _$GGetTasksReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GGetTasksReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GGetTasksReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -337,7 +341,7 @@ class GGetTasksReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetTasksReq', _$failedField, e.toString());
       }
       rethrow;

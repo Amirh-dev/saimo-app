@@ -7,10 +7,10 @@ part of 'create_direct_chat.data.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateDirectChatData> _$gCreateDirectChatDataSerializer =
-    new _$GCreateDirectChatDataSerializer();
+    _$GCreateDirectChatDataSerializer();
 Serializer<GCreateDirectChatData_createDirectChat>
     _$gCreateDirectChatDataCreateDirectChatSerializer =
-    new _$GCreateDirectChatData_createDirectChatSerializer();
+    _$GCreateDirectChatData_createDirectChatSerializer();
 
 class _$GCreateDirectChatDataSerializer
     implements StructuredSerializer<GCreateDirectChatData> {
@@ -43,7 +43,7 @@ class _$GCreateDirectChatDataSerializer
   GCreateDirectChatData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateDirectChatDataBuilder();
+    final result = GCreateDirectChatDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -97,7 +97,7 @@ class _$GCreateDirectChatData_createDirectChatSerializer
   GCreateDirectChatData_createDirectChat deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateDirectChatData_createDirectChatBuilder();
+    final result = GCreateDirectChatData_createDirectChatBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -128,17 +128,11 @@ class _$GCreateDirectChatData extends GCreateDirectChatData {
 
   factory _$GCreateDirectChatData(
           [void Function(GCreateDirectChatDataBuilder)? updates]) =>
-      (new GCreateDirectChatDataBuilder()..update(updates))._build();
+      (GCreateDirectChatDataBuilder()..update(updates))._build();
 
   _$GCreateDirectChatData._(
       {required this.G__typename, required this.createDirectChat})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GCreateDirectChatData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        createDirectChat, r'GCreateDirectChatData', 'createDirectChat');
-  }
-
+      : super._();
   @override
   GCreateDirectChatData rebuild(
           void Function(GCreateDirectChatDataBuilder) updates) =>
@@ -146,7 +140,7 @@ class _$GCreateDirectChatData extends GCreateDirectChatData {
 
   @override
   GCreateDirectChatDataBuilder toBuilder() =>
-      new GCreateDirectChatDataBuilder()..replace(this);
+      GCreateDirectChatDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -185,7 +179,7 @@ class GCreateDirectChatDataBuilder
   GCreateDirectChatData_createDirectChatBuilder? _createDirectChat;
   GCreateDirectChatData_createDirectChatBuilder get createDirectChat =>
       _$this._createDirectChat ??=
-          new GCreateDirectChatData_createDirectChatBuilder();
+          GCreateDirectChatData_createDirectChatBuilder();
   set createDirectChat(
           GCreateDirectChatData_createDirectChatBuilder? createDirectChat) =>
       _$this._createDirectChat = createDirectChat;
@@ -206,7 +200,6 @@ class GCreateDirectChatDataBuilder
 
   @override
   void replace(GCreateDirectChatData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateDirectChatData;
   }
 
@@ -222,17 +215,18 @@ class GCreateDirectChatDataBuilder
     _$GCreateDirectChatData _$result;
     try {
       _$result = _$v ??
-          new _$GCreateDirectChatData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GCreateDirectChatData', 'G__typename'),
-              createDirectChat: createDirectChat.build());
+          _$GCreateDirectChatData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GCreateDirectChatData', 'G__typename'),
+            createDirectChat: createDirectChat.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'createDirectChat';
         createDirectChat.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateDirectChatData', _$failedField, e.toString());
       }
       rethrow;
@@ -252,18 +246,12 @@ class _$GCreateDirectChatData_createDirectChat
   factory _$GCreateDirectChatData_createDirectChat(
           [void Function(GCreateDirectChatData_createDirectChatBuilder)?
               updates]) =>
-      (new GCreateDirectChatData_createDirectChatBuilder()..update(updates))
+      (GCreateDirectChatData_createDirectChatBuilder()..update(updates))
           ._build();
 
   _$GCreateDirectChatData_createDirectChat._(
       {required this.G__typename, required this.id})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GCreateDirectChatData_createDirectChat', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GCreateDirectChatData_createDirectChat', 'id');
-  }
-
+      : super._();
   @override
   GCreateDirectChatData_createDirectChat rebuild(
           void Function(GCreateDirectChatData_createDirectChatBuilder)
@@ -272,7 +260,7 @@ class _$GCreateDirectChatData_createDirectChat
 
   @override
   GCreateDirectChatData_createDirectChatBuilder toBuilder() =>
-      new GCreateDirectChatData_createDirectChatBuilder()..replace(this);
+      GCreateDirectChatData_createDirectChatBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -331,7 +319,6 @@ class GCreateDirectChatData_createDirectChatBuilder
 
   @override
   void replace(GCreateDirectChatData_createDirectChat other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateDirectChatData_createDirectChat;
   }
 
@@ -346,11 +333,12 @@ class GCreateDirectChatData_createDirectChatBuilder
 
   _$GCreateDirectChatData_createDirectChat _build() {
     final _$result = _$v ??
-        new _$GCreateDirectChatData_createDirectChat._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
-                r'GCreateDirectChatData_createDirectChat', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GCreateDirectChatData_createDirectChat', 'id'));
+        _$GCreateDirectChatData_createDirectChat._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(G__typename,
+              r'GCreateDirectChatData_createDirectChat', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GCreateDirectChatData_createDirectChat', 'id'),
+        );
     replace(_$result);
     return _$result;
   }

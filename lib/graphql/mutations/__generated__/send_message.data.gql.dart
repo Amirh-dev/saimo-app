@@ -13,7 +13,7 @@ abstract class GSendMessageData
     implements Built<GSendMessageData, GSendMessageDataBuilder> {
   GSendMessageData._();
 
-  factory GSendMessageData([Function(GSendMessageDataBuilder b) updates]) =
+  factory GSendMessageData([void Function(GSendMessageDataBuilder b) updates]) =
       _$GSendMessageData;
 
   static void _initializeBuilder(GSendMessageDataBuilder b) =>
@@ -44,7 +44,7 @@ abstract class GSendMessageData_sendMessage
   GSendMessageData_sendMessage._();
 
   factory GSendMessageData_sendMessage(
-          [Function(GSendMessageData_sendMessageBuilder b) updates]) =
+          [void Function(GSendMessageData_sendMessageBuilder b) updates]) =
       _$GSendMessageData_sendMessage;
 
   static void _initializeBuilder(GSendMessageData_sendMessageBuilder b) =>

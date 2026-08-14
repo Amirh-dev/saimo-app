@@ -22,12 +22,12 @@ GDeviceTokenPlatform _$gDeviceTokenPlatformValueOf(String name) {
     case 'WEB':
       return _$gDeviceTokenPlatformWEB;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GDeviceTokenPlatform> _$gDeviceTokenPlatformValues =
-    new BuiltSet<GDeviceTokenPlatform>(const <GDeviceTokenPlatform>[
+    BuiltSet<GDeviceTokenPlatform>(const <GDeviceTokenPlatform>[
   _$gDeviceTokenPlatformANDROID,
   _$gDeviceTokenPlatformIOS,
   _$gDeviceTokenPlatformWEB,
@@ -43,12 +43,12 @@ GChatType _$gChatTypeValueOf(String name) {
     case 'GROUP':
       return _$gChatTypeGROUP;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GChatType> _$gChatTypeValues =
-    new BuiltSet<GChatType>(const <GChatType>[
+    BuiltSet<GChatType>(const <GChatType>[
   _$gChatTypeDIRECT,
   _$gChatTypeGROUP,
 ]);
@@ -67,12 +67,12 @@ GMessageType _$gMessageTypeValueOf(String name) {
     case 'SYSTEM':
       return _$gMessageTypeSYSTEM;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GMessageType> _$gMessageTypeValues =
-    new BuiltSet<GMessageType>(const <GMessageType>[
+    BuiltSet<GMessageType>(const <GMessageType>[
   _$gMessageTypeTEXT,
   _$gMessageTypeDUEL_INVITE,
   _$gMessageTypeSYSTEM,
@@ -98,12 +98,12 @@ GFriendshipStatus _$gFriendshipStatusValueOf(String name) {
     case 'BLOCKED':
       return _$gFriendshipStatusBLOCKED;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GFriendshipStatus> _$gFriendshipStatusValues =
-    new BuiltSet<GFriendshipStatus>(const <GFriendshipStatus>[
+    BuiltSet<GFriendshipStatus>(const <GFriendshipStatus>[
   _$gFriendshipStatusPENDING,
   _$gFriendshipStatusACCEPTED,
   _$gFriendshipStatusREJECTED,
@@ -122,12 +122,12 @@ GGoalOrderField _$gGoalOrderFieldValueOf(String name) {
     case 'UPDATED_AT':
       return _$gGoalOrderFieldUPDATED_AT;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GGoalOrderField> _$gGoalOrderFieldValues =
-    new BuiltSet<GGoalOrderField>(const <GGoalOrderField>[
+    BuiltSet<GGoalOrderField>(const <GGoalOrderField>[
   _$gGoalOrderFieldCREATED_AT,
   _$gGoalOrderFieldUPDATED_AT,
 ]);
@@ -148,12 +148,12 @@ GGoalStatus _$gGoalStatusValueOf(String name) {
     case 'ARCHIVED':
       return _$gGoalStatusARCHIVED;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GGoalStatus> _$gGoalStatusValues =
-    new BuiltSet<GGoalStatus>(const <GGoalStatus>[
+    BuiltSet<GGoalStatus>(const <GGoalStatus>[
   _$gGoalStatusIN_PROGRESS,
   _$gGoalStatusCOMPLETED,
   _$gGoalStatusPAUSED,
@@ -170,12 +170,12 @@ GOrderDirection _$gOrderDirectionValueOf(String name) {
     case 'DESC':
       return _$gOrderDirectionDESC;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GOrderDirection> _$gOrderDirectionValues =
-    new BuiltSet<GOrderDirection>(const <GOrderDirection>[
+    BuiltSet<GOrderDirection>(const <GOrderDirection>[
   _$gOrderDirectionASC,
   _$gOrderDirectionDESC,
 ]);
@@ -192,12 +192,12 @@ GTaskOrderField _$gTaskOrderFieldValueOf(String name) {
     case 'UPDATED_AT':
       return _$gTaskOrderFieldUPDATED_AT;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GTaskOrderField> _$gTaskOrderFieldValues =
-    new BuiltSet<GTaskOrderField>(const <GTaskOrderField>[
+    BuiltSet<GTaskOrderField>(const <GTaskOrderField>[
   _$gTaskOrderFieldCREATED_AT,
   _$gTaskOrderFieldUPDATED_AT,
 ]);
@@ -218,12 +218,12 @@ GTaskStatus _$gTaskStatusValueOf(String name) {
     case 'CANCELED':
       return _$gTaskStatusCANCELED;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GTaskStatus> _$gTaskStatusValues =
-    new BuiltSet<GTaskStatus>(const <GTaskStatus>[
+    BuiltSet<GTaskStatus>(const <GTaskStatus>[
   _$gTaskStatusTODO,
   _$gTaskStatusIN_PROGRESS,
   _$gTaskStatusCOMPLETED,
@@ -240,12 +240,12 @@ GTaskType _$gTaskTypeValueOf(String name) {
     case 'TIMED':
       return _$gTaskTypeTIMED;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GTaskType> _$gTaskTypeValues =
-    new BuiltSet<GTaskType>(const <GTaskType>[
+    BuiltSet<GTaskType>(const <GTaskType>[
   _$gTaskTypeNORMAL,
   _$gTaskTypeTIMED,
 ]);
@@ -262,12 +262,12 @@ GUserOrderField _$gUserOrderFieldValueOf(String name) {
     case 'UPDATED_AT':
       return _$gUserOrderFieldUPDATED_AT;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GUserOrderField> _$gUserOrderFieldValues =
-    new BuiltSet<GUserOrderField>(const <GUserOrderField>[
+    BuiltSet<GUserOrderField>(const <GUserOrderField>[
   _$gUserOrderFieldCREATED_AT,
   _$gUserOrderFieldUPDATED_AT,
 ]);
@@ -285,12 +285,12 @@ GUserRole _$gUserRoleValueOf(String name) {
     case 'ADMIN':
       return _$gUserRoleADMIN;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GUserRole> _$gUserRoleValues =
-    new BuiltSet<GUserRole>(const <GUserRole>[
+    BuiltSet<GUserRole>(const <GUserRole>[
   _$gUserRoleUSER,
   _$gUserRoleADVISOR,
   _$gUserRoleADMIN,
@@ -312,73 +312,72 @@ GUserStudyTime _$gUserStudyTimeValueOf(String name) {
     case 'OVER_7_HOURS':
       return _$gUserStudyTimeOVER_7_HOURS;
     default:
-      throw new ArgumentError(name);
+      throw ArgumentError(name);
   }
 }
 
 final BuiltSet<GUserStudyTime> _$gUserStudyTimeValues =
-    new BuiltSet<GUserStudyTime>(const <GUserStudyTime>[
+    BuiltSet<GUserStudyTime>(const <GUserStudyTime>[
   _$gUserStudyTimeUNDER_4_HOURS,
   _$gUserStudyTimeBETWEEN_4_AND_7,
   _$gUserStudyTimeOVER_7_HOURS,
 ]);
 
 Serializer<GDeviceTokenPlatform> _$gDeviceTokenPlatformSerializer =
-    new _$GDeviceTokenPlatformSerializer();
-Serializer<GChatType> _$gChatTypeSerializer = new _$GChatTypeSerializer();
-Serializer<GMessageType> _$gMessageTypeSerializer =
-    new _$GMessageTypeSerializer();
+    _$GDeviceTokenPlatformSerializer();
+Serializer<GChatType> _$gChatTypeSerializer = _$GChatTypeSerializer();
+Serializer<GMessageType> _$gMessageTypeSerializer = _$GMessageTypeSerializer();
 Serializer<GFriendshipStatus> _$gFriendshipStatusSerializer =
-    new _$GFriendshipStatusSerializer();
+    _$GFriendshipStatusSerializer();
 Serializer<GCreateDirectChatInput> _$gCreateDirectChatInputSerializer =
-    new _$GCreateDirectChatInputSerializer();
+    _$GCreateDirectChatInputSerializer();
 Serializer<GSendMessageInput> _$gSendMessageInputSerializer =
-    new _$GSendMessageInputSerializer();
+    _$GSendMessageInputSerializer();
 Serializer<GGoalOrderField> _$gGoalOrderFieldSerializer =
-    new _$GGoalOrderFieldSerializer();
-Serializer<GGoalStatus> _$gGoalStatusSerializer = new _$GGoalStatusSerializer();
+    _$GGoalOrderFieldSerializer();
+Serializer<GGoalStatus> _$gGoalStatusSerializer = _$GGoalStatusSerializer();
 Serializer<GOrderDirection> _$gOrderDirectionSerializer =
-    new _$GOrderDirectionSerializer();
+    _$GOrderDirectionSerializer();
 Serializer<GTaskOrderField> _$gTaskOrderFieldSerializer =
-    new _$GTaskOrderFieldSerializer();
-Serializer<GTaskStatus> _$gTaskStatusSerializer = new _$GTaskStatusSerializer();
-Serializer<GTaskType> _$gTaskTypeSerializer = new _$GTaskTypeSerializer();
+    _$GTaskOrderFieldSerializer();
+Serializer<GTaskStatus> _$gTaskStatusSerializer = _$GTaskStatusSerializer();
+Serializer<GTaskType> _$gTaskTypeSerializer = _$GTaskTypeSerializer();
 Serializer<GUserOrderField> _$gUserOrderFieldSerializer =
-    new _$GUserOrderFieldSerializer();
-Serializer<GUserRole> _$gUserRoleSerializer = new _$GUserRoleSerializer();
+    _$GUserOrderFieldSerializer();
+Serializer<GUserRole> _$gUserRoleSerializer = _$GUserRoleSerializer();
 Serializer<GUserStudyTime> _$gUserStudyTimeSerializer =
-    new _$GUserStudyTimeSerializer();
+    _$GUserStudyTimeSerializer();
 Serializer<GCreateGoalInput> _$gCreateGoalInputSerializer =
-    new _$GCreateGoalInputSerializer();
+    _$GCreateGoalInputSerializer();
 Serializer<GCreateTaskInput> _$gCreateTaskInputSerializer =
-    new _$GCreateTaskInputSerializer();
-Serializer<GGoalOrder> _$gGoalOrderSerializer = new _$GGoalOrderSerializer();
+    _$GCreateTaskInputSerializer();
+Serializer<GGoalOrder> _$gGoalOrderSerializer = _$GGoalOrderSerializer();
 Serializer<GGoalWhereInput> _$gGoalWhereInputSerializer =
-    new _$GGoalWhereInputSerializer();
+    _$GGoalWhereInputSerializer();
 Serializer<GInterestWhereInput> _$gInterestWhereInputSerializer =
-    new _$GInterestWhereInputSerializer();
+    _$GInterestWhereInputSerializer();
 Serializer<GSendOTPInput> _$gSendOTPInputSerializer =
-    new _$GSendOTPInputSerializer();
+    _$GSendOTPInputSerializer();
 Serializer<GRefreshTokenInput> _$gRefreshTokenInputSerializer =
-    new _$GRefreshTokenInputSerializer();
+    _$GRefreshTokenInputSerializer();
 Serializer<GTagWhereInput> _$gTagWhereInputSerializer =
-    new _$GTagWhereInputSerializer();
-Serializer<GTaskOrder> _$gTaskOrderSerializer = new _$GTaskOrderSerializer();
+    _$GTagWhereInputSerializer();
+Serializer<GTaskOrder> _$gTaskOrderSerializer = _$GTaskOrderSerializer();
 Serializer<GTaskWhereInput> _$gTaskWhereInputSerializer =
-    new _$GTaskWhereInputSerializer();
+    _$GTaskWhereInputSerializer();
 Serializer<GUpdateGoalInput> _$gUpdateGoalInputSerializer =
-    new _$GUpdateGoalInputSerializer();
+    _$GUpdateGoalInputSerializer();
 Serializer<GUpdateProfileInput> _$gUpdateProfileInputSerializer =
-    new _$GUpdateProfileInputSerializer();
+    _$GUpdateProfileInputSerializer();
 Serializer<GUpdateTaskInput> _$gUpdateTaskInputSerializer =
-    new _$GUpdateTaskInputSerializer();
-Serializer<GUserOrder> _$gUserOrderSerializer = new _$GUserOrderSerializer();
+    _$GUpdateTaskInputSerializer();
+Serializer<GUserOrder> _$gUserOrderSerializer = _$GUserOrderSerializer();
 Serializer<GUserWhereInput> _$gUserWhereInputSerializer =
-    new _$GUserWhereInputSerializer();
+    _$GUserWhereInputSerializer();
 Serializer<GVerifyOTPAndLoginInput> _$gVerifyOTPAndLoginInputSerializer =
-    new _$GVerifyOTPAndLoginInputSerializer();
+    _$GVerifyOTPAndLoginInputSerializer();
 Serializer<GVerifyOTPAndRegisterInput> _$gVerifyOTPAndRegisterInputSerializer =
-    new _$GVerifyOTPAndRegisterInputSerializer();
+    _$GVerifyOTPAndRegisterInputSerializer();
 
 class _$GDeviceTokenPlatformSerializer
     implements PrimitiveSerializer<GDeviceTokenPlatform> {
@@ -477,7 +476,7 @@ class _$GCreateDirectChatInputSerializer
   GCreateDirectChatInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateDirectChatInputBuilder();
+    final result = GCreateDirectChatInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -529,7 +528,7 @@ class _$GSendMessageInputSerializer
   GSendMessageInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendMessageInputBuilder();
+    final result = GSendMessageInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -751,7 +750,7 @@ class _$GCreateGoalInputSerializer
   GCreateGoalInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateGoalInputBuilder();
+    final result = GCreateGoalInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -866,7 +865,7 @@ class _$GCreateTaskInputSerializer
   GCreateTaskInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateTaskInputBuilder();
+    final result = GCreateTaskInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -951,7 +950,7 @@ class _$GGoalOrderSerializer implements StructuredSerializer<GGoalOrder> {
   @override
   GGoalOrder deserialize(Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGoalOrderBuilder();
+    final result = GGoalOrderBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -1524,7 +1523,7 @@ class _$GGoalWhereInputSerializer
   GGoalWhereInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGoalWhereInputBuilder();
+    final result = GGoalWhereInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -2080,7 +2079,7 @@ class _$GInterestWhereInputSerializer
   GInterestWhereInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GInterestWhereInputBuilder();
+    final result = GInterestWhereInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -2227,6 +2226,9 @@ class _$GSendOTPInputSerializer implements StructuredSerializer<GSendOTPInput> {
       'phoneNumber',
       serializers.serialize(object.phoneNumber,
           specifiedType: const FullType(String)),
+      'client',
+      serializers.serialize(object.client,
+          specifiedType: const FullType(GDeviceTokenPlatform)),
     ];
 
     return result;
@@ -2236,7 +2238,7 @@ class _$GSendOTPInputSerializer implements StructuredSerializer<GSendOTPInput> {
   GSendOTPInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendOTPInputBuilder();
+    final result = GSendOTPInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -2247,6 +2249,11 @@ class _$GSendOTPInputSerializer implements StructuredSerializer<GSendOTPInput> {
         case 'phoneNumber':
           result.phoneNumber = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
+          break;
+        case 'client':
+          result.client = serializers.deserialize(value,
+                  specifiedType: const FullType(GDeviceTokenPlatform))!
+              as GDeviceTokenPlatform;
           break;
       }
     }
@@ -2279,7 +2286,7 @@ class _$GRefreshTokenInputSerializer
   GRefreshTokenInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRefreshTokenInputBuilder();
+    final result = GRefreshTokenInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -2506,7 +2513,7 @@ class _$GTagWhereInputSerializer
   GTagWhereInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GTagWhereInputBuilder();
+    final result = GTagWhereInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -2664,7 +2671,7 @@ class _$GTaskOrderSerializer implements StructuredSerializer<GTaskOrder> {
   @override
   GTaskOrder deserialize(Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GTaskOrderBuilder();
+    final result = GTaskOrderBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -3634,7 +3641,7 @@ class _$GTaskWhereInputSerializer
   GTaskWhereInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GTaskWhereInputBuilder();
+    final result = GTaskWhereInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -4271,7 +4278,7 @@ class _$GUpdateGoalInputSerializer
   GUpdateGoalInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUpdateGoalInputBuilder();
+    final result = GUpdateGoalInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -4367,7 +4374,7 @@ class _$GUpdateProfileInputSerializer
   GUpdateProfileInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUpdateProfileInputBuilder();
+    final result = GUpdateProfileInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -4509,7 +4516,7 @@ class _$GUpdateTaskInputSerializer
   GUpdateTaskInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUpdateTaskInputBuilder();
+    final result = GUpdateTaskInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -4598,7 +4605,7 @@ class _$GUserOrderSerializer implements StructuredSerializer<GUserOrder> {
   @override
   GUserOrder deserialize(Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUserOrderBuilder();
+    final result = GUserOrderBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -5562,7 +5569,7 @@ class _$GUserWhereInputSerializer
   GUserWhereInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GUserWhereInputBuilder();
+    final result = GUserWhereInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -6181,7 +6188,7 @@ class _$GVerifyOTPAndLoginInputSerializer
   GVerifyOTPAndLoginInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginInputBuilder();
+    final result = GVerifyOTPAndLoginInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -6245,7 +6252,7 @@ class _$GVerifyOTPAndRegisterInputSerializer
   GVerifyOTPAndRegisterInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndRegisterInputBuilder();
+    final result = GVerifyOTPAndRegisterInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -6289,18 +6296,15 @@ class _$GCursor extends GCursor {
   final String value;
 
   factory _$GCursor([void Function(GCursorBuilder)? updates]) =>
-      (new GCursorBuilder()..update(updates))._build();
+      (GCursorBuilder()..update(updates))._build();
 
-  _$GCursor._({required this.value}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(value, r'GCursor', 'value');
-  }
-
+  _$GCursor._({required this.value}) : super._();
   @override
   GCursor rebuild(void Function(GCursorBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GCursorBuilder toBuilder() => new GCursorBuilder()..replace(this);
+  GCursorBuilder toBuilder() => GCursorBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6343,7 +6347,6 @@ class GCursorBuilder implements Builder<GCursor, GCursorBuilder> {
 
   @override
   void replace(GCursor other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCursor;
   }
 
@@ -6357,9 +6360,10 @@ class GCursorBuilder implements Builder<GCursor, GCursorBuilder> {
 
   _$GCursor _build() {
     final _$result = _$v ??
-        new _$GCursor._(
-            value: BuiltValueNullFieldError.checkNotNull(
-                value, r'GCursor', 'value'));
+        _$GCursor._(
+          value:
+              BuiltValueNullFieldError.checkNotNull(value, r'GCursor', 'value'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -6370,18 +6374,15 @@ class _$GTime extends GTime {
   final String value;
 
   factory _$GTime([void Function(GTimeBuilder)? updates]) =>
-      (new GTimeBuilder()..update(updates))._build();
+      (GTimeBuilder()..update(updates))._build();
 
-  _$GTime._({required this.value}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(value, r'GTime', 'value');
-  }
-
+  _$GTime._({required this.value}) : super._();
   @override
   GTime rebuild(void Function(GTimeBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GTimeBuilder toBuilder() => new GTimeBuilder()..replace(this);
+  GTimeBuilder toBuilder() => GTimeBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6424,7 +6425,6 @@ class GTimeBuilder implements Builder<GTime, GTimeBuilder> {
 
   @override
   void replace(GTime other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GTime;
   }
 
@@ -6438,9 +6438,10 @@ class GTimeBuilder implements Builder<GTime, GTimeBuilder> {
 
   _$GTime _build() {
     final _$result = _$v ??
-        new _$GTime._(
-            value: BuiltValueNullFieldError.checkNotNull(
-                value, r'GTime', 'value'));
+        _$GTime._(
+          value:
+              BuiltValueNullFieldError.checkNotNull(value, r'GTime', 'value'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -6451,18 +6452,15 @@ class _$GUUID extends GUUID {
   final String value;
 
   factory _$GUUID([void Function(GUUIDBuilder)? updates]) =>
-      (new GUUIDBuilder()..update(updates))._build();
+      (GUUIDBuilder()..update(updates))._build();
 
-  _$GUUID._({required this.value}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(value, r'GUUID', 'value');
-  }
-
+  _$GUUID._({required this.value}) : super._();
   @override
   GUUID rebuild(void Function(GUUIDBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GUUIDBuilder toBuilder() => new GUUIDBuilder()..replace(this);
+  GUUIDBuilder toBuilder() => GUUIDBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6505,7 +6503,6 @@ class GUUIDBuilder implements Builder<GUUID, GUUIDBuilder> {
 
   @override
   void replace(GUUID other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUUID;
   }
 
@@ -6519,9 +6516,10 @@ class GUUIDBuilder implements Builder<GUUID, GUUIDBuilder> {
 
   _$GUUID _build() {
     final _$result = _$v ??
-        new _$GUUID._(
-            value: BuiltValueNullFieldError.checkNotNull(
-                value, r'GUUID', 'value'));
+        _$GUUID._(
+          value:
+              BuiltValueNullFieldError.checkNotNull(value, r'GUUID', 'value'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -6533,13 +6531,9 @@ class _$GCreateDirectChatInput extends GCreateDirectChatInput {
 
   factory _$GCreateDirectChatInput(
           [void Function(GCreateDirectChatInputBuilder)? updates]) =>
-      (new GCreateDirectChatInputBuilder()..update(updates))._build();
+      (GCreateDirectChatInputBuilder()..update(updates))._build();
 
-  _$GCreateDirectChatInput._({required this.targetUserID}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        targetUserID, r'GCreateDirectChatInput', 'targetUserID');
-  }
-
+  _$GCreateDirectChatInput._({required this.targetUserID}) : super._();
   @override
   GCreateDirectChatInput rebuild(
           void Function(GCreateDirectChatInputBuilder) updates) =>
@@ -6547,7 +6541,7 @@ class _$GCreateDirectChatInput extends GCreateDirectChatInput {
 
   @override
   GCreateDirectChatInputBuilder toBuilder() =>
-      new GCreateDirectChatInputBuilder()..replace(this);
+      GCreateDirectChatInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6577,7 +6571,7 @@ class GCreateDirectChatInputBuilder
   _$GCreateDirectChatInput? _$v;
 
   GUUIDBuilder? _targetUserID;
-  GUUIDBuilder get targetUserID => _$this._targetUserID ??= new GUUIDBuilder();
+  GUUIDBuilder get targetUserID => _$this._targetUserID ??= GUUIDBuilder();
   set targetUserID(GUUIDBuilder? targetUserID) =>
       _$this._targetUserID = targetUserID;
 
@@ -6594,7 +6588,6 @@ class GCreateDirectChatInputBuilder
 
   @override
   void replace(GCreateDirectChatInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateDirectChatInput;
   }
 
@@ -6610,14 +6603,16 @@ class GCreateDirectChatInputBuilder
     _$GCreateDirectChatInput _$result;
     try {
       _$result = _$v ??
-          new _$GCreateDirectChatInput._(targetUserID: targetUserID.build());
+          _$GCreateDirectChatInput._(
+            targetUserID: targetUserID.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'targetUserID';
         targetUserID.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateDirectChatInput', _$failedField, e.toString());
       }
       rethrow;
@@ -6637,24 +6632,18 @@ class _$GSendMessageInput extends GSendMessageInput {
 
   factory _$GSendMessageInput(
           [void Function(GSendMessageInputBuilder)? updates]) =>
-      (new GSendMessageInputBuilder()..update(updates))._build();
+      (GSendMessageInputBuilder()..update(updates))._build();
 
   _$GSendMessageInput._(
       {required this.chatID, required this.content, this.replyToID})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        chatID, r'GSendMessageInput', 'chatID');
-    BuiltValueNullFieldError.checkNotNull(
-        content, r'GSendMessageInput', 'content');
-  }
-
+      : super._();
   @override
   GSendMessageInput rebuild(void Function(GSendMessageInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GSendMessageInputBuilder toBuilder() =>
-      new GSendMessageInputBuilder()..replace(this);
+      GSendMessageInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6716,7 +6705,6 @@ class GSendMessageInputBuilder
 
   @override
   void replace(GSendMessageInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendMessageInput;
   }
 
@@ -6730,12 +6718,13 @@ class GSendMessageInputBuilder
 
   _$GSendMessageInput _build() {
     final _$result = _$v ??
-        new _$GSendMessageInput._(
-            chatID: BuiltValueNullFieldError.checkNotNull(
-                chatID, r'GSendMessageInput', 'chatID'),
-            content: BuiltValueNullFieldError.checkNotNull(
-                content, r'GSendMessageInput', 'content'),
-            replyToID: replyToID);
+        _$GSendMessageInput._(
+          chatID: BuiltValueNullFieldError.checkNotNull(
+              chatID, r'GSendMessageInput', 'chatID'),
+          content: BuiltValueNullFieldError.checkNotNull(
+              content, r'GSendMessageInput', 'content'),
+          replyToID: replyToID,
+        );
     replace(_$result);
     return _$result;
   }
@@ -6751,20 +6740,17 @@ class _$GCreateGoalInput extends GCreateGoalInput {
 
   factory _$GCreateGoalInput(
           [void Function(GCreateGoalInputBuilder)? updates]) =>
-      (new GCreateGoalInputBuilder()..update(updates))._build();
+      (GCreateGoalInputBuilder()..update(updates))._build();
 
   _$GCreateGoalInput._({required this.title, this.note, this.targetDate})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(title, r'GCreateGoalInput', 'title');
-  }
-
+      : super._();
   @override
   GCreateGoalInput rebuild(void Function(GCreateGoalInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GCreateGoalInputBuilder toBuilder() =>
-      new GCreateGoalInputBuilder()..replace(this);
+      GCreateGoalInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6808,7 +6794,7 @@ class GCreateGoalInputBuilder
   set note(String? note) => _$this._note = note;
 
   GTimeBuilder? _targetDate;
-  GTimeBuilder get targetDate => _$this._targetDate ??= new GTimeBuilder();
+  GTimeBuilder get targetDate => _$this._targetDate ??= GTimeBuilder();
   set targetDate(GTimeBuilder? targetDate) => _$this._targetDate = targetDate;
 
   GCreateGoalInputBuilder();
@@ -6826,7 +6812,6 @@ class GCreateGoalInputBuilder
 
   @override
   void replace(GCreateGoalInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateGoalInput;
   }
 
@@ -6842,18 +6827,19 @@ class GCreateGoalInputBuilder
     _$GCreateGoalInput _$result;
     try {
       _$result = _$v ??
-          new _$GCreateGoalInput._(
-              title: BuiltValueNullFieldError.checkNotNull(
-                  title, r'GCreateGoalInput', 'title'),
-              note: note,
-              targetDate: _targetDate?.build());
+          _$GCreateGoalInput._(
+            title: BuiltValueNullFieldError.checkNotNull(
+                title, r'GCreateGoalInput', 'title'),
+            note: note,
+            targetDate: _targetDate?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'targetDate';
         _targetDate?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateGoalInput', _$failedField, e.toString());
       }
       rethrow;
@@ -6889,7 +6875,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
 
   factory _$GCreateTaskInput(
           [void Function(GCreateTaskInputBuilder)? updates]) =>
-      (new GCreateTaskInputBuilder()..update(updates))._build();
+      (GCreateTaskInputBuilder()..update(updates))._build();
 
   _$GCreateTaskInput._(
       {required this.title,
@@ -6903,18 +6889,14 @@ class _$GCreateTaskInput extends GCreateTaskInput {
       this.recurringDays,
       this.goalID,
       this.tagNames})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(title, r'GCreateTaskInput', 'title');
-    BuiltValueNullFieldError.checkNotNull(date, r'GCreateTaskInput', 'date');
-  }
-
+      : super._();
   @override
   GCreateTaskInput rebuild(void Function(GCreateTaskInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GCreateTaskInputBuilder toBuilder() =>
-      new GCreateTaskInputBuilder()..replace(this);
+      GCreateTaskInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -6991,7 +6973,7 @@ class GCreateTaskInputBuilder
   set note(String? note) => _$this._note = note;
 
   GTimeBuilder? _date;
-  GTimeBuilder get date => _$this._date ??= new GTimeBuilder();
+  GTimeBuilder get date => _$this._date ??= GTimeBuilder();
   set date(GTimeBuilder? date) => _$this._date = date;
 
   int? _durationM;
@@ -7003,7 +6985,7 @@ class GCreateTaskInputBuilder
   set hasReminder(bool? hasReminder) => _$this._hasReminder = hasReminder;
 
   GTimeBuilder? _reminderTime;
-  GTimeBuilder get reminderTime => _$this._reminderTime ??= new GTimeBuilder();
+  GTimeBuilder get reminderTime => _$this._reminderTime ??= GTimeBuilder();
   set reminderTime(GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
@@ -7018,7 +7000,7 @@ class GCreateTaskInputBuilder
 
   ListBuilder<String>? _tagNames;
   ListBuilder<String> get tagNames =>
-      _$this._tagNames ??= new ListBuilder<String>();
+      _$this._tagNames ??= ListBuilder<String>();
   set tagNames(ListBuilder<String>? tagNames) => _$this._tagNames = tagNames;
 
   GCreateTaskInputBuilder();
@@ -7044,7 +7026,6 @@ class GCreateTaskInputBuilder
 
   @override
   void replace(GCreateTaskInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateTaskInput;
   }
 
@@ -7060,19 +7041,20 @@ class GCreateTaskInputBuilder
     _$GCreateTaskInput _$result;
     try {
       _$result = _$v ??
-          new _$GCreateTaskInput._(
-              title: BuiltValueNullFieldError.checkNotNull(
-                  title, r'GCreateTaskInput', 'title'),
-              shortDescription: shortDescription,
-              type: type,
-              note: note,
-              date: date.build(),
-              durationM: durationM,
-              hasReminder: hasReminder,
-              reminderTime: _reminderTime?.build(),
-              recurringDays: recurringDays,
-              goalID: goalID,
-              tagNames: _tagNames?.build());
+          _$GCreateTaskInput._(
+            title: BuiltValueNullFieldError.checkNotNull(
+                title, r'GCreateTaskInput', 'title'),
+            shortDescription: shortDescription,
+            type: type,
+            note: note,
+            date: date.build(),
+            durationM: durationM,
+            hasReminder: hasReminder,
+            reminderTime: _reminderTime?.build(),
+            recurringDays: recurringDays,
+            goalID: goalID,
+            tagNames: _tagNames?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -7085,7 +7067,7 @@ class GCreateTaskInputBuilder
         _$failedField = 'tagNames';
         _tagNames?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateTaskInput', _$failedField, e.toString());
       }
       rethrow;
@@ -7102,20 +7084,15 @@ class _$GGoalOrder extends GGoalOrder {
   final GGoalOrderField field;
 
   factory _$GGoalOrder([void Function(GGoalOrderBuilder)? updates]) =>
-      (new GGoalOrderBuilder()..update(updates))._build();
+      (GGoalOrderBuilder()..update(updates))._build();
 
-  _$GGoalOrder._({required this.direction, required this.field}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        direction, r'GGoalOrder', 'direction');
-    BuiltValueNullFieldError.checkNotNull(field, r'GGoalOrder', 'field');
-  }
-
+  _$GGoalOrder._({required this.direction, required this.field}) : super._();
   @override
   GGoalOrder rebuild(void Function(GGoalOrderBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGoalOrderBuilder toBuilder() => new GGoalOrderBuilder()..replace(this);
+  GGoalOrderBuilder toBuilder() => GGoalOrderBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -7168,7 +7145,6 @@ class GGoalOrderBuilder implements Builder<GGoalOrder, GGoalOrderBuilder> {
 
   @override
   void replace(GGoalOrder other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGoalOrder;
   }
 
@@ -7182,11 +7158,12 @@ class GGoalOrderBuilder implements Builder<GGoalOrder, GGoalOrderBuilder> {
 
   _$GGoalOrder _build() {
     final _$result = _$v ??
-        new _$GGoalOrder._(
-            direction: BuiltValueNullFieldError.checkNotNull(
-                direction, r'GGoalOrder', 'direction'),
-            field: BuiltValueNullFieldError.checkNotNull(
-                field, r'GGoalOrder', 'field'));
+        _$GGoalOrder._(
+          direction: BuiltValueNullFieldError.checkNotNull(
+              direction, r'GGoalOrder', 'direction'),
+          field: BuiltValueNullFieldError.checkNotNull(
+              field, r'GGoalOrder', 'field'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -7341,7 +7318,7 @@ class _$GGoalWhereInput extends GGoalWhereInput {
   final BuiltList<GTaskWhereInput>? hasTasksWith;
 
   factory _$GGoalWhereInput([void Function(GGoalWhereInputBuilder)? updates]) =>
-      (new GGoalWhereInputBuilder()..update(updates))._build();
+      (GGoalWhereInputBuilder()..update(updates))._build();
 
   _$GGoalWhereInput._(
       {this.not,
@@ -7418,14 +7395,12 @@ class _$GGoalWhereInput extends GGoalWhereInput {
       this.hasTasks,
       this.hasTasksWith})
       : super._();
-
   @override
   GGoalWhereInput rebuild(void Function(GGoalWhereInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGoalWhereInputBuilder toBuilder() =>
-      new GGoalWhereInputBuilder()..replace(this);
+  GGoalWhereInputBuilder toBuilder() => GGoalWhereInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -7671,18 +7646,17 @@ class GGoalWhereInputBuilder
   _$GGoalWhereInput? _$v;
 
   GGoalWhereInputBuilder? _not;
-  GGoalWhereInputBuilder get not =>
-      _$this._not ??= new GGoalWhereInputBuilder();
+  GGoalWhereInputBuilder get not => _$this._not ??= GGoalWhereInputBuilder();
   set not(GGoalWhereInputBuilder? not) => _$this._not = not;
 
   ListBuilder<GGoalWhereInput>? _and;
   ListBuilder<GGoalWhereInput> get and =>
-      _$this._and ??= new ListBuilder<GGoalWhereInput>();
+      _$this._and ??= ListBuilder<GGoalWhereInput>();
   set and(ListBuilder<GGoalWhereInput>? and) => _$this._and = and;
 
   ListBuilder<GGoalWhereInput>? _or;
   ListBuilder<GGoalWhereInput> get or =>
-      _$this._or ??= new ListBuilder<GGoalWhereInput>();
+      _$this._or ??= ListBuilder<GGoalWhereInput>();
   set or(ListBuilder<GGoalWhereInput>? or) => _$this._or = or;
 
   String? _id;
@@ -7694,12 +7668,11 @@ class GGoalWhereInputBuilder
   set idNEQ(String? idNEQ) => _$this._idNEQ = idNEQ;
 
   ListBuilder<String>? _idIn;
-  ListBuilder<String> get idIn => _$this._idIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idIn => _$this._idIn ??= ListBuilder<String>();
   set idIn(ListBuilder<String>? idIn) => _$this._idIn = idIn;
 
   ListBuilder<String>? _idNotIn;
-  ListBuilder<String> get idNotIn =>
-      _$this._idNotIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idNotIn => _$this._idNotIn ??= ListBuilder<String>();
   set idNotIn(ListBuilder<String>? idNotIn) => _$this._idNotIn = idNotIn;
 
   String? _idGT;
@@ -7719,84 +7692,84 @@ class GGoalWhereInputBuilder
   set idLTE(String? idLTE) => _$this._idLTE = idLTE;
 
   GTimeBuilder? _createdAt;
-  GTimeBuilder get createdAt => _$this._createdAt ??= new GTimeBuilder();
+  GTimeBuilder get createdAt => _$this._createdAt ??= GTimeBuilder();
   set createdAt(GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   GTimeBuilder? _createdAtNEQ;
-  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= GTimeBuilder();
   set createdAtNEQ(GTimeBuilder? createdAtNEQ) =>
       _$this._createdAtNEQ = createdAtNEQ;
 
   ListBuilder<GTime>? _createdAtIn;
   ListBuilder<GTime> get createdAtIn =>
-      _$this._createdAtIn ??= new ListBuilder<GTime>();
+      _$this._createdAtIn ??= ListBuilder<GTime>();
   set createdAtIn(ListBuilder<GTime>? createdAtIn) =>
       _$this._createdAtIn = createdAtIn;
 
   ListBuilder<GTime>? _createdAtNotIn;
   ListBuilder<GTime> get createdAtNotIn =>
-      _$this._createdAtNotIn ??= new ListBuilder<GTime>();
+      _$this._createdAtNotIn ??= ListBuilder<GTime>();
   set createdAtNotIn(ListBuilder<GTime>? createdAtNotIn) =>
       _$this._createdAtNotIn = createdAtNotIn;
 
   GTimeBuilder? _createdAtGT;
-  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= GTimeBuilder();
   set createdAtGT(GTimeBuilder? createdAtGT) =>
       _$this._createdAtGT = createdAtGT;
 
   GTimeBuilder? _createdAtGTE;
-  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= GTimeBuilder();
   set createdAtGTE(GTimeBuilder? createdAtGTE) =>
       _$this._createdAtGTE = createdAtGTE;
 
   GTimeBuilder? _createdAtLT;
-  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= GTimeBuilder();
   set createdAtLT(GTimeBuilder? createdAtLT) =>
       _$this._createdAtLT = createdAtLT;
 
   GTimeBuilder? _createdAtLTE;
-  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= GTimeBuilder();
   set createdAtLTE(GTimeBuilder? createdAtLTE) =>
       _$this._createdAtLTE = createdAtLTE;
 
   GTimeBuilder? _updatedAt;
-  GTimeBuilder get updatedAt => _$this._updatedAt ??= new GTimeBuilder();
+  GTimeBuilder get updatedAt => _$this._updatedAt ??= GTimeBuilder();
   set updatedAt(GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GTimeBuilder? _updatedAtNEQ;
-  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= GTimeBuilder();
   set updatedAtNEQ(GTimeBuilder? updatedAtNEQ) =>
       _$this._updatedAtNEQ = updatedAtNEQ;
 
   ListBuilder<GTime>? _updatedAtIn;
   ListBuilder<GTime> get updatedAtIn =>
-      _$this._updatedAtIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtIn ??= ListBuilder<GTime>();
   set updatedAtIn(ListBuilder<GTime>? updatedAtIn) =>
       _$this._updatedAtIn = updatedAtIn;
 
   ListBuilder<GTime>? _updatedAtNotIn;
   ListBuilder<GTime> get updatedAtNotIn =>
-      _$this._updatedAtNotIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtNotIn ??= ListBuilder<GTime>();
   set updatedAtNotIn(ListBuilder<GTime>? updatedAtNotIn) =>
       _$this._updatedAtNotIn = updatedAtNotIn;
 
   GTimeBuilder? _updatedAtGT;
-  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= GTimeBuilder();
   set updatedAtGT(GTimeBuilder? updatedAtGT) =>
       _$this._updatedAtGT = updatedAtGT;
 
   GTimeBuilder? _updatedAtGTE;
-  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= GTimeBuilder();
   set updatedAtGTE(GTimeBuilder? updatedAtGTE) =>
       _$this._updatedAtGTE = updatedAtGTE;
 
   GTimeBuilder? _updatedAtLT;
-  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= GTimeBuilder();
   set updatedAtLT(GTimeBuilder? updatedAtLT) =>
       _$this._updatedAtLT = updatedAtLT;
 
   GTimeBuilder? _updatedAtLTE;
-  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= GTimeBuilder();
   set updatedAtLTE(GTimeBuilder? updatedAtLTE) =>
       _$this._updatedAtLTE = updatedAtLTE;
 
@@ -7809,13 +7782,12 @@ class GGoalWhereInputBuilder
   set titleNEQ(String? titleNEQ) => _$this._titleNEQ = titleNEQ;
 
   ListBuilder<String>? _titleIn;
-  ListBuilder<String> get titleIn =>
-      _$this._titleIn ??= new ListBuilder<String>();
+  ListBuilder<String> get titleIn => _$this._titleIn ??= ListBuilder<String>();
   set titleIn(ListBuilder<String>? titleIn) => _$this._titleIn = titleIn;
 
   ListBuilder<String>? _titleNotIn;
   ListBuilder<String> get titleNotIn =>
-      _$this._titleNotIn ??= new ListBuilder<String>();
+      _$this._titleNotIn ??= ListBuilder<String>();
   set titleNotIn(ListBuilder<String>? titleNotIn) =>
       _$this._titleNotIn = titleNotIn;
 
@@ -7869,13 +7841,12 @@ class GGoalWhereInputBuilder
   set noteNEQ(String? noteNEQ) => _$this._noteNEQ = noteNEQ;
 
   ListBuilder<String>? _noteIn;
-  ListBuilder<String> get noteIn =>
-      _$this._noteIn ??= new ListBuilder<String>();
+  ListBuilder<String> get noteIn => _$this._noteIn ??= ListBuilder<String>();
   set noteIn(ListBuilder<String>? noteIn) => _$this._noteIn = noteIn;
 
   ListBuilder<String>? _noteNotIn;
   ListBuilder<String> get noteNotIn =>
-      _$this._noteNotIn ??= new ListBuilder<String>();
+      _$this._noteNotIn ??= ListBuilder<String>();
   set noteNotIn(ListBuilder<String>? noteNotIn) =>
       _$this._noteNotIn = noteNotIn;
 
@@ -7928,46 +7899,43 @@ class GGoalWhereInputBuilder
       _$this._noteContainsFold = noteContainsFold;
 
   GTimeBuilder? _targetDate;
-  GTimeBuilder get targetDate => _$this._targetDate ??= new GTimeBuilder();
+  GTimeBuilder get targetDate => _$this._targetDate ??= GTimeBuilder();
   set targetDate(GTimeBuilder? targetDate) => _$this._targetDate = targetDate;
 
   GTimeBuilder? _targetDateNEQ;
-  GTimeBuilder get targetDateNEQ =>
-      _$this._targetDateNEQ ??= new GTimeBuilder();
+  GTimeBuilder get targetDateNEQ => _$this._targetDateNEQ ??= GTimeBuilder();
   set targetDateNEQ(GTimeBuilder? targetDateNEQ) =>
       _$this._targetDateNEQ = targetDateNEQ;
 
   ListBuilder<GTime>? _targetDateIn;
   ListBuilder<GTime> get targetDateIn =>
-      _$this._targetDateIn ??= new ListBuilder<GTime>();
+      _$this._targetDateIn ??= ListBuilder<GTime>();
   set targetDateIn(ListBuilder<GTime>? targetDateIn) =>
       _$this._targetDateIn = targetDateIn;
 
   ListBuilder<GTime>? _targetDateNotIn;
   ListBuilder<GTime> get targetDateNotIn =>
-      _$this._targetDateNotIn ??= new ListBuilder<GTime>();
+      _$this._targetDateNotIn ??= ListBuilder<GTime>();
   set targetDateNotIn(ListBuilder<GTime>? targetDateNotIn) =>
       _$this._targetDateNotIn = targetDateNotIn;
 
   GTimeBuilder? _targetDateGT;
-  GTimeBuilder get targetDateGT => _$this._targetDateGT ??= new GTimeBuilder();
+  GTimeBuilder get targetDateGT => _$this._targetDateGT ??= GTimeBuilder();
   set targetDateGT(GTimeBuilder? targetDateGT) =>
       _$this._targetDateGT = targetDateGT;
 
   GTimeBuilder? _targetDateGTE;
-  GTimeBuilder get targetDateGTE =>
-      _$this._targetDateGTE ??= new GTimeBuilder();
+  GTimeBuilder get targetDateGTE => _$this._targetDateGTE ??= GTimeBuilder();
   set targetDateGTE(GTimeBuilder? targetDateGTE) =>
       _$this._targetDateGTE = targetDateGTE;
 
   GTimeBuilder? _targetDateLT;
-  GTimeBuilder get targetDateLT => _$this._targetDateLT ??= new GTimeBuilder();
+  GTimeBuilder get targetDateLT => _$this._targetDateLT ??= GTimeBuilder();
   set targetDateLT(GTimeBuilder? targetDateLT) =>
       _$this._targetDateLT = targetDateLT;
 
   GTimeBuilder? _targetDateLTE;
-  GTimeBuilder get targetDateLTE =>
-      _$this._targetDateLTE ??= new GTimeBuilder();
+  GTimeBuilder get targetDateLTE => _$this._targetDateLTE ??= GTimeBuilder();
   set targetDateLTE(GTimeBuilder? targetDateLTE) =>
       _$this._targetDateLTE = targetDateLTE;
 
@@ -7991,13 +7959,13 @@ class GGoalWhereInputBuilder
 
   ListBuilder<GGoalStatus>? _statusIn;
   ListBuilder<GGoalStatus> get statusIn =>
-      _$this._statusIn ??= new ListBuilder<GGoalStatus>();
+      _$this._statusIn ??= ListBuilder<GGoalStatus>();
   set statusIn(ListBuilder<GGoalStatus>? statusIn) =>
       _$this._statusIn = statusIn;
 
   ListBuilder<GGoalStatus>? _statusNotIn;
   ListBuilder<GGoalStatus> get statusNotIn =>
-      _$this._statusNotIn ??= new ListBuilder<GGoalStatus>();
+      _$this._statusNotIn ??= ListBuilder<GGoalStatus>();
   set statusNotIn(ListBuilder<GGoalStatus>? statusNotIn) =>
       _$this._statusNotIn = statusNotIn;
 
@@ -8007,7 +7975,7 @@ class GGoalWhereInputBuilder
 
   ListBuilder<GUserWhereInput>? _hasUserWith;
   ListBuilder<GUserWhereInput> get hasUserWith =>
-      _$this._hasUserWith ??= new ListBuilder<GUserWhereInput>();
+      _$this._hasUserWith ??= ListBuilder<GUserWhereInput>();
   set hasUserWith(ListBuilder<GUserWhereInput>? hasUserWith) =>
       _$this._hasUserWith = hasUserWith;
 
@@ -8017,7 +7985,7 @@ class GGoalWhereInputBuilder
 
   ListBuilder<GTaskWhereInput>? _hasTasksWith;
   ListBuilder<GTaskWhereInput> get hasTasksWith =>
-      _$this._hasTasksWith ??= new ListBuilder<GTaskWhereInput>();
+      _$this._hasTasksWith ??= ListBuilder<GTaskWhereInput>();
   set hasTasksWith(ListBuilder<GTaskWhereInput>? hasTasksWith) =>
       _$this._hasTasksWith = hasTasksWith;
 
@@ -8106,7 +8074,6 @@ class GGoalWhereInputBuilder
 
   @override
   void replace(GGoalWhereInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGoalWhereInput;
   }
 
@@ -8122,80 +8089,81 @@ class GGoalWhereInputBuilder
     _$GGoalWhereInput _$result;
     try {
       _$result = _$v ??
-          new _$GGoalWhereInput._(
-              not: _not?.build(),
-              and: _and?.build(),
-              or: _or?.build(),
-              id: id,
-              idNEQ: idNEQ,
-              idIn: _idIn?.build(),
-              idNotIn: _idNotIn?.build(),
-              idGT: idGT,
-              idGTE: idGTE,
-              idLT: idLT,
-              idLTE: idLTE,
-              createdAt: _createdAt?.build(),
-              createdAtNEQ: _createdAtNEQ?.build(),
-              createdAtIn: _createdAtIn?.build(),
-              createdAtNotIn: _createdAtNotIn?.build(),
-              createdAtGT: _createdAtGT?.build(),
-              createdAtGTE: _createdAtGTE?.build(),
-              createdAtLT: _createdAtLT?.build(),
-              createdAtLTE: _createdAtLTE?.build(),
-              updatedAt: _updatedAt?.build(),
-              updatedAtNEQ: _updatedAtNEQ?.build(),
-              updatedAtIn: _updatedAtIn?.build(),
-              updatedAtNotIn: _updatedAtNotIn?.build(),
-              updatedAtGT: _updatedAtGT?.build(),
-              updatedAtGTE: _updatedAtGTE?.build(),
-              updatedAtLT: _updatedAtLT?.build(),
-              updatedAtLTE: _updatedAtLTE?.build(),
-              title: title,
-              titleNEQ: titleNEQ,
-              titleIn: _titleIn?.build(),
-              titleNotIn: _titleNotIn?.build(),
-              titleGT: titleGT,
-              titleGTE: titleGTE,
-              titleLT: titleLT,
-              titleLTE: titleLTE,
-              titleContains: titleContains,
-              titleHasPrefix: titleHasPrefix,
-              titleHasSuffix: titleHasSuffix,
-              titleEqualFold: titleEqualFold,
-              titleContainsFold: titleContainsFold,
-              note: note,
-              noteNEQ: noteNEQ,
-              noteIn: _noteIn?.build(),
-              noteNotIn: _noteNotIn?.build(),
-              noteGT: noteGT,
-              noteGTE: noteGTE,
-              noteLT: noteLT,
-              noteLTE: noteLTE,
-              noteContains: noteContains,
-              noteHasPrefix: noteHasPrefix,
-              noteHasSuffix: noteHasSuffix,
-              noteIsNil: noteIsNil,
-              noteNotNil: noteNotNil,
-              noteEqualFold: noteEqualFold,
-              noteContainsFold: noteContainsFold,
-              targetDate: _targetDate?.build(),
-              targetDateNEQ: _targetDateNEQ?.build(),
-              targetDateIn: _targetDateIn?.build(),
-              targetDateNotIn: _targetDateNotIn?.build(),
-              targetDateGT: _targetDateGT?.build(),
-              targetDateGTE: _targetDateGTE?.build(),
-              targetDateLT: _targetDateLT?.build(),
-              targetDateLTE: _targetDateLTE?.build(),
-              targetDateIsNil: targetDateIsNil,
-              targetDateNotNil: targetDateNotNil,
-              status: status,
-              statusNEQ: statusNEQ,
-              statusIn: _statusIn?.build(),
-              statusNotIn: _statusNotIn?.build(),
-              hasUser: hasUser,
-              hasUserWith: _hasUserWith?.build(),
-              hasTasks: hasTasks,
-              hasTasksWith: _hasTasksWith?.build());
+          _$GGoalWhereInput._(
+            not: _not?.build(),
+            and: _and?.build(),
+            or: _or?.build(),
+            id: id,
+            idNEQ: idNEQ,
+            idIn: _idIn?.build(),
+            idNotIn: _idNotIn?.build(),
+            idGT: idGT,
+            idGTE: idGTE,
+            idLT: idLT,
+            idLTE: idLTE,
+            createdAt: _createdAt?.build(),
+            createdAtNEQ: _createdAtNEQ?.build(),
+            createdAtIn: _createdAtIn?.build(),
+            createdAtNotIn: _createdAtNotIn?.build(),
+            createdAtGT: _createdAtGT?.build(),
+            createdAtGTE: _createdAtGTE?.build(),
+            createdAtLT: _createdAtLT?.build(),
+            createdAtLTE: _createdAtLTE?.build(),
+            updatedAt: _updatedAt?.build(),
+            updatedAtNEQ: _updatedAtNEQ?.build(),
+            updatedAtIn: _updatedAtIn?.build(),
+            updatedAtNotIn: _updatedAtNotIn?.build(),
+            updatedAtGT: _updatedAtGT?.build(),
+            updatedAtGTE: _updatedAtGTE?.build(),
+            updatedAtLT: _updatedAtLT?.build(),
+            updatedAtLTE: _updatedAtLTE?.build(),
+            title: title,
+            titleNEQ: titleNEQ,
+            titleIn: _titleIn?.build(),
+            titleNotIn: _titleNotIn?.build(),
+            titleGT: titleGT,
+            titleGTE: titleGTE,
+            titleLT: titleLT,
+            titleLTE: titleLTE,
+            titleContains: titleContains,
+            titleHasPrefix: titleHasPrefix,
+            titleHasSuffix: titleHasSuffix,
+            titleEqualFold: titleEqualFold,
+            titleContainsFold: titleContainsFold,
+            note: note,
+            noteNEQ: noteNEQ,
+            noteIn: _noteIn?.build(),
+            noteNotIn: _noteNotIn?.build(),
+            noteGT: noteGT,
+            noteGTE: noteGTE,
+            noteLT: noteLT,
+            noteLTE: noteLTE,
+            noteContains: noteContains,
+            noteHasPrefix: noteHasPrefix,
+            noteHasSuffix: noteHasSuffix,
+            noteIsNil: noteIsNil,
+            noteNotNil: noteNotNil,
+            noteEqualFold: noteEqualFold,
+            noteContainsFold: noteContainsFold,
+            targetDate: _targetDate?.build(),
+            targetDateNEQ: _targetDateNEQ?.build(),
+            targetDateIn: _targetDateIn?.build(),
+            targetDateNotIn: _targetDateNotIn?.build(),
+            targetDateGT: _targetDateGT?.build(),
+            targetDateGTE: _targetDateGTE?.build(),
+            targetDateLT: _targetDateLT?.build(),
+            targetDateLTE: _targetDateLTE?.build(),
+            targetDateIsNil: targetDateIsNil,
+            targetDateNotNil: targetDateNotNil,
+            status: status,
+            statusNEQ: statusNEQ,
+            statusIn: _statusIn?.build(),
+            statusNotIn: _statusNotIn?.build(),
+            hasUser: hasUser,
+            hasUserWith: _hasUserWith?.build(),
+            hasTasks: hasTasks,
+            hasTasksWith: _hasTasksWith?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -8282,7 +8250,7 @@ class GGoalWhereInputBuilder
         _$failedField = 'hasTasksWith';
         _hasTasksWith?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGoalWhereInput', _$failedField, e.toString());
       }
       rethrow;
@@ -8348,7 +8316,7 @@ class _$GInterestWhereInput extends GInterestWhereInput {
 
   factory _$GInterestWhereInput(
           [void Function(GInterestWhereInputBuilder)? updates]) =>
-      (new GInterestWhereInputBuilder()..update(updates))._build();
+      (GInterestWhereInputBuilder()..update(updates))._build();
 
   _$GInterestWhereInput._(
       {this.not,
@@ -8378,7 +8346,6 @@ class _$GInterestWhereInput extends GInterestWhereInput {
       this.hasUsers,
       this.hasUsersWith})
       : super._();
-
   @override
   GInterestWhereInput rebuild(
           void Function(GInterestWhereInputBuilder) updates) =>
@@ -8386,7 +8353,7 @@ class _$GInterestWhereInput extends GInterestWhereInput {
 
   @override
   GInterestWhereInputBuilder toBuilder() =>
-      new GInterestWhereInputBuilder()..replace(this);
+      GInterestWhereInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -8492,17 +8459,17 @@ class GInterestWhereInputBuilder
 
   GInterestWhereInputBuilder? _not;
   GInterestWhereInputBuilder get not =>
-      _$this._not ??= new GInterestWhereInputBuilder();
+      _$this._not ??= GInterestWhereInputBuilder();
   set not(GInterestWhereInputBuilder? not) => _$this._not = not;
 
   ListBuilder<GInterestWhereInput>? _and;
   ListBuilder<GInterestWhereInput> get and =>
-      _$this._and ??= new ListBuilder<GInterestWhereInput>();
+      _$this._and ??= ListBuilder<GInterestWhereInput>();
   set and(ListBuilder<GInterestWhereInput>? and) => _$this._and = and;
 
   ListBuilder<GInterestWhereInput>? _or;
   ListBuilder<GInterestWhereInput> get or =>
-      _$this._or ??= new ListBuilder<GInterestWhereInput>();
+      _$this._or ??= ListBuilder<GInterestWhereInput>();
   set or(ListBuilder<GInterestWhereInput>? or) => _$this._or = or;
 
   String? _id;
@@ -8514,12 +8481,11 @@ class GInterestWhereInputBuilder
   set idNEQ(String? idNEQ) => _$this._idNEQ = idNEQ;
 
   ListBuilder<String>? _idIn;
-  ListBuilder<String> get idIn => _$this._idIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idIn => _$this._idIn ??= ListBuilder<String>();
   set idIn(ListBuilder<String>? idIn) => _$this._idIn = idIn;
 
   ListBuilder<String>? _idNotIn;
-  ListBuilder<String> get idNotIn =>
-      _$this._idNotIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idNotIn => _$this._idNotIn ??= ListBuilder<String>();
   set idNotIn(ListBuilder<String>? idNotIn) => _$this._idNotIn = idNotIn;
 
   String? _idGT;
@@ -8547,13 +8513,12 @@ class GInterestWhereInputBuilder
   set nameNEQ(String? nameNEQ) => _$this._nameNEQ = nameNEQ;
 
   ListBuilder<String>? _nameIn;
-  ListBuilder<String> get nameIn =>
-      _$this._nameIn ??= new ListBuilder<String>();
+  ListBuilder<String> get nameIn => _$this._nameIn ??= ListBuilder<String>();
   set nameIn(ListBuilder<String>? nameIn) => _$this._nameIn = nameIn;
 
   ListBuilder<String>? _nameNotIn;
   ListBuilder<String> get nameNotIn =>
-      _$this._nameNotIn ??= new ListBuilder<String>();
+      _$this._nameNotIn ??= ListBuilder<String>();
   set nameNotIn(ListBuilder<String>? nameNotIn) =>
       _$this._nameNotIn = nameNotIn;
 
@@ -8603,7 +8568,7 @@ class GInterestWhereInputBuilder
 
   ListBuilder<GUserWhereInput>? _hasUsersWith;
   ListBuilder<GUserWhereInput> get hasUsersWith =>
-      _$this._hasUsersWith ??= new ListBuilder<GUserWhereInput>();
+      _$this._hasUsersWith ??= ListBuilder<GUserWhereInput>();
   set hasUsersWith(ListBuilder<GUserWhereInput>? hasUsersWith) =>
       _$this._hasUsersWith = hasUsersWith;
 
@@ -8645,7 +8610,6 @@ class GInterestWhereInputBuilder
 
   @override
   void replace(GInterestWhereInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GInterestWhereInput;
   }
 
@@ -8661,33 +8625,34 @@ class GInterestWhereInputBuilder
     _$GInterestWhereInput _$result;
     try {
       _$result = _$v ??
-          new _$GInterestWhereInput._(
-              not: _not?.build(),
-              and: _and?.build(),
-              or: _or?.build(),
-              id: id,
-              idNEQ: idNEQ,
-              idIn: _idIn?.build(),
-              idNotIn: _idNotIn?.build(),
-              idGT: idGT,
-              idGTE: idGTE,
-              idLT: idLT,
-              idLTE: idLTE,
-              name: name,
-              nameNEQ: nameNEQ,
-              nameIn: _nameIn?.build(),
-              nameNotIn: _nameNotIn?.build(),
-              nameGT: nameGT,
-              nameGTE: nameGTE,
-              nameLT: nameLT,
-              nameLTE: nameLTE,
-              nameContains: nameContains,
-              nameHasPrefix: nameHasPrefix,
-              nameHasSuffix: nameHasSuffix,
-              nameEqualFold: nameEqualFold,
-              nameContainsFold: nameContainsFold,
-              hasUsers: hasUsers,
-              hasUsersWith: _hasUsersWith?.build());
+          _$GInterestWhereInput._(
+            not: _not?.build(),
+            and: _and?.build(),
+            or: _or?.build(),
+            id: id,
+            idNEQ: idNEQ,
+            idIn: _idIn?.build(),
+            idNotIn: _idNotIn?.build(),
+            idGT: idGT,
+            idGTE: idGTE,
+            idLT: idLT,
+            idLTE: idLTE,
+            name: name,
+            nameNEQ: nameNEQ,
+            nameIn: _nameIn?.build(),
+            nameNotIn: _nameNotIn?.build(),
+            nameGT: nameGT,
+            nameGTE: nameGTE,
+            nameLT: nameLT,
+            nameLTE: nameLTE,
+            nameContains: nameContains,
+            nameHasPrefix: nameHasPrefix,
+            nameHasSuffix: nameHasSuffix,
+            nameEqualFold: nameEqualFold,
+            nameContainsFold: nameContainsFold,
+            hasUsers: hasUsers,
+            hasUsersWith: _hasUsersWith?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -8711,7 +8676,7 @@ class GInterestWhereInputBuilder
         _$failedField = 'hasUsersWith';
         _hasUsersWith?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GInterestWhereInput', _$failedField, e.toString());
       }
       rethrow;
@@ -8724,32 +8689,34 @@ class GInterestWhereInputBuilder
 class _$GSendOTPInput extends GSendOTPInput {
   @override
   final String phoneNumber;
+  @override
+  final GDeviceTokenPlatform client;
 
   factory _$GSendOTPInput([void Function(GSendOTPInputBuilder)? updates]) =>
-      (new GSendOTPInputBuilder()..update(updates))._build();
+      (GSendOTPInputBuilder()..update(updates))._build();
 
-  _$GSendOTPInput._({required this.phoneNumber}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        phoneNumber, r'GSendOTPInput', 'phoneNumber');
-  }
-
+  _$GSendOTPInput._({required this.phoneNumber, required this.client})
+      : super._();
   @override
   GSendOTPInput rebuild(void Function(GSendOTPInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GSendOTPInputBuilder toBuilder() => new GSendOTPInputBuilder()..replace(this);
+  GSendOTPInputBuilder toBuilder() => GSendOTPInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is GSendOTPInput && phoneNumber == other.phoneNumber;
+    return other is GSendOTPInput &&
+        phoneNumber == other.phoneNumber &&
+        client == other.client;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, phoneNumber.hashCode);
+    _$hash = $jc(_$hash, client.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -8757,7 +8724,8 @@ class _$GSendOTPInput extends GSendOTPInput {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'GSendOTPInput')
-          ..add('phoneNumber', phoneNumber))
+          ..add('phoneNumber', phoneNumber)
+          ..add('client', client))
         .toString();
   }
 }
@@ -8770,12 +8738,17 @@ class GSendOTPInputBuilder
   String? get phoneNumber => _$this._phoneNumber;
   set phoneNumber(String? phoneNumber) => _$this._phoneNumber = phoneNumber;
 
+  GDeviceTokenPlatform? _client;
+  GDeviceTokenPlatform? get client => _$this._client;
+  set client(GDeviceTokenPlatform? client) => _$this._client = client;
+
   GSendOTPInputBuilder();
 
   GSendOTPInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _phoneNumber = $v.phoneNumber;
+      _client = $v.client;
       _$v = null;
     }
     return this;
@@ -8783,7 +8756,6 @@ class GSendOTPInputBuilder
 
   @override
   void replace(GSendOTPInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendOTPInput;
   }
 
@@ -8797,9 +8769,12 @@ class GSendOTPInputBuilder
 
   _$GSendOTPInput _build() {
     final _$result = _$v ??
-        new _$GSendOTPInput._(
-            phoneNumber: BuiltValueNullFieldError.checkNotNull(
-                phoneNumber, r'GSendOTPInput', 'phoneNumber'));
+        _$GSendOTPInput._(
+          phoneNumber: BuiltValueNullFieldError.checkNotNull(
+              phoneNumber, r'GSendOTPInput', 'phoneNumber'),
+          client: BuiltValueNullFieldError.checkNotNull(
+              client, r'GSendOTPInput', 'client'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -8811,13 +8786,9 @@ class _$GRefreshTokenInput extends GRefreshTokenInput {
 
   factory _$GRefreshTokenInput(
           [void Function(GRefreshTokenInputBuilder)? updates]) =>
-      (new GRefreshTokenInputBuilder()..update(updates))._build();
+      (GRefreshTokenInputBuilder()..update(updates))._build();
 
-  _$GRefreshTokenInput._({required this.refreshToken}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        refreshToken, r'GRefreshTokenInput', 'refreshToken');
-  }
-
+  _$GRefreshTokenInput._({required this.refreshToken}) : super._();
   @override
   GRefreshTokenInput rebuild(
           void Function(GRefreshTokenInputBuilder) updates) =>
@@ -8825,7 +8796,7 @@ class _$GRefreshTokenInput extends GRefreshTokenInput {
 
   @override
   GRefreshTokenInputBuilder toBuilder() =>
-      new GRefreshTokenInputBuilder()..replace(this);
+      GRefreshTokenInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -8870,7 +8841,6 @@ class GRefreshTokenInputBuilder
 
   @override
   void replace(GRefreshTokenInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRefreshTokenInput;
   }
 
@@ -8884,9 +8854,10 @@ class GRefreshTokenInputBuilder
 
   _$GRefreshTokenInput _build() {
     final _$result = _$v ??
-        new _$GRefreshTokenInput._(
-            refreshToken: BuiltValueNullFieldError.checkNotNull(
-                refreshToken, r'GRefreshTokenInput', 'refreshToken'));
+        _$GRefreshTokenInput._(
+          refreshToken: BuiltValueNullFieldError.checkNotNull(
+              refreshToken, r'GRefreshTokenInput', 'refreshToken'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -8947,7 +8918,7 @@ class _$GTagWhereInput extends GTagWhereInput {
   final BuiltList<GTaskWhereInput>? hasTasksWith;
 
   factory _$GTagWhereInput([void Function(GTagWhereInputBuilder)? updates]) =>
-      (new GTagWhereInputBuilder()..update(updates))._build();
+      (GTagWhereInputBuilder()..update(updates))._build();
 
   _$GTagWhereInput._(
       {this.not,
@@ -8977,14 +8948,12 @@ class _$GTagWhereInput extends GTagWhereInput {
       this.hasTasks,
       this.hasTasksWith})
       : super._();
-
   @override
   GTagWhereInput rebuild(void Function(GTagWhereInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GTagWhereInputBuilder toBuilder() =>
-      new GTagWhereInputBuilder()..replace(this);
+  GTagWhereInputBuilder toBuilder() => GTagWhereInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -9089,17 +9058,17 @@ class GTagWhereInputBuilder
   _$GTagWhereInput? _$v;
 
   GTagWhereInputBuilder? _not;
-  GTagWhereInputBuilder get not => _$this._not ??= new GTagWhereInputBuilder();
+  GTagWhereInputBuilder get not => _$this._not ??= GTagWhereInputBuilder();
   set not(GTagWhereInputBuilder? not) => _$this._not = not;
 
   ListBuilder<GTagWhereInput>? _and;
   ListBuilder<GTagWhereInput> get and =>
-      _$this._and ??= new ListBuilder<GTagWhereInput>();
+      _$this._and ??= ListBuilder<GTagWhereInput>();
   set and(ListBuilder<GTagWhereInput>? and) => _$this._and = and;
 
   ListBuilder<GTagWhereInput>? _or;
   ListBuilder<GTagWhereInput> get or =>
-      _$this._or ??= new ListBuilder<GTagWhereInput>();
+      _$this._or ??= ListBuilder<GTagWhereInput>();
   set or(ListBuilder<GTagWhereInput>? or) => _$this._or = or;
 
   String? _id;
@@ -9111,12 +9080,11 @@ class GTagWhereInputBuilder
   set idNEQ(String? idNEQ) => _$this._idNEQ = idNEQ;
 
   ListBuilder<String>? _idIn;
-  ListBuilder<String> get idIn => _$this._idIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idIn => _$this._idIn ??= ListBuilder<String>();
   set idIn(ListBuilder<String>? idIn) => _$this._idIn = idIn;
 
   ListBuilder<String>? _idNotIn;
-  ListBuilder<String> get idNotIn =>
-      _$this._idNotIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idNotIn => _$this._idNotIn ??= ListBuilder<String>();
   set idNotIn(ListBuilder<String>? idNotIn) => _$this._idNotIn = idNotIn;
 
   String? _idGT;
@@ -9144,13 +9112,12 @@ class GTagWhereInputBuilder
   set nameNEQ(String? nameNEQ) => _$this._nameNEQ = nameNEQ;
 
   ListBuilder<String>? _nameIn;
-  ListBuilder<String> get nameIn =>
-      _$this._nameIn ??= new ListBuilder<String>();
+  ListBuilder<String> get nameIn => _$this._nameIn ??= ListBuilder<String>();
   set nameIn(ListBuilder<String>? nameIn) => _$this._nameIn = nameIn;
 
   ListBuilder<String>? _nameNotIn;
   ListBuilder<String> get nameNotIn =>
-      _$this._nameNotIn ??= new ListBuilder<String>();
+      _$this._nameNotIn ??= ListBuilder<String>();
   set nameNotIn(ListBuilder<String>? nameNotIn) =>
       _$this._nameNotIn = nameNotIn;
 
@@ -9200,7 +9167,7 @@ class GTagWhereInputBuilder
 
   ListBuilder<GTaskWhereInput>? _hasTasksWith;
   ListBuilder<GTaskWhereInput> get hasTasksWith =>
-      _$this._hasTasksWith ??= new ListBuilder<GTaskWhereInput>();
+      _$this._hasTasksWith ??= ListBuilder<GTaskWhereInput>();
   set hasTasksWith(ListBuilder<GTaskWhereInput>? hasTasksWith) =>
       _$this._hasTasksWith = hasTasksWith;
 
@@ -9242,7 +9209,6 @@ class GTagWhereInputBuilder
 
   @override
   void replace(GTagWhereInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GTagWhereInput;
   }
 
@@ -9258,33 +9224,34 @@ class GTagWhereInputBuilder
     _$GTagWhereInput _$result;
     try {
       _$result = _$v ??
-          new _$GTagWhereInput._(
-              not: _not?.build(),
-              and: _and?.build(),
-              or: _or?.build(),
-              id: id,
-              idNEQ: idNEQ,
-              idIn: _idIn?.build(),
-              idNotIn: _idNotIn?.build(),
-              idGT: idGT,
-              idGTE: idGTE,
-              idLT: idLT,
-              idLTE: idLTE,
-              name: name,
-              nameNEQ: nameNEQ,
-              nameIn: _nameIn?.build(),
-              nameNotIn: _nameNotIn?.build(),
-              nameGT: nameGT,
-              nameGTE: nameGTE,
-              nameLT: nameLT,
-              nameLTE: nameLTE,
-              nameContains: nameContains,
-              nameHasPrefix: nameHasPrefix,
-              nameHasSuffix: nameHasSuffix,
-              nameEqualFold: nameEqualFold,
-              nameContainsFold: nameContainsFold,
-              hasTasks: hasTasks,
-              hasTasksWith: _hasTasksWith?.build());
+          _$GTagWhereInput._(
+            not: _not?.build(),
+            and: _and?.build(),
+            or: _or?.build(),
+            id: id,
+            idNEQ: idNEQ,
+            idIn: _idIn?.build(),
+            idNotIn: _idNotIn?.build(),
+            idGT: idGT,
+            idGTE: idGTE,
+            idLT: idLT,
+            idLTE: idLTE,
+            name: name,
+            nameNEQ: nameNEQ,
+            nameIn: _nameIn?.build(),
+            nameNotIn: _nameNotIn?.build(),
+            nameGT: nameGT,
+            nameGTE: nameGTE,
+            nameLT: nameLT,
+            nameLTE: nameLTE,
+            nameContains: nameContains,
+            nameHasPrefix: nameHasPrefix,
+            nameHasSuffix: nameHasSuffix,
+            nameEqualFold: nameEqualFold,
+            nameContainsFold: nameContainsFold,
+            hasTasks: hasTasks,
+            hasTasksWith: _hasTasksWith?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -9308,7 +9275,7 @@ class GTagWhereInputBuilder
         _$failedField = 'hasTasksWith';
         _hasTasksWith?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GTagWhereInput', _$failedField, e.toString());
       }
       rethrow;
@@ -9325,20 +9292,15 @@ class _$GTaskOrder extends GTaskOrder {
   final GTaskOrderField field;
 
   factory _$GTaskOrder([void Function(GTaskOrderBuilder)? updates]) =>
-      (new GTaskOrderBuilder()..update(updates))._build();
+      (GTaskOrderBuilder()..update(updates))._build();
 
-  _$GTaskOrder._({required this.direction, required this.field}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        direction, r'GTaskOrder', 'direction');
-    BuiltValueNullFieldError.checkNotNull(field, r'GTaskOrder', 'field');
-  }
-
+  _$GTaskOrder._({required this.direction, required this.field}) : super._();
   @override
   GTaskOrder rebuild(void Function(GTaskOrderBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GTaskOrderBuilder toBuilder() => new GTaskOrderBuilder()..replace(this);
+  GTaskOrderBuilder toBuilder() => GTaskOrderBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -9391,7 +9353,6 @@ class GTaskOrderBuilder implements Builder<GTaskOrder, GTaskOrderBuilder> {
 
   @override
   void replace(GTaskOrder other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GTaskOrder;
   }
 
@@ -9405,11 +9366,12 @@ class GTaskOrderBuilder implements Builder<GTaskOrder, GTaskOrderBuilder> {
 
   _$GTaskOrder _build() {
     final _$result = _$v ??
-        new _$GTaskOrder._(
-            direction: BuiltValueNullFieldError.checkNotNull(
-                direction, r'GTaskOrder', 'direction'),
-            field: BuiltValueNullFieldError.checkNotNull(
-                field, r'GTaskOrder', 'field'));
+        _$GTaskOrder._(
+          direction: BuiltValueNullFieldError.checkNotNull(
+              direction, r'GTaskOrder', 'direction'),
+          field: BuiltValueNullFieldError.checkNotNull(
+              field, r'GTaskOrder', 'field'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -9676,7 +9638,7 @@ class _$GTaskWhereInput extends GTaskWhereInput {
   final BuiltList<GTagWhereInput>? hasTagsWith;
 
   factory _$GTaskWhereInput([void Function(GTaskWhereInputBuilder)? updates]) =>
-      (new GTaskWhereInputBuilder()..update(updates))._build();
+      (GTaskWhereInputBuilder()..update(updates))._build();
 
   _$GTaskWhereInput._(
       {this.not,
@@ -9809,14 +9771,12 @@ class _$GTaskWhereInput extends GTaskWhereInput {
       this.hasTags,
       this.hasTagsWith})
       : super._();
-
   @override
   GTaskWhereInput rebuild(void Function(GTaskWhereInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GTaskWhereInputBuilder toBuilder() =>
-      new GTaskWhereInputBuilder()..replace(this);
+  GTaskWhereInputBuilder toBuilder() => GTaskWhereInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -10230,18 +10190,17 @@ class GTaskWhereInputBuilder
   _$GTaskWhereInput? _$v;
 
   GTaskWhereInputBuilder? _not;
-  GTaskWhereInputBuilder get not =>
-      _$this._not ??= new GTaskWhereInputBuilder();
+  GTaskWhereInputBuilder get not => _$this._not ??= GTaskWhereInputBuilder();
   set not(GTaskWhereInputBuilder? not) => _$this._not = not;
 
   ListBuilder<GTaskWhereInput>? _and;
   ListBuilder<GTaskWhereInput> get and =>
-      _$this._and ??= new ListBuilder<GTaskWhereInput>();
+      _$this._and ??= ListBuilder<GTaskWhereInput>();
   set and(ListBuilder<GTaskWhereInput>? and) => _$this._and = and;
 
   ListBuilder<GTaskWhereInput>? _or;
   ListBuilder<GTaskWhereInput> get or =>
-      _$this._or ??= new ListBuilder<GTaskWhereInput>();
+      _$this._or ??= ListBuilder<GTaskWhereInput>();
   set or(ListBuilder<GTaskWhereInput>? or) => _$this._or = or;
 
   String? _id;
@@ -10253,12 +10212,11 @@ class GTaskWhereInputBuilder
   set idNEQ(String? idNEQ) => _$this._idNEQ = idNEQ;
 
   ListBuilder<String>? _idIn;
-  ListBuilder<String> get idIn => _$this._idIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idIn => _$this._idIn ??= ListBuilder<String>();
   set idIn(ListBuilder<String>? idIn) => _$this._idIn = idIn;
 
   ListBuilder<String>? _idNotIn;
-  ListBuilder<String> get idNotIn =>
-      _$this._idNotIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idNotIn => _$this._idNotIn ??= ListBuilder<String>();
   set idNotIn(ListBuilder<String>? idNotIn) => _$this._idNotIn = idNotIn;
 
   String? _idGT;
@@ -10278,84 +10236,84 @@ class GTaskWhereInputBuilder
   set idLTE(String? idLTE) => _$this._idLTE = idLTE;
 
   GTimeBuilder? _createdAt;
-  GTimeBuilder get createdAt => _$this._createdAt ??= new GTimeBuilder();
+  GTimeBuilder get createdAt => _$this._createdAt ??= GTimeBuilder();
   set createdAt(GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   GTimeBuilder? _createdAtNEQ;
-  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= GTimeBuilder();
   set createdAtNEQ(GTimeBuilder? createdAtNEQ) =>
       _$this._createdAtNEQ = createdAtNEQ;
 
   ListBuilder<GTime>? _createdAtIn;
   ListBuilder<GTime> get createdAtIn =>
-      _$this._createdAtIn ??= new ListBuilder<GTime>();
+      _$this._createdAtIn ??= ListBuilder<GTime>();
   set createdAtIn(ListBuilder<GTime>? createdAtIn) =>
       _$this._createdAtIn = createdAtIn;
 
   ListBuilder<GTime>? _createdAtNotIn;
   ListBuilder<GTime> get createdAtNotIn =>
-      _$this._createdAtNotIn ??= new ListBuilder<GTime>();
+      _$this._createdAtNotIn ??= ListBuilder<GTime>();
   set createdAtNotIn(ListBuilder<GTime>? createdAtNotIn) =>
       _$this._createdAtNotIn = createdAtNotIn;
 
   GTimeBuilder? _createdAtGT;
-  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= GTimeBuilder();
   set createdAtGT(GTimeBuilder? createdAtGT) =>
       _$this._createdAtGT = createdAtGT;
 
   GTimeBuilder? _createdAtGTE;
-  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= GTimeBuilder();
   set createdAtGTE(GTimeBuilder? createdAtGTE) =>
       _$this._createdAtGTE = createdAtGTE;
 
   GTimeBuilder? _createdAtLT;
-  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= GTimeBuilder();
   set createdAtLT(GTimeBuilder? createdAtLT) =>
       _$this._createdAtLT = createdAtLT;
 
   GTimeBuilder? _createdAtLTE;
-  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= GTimeBuilder();
   set createdAtLTE(GTimeBuilder? createdAtLTE) =>
       _$this._createdAtLTE = createdAtLTE;
 
   GTimeBuilder? _updatedAt;
-  GTimeBuilder get updatedAt => _$this._updatedAt ??= new GTimeBuilder();
+  GTimeBuilder get updatedAt => _$this._updatedAt ??= GTimeBuilder();
   set updatedAt(GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GTimeBuilder? _updatedAtNEQ;
-  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= GTimeBuilder();
   set updatedAtNEQ(GTimeBuilder? updatedAtNEQ) =>
       _$this._updatedAtNEQ = updatedAtNEQ;
 
   ListBuilder<GTime>? _updatedAtIn;
   ListBuilder<GTime> get updatedAtIn =>
-      _$this._updatedAtIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtIn ??= ListBuilder<GTime>();
   set updatedAtIn(ListBuilder<GTime>? updatedAtIn) =>
       _$this._updatedAtIn = updatedAtIn;
 
   ListBuilder<GTime>? _updatedAtNotIn;
   ListBuilder<GTime> get updatedAtNotIn =>
-      _$this._updatedAtNotIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtNotIn ??= ListBuilder<GTime>();
   set updatedAtNotIn(ListBuilder<GTime>? updatedAtNotIn) =>
       _$this._updatedAtNotIn = updatedAtNotIn;
 
   GTimeBuilder? _updatedAtGT;
-  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= GTimeBuilder();
   set updatedAtGT(GTimeBuilder? updatedAtGT) =>
       _$this._updatedAtGT = updatedAtGT;
 
   GTimeBuilder? _updatedAtGTE;
-  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= GTimeBuilder();
   set updatedAtGTE(GTimeBuilder? updatedAtGTE) =>
       _$this._updatedAtGTE = updatedAtGTE;
 
   GTimeBuilder? _updatedAtLT;
-  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= GTimeBuilder();
   set updatedAtLT(GTimeBuilder? updatedAtLT) =>
       _$this._updatedAtLT = updatedAtLT;
 
   GTimeBuilder? _updatedAtLTE;
-  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= GTimeBuilder();
   set updatedAtLTE(GTimeBuilder? updatedAtLTE) =>
       _$this._updatedAtLTE = updatedAtLTE;
 
@@ -10368,13 +10326,12 @@ class GTaskWhereInputBuilder
   set titleNEQ(String? titleNEQ) => _$this._titleNEQ = titleNEQ;
 
   ListBuilder<String>? _titleIn;
-  ListBuilder<String> get titleIn =>
-      _$this._titleIn ??= new ListBuilder<String>();
+  ListBuilder<String> get titleIn => _$this._titleIn ??= ListBuilder<String>();
   set titleIn(ListBuilder<String>? titleIn) => _$this._titleIn = titleIn;
 
   ListBuilder<String>? _titleNotIn;
   ListBuilder<String> get titleNotIn =>
-      _$this._titleNotIn ??= new ListBuilder<String>();
+      _$this._titleNotIn ??= ListBuilder<String>();
   set titleNotIn(ListBuilder<String>? titleNotIn) =>
       _$this._titleNotIn = titleNotIn;
 
@@ -10431,13 +10388,13 @@ class GTaskWhereInputBuilder
 
   ListBuilder<String>? _shortDescriptionIn;
   ListBuilder<String> get shortDescriptionIn =>
-      _$this._shortDescriptionIn ??= new ListBuilder<String>();
+      _$this._shortDescriptionIn ??= ListBuilder<String>();
   set shortDescriptionIn(ListBuilder<String>? shortDescriptionIn) =>
       _$this._shortDescriptionIn = shortDescriptionIn;
 
   ListBuilder<String>? _shortDescriptionNotIn;
   ListBuilder<String> get shortDescriptionNotIn =>
-      _$this._shortDescriptionNotIn ??= new ListBuilder<String>();
+      _$this._shortDescriptionNotIn ??= ListBuilder<String>();
   set shortDescriptionNotIn(ListBuilder<String>? shortDescriptionNotIn) =>
       _$this._shortDescriptionNotIn = shortDescriptionNotIn;
 
@@ -10506,13 +10463,12 @@ class GTaskWhereInputBuilder
   set noteNEQ(String? noteNEQ) => _$this._noteNEQ = noteNEQ;
 
   ListBuilder<String>? _noteIn;
-  ListBuilder<String> get noteIn =>
-      _$this._noteIn ??= new ListBuilder<String>();
+  ListBuilder<String> get noteIn => _$this._noteIn ??= ListBuilder<String>();
   set noteIn(ListBuilder<String>? noteIn) => _$this._noteIn = noteIn;
 
   ListBuilder<String>? _noteNotIn;
   ListBuilder<String> get noteNotIn =>
-      _$this._noteNotIn ??= new ListBuilder<String>();
+      _$this._noteNotIn ??= ListBuilder<String>();
   set noteNotIn(ListBuilder<String>? noteNotIn) =>
       _$this._noteNotIn = noteNotIn;
 
@@ -10574,46 +10530,46 @@ class GTaskWhereInputBuilder
 
   ListBuilder<GTaskType>? _typeIn;
   ListBuilder<GTaskType> get typeIn =>
-      _$this._typeIn ??= new ListBuilder<GTaskType>();
+      _$this._typeIn ??= ListBuilder<GTaskType>();
   set typeIn(ListBuilder<GTaskType>? typeIn) => _$this._typeIn = typeIn;
 
   ListBuilder<GTaskType>? _typeNotIn;
   ListBuilder<GTaskType> get typeNotIn =>
-      _$this._typeNotIn ??= new ListBuilder<GTaskType>();
+      _$this._typeNotIn ??= ListBuilder<GTaskType>();
   set typeNotIn(ListBuilder<GTaskType>? typeNotIn) =>
       _$this._typeNotIn = typeNotIn;
 
   GTimeBuilder? _date;
-  GTimeBuilder get date => _$this._date ??= new GTimeBuilder();
+  GTimeBuilder get date => _$this._date ??= GTimeBuilder();
   set date(GTimeBuilder? date) => _$this._date = date;
 
   GTimeBuilder? _dateNEQ;
-  GTimeBuilder get dateNEQ => _$this._dateNEQ ??= new GTimeBuilder();
+  GTimeBuilder get dateNEQ => _$this._dateNEQ ??= GTimeBuilder();
   set dateNEQ(GTimeBuilder? dateNEQ) => _$this._dateNEQ = dateNEQ;
 
   ListBuilder<GTime>? _dateIn;
-  ListBuilder<GTime> get dateIn => _$this._dateIn ??= new ListBuilder<GTime>();
+  ListBuilder<GTime> get dateIn => _$this._dateIn ??= ListBuilder<GTime>();
   set dateIn(ListBuilder<GTime>? dateIn) => _$this._dateIn = dateIn;
 
   ListBuilder<GTime>? _dateNotIn;
   ListBuilder<GTime> get dateNotIn =>
-      _$this._dateNotIn ??= new ListBuilder<GTime>();
+      _$this._dateNotIn ??= ListBuilder<GTime>();
   set dateNotIn(ListBuilder<GTime>? dateNotIn) => _$this._dateNotIn = dateNotIn;
 
   GTimeBuilder? _dateGT;
-  GTimeBuilder get dateGT => _$this._dateGT ??= new GTimeBuilder();
+  GTimeBuilder get dateGT => _$this._dateGT ??= GTimeBuilder();
   set dateGT(GTimeBuilder? dateGT) => _$this._dateGT = dateGT;
 
   GTimeBuilder? _dateGTE;
-  GTimeBuilder get dateGTE => _$this._dateGTE ??= new GTimeBuilder();
+  GTimeBuilder get dateGTE => _$this._dateGTE ??= GTimeBuilder();
   set dateGTE(GTimeBuilder? dateGTE) => _$this._dateGTE = dateGTE;
 
   GTimeBuilder? _dateLT;
-  GTimeBuilder get dateLT => _$this._dateLT ??= new GTimeBuilder();
+  GTimeBuilder get dateLT => _$this._dateLT ??= GTimeBuilder();
   set dateLT(GTimeBuilder? dateLT) => _$this._dateLT = dateLT;
 
   GTimeBuilder? _dateLTE;
-  GTimeBuilder get dateLTE => _$this._dateLTE ??= new GTimeBuilder();
+  GTimeBuilder get dateLTE => _$this._dateLTE ??= GTimeBuilder();
   set dateLTE(GTimeBuilder? dateLTE) => _$this._dateLTE = dateLTE;
 
   int? _durationM;
@@ -10626,13 +10582,13 @@ class GTaskWhereInputBuilder
 
   ListBuilder<int>? _durationMIn;
   ListBuilder<int> get durationMIn =>
-      _$this._durationMIn ??= new ListBuilder<int>();
+      _$this._durationMIn ??= ListBuilder<int>();
   set durationMIn(ListBuilder<int>? durationMIn) =>
       _$this._durationMIn = durationMIn;
 
   ListBuilder<int>? _durationMNotIn;
   ListBuilder<int> get durationMNotIn =>
-      _$this._durationMNotIn ??= new ListBuilder<int>();
+      _$this._durationMNotIn ??= ListBuilder<int>();
   set durationMNotIn(ListBuilder<int>? durationMNotIn) =>
       _$this._durationMNotIn = durationMNotIn;
 
@@ -10672,49 +10628,47 @@ class GTaskWhereInputBuilder
       _$this._hasReminderNEQ = hasReminderNEQ;
 
   GTimeBuilder? _reminderTime;
-  GTimeBuilder get reminderTime => _$this._reminderTime ??= new GTimeBuilder();
+  GTimeBuilder get reminderTime => _$this._reminderTime ??= GTimeBuilder();
   set reminderTime(GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
   GTimeBuilder? _reminderTimeNEQ;
   GTimeBuilder get reminderTimeNEQ =>
-      _$this._reminderTimeNEQ ??= new GTimeBuilder();
+      _$this._reminderTimeNEQ ??= GTimeBuilder();
   set reminderTimeNEQ(GTimeBuilder? reminderTimeNEQ) =>
       _$this._reminderTimeNEQ = reminderTimeNEQ;
 
   ListBuilder<GTime>? _reminderTimeIn;
   ListBuilder<GTime> get reminderTimeIn =>
-      _$this._reminderTimeIn ??= new ListBuilder<GTime>();
+      _$this._reminderTimeIn ??= ListBuilder<GTime>();
   set reminderTimeIn(ListBuilder<GTime>? reminderTimeIn) =>
       _$this._reminderTimeIn = reminderTimeIn;
 
   ListBuilder<GTime>? _reminderTimeNotIn;
   ListBuilder<GTime> get reminderTimeNotIn =>
-      _$this._reminderTimeNotIn ??= new ListBuilder<GTime>();
+      _$this._reminderTimeNotIn ??= ListBuilder<GTime>();
   set reminderTimeNotIn(ListBuilder<GTime>? reminderTimeNotIn) =>
       _$this._reminderTimeNotIn = reminderTimeNotIn;
 
   GTimeBuilder? _reminderTimeGT;
-  GTimeBuilder get reminderTimeGT =>
-      _$this._reminderTimeGT ??= new GTimeBuilder();
+  GTimeBuilder get reminderTimeGT => _$this._reminderTimeGT ??= GTimeBuilder();
   set reminderTimeGT(GTimeBuilder? reminderTimeGT) =>
       _$this._reminderTimeGT = reminderTimeGT;
 
   GTimeBuilder? _reminderTimeGTE;
   GTimeBuilder get reminderTimeGTE =>
-      _$this._reminderTimeGTE ??= new GTimeBuilder();
+      _$this._reminderTimeGTE ??= GTimeBuilder();
   set reminderTimeGTE(GTimeBuilder? reminderTimeGTE) =>
       _$this._reminderTimeGTE = reminderTimeGTE;
 
   GTimeBuilder? _reminderTimeLT;
-  GTimeBuilder get reminderTimeLT =>
-      _$this._reminderTimeLT ??= new GTimeBuilder();
+  GTimeBuilder get reminderTimeLT => _$this._reminderTimeLT ??= GTimeBuilder();
   set reminderTimeLT(GTimeBuilder? reminderTimeLT) =>
       _$this._reminderTimeLT = reminderTimeLT;
 
   GTimeBuilder? _reminderTimeLTE;
   GTimeBuilder get reminderTimeLTE =>
-      _$this._reminderTimeLTE ??= new GTimeBuilder();
+      _$this._reminderTimeLTE ??= GTimeBuilder();
   set reminderTimeLTE(GTimeBuilder? reminderTimeLTE) =>
       _$this._reminderTimeLTE = reminderTimeLTE;
 
@@ -10740,13 +10694,13 @@ class GTaskWhereInputBuilder
 
   ListBuilder<String>? _recurringDaysIn;
   ListBuilder<String> get recurringDaysIn =>
-      _$this._recurringDaysIn ??= new ListBuilder<String>();
+      _$this._recurringDaysIn ??= ListBuilder<String>();
   set recurringDaysIn(ListBuilder<String>? recurringDaysIn) =>
       _$this._recurringDaysIn = recurringDaysIn;
 
   ListBuilder<String>? _recurringDaysNotIn;
   ListBuilder<String> get recurringDaysNotIn =>
-      _$this._recurringDaysNotIn ??= new ListBuilder<String>();
+      _$this._recurringDaysNotIn ??= ListBuilder<String>();
   set recurringDaysNotIn(ListBuilder<String>? recurringDaysNotIn) =>
       _$this._recurringDaysNotIn = recurringDaysNotIn;
 
@@ -10815,13 +10769,13 @@ class GTaskWhereInputBuilder
 
   ListBuilder<GTaskStatus>? _statusIn;
   ListBuilder<GTaskStatus> get statusIn =>
-      _$this._statusIn ??= new ListBuilder<GTaskStatus>();
+      _$this._statusIn ??= ListBuilder<GTaskStatus>();
   set statusIn(ListBuilder<GTaskStatus>? statusIn) =>
       _$this._statusIn = statusIn;
 
   ListBuilder<GTaskStatus>? _statusNotIn;
   ListBuilder<GTaskStatus> get statusNotIn =>
-      _$this._statusNotIn ??= new ListBuilder<GTaskStatus>();
+      _$this._statusNotIn ??= ListBuilder<GTaskStatus>();
   set statusNotIn(ListBuilder<GTaskStatus>? statusNotIn) =>
       _$this._statusNotIn = statusNotIn;
 
@@ -10831,7 +10785,7 @@ class GTaskWhereInputBuilder
 
   ListBuilder<GUserWhereInput>? _hasUserWith;
   ListBuilder<GUserWhereInput> get hasUserWith =>
-      _$this._hasUserWith ??= new ListBuilder<GUserWhereInput>();
+      _$this._hasUserWith ??= ListBuilder<GUserWhereInput>();
   set hasUserWith(ListBuilder<GUserWhereInput>? hasUserWith) =>
       _$this._hasUserWith = hasUserWith;
 
@@ -10841,7 +10795,7 @@ class GTaskWhereInputBuilder
 
   ListBuilder<GGoalWhereInput>? _hasGoalWith;
   ListBuilder<GGoalWhereInput> get hasGoalWith =>
-      _$this._hasGoalWith ??= new ListBuilder<GGoalWhereInput>();
+      _$this._hasGoalWith ??= ListBuilder<GGoalWhereInput>();
   set hasGoalWith(ListBuilder<GGoalWhereInput>? hasGoalWith) =>
       _$this._hasGoalWith = hasGoalWith;
 
@@ -10851,7 +10805,7 @@ class GTaskWhereInputBuilder
 
   ListBuilder<GTagWhereInput>? _hasTagsWith;
   ListBuilder<GTagWhereInput> get hasTagsWith =>
-      _$this._hasTagsWith ??= new ListBuilder<GTagWhereInput>();
+      _$this._hasTagsWith ??= ListBuilder<GTagWhereInput>();
   set hasTagsWith(ListBuilder<GTagWhereInput>? hasTagsWith) =>
       _$this._hasTagsWith = hasTagsWith;
 
@@ -10996,7 +10950,6 @@ class GTaskWhereInputBuilder
 
   @override
   void replace(GTaskWhereInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GTaskWhereInput;
   }
 
@@ -11012,136 +10965,137 @@ class GTaskWhereInputBuilder
     _$GTaskWhereInput _$result;
     try {
       _$result = _$v ??
-          new _$GTaskWhereInput._(
-              not: _not?.build(),
-              and: _and?.build(),
-              or: _or?.build(),
-              id: id,
-              idNEQ: idNEQ,
-              idIn: _idIn?.build(),
-              idNotIn: _idNotIn?.build(),
-              idGT: idGT,
-              idGTE: idGTE,
-              idLT: idLT,
-              idLTE: idLTE,
-              createdAt: _createdAt?.build(),
-              createdAtNEQ: _createdAtNEQ?.build(),
-              createdAtIn: _createdAtIn?.build(),
-              createdAtNotIn: _createdAtNotIn?.build(),
-              createdAtGT: _createdAtGT?.build(),
-              createdAtGTE: _createdAtGTE?.build(),
-              createdAtLT: _createdAtLT?.build(),
-              createdAtLTE: _createdAtLTE?.build(),
-              updatedAt: _updatedAt?.build(),
-              updatedAtNEQ: _updatedAtNEQ?.build(),
-              updatedAtIn: _updatedAtIn?.build(),
-              updatedAtNotIn: _updatedAtNotIn?.build(),
-              updatedAtGT: _updatedAtGT?.build(),
-              updatedAtGTE: _updatedAtGTE?.build(),
-              updatedAtLT: _updatedAtLT?.build(),
-              updatedAtLTE: _updatedAtLTE?.build(),
-              title: title,
-              titleNEQ: titleNEQ,
-              titleIn: _titleIn?.build(),
-              titleNotIn: _titleNotIn?.build(),
-              titleGT: titleGT,
-              titleGTE: titleGTE,
-              titleLT: titleLT,
-              titleLTE: titleLTE,
-              titleContains: titleContains,
-              titleHasPrefix: titleHasPrefix,
-              titleHasSuffix: titleHasSuffix,
-              titleEqualFold: titleEqualFold,
-              titleContainsFold: titleContainsFold,
-              shortDescription: shortDescription,
-              shortDescriptionNEQ: shortDescriptionNEQ,
-              shortDescriptionIn: _shortDescriptionIn?.build(),
-              shortDescriptionNotIn: _shortDescriptionNotIn?.build(),
-              shortDescriptionGT: shortDescriptionGT,
-              shortDescriptionGTE: shortDescriptionGTE,
-              shortDescriptionLT: shortDescriptionLT,
-              shortDescriptionLTE: shortDescriptionLTE,
-              shortDescriptionContains: shortDescriptionContains,
-              shortDescriptionHasPrefix: shortDescriptionHasPrefix,
-              shortDescriptionHasSuffix: shortDescriptionHasSuffix,
-              shortDescriptionIsNil: shortDescriptionIsNil,
-              shortDescriptionNotNil: shortDescriptionNotNil,
-              shortDescriptionEqualFold: shortDescriptionEqualFold,
-              shortDescriptionContainsFold: shortDescriptionContainsFold,
-              note: note,
-              noteNEQ: noteNEQ,
-              noteIn: _noteIn?.build(),
-              noteNotIn: _noteNotIn?.build(),
-              noteGT: noteGT,
-              noteGTE: noteGTE,
-              noteLT: noteLT,
-              noteLTE: noteLTE,
-              noteContains: noteContains,
-              noteHasPrefix: noteHasPrefix,
-              noteHasSuffix: noteHasSuffix,
-              noteIsNil: noteIsNil,
-              noteNotNil: noteNotNil,
-              noteEqualFold: noteEqualFold,
-              noteContainsFold: noteContainsFold,
-              type: type,
-              typeNEQ: typeNEQ,
-              typeIn: _typeIn?.build(),
-              typeNotIn: _typeNotIn?.build(),
-              date: _date?.build(),
-              dateNEQ: _dateNEQ?.build(),
-              dateIn: _dateIn?.build(),
-              dateNotIn: _dateNotIn?.build(),
-              dateGT: _dateGT?.build(),
-              dateGTE: _dateGTE?.build(),
-              dateLT: _dateLT?.build(),
-              dateLTE: _dateLTE?.build(),
-              durationM: durationM,
-              durationMNEQ: durationMNEQ,
-              durationMIn: _durationMIn?.build(),
-              durationMNotIn: _durationMNotIn?.build(),
-              durationMGT: durationMGT,
-              durationMGTE: durationMGTE,
-              durationMLT: durationMLT,
-              durationMLTE: durationMLTE,
-              durationMIsNil: durationMIsNil,
-              durationMNotNil: durationMNotNil,
-              hasReminder: hasReminder,
-              hasReminderNEQ: hasReminderNEQ,
-              reminderTime: _reminderTime?.build(),
-              reminderTimeNEQ: _reminderTimeNEQ?.build(),
-              reminderTimeIn: _reminderTimeIn?.build(),
-              reminderTimeNotIn: _reminderTimeNotIn?.build(),
-              reminderTimeGT: _reminderTimeGT?.build(),
-              reminderTimeGTE: _reminderTimeGTE?.build(),
-              reminderTimeLT: _reminderTimeLT?.build(),
-              reminderTimeLTE: _reminderTimeLTE?.build(),
-              reminderTimeIsNil: reminderTimeIsNil,
-              reminderTimeNotNil: reminderTimeNotNil,
-              recurringDays: recurringDays,
-              recurringDaysNEQ: recurringDaysNEQ,
-              recurringDaysIn: _recurringDaysIn?.build(),
-              recurringDaysNotIn: _recurringDaysNotIn?.build(),
-              recurringDaysGT: recurringDaysGT,
-              recurringDaysGTE: recurringDaysGTE,
-              recurringDaysLT: recurringDaysLT,
-              recurringDaysLTE: recurringDaysLTE,
-              recurringDaysContains: recurringDaysContains,
-              recurringDaysHasPrefix: recurringDaysHasPrefix,
-              recurringDaysHasSuffix: recurringDaysHasSuffix,
-              recurringDaysIsNil: recurringDaysIsNil,
-              recurringDaysNotNil: recurringDaysNotNil,
-              recurringDaysEqualFold: recurringDaysEqualFold,
-              recurringDaysContainsFold: recurringDaysContainsFold,
-              status: status,
-              statusNEQ: statusNEQ,
-              statusIn: _statusIn?.build(),
-              statusNotIn: _statusNotIn?.build(),
-              hasUser: hasUser,
-              hasUserWith: _hasUserWith?.build(),
-              hasGoal: hasGoal,
-              hasGoalWith: _hasGoalWith?.build(),
-              hasTags: hasTags,
-              hasTagsWith: _hasTagsWith?.build());
+          _$GTaskWhereInput._(
+            not: _not?.build(),
+            and: _and?.build(),
+            or: _or?.build(),
+            id: id,
+            idNEQ: idNEQ,
+            idIn: _idIn?.build(),
+            idNotIn: _idNotIn?.build(),
+            idGT: idGT,
+            idGTE: idGTE,
+            idLT: idLT,
+            idLTE: idLTE,
+            createdAt: _createdAt?.build(),
+            createdAtNEQ: _createdAtNEQ?.build(),
+            createdAtIn: _createdAtIn?.build(),
+            createdAtNotIn: _createdAtNotIn?.build(),
+            createdAtGT: _createdAtGT?.build(),
+            createdAtGTE: _createdAtGTE?.build(),
+            createdAtLT: _createdAtLT?.build(),
+            createdAtLTE: _createdAtLTE?.build(),
+            updatedAt: _updatedAt?.build(),
+            updatedAtNEQ: _updatedAtNEQ?.build(),
+            updatedAtIn: _updatedAtIn?.build(),
+            updatedAtNotIn: _updatedAtNotIn?.build(),
+            updatedAtGT: _updatedAtGT?.build(),
+            updatedAtGTE: _updatedAtGTE?.build(),
+            updatedAtLT: _updatedAtLT?.build(),
+            updatedAtLTE: _updatedAtLTE?.build(),
+            title: title,
+            titleNEQ: titleNEQ,
+            titleIn: _titleIn?.build(),
+            titleNotIn: _titleNotIn?.build(),
+            titleGT: titleGT,
+            titleGTE: titleGTE,
+            titleLT: titleLT,
+            titleLTE: titleLTE,
+            titleContains: titleContains,
+            titleHasPrefix: titleHasPrefix,
+            titleHasSuffix: titleHasSuffix,
+            titleEqualFold: titleEqualFold,
+            titleContainsFold: titleContainsFold,
+            shortDescription: shortDescription,
+            shortDescriptionNEQ: shortDescriptionNEQ,
+            shortDescriptionIn: _shortDescriptionIn?.build(),
+            shortDescriptionNotIn: _shortDescriptionNotIn?.build(),
+            shortDescriptionGT: shortDescriptionGT,
+            shortDescriptionGTE: shortDescriptionGTE,
+            shortDescriptionLT: shortDescriptionLT,
+            shortDescriptionLTE: shortDescriptionLTE,
+            shortDescriptionContains: shortDescriptionContains,
+            shortDescriptionHasPrefix: shortDescriptionHasPrefix,
+            shortDescriptionHasSuffix: shortDescriptionHasSuffix,
+            shortDescriptionIsNil: shortDescriptionIsNil,
+            shortDescriptionNotNil: shortDescriptionNotNil,
+            shortDescriptionEqualFold: shortDescriptionEqualFold,
+            shortDescriptionContainsFold: shortDescriptionContainsFold,
+            note: note,
+            noteNEQ: noteNEQ,
+            noteIn: _noteIn?.build(),
+            noteNotIn: _noteNotIn?.build(),
+            noteGT: noteGT,
+            noteGTE: noteGTE,
+            noteLT: noteLT,
+            noteLTE: noteLTE,
+            noteContains: noteContains,
+            noteHasPrefix: noteHasPrefix,
+            noteHasSuffix: noteHasSuffix,
+            noteIsNil: noteIsNil,
+            noteNotNil: noteNotNil,
+            noteEqualFold: noteEqualFold,
+            noteContainsFold: noteContainsFold,
+            type: type,
+            typeNEQ: typeNEQ,
+            typeIn: _typeIn?.build(),
+            typeNotIn: _typeNotIn?.build(),
+            date: _date?.build(),
+            dateNEQ: _dateNEQ?.build(),
+            dateIn: _dateIn?.build(),
+            dateNotIn: _dateNotIn?.build(),
+            dateGT: _dateGT?.build(),
+            dateGTE: _dateGTE?.build(),
+            dateLT: _dateLT?.build(),
+            dateLTE: _dateLTE?.build(),
+            durationM: durationM,
+            durationMNEQ: durationMNEQ,
+            durationMIn: _durationMIn?.build(),
+            durationMNotIn: _durationMNotIn?.build(),
+            durationMGT: durationMGT,
+            durationMGTE: durationMGTE,
+            durationMLT: durationMLT,
+            durationMLTE: durationMLTE,
+            durationMIsNil: durationMIsNil,
+            durationMNotNil: durationMNotNil,
+            hasReminder: hasReminder,
+            hasReminderNEQ: hasReminderNEQ,
+            reminderTime: _reminderTime?.build(),
+            reminderTimeNEQ: _reminderTimeNEQ?.build(),
+            reminderTimeIn: _reminderTimeIn?.build(),
+            reminderTimeNotIn: _reminderTimeNotIn?.build(),
+            reminderTimeGT: _reminderTimeGT?.build(),
+            reminderTimeGTE: _reminderTimeGTE?.build(),
+            reminderTimeLT: _reminderTimeLT?.build(),
+            reminderTimeLTE: _reminderTimeLTE?.build(),
+            reminderTimeIsNil: reminderTimeIsNil,
+            reminderTimeNotNil: reminderTimeNotNil,
+            recurringDays: recurringDays,
+            recurringDaysNEQ: recurringDaysNEQ,
+            recurringDaysIn: _recurringDaysIn?.build(),
+            recurringDaysNotIn: _recurringDaysNotIn?.build(),
+            recurringDaysGT: recurringDaysGT,
+            recurringDaysGTE: recurringDaysGTE,
+            recurringDaysLT: recurringDaysLT,
+            recurringDaysLTE: recurringDaysLTE,
+            recurringDaysContains: recurringDaysContains,
+            recurringDaysHasPrefix: recurringDaysHasPrefix,
+            recurringDaysHasSuffix: recurringDaysHasSuffix,
+            recurringDaysIsNil: recurringDaysIsNil,
+            recurringDaysNotNil: recurringDaysNotNil,
+            recurringDaysEqualFold: recurringDaysEqualFold,
+            recurringDaysContainsFold: recurringDaysContainsFold,
+            status: status,
+            statusNEQ: statusNEQ,
+            statusIn: _statusIn?.build(),
+            statusNotIn: _statusNotIn?.build(),
+            hasUser: hasUser,
+            hasUserWith: _hasUserWith?.build(),
+            hasGoal: hasGoal,
+            hasGoalWith: _hasGoalWith?.build(),
+            hasTags: hasTags,
+            hasTagsWith: _hasTagsWith?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -11267,7 +11221,7 @@ class GTaskWhereInputBuilder
         _$failedField = 'hasTagsWith';
         _hasTagsWith?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GTaskWhereInput', _$failedField, e.toString());
       }
       rethrow;
@@ -11289,18 +11243,17 @@ class _$GUpdateGoalInput extends GUpdateGoalInput {
 
   factory _$GUpdateGoalInput(
           [void Function(GUpdateGoalInputBuilder)? updates]) =>
-      (new GUpdateGoalInputBuilder()..update(updates))._build();
+      (GUpdateGoalInputBuilder()..update(updates))._build();
 
   _$GUpdateGoalInput._({this.title, this.note, this.targetDate, this.status})
       : super._();
-
   @override
   GUpdateGoalInput rebuild(void Function(GUpdateGoalInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GUpdateGoalInputBuilder toBuilder() =>
-      new GUpdateGoalInputBuilder()..replace(this);
+      GUpdateGoalInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -11347,7 +11300,7 @@ class GUpdateGoalInputBuilder
   set note(String? note) => _$this._note = note;
 
   GTimeBuilder? _targetDate;
-  GTimeBuilder get targetDate => _$this._targetDate ??= new GTimeBuilder();
+  GTimeBuilder get targetDate => _$this._targetDate ??= GTimeBuilder();
   set targetDate(GTimeBuilder? targetDate) => _$this._targetDate = targetDate;
 
   GGoalStatus? _status;
@@ -11370,7 +11323,6 @@ class GUpdateGoalInputBuilder
 
   @override
   void replace(GUpdateGoalInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUpdateGoalInput;
   }
 
@@ -11386,18 +11338,19 @@ class GUpdateGoalInputBuilder
     _$GUpdateGoalInput _$result;
     try {
       _$result = _$v ??
-          new _$GUpdateGoalInput._(
-              title: title,
-              note: note,
-              targetDate: _targetDate?.build(),
-              status: status);
+          _$GUpdateGoalInput._(
+            title: title,
+            note: note,
+            targetDate: _targetDate?.build(),
+            status: status,
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'targetDate';
         _targetDate?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GUpdateGoalInput', _$failedField, e.toString());
       }
       rethrow;
@@ -11423,7 +11376,7 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
 
   factory _$GUpdateProfileInput(
           [void Function(GUpdateProfileInputBuilder)? updates]) =>
-      (new GUpdateProfileInputBuilder()..update(updates))._build();
+      (GUpdateProfileInputBuilder()..update(updates))._build();
 
   _$GUpdateProfileInput._(
       {this.username,
@@ -11433,7 +11386,6 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
       this.major,
       this.bio})
       : super._();
-
   @override
   GUpdateProfileInput rebuild(
           void Function(GUpdateProfileInputBuilder) updates) =>
@@ -11441,7 +11393,7 @@ class _$GUpdateProfileInput extends GUpdateProfileInput {
 
   @override
   GUpdateProfileInputBuilder toBuilder() =>
-      new GUpdateProfileInputBuilder()..replace(this);
+      GUpdateProfileInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -11494,7 +11446,7 @@ class GUpdateProfileInputBuilder
   set fullName(String? fullName) => _$this._fullName = fullName;
 
   GTimeBuilder? _birthDate;
-  GTimeBuilder get birthDate => _$this._birthDate ??= new GTimeBuilder();
+  GTimeBuilder get birthDate => _$this._birthDate ??= GTimeBuilder();
   set birthDate(GTimeBuilder? birthDate) => _$this._birthDate = birthDate;
 
   GUserStudyTime? _studyTime;
@@ -11527,7 +11479,6 @@ class GUpdateProfileInputBuilder
 
   @override
   void replace(GUpdateProfileInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUpdateProfileInput;
   }
 
@@ -11543,20 +11494,21 @@ class GUpdateProfileInputBuilder
     _$GUpdateProfileInput _$result;
     try {
       _$result = _$v ??
-          new _$GUpdateProfileInput._(
-              username: username,
-              fullName: fullName,
-              birthDate: _birthDate?.build(),
-              studyTime: studyTime,
-              major: major,
-              bio: bio);
+          _$GUpdateProfileInput._(
+            username: username,
+            fullName: fullName,
+            birthDate: _birthDate?.build(),
+            studyTime: studyTime,
+            major: major,
+            bio: bio,
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'birthDate';
         _birthDate?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GUpdateProfileInput', _$failedField, e.toString());
       }
       rethrow;
@@ -11594,7 +11546,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
 
   factory _$GUpdateTaskInput(
           [void Function(GUpdateTaskInputBuilder)? updates]) =>
-      (new GUpdateTaskInputBuilder()..update(updates))._build();
+      (GUpdateTaskInputBuilder()..update(updates))._build();
 
   _$GUpdateTaskInput._(
       {this.title,
@@ -11610,14 +11562,13 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
       this.goalID,
       this.tagNames})
       : super._();
-
   @override
   GUpdateTaskInput rebuild(void Function(GUpdateTaskInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GUpdateTaskInputBuilder toBuilder() =>
-      new GUpdateTaskInputBuilder()..replace(this);
+      GUpdateTaskInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -11697,7 +11648,7 @@ class GUpdateTaskInputBuilder
   set note(String? note) => _$this._note = note;
 
   GTimeBuilder? _date;
-  GTimeBuilder get date => _$this._date ??= new GTimeBuilder();
+  GTimeBuilder get date => _$this._date ??= GTimeBuilder();
   set date(GTimeBuilder? date) => _$this._date = date;
 
   int? _durationM;
@@ -11709,7 +11660,7 @@ class GUpdateTaskInputBuilder
   set hasReminder(bool? hasReminder) => _$this._hasReminder = hasReminder;
 
   GTimeBuilder? _reminderTime;
-  GTimeBuilder get reminderTime => _$this._reminderTime ??= new GTimeBuilder();
+  GTimeBuilder get reminderTime => _$this._reminderTime ??= GTimeBuilder();
   set reminderTime(GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
@@ -11728,7 +11679,7 @@ class GUpdateTaskInputBuilder
 
   ListBuilder<String>? _tagNames;
   ListBuilder<String> get tagNames =>
-      _$this._tagNames ??= new ListBuilder<String>();
+      _$this._tagNames ??= ListBuilder<String>();
   set tagNames(ListBuilder<String>? tagNames) => _$this._tagNames = tagNames;
 
   GUpdateTaskInputBuilder();
@@ -11755,7 +11706,6 @@ class GUpdateTaskInputBuilder
 
   @override
   void replace(GUpdateTaskInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUpdateTaskInput;
   }
 
@@ -11771,19 +11721,20 @@ class GUpdateTaskInputBuilder
     _$GUpdateTaskInput _$result;
     try {
       _$result = _$v ??
-          new _$GUpdateTaskInput._(
-              title: title,
-              shortDescription: shortDescription,
-              type: type,
-              note: note,
-              date: _date?.build(),
-              durationM: durationM,
-              hasReminder: hasReminder,
-              reminderTime: _reminderTime?.build(),
-              recurringDays: recurringDays,
-              status: status,
-              goalID: goalID,
-              tagNames: _tagNames?.build());
+          _$GUpdateTaskInput._(
+            title: title,
+            shortDescription: shortDescription,
+            type: type,
+            note: note,
+            date: _date?.build(),
+            durationM: durationM,
+            hasReminder: hasReminder,
+            reminderTime: _reminderTime?.build(),
+            recurringDays: recurringDays,
+            status: status,
+            goalID: goalID,
+            tagNames: _tagNames?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -11796,7 +11747,7 @@ class GUpdateTaskInputBuilder
         _$failedField = 'tagNames';
         _tagNames?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GUpdateTaskInput', _$failedField, e.toString());
       }
       rethrow;
@@ -11813,20 +11764,15 @@ class _$GUserOrder extends GUserOrder {
   final GUserOrderField field;
 
   factory _$GUserOrder([void Function(GUserOrderBuilder)? updates]) =>
-      (new GUserOrderBuilder()..update(updates))._build();
+      (GUserOrderBuilder()..update(updates))._build();
 
-  _$GUserOrder._({required this.direction, required this.field}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        direction, r'GUserOrder', 'direction');
-    BuiltValueNullFieldError.checkNotNull(field, r'GUserOrder', 'field');
-  }
-
+  _$GUserOrder._({required this.direction, required this.field}) : super._();
   @override
   GUserOrder rebuild(void Function(GUserOrderBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GUserOrderBuilder toBuilder() => new GUserOrderBuilder()..replace(this);
+  GUserOrderBuilder toBuilder() => GUserOrderBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -11879,7 +11825,6 @@ class GUserOrderBuilder implements Builder<GUserOrder, GUserOrderBuilder> {
 
   @override
   void replace(GUserOrder other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUserOrder;
   }
 
@@ -11893,11 +11838,12 @@ class GUserOrderBuilder implements Builder<GUserOrder, GUserOrderBuilder> {
 
   _$GUserOrder _build() {
     final _$result = _$v ??
-        new _$GUserOrder._(
-            direction: BuiltValueNullFieldError.checkNotNull(
-                direction, r'GUserOrder', 'direction'),
-            field: BuiltValueNullFieldError.checkNotNull(
-                field, r'GUserOrder', 'field'));
+        _$GUserOrder._(
+          direction: BuiltValueNullFieldError.checkNotNull(
+              direction, r'GUserOrder', 'direction'),
+          field: BuiltValueNullFieldError.checkNotNull(
+              field, r'GUserOrder', 'field'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -12164,7 +12110,7 @@ class _$GUserWhereInput extends GUserWhereInput {
   final BuiltList<GTaskWhereInput>? hasTasksWith;
 
   factory _$GUserWhereInput([void Function(GUserWhereInputBuilder)? updates]) =>
-      (new GUserWhereInputBuilder()..update(updates))._build();
+      (GUserWhereInputBuilder()..update(updates))._build();
 
   _$GUserWhereInput._(
       {this.not,
@@ -12297,14 +12243,12 @@ class _$GUserWhereInput extends GUserWhereInput {
       this.hasTasks,
       this.hasTasksWith})
       : super._();
-
   @override
   GUserWhereInput rebuild(void Function(GUserWhereInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GUserWhereInputBuilder toBuilder() =>
-      new GUserWhereInputBuilder()..replace(this);
+  GUserWhereInputBuilder toBuilder() => GUserWhereInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -12718,18 +12662,17 @@ class GUserWhereInputBuilder
   _$GUserWhereInput? _$v;
 
   GUserWhereInputBuilder? _not;
-  GUserWhereInputBuilder get not =>
-      _$this._not ??= new GUserWhereInputBuilder();
+  GUserWhereInputBuilder get not => _$this._not ??= GUserWhereInputBuilder();
   set not(GUserWhereInputBuilder? not) => _$this._not = not;
 
   ListBuilder<GUserWhereInput>? _and;
   ListBuilder<GUserWhereInput> get and =>
-      _$this._and ??= new ListBuilder<GUserWhereInput>();
+      _$this._and ??= ListBuilder<GUserWhereInput>();
   set and(ListBuilder<GUserWhereInput>? and) => _$this._and = and;
 
   ListBuilder<GUserWhereInput>? _or;
   ListBuilder<GUserWhereInput> get or =>
-      _$this._or ??= new ListBuilder<GUserWhereInput>();
+      _$this._or ??= ListBuilder<GUserWhereInput>();
   set or(ListBuilder<GUserWhereInput>? or) => _$this._or = or;
 
   String? _id;
@@ -12741,12 +12684,11 @@ class GUserWhereInputBuilder
   set idNEQ(String? idNEQ) => _$this._idNEQ = idNEQ;
 
   ListBuilder<String>? _idIn;
-  ListBuilder<String> get idIn => _$this._idIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idIn => _$this._idIn ??= ListBuilder<String>();
   set idIn(ListBuilder<String>? idIn) => _$this._idIn = idIn;
 
   ListBuilder<String>? _idNotIn;
-  ListBuilder<String> get idNotIn =>
-      _$this._idNotIn ??= new ListBuilder<String>();
+  ListBuilder<String> get idNotIn => _$this._idNotIn ??= ListBuilder<String>();
   set idNotIn(ListBuilder<String>? idNotIn) => _$this._idNotIn = idNotIn;
 
   String? _idGT;
@@ -12766,84 +12708,84 @@ class GUserWhereInputBuilder
   set idLTE(String? idLTE) => _$this._idLTE = idLTE;
 
   GTimeBuilder? _createdAt;
-  GTimeBuilder get createdAt => _$this._createdAt ??= new GTimeBuilder();
+  GTimeBuilder get createdAt => _$this._createdAt ??= GTimeBuilder();
   set createdAt(GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
 
   GTimeBuilder? _createdAtNEQ;
-  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get createdAtNEQ => _$this._createdAtNEQ ??= GTimeBuilder();
   set createdAtNEQ(GTimeBuilder? createdAtNEQ) =>
       _$this._createdAtNEQ = createdAtNEQ;
 
   ListBuilder<GTime>? _createdAtIn;
   ListBuilder<GTime> get createdAtIn =>
-      _$this._createdAtIn ??= new ListBuilder<GTime>();
+      _$this._createdAtIn ??= ListBuilder<GTime>();
   set createdAtIn(ListBuilder<GTime>? createdAtIn) =>
       _$this._createdAtIn = createdAtIn;
 
   ListBuilder<GTime>? _createdAtNotIn;
   ListBuilder<GTime> get createdAtNotIn =>
-      _$this._createdAtNotIn ??= new ListBuilder<GTime>();
+      _$this._createdAtNotIn ??= ListBuilder<GTime>();
   set createdAtNotIn(ListBuilder<GTime>? createdAtNotIn) =>
       _$this._createdAtNotIn = createdAtNotIn;
 
   GTimeBuilder? _createdAtGT;
-  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGT => _$this._createdAtGT ??= GTimeBuilder();
   set createdAtGT(GTimeBuilder? createdAtGT) =>
       _$this._createdAtGT = createdAtGT;
 
   GTimeBuilder? _createdAtGTE;
-  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtGTE => _$this._createdAtGTE ??= GTimeBuilder();
   set createdAtGTE(GTimeBuilder? createdAtGTE) =>
       _$this._createdAtGTE = createdAtGTE;
 
   GTimeBuilder? _createdAtLT;
-  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLT => _$this._createdAtLT ??= GTimeBuilder();
   set createdAtLT(GTimeBuilder? createdAtLT) =>
       _$this._createdAtLT = createdAtLT;
 
   GTimeBuilder? _createdAtLTE;
-  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get createdAtLTE => _$this._createdAtLTE ??= GTimeBuilder();
   set createdAtLTE(GTimeBuilder? createdAtLTE) =>
       _$this._createdAtLTE = createdAtLTE;
 
   GTimeBuilder? _updatedAt;
-  GTimeBuilder get updatedAt => _$this._updatedAt ??= new GTimeBuilder();
+  GTimeBuilder get updatedAt => _$this._updatedAt ??= GTimeBuilder();
   set updatedAt(GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   GTimeBuilder? _updatedAtNEQ;
-  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtNEQ => _$this._updatedAtNEQ ??= GTimeBuilder();
   set updatedAtNEQ(GTimeBuilder? updatedAtNEQ) =>
       _$this._updatedAtNEQ = updatedAtNEQ;
 
   ListBuilder<GTime>? _updatedAtIn;
   ListBuilder<GTime> get updatedAtIn =>
-      _$this._updatedAtIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtIn ??= ListBuilder<GTime>();
   set updatedAtIn(ListBuilder<GTime>? updatedAtIn) =>
       _$this._updatedAtIn = updatedAtIn;
 
   ListBuilder<GTime>? _updatedAtNotIn;
   ListBuilder<GTime> get updatedAtNotIn =>
-      _$this._updatedAtNotIn ??= new ListBuilder<GTime>();
+      _$this._updatedAtNotIn ??= ListBuilder<GTime>();
   set updatedAtNotIn(ListBuilder<GTime>? updatedAtNotIn) =>
       _$this._updatedAtNotIn = updatedAtNotIn;
 
   GTimeBuilder? _updatedAtGT;
-  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGT => _$this._updatedAtGT ??= GTimeBuilder();
   set updatedAtGT(GTimeBuilder? updatedAtGT) =>
       _$this._updatedAtGT = updatedAtGT;
 
   GTimeBuilder? _updatedAtGTE;
-  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtGTE => _$this._updatedAtGTE ??= GTimeBuilder();
   set updatedAtGTE(GTimeBuilder? updatedAtGTE) =>
       _$this._updatedAtGTE = updatedAtGTE;
 
   GTimeBuilder? _updatedAtLT;
-  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLT => _$this._updatedAtLT ??= GTimeBuilder();
   set updatedAtLT(GTimeBuilder? updatedAtLT) =>
       _$this._updatedAtLT = updatedAtLT;
 
   GTimeBuilder? _updatedAtLTE;
-  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= new GTimeBuilder();
+  GTimeBuilder get updatedAtLTE => _$this._updatedAtLTE ??= GTimeBuilder();
   set updatedAtLTE(GTimeBuilder? updatedAtLTE) =>
       _$this._updatedAtLTE = updatedAtLTE;
 
@@ -12858,13 +12800,13 @@ class GUserWhereInputBuilder
 
   ListBuilder<String>? _phoneNumberIn;
   ListBuilder<String> get phoneNumberIn =>
-      _$this._phoneNumberIn ??= new ListBuilder<String>();
+      _$this._phoneNumberIn ??= ListBuilder<String>();
   set phoneNumberIn(ListBuilder<String>? phoneNumberIn) =>
       _$this._phoneNumberIn = phoneNumberIn;
 
   ListBuilder<String>? _phoneNumberNotIn;
   ListBuilder<String> get phoneNumberNotIn =>
-      _$this._phoneNumberNotIn ??= new ListBuilder<String>();
+      _$this._phoneNumberNotIn ??= ListBuilder<String>();
   set phoneNumberNotIn(ListBuilder<String>? phoneNumberNotIn) =>
       _$this._phoneNumberNotIn = phoneNumberNotIn;
 
@@ -12923,13 +12865,13 @@ class GUserWhereInputBuilder
 
   ListBuilder<String>? _fullNameIn;
   ListBuilder<String> get fullNameIn =>
-      _$this._fullNameIn ??= new ListBuilder<String>();
+      _$this._fullNameIn ??= ListBuilder<String>();
   set fullNameIn(ListBuilder<String>? fullNameIn) =>
       _$this._fullNameIn = fullNameIn;
 
   ListBuilder<String>? _fullNameNotIn;
   ListBuilder<String> get fullNameNotIn =>
-      _$this._fullNameNotIn ??= new ListBuilder<String>();
+      _$this._fullNameNotIn ??= ListBuilder<String>();
   set fullNameNotIn(ListBuilder<String>? fullNameNotIn) =>
       _$this._fullNameNotIn = fullNameNotIn;
 
@@ -12985,43 +12927,43 @@ class GUserWhereInputBuilder
       _$this._fullNameContainsFold = fullNameContainsFold;
 
   GTimeBuilder? _birthDate;
-  GTimeBuilder get birthDate => _$this._birthDate ??= new GTimeBuilder();
+  GTimeBuilder get birthDate => _$this._birthDate ??= GTimeBuilder();
   set birthDate(GTimeBuilder? birthDate) => _$this._birthDate = birthDate;
 
   GTimeBuilder? _birthDateNEQ;
-  GTimeBuilder get birthDateNEQ => _$this._birthDateNEQ ??= new GTimeBuilder();
+  GTimeBuilder get birthDateNEQ => _$this._birthDateNEQ ??= GTimeBuilder();
   set birthDateNEQ(GTimeBuilder? birthDateNEQ) =>
       _$this._birthDateNEQ = birthDateNEQ;
 
   ListBuilder<GTime>? _birthDateIn;
   ListBuilder<GTime> get birthDateIn =>
-      _$this._birthDateIn ??= new ListBuilder<GTime>();
+      _$this._birthDateIn ??= ListBuilder<GTime>();
   set birthDateIn(ListBuilder<GTime>? birthDateIn) =>
       _$this._birthDateIn = birthDateIn;
 
   ListBuilder<GTime>? _birthDateNotIn;
   ListBuilder<GTime> get birthDateNotIn =>
-      _$this._birthDateNotIn ??= new ListBuilder<GTime>();
+      _$this._birthDateNotIn ??= ListBuilder<GTime>();
   set birthDateNotIn(ListBuilder<GTime>? birthDateNotIn) =>
       _$this._birthDateNotIn = birthDateNotIn;
 
   GTimeBuilder? _birthDateGT;
-  GTimeBuilder get birthDateGT => _$this._birthDateGT ??= new GTimeBuilder();
+  GTimeBuilder get birthDateGT => _$this._birthDateGT ??= GTimeBuilder();
   set birthDateGT(GTimeBuilder? birthDateGT) =>
       _$this._birthDateGT = birthDateGT;
 
   GTimeBuilder? _birthDateGTE;
-  GTimeBuilder get birthDateGTE => _$this._birthDateGTE ??= new GTimeBuilder();
+  GTimeBuilder get birthDateGTE => _$this._birthDateGTE ??= GTimeBuilder();
   set birthDateGTE(GTimeBuilder? birthDateGTE) =>
       _$this._birthDateGTE = birthDateGTE;
 
   GTimeBuilder? _birthDateLT;
-  GTimeBuilder get birthDateLT => _$this._birthDateLT ??= new GTimeBuilder();
+  GTimeBuilder get birthDateLT => _$this._birthDateLT ??= GTimeBuilder();
   set birthDateLT(GTimeBuilder? birthDateLT) =>
       _$this._birthDateLT = birthDateLT;
 
   GTimeBuilder? _birthDateLTE;
-  GTimeBuilder get birthDateLTE => _$this._birthDateLTE ??= new GTimeBuilder();
+  GTimeBuilder get birthDateLTE => _$this._birthDateLTE ??= GTimeBuilder();
   set birthDateLTE(GTimeBuilder? birthDateLTE) =>
       _$this._birthDateLTE = birthDateLTE;
 
@@ -13046,13 +12988,13 @@ class GUserWhereInputBuilder
 
   ListBuilder<GUserStudyTime>? _studyTimeIn;
   ListBuilder<GUserStudyTime> get studyTimeIn =>
-      _$this._studyTimeIn ??= new ListBuilder<GUserStudyTime>();
+      _$this._studyTimeIn ??= ListBuilder<GUserStudyTime>();
   set studyTimeIn(ListBuilder<GUserStudyTime>? studyTimeIn) =>
       _$this._studyTimeIn = studyTimeIn;
 
   ListBuilder<GUserStudyTime>? _studyTimeNotIn;
   ListBuilder<GUserStudyTime> get studyTimeNotIn =>
-      _$this._studyTimeNotIn ??= new ListBuilder<GUserStudyTime>();
+      _$this._studyTimeNotIn ??= ListBuilder<GUserStudyTime>();
   set studyTimeNotIn(ListBuilder<GUserStudyTime>? studyTimeNotIn) =>
       _$this._studyTimeNotIn = studyTimeNotIn;
 
@@ -13076,12 +13018,12 @@ class GUserWhereInputBuilder
 
   ListBuilder<GUserRole>? _roleIn;
   ListBuilder<GUserRole> get roleIn =>
-      _$this._roleIn ??= new ListBuilder<GUserRole>();
+      _$this._roleIn ??= ListBuilder<GUserRole>();
   set roleIn(ListBuilder<GUserRole>? roleIn) => _$this._roleIn = roleIn;
 
   ListBuilder<GUserRole>? _roleNotIn;
   ListBuilder<GUserRole> get roleNotIn =>
-      _$this._roleNotIn ??= new ListBuilder<GUserRole>();
+      _$this._roleNotIn ??= ListBuilder<GUserRole>();
   set roleNotIn(ListBuilder<GUserRole>? roleNotIn) =>
       _$this._roleNotIn = roleNotIn;
 
@@ -13095,13 +13037,13 @@ class GUserWhereInputBuilder
 
   ListBuilder<int>? _simoCoinsIn;
   ListBuilder<int> get simoCoinsIn =>
-      _$this._simoCoinsIn ??= new ListBuilder<int>();
+      _$this._simoCoinsIn ??= ListBuilder<int>();
   set simoCoinsIn(ListBuilder<int>? simoCoinsIn) =>
       _$this._simoCoinsIn = simoCoinsIn;
 
   ListBuilder<int>? _simoCoinsNotIn;
   ListBuilder<int> get simoCoinsNotIn =>
-      _$this._simoCoinsNotIn ??= new ListBuilder<int>();
+      _$this._simoCoinsNotIn ??= ListBuilder<int>();
   set simoCoinsNotIn(ListBuilder<int>? simoCoinsNotIn) =>
       _$this._simoCoinsNotIn = simoCoinsNotIn;
 
@@ -13130,12 +13072,11 @@ class GUserWhereInputBuilder
   set scoreNEQ(int? scoreNEQ) => _$this._scoreNEQ = scoreNEQ;
 
   ListBuilder<int>? _scoreIn;
-  ListBuilder<int> get scoreIn => _$this._scoreIn ??= new ListBuilder<int>();
+  ListBuilder<int> get scoreIn => _$this._scoreIn ??= ListBuilder<int>();
   set scoreIn(ListBuilder<int>? scoreIn) => _$this._scoreIn = scoreIn;
 
   ListBuilder<int>? _scoreNotIn;
-  ListBuilder<int> get scoreNotIn =>
-      _$this._scoreNotIn ??= new ListBuilder<int>();
+  ListBuilder<int> get scoreNotIn => _$this._scoreNotIn ??= ListBuilder<int>();
   set scoreNotIn(ListBuilder<int>? scoreNotIn) =>
       _$this._scoreNotIn = scoreNotIn;
 
@@ -13172,13 +13113,12 @@ class GUserWhereInputBuilder
   set majorNEQ(String? majorNEQ) => _$this._majorNEQ = majorNEQ;
 
   ListBuilder<String>? _majorIn;
-  ListBuilder<String> get majorIn =>
-      _$this._majorIn ??= new ListBuilder<String>();
+  ListBuilder<String> get majorIn => _$this._majorIn ??= ListBuilder<String>();
   set majorIn(ListBuilder<String>? majorIn) => _$this._majorIn = majorIn;
 
   ListBuilder<String>? _majorNotIn;
   ListBuilder<String> get majorNotIn =>
-      _$this._majorNotIn ??= new ListBuilder<String>();
+      _$this._majorNotIn ??= ListBuilder<String>();
   set majorNotIn(ListBuilder<String>? majorNotIn) =>
       _$this._majorNotIn = majorNotIn;
 
@@ -13240,12 +13180,12 @@ class GUserWhereInputBuilder
   set bioNEQ(String? bioNEQ) => _$this._bioNEQ = bioNEQ;
 
   ListBuilder<String>? _bioIn;
-  ListBuilder<String> get bioIn => _$this._bioIn ??= new ListBuilder<String>();
+  ListBuilder<String> get bioIn => _$this._bioIn ??= ListBuilder<String>();
   set bioIn(ListBuilder<String>? bioIn) => _$this._bioIn = bioIn;
 
   ListBuilder<String>? _bioNotIn;
   ListBuilder<String> get bioNotIn =>
-      _$this._bioNotIn ??= new ListBuilder<String>();
+      _$this._bioNotIn ??= ListBuilder<String>();
   set bioNotIn(ListBuilder<String>? bioNotIn) => _$this._bioNotIn = bioNotIn;
 
   String? _bioGT;
@@ -13299,7 +13239,7 @@ class GUserWhereInputBuilder
 
   ListBuilder<GInterestWhereInput>? _hasInterestsWith;
   ListBuilder<GInterestWhereInput> get hasInterestsWith =>
-      _$this._hasInterestsWith ??= new ListBuilder<GInterestWhereInput>();
+      _$this._hasInterestsWith ??= ListBuilder<GInterestWhereInput>();
   set hasInterestsWith(ListBuilder<GInterestWhereInput>? hasInterestsWith) =>
       _$this._hasInterestsWith = hasInterestsWith;
 
@@ -13309,7 +13249,7 @@ class GUserWhereInputBuilder
 
   ListBuilder<GGoalWhereInput>? _hasGoalsWith;
   ListBuilder<GGoalWhereInput> get hasGoalsWith =>
-      _$this._hasGoalsWith ??= new ListBuilder<GGoalWhereInput>();
+      _$this._hasGoalsWith ??= ListBuilder<GGoalWhereInput>();
   set hasGoalsWith(ListBuilder<GGoalWhereInput>? hasGoalsWith) =>
       _$this._hasGoalsWith = hasGoalsWith;
 
@@ -13319,7 +13259,7 @@ class GUserWhereInputBuilder
 
   ListBuilder<GTaskWhereInput>? _hasTasksWith;
   ListBuilder<GTaskWhereInput> get hasTasksWith =>
-      _$this._hasTasksWith ??= new ListBuilder<GTaskWhereInput>();
+      _$this._hasTasksWith ??= ListBuilder<GTaskWhereInput>();
   set hasTasksWith(ListBuilder<GTaskWhereInput>? hasTasksWith) =>
       _$this._hasTasksWith = hasTasksWith;
 
@@ -13464,7 +13404,6 @@ class GUserWhereInputBuilder
 
   @override
   void replace(GUserWhereInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GUserWhereInput;
   }
 
@@ -13480,136 +13419,137 @@ class GUserWhereInputBuilder
     _$GUserWhereInput _$result;
     try {
       _$result = _$v ??
-          new _$GUserWhereInput._(
-              not: _not?.build(),
-              and: _and?.build(),
-              or: _or?.build(),
-              id: id,
-              idNEQ: idNEQ,
-              idIn: _idIn?.build(),
-              idNotIn: _idNotIn?.build(),
-              idGT: idGT,
-              idGTE: idGTE,
-              idLT: idLT,
-              idLTE: idLTE,
-              createdAt: _createdAt?.build(),
-              createdAtNEQ: _createdAtNEQ?.build(),
-              createdAtIn: _createdAtIn?.build(),
-              createdAtNotIn: _createdAtNotIn?.build(),
-              createdAtGT: _createdAtGT?.build(),
-              createdAtGTE: _createdAtGTE?.build(),
-              createdAtLT: _createdAtLT?.build(),
-              createdAtLTE: _createdAtLTE?.build(),
-              updatedAt: _updatedAt?.build(),
-              updatedAtNEQ: _updatedAtNEQ?.build(),
-              updatedAtIn: _updatedAtIn?.build(),
-              updatedAtNotIn: _updatedAtNotIn?.build(),
-              updatedAtGT: _updatedAtGT?.build(),
-              updatedAtGTE: _updatedAtGTE?.build(),
-              updatedAtLT: _updatedAtLT?.build(),
-              updatedAtLTE: _updatedAtLTE?.build(),
-              phoneNumber: phoneNumber,
-              phoneNumberNEQ: phoneNumberNEQ,
-              phoneNumberIn: _phoneNumberIn?.build(),
-              phoneNumberNotIn: _phoneNumberNotIn?.build(),
-              phoneNumberGT: phoneNumberGT,
-              phoneNumberGTE: phoneNumberGTE,
-              phoneNumberLT: phoneNumberLT,
-              phoneNumberLTE: phoneNumberLTE,
-              phoneNumberContains: phoneNumberContains,
-              phoneNumberHasPrefix: phoneNumberHasPrefix,
-              phoneNumberHasSuffix: phoneNumberHasSuffix,
-              phoneNumberEqualFold: phoneNumberEqualFold,
-              phoneNumberContainsFold: phoneNumberContainsFold,
-              fullName: fullName,
-              fullNameNEQ: fullNameNEQ,
-              fullNameIn: _fullNameIn?.build(),
-              fullNameNotIn: _fullNameNotIn?.build(),
-              fullNameGT: fullNameGT,
-              fullNameGTE: fullNameGTE,
-              fullNameLT: fullNameLT,
-              fullNameLTE: fullNameLTE,
-              fullNameContains: fullNameContains,
-              fullNameHasPrefix: fullNameHasPrefix,
-              fullNameHasSuffix: fullNameHasSuffix,
-              fullNameIsNil: fullNameIsNil,
-              fullNameNotNil: fullNameNotNil,
-              fullNameEqualFold: fullNameEqualFold,
-              fullNameContainsFold: fullNameContainsFold,
-              birthDate: _birthDate?.build(),
-              birthDateNEQ: _birthDateNEQ?.build(),
-              birthDateIn: _birthDateIn?.build(),
-              birthDateNotIn: _birthDateNotIn?.build(),
-              birthDateGT: _birthDateGT?.build(),
-              birthDateGTE: _birthDateGTE?.build(),
-              birthDateLT: _birthDateLT?.build(),
-              birthDateLTE: _birthDateLTE?.build(),
-              birthDateIsNil: birthDateIsNil,
-              birthDateNotNil: birthDateNotNil,
-              studyTime: studyTime,
-              studyTimeNEQ: studyTimeNEQ,
-              studyTimeIn: _studyTimeIn?.build(),
-              studyTimeNotIn: _studyTimeNotIn?.build(),
-              studyTimeIsNil: studyTimeIsNil,
-              studyTimeNotNil: studyTimeNotNil,
-              role: role,
-              roleNEQ: roleNEQ,
-              roleIn: _roleIn?.build(),
-              roleNotIn: _roleNotIn?.build(),
-              simoCoins: simoCoins,
-              simoCoinsNEQ: simoCoinsNEQ,
-              simoCoinsIn: _simoCoinsIn?.build(),
-              simoCoinsNotIn: _simoCoinsNotIn?.build(),
-              simoCoinsGT: simoCoinsGT,
-              simoCoinsGTE: simoCoinsGTE,
-              simoCoinsLT: simoCoinsLT,
-              simoCoinsLTE: simoCoinsLTE,
-              score: score,
-              scoreNEQ: scoreNEQ,
-              scoreIn: _scoreIn?.build(),
-              scoreNotIn: _scoreNotIn?.build(),
-              scoreGT: scoreGT,
-              scoreGTE: scoreGTE,
-              scoreLT: scoreLT,
-              scoreLTE: scoreLTE,
-              isPremium: isPremium,
-              isPremiumNEQ: isPremiumNEQ,
-              major: major,
-              majorNEQ: majorNEQ,
-              majorIn: _majorIn?.build(),
-              majorNotIn: _majorNotIn?.build(),
-              majorGT: majorGT,
-              majorGTE: majorGTE,
-              majorLT: majorLT,
-              majorLTE: majorLTE,
-              majorContains: majorContains,
-              majorHasPrefix: majorHasPrefix,
-              majorHasSuffix: majorHasSuffix,
-              majorIsNil: majorIsNil,
-              majorNotNil: majorNotNil,
-              majorEqualFold: majorEqualFold,
-              majorContainsFold: majorContainsFold,
-              bio: bio,
-              bioNEQ: bioNEQ,
-              bioIn: _bioIn?.build(),
-              bioNotIn: _bioNotIn?.build(),
-              bioGT: bioGT,
-              bioGTE: bioGTE,
-              bioLT: bioLT,
-              bioLTE: bioLTE,
-              bioContains: bioContains,
-              bioHasPrefix: bioHasPrefix,
-              bioHasSuffix: bioHasSuffix,
-              bioIsNil: bioIsNil,
-              bioNotNil: bioNotNil,
-              bioEqualFold: bioEqualFold,
-              bioContainsFold: bioContainsFold,
-              hasInterests: hasInterests,
-              hasInterestsWith: _hasInterestsWith?.build(),
-              hasGoals: hasGoals,
-              hasGoalsWith: _hasGoalsWith?.build(),
-              hasTasks: hasTasks,
-              hasTasksWith: _hasTasksWith?.build());
+          _$GUserWhereInput._(
+            not: _not?.build(),
+            and: _and?.build(),
+            or: _or?.build(),
+            id: id,
+            idNEQ: idNEQ,
+            idIn: _idIn?.build(),
+            idNotIn: _idNotIn?.build(),
+            idGT: idGT,
+            idGTE: idGTE,
+            idLT: idLT,
+            idLTE: idLTE,
+            createdAt: _createdAt?.build(),
+            createdAtNEQ: _createdAtNEQ?.build(),
+            createdAtIn: _createdAtIn?.build(),
+            createdAtNotIn: _createdAtNotIn?.build(),
+            createdAtGT: _createdAtGT?.build(),
+            createdAtGTE: _createdAtGTE?.build(),
+            createdAtLT: _createdAtLT?.build(),
+            createdAtLTE: _createdAtLTE?.build(),
+            updatedAt: _updatedAt?.build(),
+            updatedAtNEQ: _updatedAtNEQ?.build(),
+            updatedAtIn: _updatedAtIn?.build(),
+            updatedAtNotIn: _updatedAtNotIn?.build(),
+            updatedAtGT: _updatedAtGT?.build(),
+            updatedAtGTE: _updatedAtGTE?.build(),
+            updatedAtLT: _updatedAtLT?.build(),
+            updatedAtLTE: _updatedAtLTE?.build(),
+            phoneNumber: phoneNumber,
+            phoneNumberNEQ: phoneNumberNEQ,
+            phoneNumberIn: _phoneNumberIn?.build(),
+            phoneNumberNotIn: _phoneNumberNotIn?.build(),
+            phoneNumberGT: phoneNumberGT,
+            phoneNumberGTE: phoneNumberGTE,
+            phoneNumberLT: phoneNumberLT,
+            phoneNumberLTE: phoneNumberLTE,
+            phoneNumberContains: phoneNumberContains,
+            phoneNumberHasPrefix: phoneNumberHasPrefix,
+            phoneNumberHasSuffix: phoneNumberHasSuffix,
+            phoneNumberEqualFold: phoneNumberEqualFold,
+            phoneNumberContainsFold: phoneNumberContainsFold,
+            fullName: fullName,
+            fullNameNEQ: fullNameNEQ,
+            fullNameIn: _fullNameIn?.build(),
+            fullNameNotIn: _fullNameNotIn?.build(),
+            fullNameGT: fullNameGT,
+            fullNameGTE: fullNameGTE,
+            fullNameLT: fullNameLT,
+            fullNameLTE: fullNameLTE,
+            fullNameContains: fullNameContains,
+            fullNameHasPrefix: fullNameHasPrefix,
+            fullNameHasSuffix: fullNameHasSuffix,
+            fullNameIsNil: fullNameIsNil,
+            fullNameNotNil: fullNameNotNil,
+            fullNameEqualFold: fullNameEqualFold,
+            fullNameContainsFold: fullNameContainsFold,
+            birthDate: _birthDate?.build(),
+            birthDateNEQ: _birthDateNEQ?.build(),
+            birthDateIn: _birthDateIn?.build(),
+            birthDateNotIn: _birthDateNotIn?.build(),
+            birthDateGT: _birthDateGT?.build(),
+            birthDateGTE: _birthDateGTE?.build(),
+            birthDateLT: _birthDateLT?.build(),
+            birthDateLTE: _birthDateLTE?.build(),
+            birthDateIsNil: birthDateIsNil,
+            birthDateNotNil: birthDateNotNil,
+            studyTime: studyTime,
+            studyTimeNEQ: studyTimeNEQ,
+            studyTimeIn: _studyTimeIn?.build(),
+            studyTimeNotIn: _studyTimeNotIn?.build(),
+            studyTimeIsNil: studyTimeIsNil,
+            studyTimeNotNil: studyTimeNotNil,
+            role: role,
+            roleNEQ: roleNEQ,
+            roleIn: _roleIn?.build(),
+            roleNotIn: _roleNotIn?.build(),
+            simoCoins: simoCoins,
+            simoCoinsNEQ: simoCoinsNEQ,
+            simoCoinsIn: _simoCoinsIn?.build(),
+            simoCoinsNotIn: _simoCoinsNotIn?.build(),
+            simoCoinsGT: simoCoinsGT,
+            simoCoinsGTE: simoCoinsGTE,
+            simoCoinsLT: simoCoinsLT,
+            simoCoinsLTE: simoCoinsLTE,
+            score: score,
+            scoreNEQ: scoreNEQ,
+            scoreIn: _scoreIn?.build(),
+            scoreNotIn: _scoreNotIn?.build(),
+            scoreGT: scoreGT,
+            scoreGTE: scoreGTE,
+            scoreLT: scoreLT,
+            scoreLTE: scoreLTE,
+            isPremium: isPremium,
+            isPremiumNEQ: isPremiumNEQ,
+            major: major,
+            majorNEQ: majorNEQ,
+            majorIn: _majorIn?.build(),
+            majorNotIn: _majorNotIn?.build(),
+            majorGT: majorGT,
+            majorGTE: majorGTE,
+            majorLT: majorLT,
+            majorLTE: majorLTE,
+            majorContains: majorContains,
+            majorHasPrefix: majorHasPrefix,
+            majorHasSuffix: majorHasSuffix,
+            majorIsNil: majorIsNil,
+            majorNotNil: majorNotNil,
+            majorEqualFold: majorEqualFold,
+            majorContainsFold: majorContainsFold,
+            bio: bio,
+            bioNEQ: bioNEQ,
+            bioIn: _bioIn?.build(),
+            bioNotIn: _bioNotIn?.build(),
+            bioGT: bioGT,
+            bioGTE: bioGTE,
+            bioLT: bioLT,
+            bioLTE: bioLTE,
+            bioContains: bioContains,
+            bioHasPrefix: bioHasPrefix,
+            bioHasSuffix: bioHasSuffix,
+            bioIsNil: bioIsNil,
+            bioNotNil: bioNotNil,
+            bioEqualFold: bioEqualFold,
+            bioContainsFold: bioContainsFold,
+            hasInterests: hasInterests,
+            hasInterestsWith: _hasInterestsWith?.build(),
+            hasGoals: hasGoals,
+            hasGoalsWith: _hasGoalsWith?.build(),
+            hasTasks: hasTasks,
+            hasTasksWith: _hasTasksWith?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -13724,7 +13664,7 @@ class GUserWhereInputBuilder
         _$failedField = 'hasTasksWith';
         _hasTasksWith?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GUserWhereInput', _$failedField, e.toString());
       }
       rethrow;
@@ -13742,16 +13682,10 @@ class _$GVerifyOTPAndLoginInput extends GVerifyOTPAndLoginInput {
 
   factory _$GVerifyOTPAndLoginInput(
           [void Function(GVerifyOTPAndLoginInputBuilder)? updates]) =>
-      (new GVerifyOTPAndLoginInputBuilder()..update(updates))._build();
+      (GVerifyOTPAndLoginInputBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndLoginInput._({required this.phoneNumber, required this.code})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        phoneNumber, r'GVerifyOTPAndLoginInput', 'phoneNumber');
-    BuiltValueNullFieldError.checkNotNull(
-        code, r'GVerifyOTPAndLoginInput', 'code');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndLoginInput rebuild(
           void Function(GVerifyOTPAndLoginInputBuilder) updates) =>
@@ -13759,7 +13693,7 @@ class _$GVerifyOTPAndLoginInput extends GVerifyOTPAndLoginInput {
 
   @override
   GVerifyOTPAndLoginInputBuilder toBuilder() =>
-      new GVerifyOTPAndLoginInputBuilder()..replace(this);
+      GVerifyOTPAndLoginInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -13814,7 +13748,6 @@ class GVerifyOTPAndLoginInputBuilder
 
   @override
   void replace(GVerifyOTPAndLoginInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginInput;
   }
 
@@ -13828,11 +13761,12 @@ class GVerifyOTPAndLoginInputBuilder
 
   _$GVerifyOTPAndLoginInput _build() {
     final _$result = _$v ??
-        new _$GVerifyOTPAndLoginInput._(
-            phoneNumber: BuiltValueNullFieldError.checkNotNull(
-                phoneNumber, r'GVerifyOTPAndLoginInput', 'phoneNumber'),
-            code: BuiltValueNullFieldError.checkNotNull(
-                code, r'GVerifyOTPAndLoginInput', 'code'));
+        _$GVerifyOTPAndLoginInput._(
+          phoneNumber: BuiltValueNullFieldError.checkNotNull(
+              phoneNumber, r'GVerifyOTPAndLoginInput', 'phoneNumber'),
+          code: BuiltValueNullFieldError.checkNotNull(
+              code, r'GVerifyOTPAndLoginInput', 'code'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -13854,7 +13788,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
 
   factory _$GVerifyOTPAndRegisterInput(
           [void Function(GVerifyOTPAndRegisterInputBuilder)? updates]) =>
-      (new GVerifyOTPAndRegisterInputBuilder()..update(updates))._build();
+      (GVerifyOTPAndRegisterInputBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndRegisterInput._(
       {required this.phoneNumber,
@@ -13863,21 +13797,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
       required this.username,
       required this.birthDate,
       required this.studyTime})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        phoneNumber, r'GVerifyOTPAndRegisterInput', 'phoneNumber');
-    BuiltValueNullFieldError.checkNotNull(
-        code, r'GVerifyOTPAndRegisterInput', 'code');
-    BuiltValueNullFieldError.checkNotNull(
-        fullName, r'GVerifyOTPAndRegisterInput', 'fullName');
-    BuiltValueNullFieldError.checkNotNull(
-        username, r'GVerifyOTPAndRegisterInput', 'username');
-    BuiltValueNullFieldError.checkNotNull(
-        birthDate, r'GVerifyOTPAndRegisterInput', 'birthDate');
-    BuiltValueNullFieldError.checkNotNull(
-        studyTime, r'GVerifyOTPAndRegisterInput', 'studyTime');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndRegisterInput rebuild(
           void Function(GVerifyOTPAndRegisterInputBuilder) updates) =>
@@ -13885,7 +13805,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
 
   @override
   GVerifyOTPAndRegisterInputBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterInputBuilder()..replace(this);
+      GVerifyOTPAndRegisterInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -13947,7 +13867,7 @@ class GVerifyOTPAndRegisterInputBuilder
   set username(String? username) => _$this._username = username;
 
   GTimeBuilder? _birthDate;
-  GTimeBuilder get birthDate => _$this._birthDate ??= new GTimeBuilder();
+  GTimeBuilder get birthDate => _$this._birthDate ??= GTimeBuilder();
   set birthDate(GTimeBuilder? birthDate) => _$this._birthDate = birthDate;
 
   GUserStudyTime? _studyTime;
@@ -13972,7 +13892,6 @@ class GVerifyOTPAndRegisterInputBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterInput other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterInput;
   }
 
@@ -13988,25 +13907,26 @@ class GVerifyOTPAndRegisterInputBuilder
     _$GVerifyOTPAndRegisterInput _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndRegisterInput._(
-              phoneNumber: BuiltValueNullFieldError.checkNotNull(
-                  phoneNumber, r'GVerifyOTPAndRegisterInput', 'phoneNumber'),
-              code: BuiltValueNullFieldError.checkNotNull(
-                  code, r'GVerifyOTPAndRegisterInput', 'code'),
-              fullName: BuiltValueNullFieldError.checkNotNull(
-                  fullName, r'GVerifyOTPAndRegisterInput', 'fullName'),
-              username: BuiltValueNullFieldError.checkNotNull(
-                  username, r'GVerifyOTPAndRegisterInput', 'username'),
-              birthDate: birthDate.build(),
-              studyTime: BuiltValueNullFieldError.checkNotNull(
-                  studyTime, r'GVerifyOTPAndRegisterInput', 'studyTime'));
+          _$GVerifyOTPAndRegisterInput._(
+            phoneNumber: BuiltValueNullFieldError.checkNotNull(
+                phoneNumber, r'GVerifyOTPAndRegisterInput', 'phoneNumber'),
+            code: BuiltValueNullFieldError.checkNotNull(
+                code, r'GVerifyOTPAndRegisterInput', 'code'),
+            fullName: BuiltValueNullFieldError.checkNotNull(
+                fullName, r'GVerifyOTPAndRegisterInput', 'fullName'),
+            username: BuiltValueNullFieldError.checkNotNull(
+                username, r'GVerifyOTPAndRegisterInput', 'username'),
+            birthDate: birthDate.build(),
+            studyTime: BuiltValueNullFieldError.checkNotNull(
+                studyTime, r'GVerifyOTPAndRegisterInput', 'studyTime'),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'birthDate';
         birthDate.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndRegisterInput', _$failedField, e.toString());
       }
       rethrow;

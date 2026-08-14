@@ -7,7 +7,7 @@ part of 'send_message.req.gql.dart';
 // **************************************************************************
 
 Serializer<GSendMessageReq> _$gSendMessageReqSerializer =
-    new _$GSendMessageReqSerializer();
+    _$GSendMessageReqSerializer();
 
 class _$GSendMessageReqSerializer
     implements StructuredSerializer<GSendMessageReq> {
@@ -74,7 +74,7 @@ class _$GSendMessageReqSerializer
   GSendMessageReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendMessageReqBuilder();
+    final result = GSendMessageReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -147,9 +147,11 @@ class _$GSendMessageReq extends GSendMessageReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GSendMessageReq([void Function(GSendMessageReqBuilder)? updates]) =>
-      (new GSendMessageReqBuilder()..update(updates))._build();
+      (GSendMessageReqBuilder()..update(updates))._build();
 
   _$GSendMessageReq._(
       {required this.vars,
@@ -160,22 +162,15 @@ class _$GSendMessageReq extends GSendMessageReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GSendMessageReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GSendMessageReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GSendMessageReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GSendMessageReq rebuild(void Function(GSendMessageReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GSendMessageReqBuilder toBuilder() =>
-      new GSendMessageReqBuilder()..replace(this);
+  GSendMessageReqBuilder toBuilder() => GSendMessageReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -190,7 +185,8 @@ class _$GSendMessageReq extends GSendMessageReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -205,6 +201,7 @@ class _$GSendMessageReq extends GSendMessageReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -220,7 +217,8 @@ class _$GSendMessageReq extends GSendMessageReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -231,7 +229,7 @@ class GSendMessageReqBuilder
 
   _i3.GSendMessageVarsBuilder? _vars;
   _i3.GSendMessageVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GSendMessageVarsBuilder();
+      _$this._vars ??= _i3.GSendMessageVarsBuilder();
   set vars(_i3.GSendMessageVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -254,7 +252,7 @@ class GSendMessageReqBuilder
 
   _i2.GSendMessageDataBuilder? _optimisticResponse;
   _i2.GSendMessageDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GSendMessageDataBuilder();
+      _$this._optimisticResponse ??= _i2.GSendMessageDataBuilder();
   set optimisticResponse(_i2.GSendMessageDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -280,6 +278,10 @@ class GSendMessageReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GSendMessageReqBuilder() {
     GSendMessageReq._initializeBuilder(this);
   }
@@ -296,6 +298,7 @@ class GSendMessageReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -303,7 +306,6 @@ class GSendMessageReqBuilder
 
   @override
   void replace(GSendMessageReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendMessageReq;
   }
 
@@ -319,18 +321,20 @@ class GSendMessageReqBuilder
     _$GSendMessageReq _$result;
     try {
       _$result = _$v ??
-          new _$GSendMessageReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GSendMessageReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GSendMessageReq', 'executeOnListen'));
+          _$GSendMessageReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GSendMessageReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GSendMessageReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -340,7 +344,7 @@ class GSendMessageReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendMessageReq', _$failedField, e.toString());
       }
       rethrow;

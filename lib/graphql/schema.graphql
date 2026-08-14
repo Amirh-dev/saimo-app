@@ -533,6 +533,7 @@ input InterestWhereInput {
 
 input SendOTPInput {
   phoneNumber: String!
+  client: DeviceTokenPlatform!
 }
 
 input RefreshTokenInput {

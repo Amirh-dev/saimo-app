@@ -7,7 +7,7 @@ part of 'get_chat_messages.req.gql.dart';
 // **************************************************************************
 
 Serializer<GGetChatMessagesReq> _$gGetChatMessagesReqSerializer =
-    new _$GGetChatMessagesReqSerializer();
+    _$GGetChatMessagesReqSerializer();
 
 class _$GGetChatMessagesReqSerializer
     implements StructuredSerializer<GGetChatMessagesReq> {
@@ -78,7 +78,7 @@ class _$GGetChatMessagesReqSerializer
   GGetChatMessagesReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetChatMessagesReqBuilder();
+    final result = GGetChatMessagesReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -151,10 +151,12 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GGetChatMessagesReq(
           [void Function(GGetChatMessagesReqBuilder)? updates]) =>
-      (new GGetChatMessagesReqBuilder()..update(updates))._build();
+      (GGetChatMessagesReqBuilder()..update(updates))._build();
 
   _$GGetChatMessagesReq._(
       {required this.vars,
@@ -165,15 +167,9 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GGetChatMessagesReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GGetChatMessagesReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GGetChatMessagesReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GGetChatMessagesReq rebuild(
           void Function(GGetChatMessagesReqBuilder) updates) =>
@@ -181,7 +177,7 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
 
   @override
   GGetChatMessagesReqBuilder toBuilder() =>
-      new GGetChatMessagesReqBuilder()..replace(this);
+      GGetChatMessagesReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -196,7 +192,8 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -211,6 +208,7 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -226,7 +224,8 @@ class _$GGetChatMessagesReq extends GGetChatMessagesReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -237,7 +236,7 @@ class GGetChatMessagesReqBuilder
 
   _i3.GGetChatMessagesVarsBuilder? _vars;
   _i3.GGetChatMessagesVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GGetChatMessagesVarsBuilder();
+      _$this._vars ??= _i3.GGetChatMessagesVarsBuilder();
   set vars(_i3.GGetChatMessagesVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -261,7 +260,7 @@ class GGetChatMessagesReqBuilder
 
   _i2.GGetChatMessagesDataBuilder? _optimisticResponse;
   _i2.GGetChatMessagesDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GGetChatMessagesDataBuilder();
+      _$this._optimisticResponse ??= _i2.GGetChatMessagesDataBuilder();
   set optimisticResponse(_i2.GGetChatMessagesDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -287,6 +286,10 @@ class GGetChatMessagesReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GGetChatMessagesReqBuilder() {
     GGetChatMessagesReq._initializeBuilder(this);
   }
@@ -303,6 +306,7 @@ class GGetChatMessagesReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -310,7 +314,6 @@ class GGetChatMessagesReqBuilder
 
   @override
   void replace(GGetChatMessagesReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetChatMessagesReq;
   }
 
@@ -326,18 +329,20 @@ class GGetChatMessagesReqBuilder
     _$GGetChatMessagesReq _$result;
     try {
       _$result = _$v ??
-          new _$GGetChatMessagesReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GGetChatMessagesReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GGetChatMessagesReq', 'executeOnListen'));
+          _$GGetChatMessagesReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GGetChatMessagesReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GGetChatMessagesReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -347,7 +352,7 @@ class GGetChatMessagesReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetChatMessagesReq', _$failedField, e.toString());
       }
       rethrow;

@@ -3564,7 +3564,16 @@ const SendOTPInput = _i1.InputObjectTypeDefinitionNode(
         isNonNull: true,
       ),
       defaultValue: null,
-    )
+    ),
+    _i1.InputValueDefinitionNode(
+      name: _i1.NameNode(value: 'client'),
+      directives: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'DeviceTokenPlatform'),
+        isNonNull: true,
+      ),
+      defaultValue: null,
+    ),
   ],
 );
 const RefreshTokenInput = _i1.InputObjectTypeDefinitionNode(

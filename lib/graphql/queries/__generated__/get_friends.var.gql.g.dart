@@ -7,7 +7,7 @@ part of 'get_friends.var.gql.dart';
 // **************************************************************************
 
 Serializer<GGetFriendsVars> _$gGetFriendsVarsSerializer =
-    new _$GGetFriendsVarsSerializer();
+    _$GGetFriendsVarsSerializer();
 
 class _$GGetFriendsVarsSerializer
     implements StructuredSerializer<GGetFriendsVars> {
@@ -40,7 +40,7 @@ class _$GGetFriendsVarsSerializer
   GGetFriendsVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetFriendsVarsBuilder();
+    final result = GGetFriendsVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -70,17 +70,15 @@ class _$GGetFriendsVars extends GGetFriendsVars {
   final int? offset;
 
   factory _$GGetFriendsVars([void Function(GGetFriendsVarsBuilder)? updates]) =>
-      (new GGetFriendsVarsBuilder()..update(updates))._build();
+      (GGetFriendsVarsBuilder()..update(updates))._build();
 
   _$GGetFriendsVars._({this.limit, this.offset}) : super._();
-
   @override
   GGetFriendsVars rebuild(void Function(GGetFriendsVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetFriendsVarsBuilder toBuilder() =>
-      new GGetFriendsVarsBuilder()..replace(this);
+  GGetFriendsVarsBuilder toBuilder() => GGetFriendsVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -134,7 +132,6 @@ class GGetFriendsVarsBuilder
 
   @override
   void replace(GGetFriendsVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetFriendsVars;
   }
 
@@ -147,8 +144,11 @@ class GGetFriendsVarsBuilder
   GGetFriendsVars build() => _build();
 
   _$GGetFriendsVars _build() {
-    final _$result =
-        _$v ?? new _$GGetFriendsVars._(limit: limit, offset: offset);
+    final _$result = _$v ??
+        _$GGetFriendsVars._(
+          limit: limit,
+          offset: offset,
+        );
     replace(_$result);
     return _$result;
   }

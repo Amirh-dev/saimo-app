@@ -7,7 +7,7 @@ part of 'refresh_token.var.gql.dart';
 // **************************************************************************
 
 Serializer<GRefreshTokenVars> _$gRefreshTokenVarsSerializer =
-    new _$GRefreshTokenVarsSerializer();
+    _$GRefreshTokenVarsSerializer();
 
 class _$GRefreshTokenVarsSerializer
     implements StructuredSerializer<GRefreshTokenVars> {
@@ -32,7 +32,7 @@ class _$GRefreshTokenVarsSerializer
   GRefreshTokenVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GRefreshTokenVarsBuilder();
+    final result = GRefreshTokenVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -58,19 +58,16 @@ class _$GRefreshTokenVars extends GRefreshTokenVars {
 
   factory _$GRefreshTokenVars(
           [void Function(GRefreshTokenVarsBuilder)? updates]) =>
-      (new GRefreshTokenVarsBuilder()..update(updates))._build();
+      (GRefreshTokenVarsBuilder()..update(updates))._build();
 
-  _$GRefreshTokenVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(input, r'GRefreshTokenVars', 'input');
-  }
-
+  _$GRefreshTokenVars._({required this.input}) : super._();
   @override
   GRefreshTokenVars rebuild(void Function(GRefreshTokenVarsBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GRefreshTokenVarsBuilder toBuilder() =>
-      new GRefreshTokenVarsBuilder()..replace(this);
+      GRefreshTokenVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -100,7 +97,7 @@ class GRefreshTokenVarsBuilder
 
   _i1.GRefreshTokenInputBuilder? _input;
   _i1.GRefreshTokenInputBuilder get input =>
-      _$this._input ??= new _i1.GRefreshTokenInputBuilder();
+      _$this._input ??= _i1.GRefreshTokenInputBuilder();
   set input(_i1.GRefreshTokenInputBuilder? input) => _$this._input = input;
 
   GRefreshTokenVarsBuilder();
@@ -116,7 +113,6 @@ class GRefreshTokenVarsBuilder
 
   @override
   void replace(GRefreshTokenVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GRefreshTokenVars;
   }
 
@@ -131,14 +127,17 @@ class GRefreshTokenVarsBuilder
   _$GRefreshTokenVars _build() {
     _$GRefreshTokenVars _$result;
     try {
-      _$result = _$v ?? new _$GRefreshTokenVars._(input: input.build());
+      _$result = _$v ??
+          _$GRefreshTokenVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GRefreshTokenVars', _$failedField, e.toString());
       }
       rethrow;

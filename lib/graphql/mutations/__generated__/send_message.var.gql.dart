@@ -13,7 +13,7 @@ abstract class GSendMessageVars
     implements Built<GSendMessageVars, GSendMessageVarsBuilder> {
   GSendMessageVars._();
 
-  factory GSendMessageVars([Function(GSendMessageVarsBuilder b) updates]) =
+  factory GSendMessageVars([void Function(GSendMessageVarsBuilder b) updates]) =
       _$GSendMessageVars;
 
   _i1.GSendMessageInput get input;

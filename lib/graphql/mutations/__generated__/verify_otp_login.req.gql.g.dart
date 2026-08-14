@@ -7,7 +7,7 @@ part of 'verify_otp_login.req.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndLoginReq> _$gVerifyOTPAndLoginReqSerializer =
-    new _$GVerifyOTPAndLoginReqSerializer();
+    _$GVerifyOTPAndLoginReqSerializer();
 
 class _$GVerifyOTPAndLoginReqSerializer
     implements StructuredSerializer<GVerifyOTPAndLoginReq> {
@@ -78,7 +78,7 @@ class _$GVerifyOTPAndLoginReqSerializer
   GVerifyOTPAndLoginReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndLoginReqBuilder();
+    final result = GVerifyOTPAndLoginReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -151,10 +151,12 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GVerifyOTPAndLoginReq(
           [void Function(GVerifyOTPAndLoginReqBuilder)? updates]) =>
-      (new GVerifyOTPAndLoginReqBuilder()..update(updates))._build();
+      (GVerifyOTPAndLoginReqBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndLoginReq._(
       {required this.vars,
@@ -165,16 +167,9 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        vars, r'GVerifyOTPAndLoginReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GVerifyOTPAndLoginReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GVerifyOTPAndLoginReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GVerifyOTPAndLoginReq rebuild(
           void Function(GVerifyOTPAndLoginReqBuilder) updates) =>
@@ -182,7 +177,7 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
 
   @override
   GVerifyOTPAndLoginReqBuilder toBuilder() =>
-      new GVerifyOTPAndLoginReqBuilder()..replace(this);
+      GVerifyOTPAndLoginReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -197,7 +192,8 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -212,6 +208,7 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -227,7 +224,8 @@ class _$GVerifyOTPAndLoginReq extends GVerifyOTPAndLoginReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -238,7 +236,7 @@ class GVerifyOTPAndLoginReqBuilder
 
   _i3.GVerifyOTPAndLoginVarsBuilder? _vars;
   _i3.GVerifyOTPAndLoginVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GVerifyOTPAndLoginVarsBuilder();
+      _$this._vars ??= _i3.GVerifyOTPAndLoginVarsBuilder();
   set vars(_i3.GVerifyOTPAndLoginVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -262,7 +260,7 @@ class GVerifyOTPAndLoginReqBuilder
 
   _i2.GVerifyOTPAndLoginDataBuilder? _optimisticResponse;
   _i2.GVerifyOTPAndLoginDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GVerifyOTPAndLoginDataBuilder();
+      _$this._optimisticResponse ??= _i2.GVerifyOTPAndLoginDataBuilder();
   set optimisticResponse(
           _i2.GVerifyOTPAndLoginDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
@@ -289,6 +287,10 @@ class GVerifyOTPAndLoginReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GVerifyOTPAndLoginReqBuilder() {
     GVerifyOTPAndLoginReq._initializeBuilder(this);
   }
@@ -305,6 +307,7 @@ class GVerifyOTPAndLoginReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -312,7 +315,6 @@ class GVerifyOTPAndLoginReqBuilder
 
   @override
   void replace(GVerifyOTPAndLoginReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndLoginReq;
   }
 
@@ -328,20 +330,20 @@ class GVerifyOTPAndLoginReqBuilder
     _$GVerifyOTPAndLoginReq _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndLoginReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GVerifyOTPAndLoginReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen,
-                  r'GVerifyOTPAndLoginReq',
-                  'executeOnListen'));
+          _$GVerifyOTPAndLoginReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GVerifyOTPAndLoginReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GVerifyOTPAndLoginReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -351,7 +353,7 @@ class GVerifyOTPAndLoginReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndLoginReq', _$failedField, e.toString());
       }
       rethrow;

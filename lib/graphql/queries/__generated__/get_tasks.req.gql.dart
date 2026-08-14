@@ -22,7 +22,7 @@ abstract class GGetTasksReq
         _i1.OperationRequest<_i2.GGetTasksData, _i3.GGetTasksVars> {
   GGetTasksReq._();
 
-  factory GGetTasksReq([Function(GGetTasksReqBuilder b) updates]) =
+  factory GGetTasksReq([void Function(GGetTasksReqBuilder b) updates]) =
       _$GGetTasksReq;
 
   static void _initializeBuilder(GGetTasksReqBuilder b) => b
@@ -40,6 +40,7 @@ abstract class GGetTasksReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -61,8 +62,22 @@ abstract class GGetTasksReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GGetTasksData? parseData(Map<String, dynamic> json) =>
       _i2.GGetTasksData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GGetTasksData data) => data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GGetTasksData, _i3.GGetTasksVars> transformOperation(
+          _i4.Operation Function(_i4.Operation) transform) =>
+      this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GGetTasksReq> get serializer => _$gGetTasksReqSerializer;
 

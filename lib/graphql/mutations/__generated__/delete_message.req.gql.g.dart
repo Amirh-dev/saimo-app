@@ -7,7 +7,7 @@ part of 'delete_message.req.gql.dart';
 // **************************************************************************
 
 Serializer<GDeleteMessageReq> _$gDeleteMessageReqSerializer =
-    new _$GDeleteMessageReqSerializer();
+    _$GDeleteMessageReqSerializer();
 
 class _$GDeleteMessageReqSerializer
     implements StructuredSerializer<GDeleteMessageReq> {
@@ -74,7 +74,7 @@ class _$GDeleteMessageReqSerializer
   GDeleteMessageReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GDeleteMessageReqBuilder();
+    final result = GDeleteMessageReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -147,10 +147,12 @@ class _$GDeleteMessageReq extends GDeleteMessageReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GDeleteMessageReq(
           [void Function(GDeleteMessageReqBuilder)? updates]) =>
-      (new GDeleteMessageReqBuilder()..update(updates))._build();
+      (GDeleteMessageReqBuilder()..update(updates))._build();
 
   _$GDeleteMessageReq._(
       {required this.vars,
@@ -161,22 +163,16 @@ class _$GDeleteMessageReq extends GDeleteMessageReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(vars, r'GDeleteMessageReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GDeleteMessageReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GDeleteMessageReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GDeleteMessageReq rebuild(void Function(GDeleteMessageReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
   GDeleteMessageReqBuilder toBuilder() =>
-      new GDeleteMessageReqBuilder()..replace(this);
+      GDeleteMessageReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -191,7 +187,8 @@ class _$GDeleteMessageReq extends GDeleteMessageReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -206,6 +203,7 @@ class _$GDeleteMessageReq extends GDeleteMessageReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -221,7 +219,8 @@ class _$GDeleteMessageReq extends GDeleteMessageReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -232,7 +231,7 @@ class GDeleteMessageReqBuilder
 
   _i3.GDeleteMessageVarsBuilder? _vars;
   _i3.GDeleteMessageVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GDeleteMessageVarsBuilder();
+      _$this._vars ??= _i3.GDeleteMessageVarsBuilder();
   set vars(_i3.GDeleteMessageVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -256,7 +255,7 @@ class GDeleteMessageReqBuilder
 
   _i2.GDeleteMessageDataBuilder? _optimisticResponse;
   _i2.GDeleteMessageDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GDeleteMessageDataBuilder();
+      _$this._optimisticResponse ??= _i2.GDeleteMessageDataBuilder();
   set optimisticResponse(_i2.GDeleteMessageDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
@@ -282,6 +281,10 @@ class GDeleteMessageReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GDeleteMessageReqBuilder() {
     GDeleteMessageReq._initializeBuilder(this);
   }
@@ -298,6 +301,7 @@ class GDeleteMessageReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -305,7 +309,6 @@ class GDeleteMessageReqBuilder
 
   @override
   void replace(GDeleteMessageReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GDeleteMessageReq;
   }
 
@@ -321,18 +324,20 @@ class GDeleteMessageReqBuilder
     _$GDeleteMessageReq _$result;
     try {
       _$result = _$v ??
-          new _$GDeleteMessageReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GDeleteMessageReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GDeleteMessageReq', 'executeOnListen'));
+          _$GDeleteMessageReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GDeleteMessageReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GDeleteMessageReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -342,7 +347,7 @@ class GDeleteMessageReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GDeleteMessageReq', _$failedField, e.toString());
       }
       rethrow;

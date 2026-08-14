@@ -13,7 +13,7 @@ abstract class GSendOTPVars
     implements Built<GSendOTPVars, GSendOTPVarsBuilder> {
   GSendOTPVars._();
 
-  factory GSendOTPVars([Function(GSendOTPVarsBuilder b) updates]) =
+  factory GSendOTPVars([void Function(GSendOTPVarsBuilder b) updates]) =
       _$GSendOTPVars;
 
   _i1.GSendOTPInput get input;

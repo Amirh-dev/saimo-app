@@ -14,7 +14,7 @@ abstract class GGetTasksData
     implements Built<GGetTasksData, GGetTasksDataBuilder> {
   GGetTasksData._();
 
-  factory GGetTasksData([Function(GGetTasksDataBuilder b) updates]) =
+  factory GGetTasksData([void Function(GGetTasksDataBuilder b) updates]) =
       _$GGetTasksData;
 
   static void _initializeBuilder(GGetTasksDataBuilder b) =>
@@ -42,7 +42,7 @@ abstract class GGetTasksData_getTasks
   GGetTasksData_getTasks._();
 
   factory GGetTasksData_getTasks(
-          [Function(GGetTasksData_getTasksBuilder b) updates]) =
+          [void Function(GGetTasksData_getTasksBuilder b) updates]) =
       _$GGetTasksData_getTasks;
 
   static void _initializeBuilder(GGetTasksData_getTasksBuilder b) =>
@@ -84,7 +84,7 @@ abstract class GGetTasksData_getTasks_goal
   GGetTasksData_getTasks_goal._();
 
   factory GGetTasksData_getTasks_goal(
-          [Function(GGetTasksData_getTasks_goalBuilder b) updates]) =
+          [void Function(GGetTasksData_getTasks_goalBuilder b) updates]) =
       _$GGetTasksData_getTasks_goal;
 
   static void _initializeBuilder(GGetTasksData_getTasks_goalBuilder b) =>
@@ -115,7 +115,7 @@ abstract class GGetTasksData_getTasks_tags
   GGetTasksData_getTasks_tags._();
 
   factory GGetTasksData_getTasks_tags(
-          [Function(GGetTasksData_getTasks_tagsBuilder b) updates]) =
+          [void Function(GGetTasksData_getTasks_tagsBuilder b) updates]) =
       _$GGetTasksData_getTasks_tags;
 
   static void _initializeBuilder(GGetTasksData_getTasks_tagsBuilder b) =>

@@ -27,7 +27,7 @@ class Consultant {
   final List<ConsultantResumeItem> resume;
 }
 
-const String _kSampleAvatar = 'assets/images/sample_profile.png';
+const String _kSampleAvatar = 'Assets.profilePlaceholder';
 
 const List<Consultant> kSampleConsultants = [
   Consultant(

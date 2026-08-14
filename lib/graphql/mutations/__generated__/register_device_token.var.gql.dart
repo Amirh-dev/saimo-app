@@ -15,7 +15,7 @@ abstract class GRegisterDeviceTokenVars
   GRegisterDeviceTokenVars._();
 
   factory GRegisterDeviceTokenVars(
-          [Function(GRegisterDeviceTokenVarsBuilder b) updates]) =
+          [void Function(GRegisterDeviceTokenVarsBuilder b) updates]) =
       _$GRegisterDeviceTokenVars;
 
   String get token;

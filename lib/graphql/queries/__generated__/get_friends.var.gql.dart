@@ -12,7 +12,7 @@ abstract class GGetFriendsVars
     implements Built<GGetFriendsVars, GGetFriendsVarsBuilder> {
   GGetFriendsVars._();
 
-  factory GGetFriendsVars([Function(GGetFriendsVarsBuilder b) updates]) =
+  factory GGetFriendsVars([void Function(GGetFriendsVarsBuilder b) updates]) =
       _$GGetFriendsVars;
 
   int? get limit;

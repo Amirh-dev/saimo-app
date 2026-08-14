@@ -14,7 +14,7 @@ abstract class GRegisterDeviceTokenData
   GRegisterDeviceTokenData._();
 
   factory GRegisterDeviceTokenData(
-          [Function(GRegisterDeviceTokenDataBuilder b) updates]) =
+          [void Function(GRegisterDeviceTokenDataBuilder b) updates]) =
       _$GRegisterDeviceTokenData;
 
   static void _initializeBuilder(GRegisterDeviceTokenDataBuilder b) =>

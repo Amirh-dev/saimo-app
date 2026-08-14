@@ -7,7 +7,7 @@ part of 'create_direct_chat.req.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateDirectChatReq> _$gCreateDirectChatReqSerializer =
-    new _$GCreateDirectChatReqSerializer();
+    _$GCreateDirectChatReqSerializer();
 
 class _$GCreateDirectChatReqSerializer
     implements StructuredSerializer<GCreateDirectChatReq> {
@@ -78,7 +78,7 @@ class _$GCreateDirectChatReqSerializer
   GCreateDirectChatReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateDirectChatReqBuilder();
+    final result = GCreateDirectChatReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -151,10 +151,12 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
   final _i1.FetchPolicy? fetchPolicy;
   @override
   final bool executeOnListen;
+  @override
+  final _i4.Context? context;
 
   factory _$GCreateDirectChatReq(
           [void Function(GCreateDirectChatReqBuilder)? updates]) =>
-      (new GCreateDirectChatReqBuilder()..update(updates))._build();
+      (GCreateDirectChatReqBuilder()..update(updates))._build();
 
   _$GCreateDirectChatReq._(
       {required this.vars,
@@ -165,16 +167,9 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
       this.updateCacheHandlerKey,
       this.updateCacheHandlerContext,
       this.fetchPolicy,
-      required this.executeOnListen})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        vars, r'GCreateDirectChatReq', 'vars');
-    BuiltValueNullFieldError.checkNotNull(
-        operation, r'GCreateDirectChatReq', 'operation');
-    BuiltValueNullFieldError.checkNotNull(
-        executeOnListen, r'GCreateDirectChatReq', 'executeOnListen');
-  }
-
+      required this.executeOnListen,
+      this.context})
+      : super._();
   @override
   GCreateDirectChatReq rebuild(
           void Function(GCreateDirectChatReqBuilder) updates) =>
@@ -182,7 +177,7 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
 
   @override
   GCreateDirectChatReqBuilder toBuilder() =>
-      new GCreateDirectChatReqBuilder()..replace(this);
+      GCreateDirectChatReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -197,7 +192,8 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
         updateCacheHandlerKey == other.updateCacheHandlerKey &&
         updateCacheHandlerContext == other.updateCacheHandlerContext &&
         fetchPolicy == other.fetchPolicy &&
-        executeOnListen == other.executeOnListen;
+        executeOnListen == other.executeOnListen &&
+        context == other.context;
   }
 
   @override
@@ -212,6 +208,7 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
     _$hash = $jc(_$hash, updateCacheHandlerContext.hashCode);
     _$hash = $jc(_$hash, fetchPolicy.hashCode);
     _$hash = $jc(_$hash, executeOnListen.hashCode);
+    _$hash = $jc(_$hash, context.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -227,7 +224,8 @@ class _$GCreateDirectChatReq extends GCreateDirectChatReq {
           ..add('updateCacheHandlerKey', updateCacheHandlerKey)
           ..add('updateCacheHandlerContext', updateCacheHandlerContext)
           ..add('fetchPolicy', fetchPolicy)
-          ..add('executeOnListen', executeOnListen))
+          ..add('executeOnListen', executeOnListen)
+          ..add('context', context))
         .toString();
   }
 }
@@ -238,7 +236,7 @@ class GCreateDirectChatReqBuilder
 
   _i3.GCreateDirectChatVarsBuilder? _vars;
   _i3.GCreateDirectChatVarsBuilder get vars =>
-      _$this._vars ??= new _i3.GCreateDirectChatVarsBuilder();
+      _$this._vars ??= _i3.GCreateDirectChatVarsBuilder();
   set vars(_i3.GCreateDirectChatVarsBuilder? vars) => _$this._vars = vars;
 
   _i4.Operation? _operation;
@@ -262,7 +260,7 @@ class GCreateDirectChatReqBuilder
 
   _i2.GCreateDirectChatDataBuilder? _optimisticResponse;
   _i2.GCreateDirectChatDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= new _i2.GCreateDirectChatDataBuilder();
+      _$this._optimisticResponse ??= _i2.GCreateDirectChatDataBuilder();
   set optimisticResponse(
           _i2.GCreateDirectChatDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
@@ -289,6 +287,10 @@ class GCreateDirectChatReqBuilder
   set executeOnListen(bool? executeOnListen) =>
       _$this._executeOnListen = executeOnListen;
 
+  _i4.Context? _context;
+  _i4.Context? get context => _$this._context;
+  set context(_i4.Context? context) => _$this._context = context;
+
   GCreateDirectChatReqBuilder() {
     GCreateDirectChatReq._initializeBuilder(this);
   }
@@ -305,6 +307,7 @@ class GCreateDirectChatReqBuilder
       _updateCacheHandlerContext = $v.updateCacheHandlerContext;
       _fetchPolicy = $v.fetchPolicy;
       _executeOnListen = $v.executeOnListen;
+      _context = $v.context;
       _$v = null;
     }
     return this;
@@ -312,7 +315,6 @@ class GCreateDirectChatReqBuilder
 
   @override
   void replace(GCreateDirectChatReq other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateDirectChatReq;
   }
 
@@ -328,18 +330,20 @@ class GCreateDirectChatReqBuilder
     _$GCreateDirectChatReq _$result;
     try {
       _$result = _$v ??
-          new _$GCreateDirectChatReq._(
-              vars: vars.build(),
-              operation: BuiltValueNullFieldError.checkNotNull(
-                  operation, r'GCreateDirectChatReq', 'operation'),
-              requestId: requestId,
-              updateResult: updateResult,
-              optimisticResponse: _optimisticResponse?.build(),
-              updateCacheHandlerKey: updateCacheHandlerKey,
-              updateCacheHandlerContext: updateCacheHandlerContext,
-              fetchPolicy: fetchPolicy,
-              executeOnListen: BuiltValueNullFieldError.checkNotNull(
-                  executeOnListen, r'GCreateDirectChatReq', 'executeOnListen'));
+          _$GCreateDirectChatReq._(
+            vars: vars.build(),
+            operation: BuiltValueNullFieldError.checkNotNull(
+                operation, r'GCreateDirectChatReq', 'operation'),
+            requestId: requestId,
+            updateResult: updateResult,
+            optimisticResponse: _optimisticResponse?.build(),
+            updateCacheHandlerKey: updateCacheHandlerKey,
+            updateCacheHandlerContext: updateCacheHandlerContext,
+            fetchPolicy: fetchPolicy,
+            executeOnListen: BuiltValueNullFieldError.checkNotNull(
+                executeOnListen, r'GCreateDirectChatReq', 'executeOnListen'),
+            context: context,
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -349,7 +353,7 @@ class GCreateDirectChatReqBuilder
         _$failedField = 'optimisticResponse';
         _optimisticResponse?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateDirectChatReq', _$failedField, e.toString());
       }
       rethrow;

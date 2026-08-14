@@ -45,6 +45,8 @@ Future<void> main() async {
     tokenStorage: tokenStorage,
   );
 
+  debugPrint("ACCESS TOKEN: ${tokenStorage.currentAccessToken}");
+
   runApp(
     MultiRepositoryProvider(
       providers: [

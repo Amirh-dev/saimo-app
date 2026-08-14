@@ -6,10 +6,9 @@ part of 'send_otp.data.gql.dart';
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GSendOTPData> _$gSendOTPDataSerializer =
-    new _$GSendOTPDataSerializer();
+Serializer<GSendOTPData> _$gSendOTPDataSerializer = _$GSendOTPDataSerializer();
 Serializer<GSendOTPData_sendOTP> _$gSendOTPDataSendOTPSerializer =
-    new _$GSendOTPData_sendOTPSerializer();
+    _$GSendOTPData_sendOTPSerializer();
 
 class _$GSendOTPDataSerializer implements StructuredSerializer<GSendOTPData> {
   @override
@@ -36,7 +35,7 @@ class _$GSendOTPDataSerializer implements StructuredSerializer<GSendOTPData> {
   GSendOTPData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendOTPDataBuilder();
+    final result = GSendOTPDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -99,7 +98,7 @@ class _$GSendOTPData_sendOTPSerializer
   GSendOTPData_sendOTP deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GSendOTPData_sendOTPBuilder();
+    final result = GSendOTPData_sendOTPBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -141,21 +140,16 @@ class _$GSendOTPData extends GSendOTPData {
   final GSendOTPData_sendOTP sendOTP;
 
   factory _$GSendOTPData([void Function(GSendOTPDataBuilder)? updates]) =>
-      (new GSendOTPDataBuilder()..update(updates))._build();
+      (GSendOTPDataBuilder()..update(updates))._build();
 
   _$GSendOTPData._({required this.G__typename, required this.sendOTP})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GSendOTPData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(sendOTP, r'GSendOTPData', 'sendOTP');
-  }
-
+      : super._();
   @override
   GSendOTPData rebuild(void Function(GSendOTPDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GSendOTPDataBuilder toBuilder() => new GSendOTPDataBuilder()..replace(this);
+  GSendOTPDataBuilder toBuilder() => GSendOTPDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -193,7 +187,7 @@ class GSendOTPDataBuilder
 
   GSendOTPData_sendOTPBuilder? _sendOTP;
   GSendOTPData_sendOTPBuilder get sendOTP =>
-      _$this._sendOTP ??= new GSendOTPData_sendOTPBuilder();
+      _$this._sendOTP ??= GSendOTPData_sendOTPBuilder();
   set sendOTP(GSendOTPData_sendOTPBuilder? sendOTP) =>
       _$this._sendOTP = sendOTP;
 
@@ -213,7 +207,6 @@ class GSendOTPDataBuilder
 
   @override
   void replace(GSendOTPData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendOTPData;
   }
 
@@ -229,17 +222,18 @@ class GSendOTPDataBuilder
     _$GSendOTPData _$result;
     try {
       _$result = _$v ??
-          new _$GSendOTPData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GSendOTPData', 'G__typename'),
-              sendOTP: sendOTP.build());
+          _$GSendOTPData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GSendOTPData', 'G__typename'),
+            sendOTP: sendOTP.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'sendOTP';
         sendOTP.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GSendOTPData', _$failedField, e.toString());
       }
       rethrow;
@@ -263,7 +257,7 @@ class _$GSendOTPData_sendOTP extends GSendOTPData_sendOTP {
 
   factory _$GSendOTPData_sendOTP(
           [void Function(GSendOTPData_sendOTPBuilder)? updates]) =>
-      (new GSendOTPData_sendOTPBuilder()..update(updates))._build();
+      (GSendOTPData_sendOTPBuilder()..update(updates))._build();
 
   _$GSendOTPData_sendOTP._(
       {required this.G__typename,
@@ -271,19 +265,7 @@ class _$GSendOTPData_sendOTP extends GSendOTPData_sendOTP {
       required this.message,
       required this.expiresInSeconds,
       required this.isRegistered})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GSendOTPData_sendOTP', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        success, r'GSendOTPData_sendOTP', 'success');
-    BuiltValueNullFieldError.checkNotNull(
-        message, r'GSendOTPData_sendOTP', 'message');
-    BuiltValueNullFieldError.checkNotNull(
-        expiresInSeconds, r'GSendOTPData_sendOTP', 'expiresInSeconds');
-    BuiltValueNullFieldError.checkNotNull(
-        isRegistered, r'GSendOTPData_sendOTP', 'isRegistered');
-  }
-
+      : super._();
   @override
   GSendOTPData_sendOTP rebuild(
           void Function(GSendOTPData_sendOTPBuilder) updates) =>
@@ -291,7 +273,7 @@ class _$GSendOTPData_sendOTP extends GSendOTPData_sendOTP {
 
   @override
   GSendOTPData_sendOTPBuilder toBuilder() =>
-      new GSendOTPData_sendOTPBuilder()..replace(this);
+      GSendOTPData_sendOTPBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -372,7 +354,6 @@ class GSendOTPData_sendOTPBuilder
 
   @override
   void replace(GSendOTPData_sendOTP other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GSendOTPData_sendOTP;
   }
 
@@ -386,17 +367,18 @@ class GSendOTPData_sendOTPBuilder
 
   _$GSendOTPData_sendOTP _build() {
     final _$result = _$v ??
-        new _$GSendOTPData_sendOTP._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GSendOTPData_sendOTP', 'G__typename'),
-            success: BuiltValueNullFieldError.checkNotNull(
-                success, r'GSendOTPData_sendOTP', 'success'),
-            message: BuiltValueNullFieldError.checkNotNull(
-                message, r'GSendOTPData_sendOTP', 'message'),
-            expiresInSeconds: BuiltValueNullFieldError.checkNotNull(
-                expiresInSeconds, r'GSendOTPData_sendOTP', 'expiresInSeconds'),
-            isRegistered: BuiltValueNullFieldError.checkNotNull(
-                isRegistered, r'GSendOTPData_sendOTP', 'isRegistered'));
+        _$GSendOTPData_sendOTP._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GSendOTPData_sendOTP', 'G__typename'),
+          success: BuiltValueNullFieldError.checkNotNull(
+              success, r'GSendOTPData_sendOTP', 'success'),
+          message: BuiltValueNullFieldError.checkNotNull(
+              message, r'GSendOTPData_sendOTP', 'message'),
+          expiresInSeconds: BuiltValueNullFieldError.checkNotNull(
+              expiresInSeconds, r'GSendOTPData_sendOTP', 'expiresInSeconds'),
+          isRegistered: BuiltValueNullFieldError.checkNotNull(
+              isRegistered, r'GSendOTPData_sendOTP', 'isRegistered'),
+        );
     replace(_$result);
     return _$result;
   }

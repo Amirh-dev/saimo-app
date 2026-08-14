@@ -24,7 +24,7 @@ abstract class GRegisterDeviceTokenReq
   GRegisterDeviceTokenReq._();
 
   factory GRegisterDeviceTokenReq(
-          [Function(GRegisterDeviceTokenReqBuilder b) updates]) =
+          [void Function(GRegisterDeviceTokenReqBuilder b) updates]) =
       _$GRegisterDeviceTokenReq;
 
   static void _initializeBuilder(GRegisterDeviceTokenReqBuilder b) => b
@@ -42,6 +42,7 @@ abstract class GRegisterDeviceTokenReq
   _i4.Request get execRequest => _i4.Request(
         operation: operation,
         variables: vars.toJson(),
+        context: context ?? const _i4.Context(),
       );
 
   @override
@@ -63,8 +64,24 @@ abstract class GRegisterDeviceTokenReq
   @override
   bool get executeOnListen;
   @override
+  @BuiltValueField(serialize: false)
+  _i4.Context? get context;
+  @override
   _i2.GRegisterDeviceTokenData? parseData(Map<String, dynamic> json) =>
       _i2.GRegisterDeviceTokenData.fromJson(json);
+
+  @override
+  Map<String, dynamic> varsToJson() => vars.toJson();
+
+  @override
+  Map<String, dynamic> dataToJson(_i2.GRegisterDeviceTokenData data) =>
+      data.toJson();
+
+  @override
+  _i1.OperationRequest<_i2.GRegisterDeviceTokenData,
+      _i3.GRegisterDeviceTokenVars> transformOperation(
+          _i4.Operation Function(_i4.Operation) transform) =>
+      this.rebuild((b) => b..operation = transform(operation));
 
   static Serializer<GRegisterDeviceTokenReq> get serializer =>
       _$gRegisterDeviceTokenReqSerializer;

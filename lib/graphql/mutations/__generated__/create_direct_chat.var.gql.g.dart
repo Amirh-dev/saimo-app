@@ -7,7 +7,7 @@ part of 'create_direct_chat.var.gql.dart';
 // **************************************************************************
 
 Serializer<GCreateDirectChatVars> _$gCreateDirectChatVarsSerializer =
-    new _$GCreateDirectChatVarsSerializer();
+    _$GCreateDirectChatVarsSerializer();
 
 class _$GCreateDirectChatVarsSerializer
     implements StructuredSerializer<GCreateDirectChatVars> {
@@ -36,7 +36,7 @@ class _$GCreateDirectChatVarsSerializer
   GCreateDirectChatVars deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GCreateDirectChatVarsBuilder();
+    final result = GCreateDirectChatVarsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -62,13 +62,9 @@ class _$GCreateDirectChatVars extends GCreateDirectChatVars {
 
   factory _$GCreateDirectChatVars(
           [void Function(GCreateDirectChatVarsBuilder)? updates]) =>
-      (new GCreateDirectChatVarsBuilder()..update(updates))._build();
+      (GCreateDirectChatVarsBuilder()..update(updates))._build();
 
-  _$GCreateDirectChatVars._({required this.input}) : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        input, r'GCreateDirectChatVars', 'input');
-  }
-
+  _$GCreateDirectChatVars._({required this.input}) : super._();
   @override
   GCreateDirectChatVars rebuild(
           void Function(GCreateDirectChatVarsBuilder) updates) =>
@@ -76,7 +72,7 @@ class _$GCreateDirectChatVars extends GCreateDirectChatVars {
 
   @override
   GCreateDirectChatVarsBuilder toBuilder() =>
-      new GCreateDirectChatVarsBuilder()..replace(this);
+      GCreateDirectChatVarsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -106,7 +102,7 @@ class GCreateDirectChatVarsBuilder
 
   _i1.GCreateDirectChatInputBuilder? _input;
   _i1.GCreateDirectChatInputBuilder get input =>
-      _$this._input ??= new _i1.GCreateDirectChatInputBuilder();
+      _$this._input ??= _i1.GCreateDirectChatInputBuilder();
   set input(_i1.GCreateDirectChatInputBuilder? input) => _$this._input = input;
 
   GCreateDirectChatVarsBuilder();
@@ -122,7 +118,6 @@ class GCreateDirectChatVarsBuilder
 
   @override
   void replace(GCreateDirectChatVars other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GCreateDirectChatVars;
   }
 
@@ -137,14 +132,17 @@ class GCreateDirectChatVarsBuilder
   _$GCreateDirectChatVars _build() {
     _$GCreateDirectChatVars _$result;
     try {
-      _$result = _$v ?? new _$GCreateDirectChatVars._(input: input.build());
+      _$result = _$v ??
+          _$GCreateDirectChatVars._(
+            input: input.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'input';
         input.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GCreateDirectChatVars', _$failedField, e.toString());
       }
       rethrow;

@@ -7,13 +7,13 @@ part of 'verify_otp_register.data.gql.dart';
 // **************************************************************************
 
 Serializer<GVerifyOTPAndRegisterData> _$gVerifyOTPAndRegisterDataSerializer =
-    new _$GVerifyOTPAndRegisterDataSerializer();
+    _$GVerifyOTPAndRegisterDataSerializer();
 Serializer<GVerifyOTPAndRegisterData_verifyOTPAndRegister>
     _$gVerifyOTPAndRegisterDataVerifyOTPAndRegisterSerializer =
-    new _$GVerifyOTPAndRegisterData_verifyOTPAndRegisterSerializer();
+    _$GVerifyOTPAndRegisterData_verifyOTPAndRegisterSerializer();
 Serializer<GVerifyOTPAndRegisterData_verifyOTPAndRegister_user>
     _$gVerifyOTPAndRegisterDataVerifyOTPAndRegisterUserSerializer =
-    new _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_userSerializer();
+    _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_userSerializer();
 
 class _$GVerifyOTPAndRegisterDataSerializer
     implements StructuredSerializer<GVerifyOTPAndRegisterData> {
@@ -46,7 +46,7 @@ class _$GVerifyOTPAndRegisterDataSerializer
   GVerifyOTPAndRegisterData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndRegisterDataBuilder();
+    final result = GVerifyOTPAndRegisterDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -109,7 +109,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegisterSerializer
   GVerifyOTPAndRegisterData_verifyOTPAndRegister deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder();
+    final result = GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -173,8 +173,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_userSerializer
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_user deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result =
-        new GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder();
+    final result = GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -205,17 +204,11 @@ class _$GVerifyOTPAndRegisterData extends GVerifyOTPAndRegisterData {
 
   factory _$GVerifyOTPAndRegisterData(
           [void Function(GVerifyOTPAndRegisterDataBuilder)? updates]) =>
-      (new GVerifyOTPAndRegisterDataBuilder()..update(updates))._build();
+      (GVerifyOTPAndRegisterDataBuilder()..update(updates))._build();
 
   _$GVerifyOTPAndRegisterData._(
       {required this.G__typename, required this.verifyOTPAndRegister})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GVerifyOTPAndRegisterData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(verifyOTPAndRegister,
-        r'GVerifyOTPAndRegisterData', 'verifyOTPAndRegister');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndRegisterData rebuild(
           void Function(GVerifyOTPAndRegisterDataBuilder) updates) =>
@@ -223,7 +216,7 @@ class _$GVerifyOTPAndRegisterData extends GVerifyOTPAndRegisterData {
 
   @override
   GVerifyOTPAndRegisterDataBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterDataBuilder()..replace(this);
+      GVerifyOTPAndRegisterDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -263,7 +256,7 @@ class GVerifyOTPAndRegisterDataBuilder
   GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder? _verifyOTPAndRegister;
   GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
       get verifyOTPAndRegister => _$this._verifyOTPAndRegister ??=
-          new GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder();
+          GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder();
   set verifyOTPAndRegister(
           GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder?
               verifyOTPAndRegister) =>
@@ -285,7 +278,6 @@ class GVerifyOTPAndRegisterDataBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterData;
   }
 
@@ -301,17 +293,18 @@ class GVerifyOTPAndRegisterDataBuilder
     _$GVerifyOTPAndRegisterData _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndRegisterData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GVerifyOTPAndRegisterData', 'G__typename'),
-              verifyOTPAndRegister: verifyOTPAndRegister.build());
+          _$GVerifyOTPAndRegisterData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GVerifyOTPAndRegisterData', 'G__typename'),
+            verifyOTPAndRegister: verifyOTPAndRegister.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'verifyOTPAndRegister';
         verifyOTPAndRegister.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndRegisterData', _$failedField, e.toString());
       }
       rethrow;
@@ -335,8 +328,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
   factory _$GVerifyOTPAndRegisterData_verifyOTPAndRegister(
           [void Function(GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder)?
               updates]) =>
-      (new GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder()
-            ..update(updates))
+      (GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder()..update(updates))
           ._build();
 
   _$GVerifyOTPAndRegisterData_verifyOTPAndRegister._(
@@ -344,17 +336,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
       required this.accessToken,
       required this.refreshToken,
       required this.user})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(accessToken,
-        r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'accessToken');
-    BuiltValueNullFieldError.checkNotNull(refreshToken,
-        r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'refreshToken');
-    BuiltValueNullFieldError.checkNotNull(
-        user, r'GVerifyOTPAndRegisterData_verifyOTPAndRegister', 'user');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndRegisterData_verifyOTPAndRegister rebuild(
           void Function(GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder)
@@ -363,8 +345,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister
 
   @override
   GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder()
-        ..replace(this);
+      GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -420,7 +401,7 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder? _user;
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder get user =>
       _$this._user ??=
-          new GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder();
+          GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder();
   set user(GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder? user) =>
       _$this._user = user;
 
@@ -442,7 +423,6 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterData_verifyOTPAndRegister other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterData_verifyOTPAndRegister;
   }
 
@@ -460,27 +440,28 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegisterBuilder
     _$GVerifyOTPAndRegisterData_verifyOTPAndRegister _$result;
     try {
       _$result = _$v ??
-          new _$GVerifyOTPAndRegisterData_verifyOTPAndRegister._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename,
-                  r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
-                  'G__typename'),
-              accessToken: BuiltValueNullFieldError.checkNotNull(
-                  accessToken,
-                  r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
-                  'accessToken'),
-              refreshToken: BuiltValueNullFieldError.checkNotNull(
-                  refreshToken,
-                  r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
-                  'refreshToken'),
-              user: user.build());
+          _$GVerifyOTPAndRegisterData_verifyOTPAndRegister._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename,
+                r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
+                'G__typename'),
+            accessToken: BuiltValueNullFieldError.checkNotNull(
+                accessToken,
+                r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
+                'accessToken'),
+            refreshToken: BuiltValueNullFieldError.checkNotNull(
+                refreshToken,
+                r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
+                'refreshToken'),
+            user: user.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'user';
         user.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GVerifyOTPAndRegisterData_verifyOTPAndRegister',
             _$failedField,
             e.toString());
@@ -503,19 +484,13 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user
           [void Function(
                   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder)?
               updates]) =>
-      (new GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder()
+      (GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder()
             ..update(updates))
           ._build();
 
   _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user._(
       {required this.G__typename, required this.id})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(G__typename,
-        r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user', 'id');
-  }
-
+      : super._();
   @override
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_user rebuild(
           void Function(
@@ -525,7 +500,7 @@ class _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user
 
   @override
   GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder toBuilder() =>
-      new GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder()
+      GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder()
         ..replace(this);
 
   @override
@@ -586,7 +561,6 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder
 
   @override
   void replace(GVerifyOTPAndRegisterData_verifyOTPAndRegister_user other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user;
   }
 
@@ -602,13 +576,14 @@ class GVerifyOTPAndRegisterData_verifyOTPAndRegister_userBuilder
 
   _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user _build() {
     final _$result = _$v ??
-        new _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename,
-                r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user',
-                'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(id,
-                r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user', 'id'));
+        _$GVerifyOTPAndRegisterData_verifyOTPAndRegister_user._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename,
+              r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user',
+              'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GVerifyOTPAndRegisterData_verifyOTPAndRegister_user', 'id'),
+        );
     replace(_$result);
     return _$result;
   }

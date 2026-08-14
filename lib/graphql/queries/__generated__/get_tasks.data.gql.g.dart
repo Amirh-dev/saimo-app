@@ -7,13 +7,13 @@ part of 'get_tasks.data.gql.dart';
 // **************************************************************************
 
 Serializer<GGetTasksData> _$gGetTasksDataSerializer =
-    new _$GGetTasksDataSerializer();
+    _$GGetTasksDataSerializer();
 Serializer<GGetTasksData_getTasks> _$gGetTasksDataGetTasksSerializer =
-    new _$GGetTasksData_getTasksSerializer();
+    _$GGetTasksData_getTasksSerializer();
 Serializer<GGetTasksData_getTasks_goal> _$gGetTasksDataGetTasksGoalSerializer =
-    new _$GGetTasksData_getTasks_goalSerializer();
+    _$GGetTasksData_getTasks_goalSerializer();
 Serializer<GGetTasksData_getTasks_tags> _$gGetTasksDataGetTasksTagsSerializer =
-    new _$GGetTasksData_getTasks_tagsSerializer();
+    _$GGetTasksData_getTasks_tagsSerializer();
 
 class _$GGetTasksDataSerializer implements StructuredSerializer<GGetTasksData> {
   @override
@@ -41,7 +41,7 @@ class _$GGetTasksDataSerializer implements StructuredSerializer<GGetTasksData> {
   GGetTasksData deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksDataBuilder();
+    final result = GGetTasksDataBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -159,7 +159,7 @@ class _$GGetTasksData_getTasksSerializer
   GGetTasksData_getTasks deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksData_getTasksBuilder();
+    final result = GGetTasksData_getTasksBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -266,7 +266,7 @@ class _$GGetTasksData_getTasks_goalSerializer
   GGetTasksData_getTasks_goal deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksData_getTasks_goalBuilder();
+    final result = GGetTasksData_getTasks_goalBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -324,7 +324,7 @@ class _$GGetTasksData_getTasks_tagsSerializer
   GGetTasksData_getTasks_tags deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = new GGetTasksData_getTasks_tagsBuilder();
+    final result = GGetTasksData_getTasks_tagsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -358,22 +358,16 @@ class _$GGetTasksData extends GGetTasksData {
   final BuiltList<GGetTasksData_getTasks> getTasks;
 
   factory _$GGetTasksData([void Function(GGetTasksDataBuilder)? updates]) =>
-      (new GGetTasksDataBuilder()..update(updates))._build();
+      (GGetTasksDataBuilder()..update(updates))._build();
 
   _$GGetTasksData._({required this.G__typename, required this.getTasks})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetTasksData', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        getTasks, r'GGetTasksData', 'getTasks');
-  }
-
+      : super._();
   @override
   GGetTasksData rebuild(void Function(GGetTasksDataBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GGetTasksDataBuilder toBuilder() => new GGetTasksDataBuilder()..replace(this);
+  GGetTasksDataBuilder toBuilder() => GGetTasksDataBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -411,7 +405,7 @@ class GGetTasksDataBuilder
 
   ListBuilder<GGetTasksData_getTasks>? _getTasks;
   ListBuilder<GGetTasksData_getTasks> get getTasks =>
-      _$this._getTasks ??= new ListBuilder<GGetTasksData_getTasks>();
+      _$this._getTasks ??= ListBuilder<GGetTasksData_getTasks>();
   set getTasks(ListBuilder<GGetTasksData_getTasks>? getTasks) =>
       _$this._getTasks = getTasks;
 
@@ -431,7 +425,6 @@ class GGetTasksDataBuilder
 
   @override
   void replace(GGetTasksData other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksData;
   }
 
@@ -447,17 +440,18 @@ class GGetTasksDataBuilder
     _$GGetTasksData _$result;
     try {
       _$result = _$v ??
-          new _$GGetTasksData._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GGetTasksData', 'G__typename'),
-              getTasks: getTasks.build());
+          _$GGetTasksData._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GGetTasksData', 'G__typename'),
+            getTasks: getTasks.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
         _$failedField = 'getTasks';
         getTasks.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetTasksData', _$failedField, e.toString());
       }
       rethrow;
@@ -499,7 +493,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
 
   factory _$GGetTasksData_getTasks(
           [void Function(GGetTasksData_getTasksBuilder)? updates]) =>
-      (new GGetTasksData_getTasksBuilder()..update(updates))._build();
+      (GGetTasksData_getTasksBuilder()..update(updates))._build();
 
   _$GGetTasksData_getTasks._(
       {required this.G__typename,
@@ -516,22 +510,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
       required this.status,
       this.goal,
       this.tags})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetTasksData_getTasks', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(id, r'GGetTasksData_getTasks', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        title, r'GGetTasksData_getTasks', 'title');
-    BuiltValueNullFieldError.checkNotNull(
-        type, r'GGetTasksData_getTasks', 'type');
-    BuiltValueNullFieldError.checkNotNull(
-        date, r'GGetTasksData_getTasks', 'date');
-    BuiltValueNullFieldError.checkNotNull(
-        hasReminder, r'GGetTasksData_getTasks', 'hasReminder');
-    BuiltValueNullFieldError.checkNotNull(
-        status, r'GGetTasksData_getTasks', 'status');
-  }
-
+      : super._();
   @override
   GGetTasksData_getTasks rebuild(
           void Function(GGetTasksData_getTasksBuilder) updates) =>
@@ -539,7 +518,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
 
   @override
   GGetTasksData_getTasksBuilder toBuilder() =>
-      new GGetTasksData_getTasksBuilder()..replace(this);
+      GGetTasksData_getTasksBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -633,7 +612,7 @@ class GGetTasksData_getTasksBuilder
   set type(_i2.GTaskType? type) => _$this._type = type;
 
   _i2.GTimeBuilder? _date;
-  _i2.GTimeBuilder get date => _$this._date ??= new _i2.GTimeBuilder();
+  _i2.GTimeBuilder get date => _$this._date ??= _i2.GTimeBuilder();
   set date(_i2.GTimeBuilder? date) => _$this._date = date;
 
   int? _durationM;
@@ -646,7 +625,7 @@ class GGetTasksData_getTasksBuilder
 
   _i2.GTimeBuilder? _reminderTime;
   _i2.GTimeBuilder get reminderTime =>
-      _$this._reminderTime ??= new _i2.GTimeBuilder();
+      _$this._reminderTime ??= _i2.GTimeBuilder();
   set reminderTime(_i2.GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
@@ -661,12 +640,12 @@ class GGetTasksData_getTasksBuilder
 
   GGetTasksData_getTasks_goalBuilder? _goal;
   GGetTasksData_getTasks_goalBuilder get goal =>
-      _$this._goal ??= new GGetTasksData_getTasks_goalBuilder();
+      _$this._goal ??= GGetTasksData_getTasks_goalBuilder();
   set goal(GGetTasksData_getTasks_goalBuilder? goal) => _$this._goal = goal;
 
   ListBuilder<GGetTasksData_getTasks_tags>? _tags;
   ListBuilder<GGetTasksData_getTasks_tags> get tags =>
-      _$this._tags ??= new ListBuilder<GGetTasksData_getTasks_tags>();
+      _$this._tags ??= ListBuilder<GGetTasksData_getTasks_tags>();
   set tags(ListBuilder<GGetTasksData_getTasks_tags>? tags) =>
       _$this._tags = tags;
 
@@ -698,7 +677,6 @@ class GGetTasksData_getTasksBuilder
 
   @override
   void replace(GGetTasksData_getTasks other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksData_getTasks;
   }
 
@@ -714,27 +692,28 @@ class GGetTasksData_getTasksBuilder
     _$GGetTasksData_getTasks _$result;
     try {
       _$result = _$v ??
-          new _$GGetTasksData_getTasks._(
-              G__typename: BuiltValueNullFieldError.checkNotNull(
-                  G__typename, r'GGetTasksData_getTasks', 'G__typename'),
-              id: BuiltValueNullFieldError.checkNotNull(
-                  id, r'GGetTasksData_getTasks', 'id'),
-              title: BuiltValueNullFieldError.checkNotNull(
-                  title, r'GGetTasksData_getTasks', 'title'),
-              shortDescription: shortDescription,
-              note: note,
-              type: BuiltValueNullFieldError.checkNotNull(
-                  type, r'GGetTasksData_getTasks', 'type'),
-              date: date.build(),
-              durationM: durationM,
-              hasReminder: BuiltValueNullFieldError.checkNotNull(
-                  hasReminder, r'GGetTasksData_getTasks', 'hasReminder'),
-              reminderTime: _reminderTime?.build(),
-              recurringDays: recurringDays,
-              status: BuiltValueNullFieldError.checkNotNull(
-                  status, r'GGetTasksData_getTasks', 'status'),
-              goal: _goal?.build(),
-              tags: _tags?.build());
+          _$GGetTasksData_getTasks._(
+            G__typename: BuiltValueNullFieldError.checkNotNull(
+                G__typename, r'GGetTasksData_getTasks', 'G__typename'),
+            id: BuiltValueNullFieldError.checkNotNull(
+                id, r'GGetTasksData_getTasks', 'id'),
+            title: BuiltValueNullFieldError.checkNotNull(
+                title, r'GGetTasksData_getTasks', 'title'),
+            shortDescription: shortDescription,
+            note: note,
+            type: BuiltValueNullFieldError.checkNotNull(
+                type, r'GGetTasksData_getTasks', 'type'),
+            date: date.build(),
+            durationM: durationM,
+            hasReminder: BuiltValueNullFieldError.checkNotNull(
+                hasReminder, r'GGetTasksData_getTasks', 'hasReminder'),
+            reminderTime: _reminderTime?.build(),
+            recurringDays: recurringDays,
+            status: BuiltValueNullFieldError.checkNotNull(
+                status, r'GGetTasksData_getTasks', 'status'),
+            goal: _goal?.build(),
+            tags: _tags?.build(),
+          );
     } catch (_) {
       late String _$failedField;
       try {
@@ -749,7 +728,7 @@ class GGetTasksData_getTasksBuilder
         _$failedField = 'tags';
         _tags?.build();
       } catch (e) {
-        throw new BuiltValueNestedFieldError(
+        throw BuiltValueNestedFieldError(
             r'GGetTasksData_getTasks', _$failedField, e.toString());
       }
       rethrow;
@@ -769,19 +748,11 @@ class _$GGetTasksData_getTasks_goal extends GGetTasksData_getTasks_goal {
 
   factory _$GGetTasksData_getTasks_goal(
           [void Function(GGetTasksData_getTasks_goalBuilder)? updates]) =>
-      (new GGetTasksData_getTasks_goalBuilder()..update(updates))._build();
+      (GGetTasksData_getTasks_goalBuilder()..update(updates))._build();
 
   _$GGetTasksData_getTasks_goal._(
       {required this.G__typename, required this.id, required this.title})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetTasksData_getTasks_goal', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetTasksData_getTasks_goal', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        title, r'GGetTasksData_getTasks_goal', 'title');
-  }
-
+      : super._();
   @override
   GGetTasksData_getTasks_goal rebuild(
           void Function(GGetTasksData_getTasks_goalBuilder) updates) =>
@@ -789,7 +760,7 @@ class _$GGetTasksData_getTasks_goal extends GGetTasksData_getTasks_goal {
 
   @override
   GGetTasksData_getTasks_goalBuilder toBuilder() =>
-      new GGetTasksData_getTasks_goalBuilder()..replace(this);
+      GGetTasksData_getTasks_goalBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -855,7 +826,6 @@ class GGetTasksData_getTasks_goalBuilder
 
   @override
   void replace(GGetTasksData_getTasks_goal other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksData_getTasks_goal;
   }
 
@@ -869,13 +839,14 @@ class GGetTasksData_getTasks_goalBuilder
 
   _$GGetTasksData_getTasks_goal _build() {
     final _$result = _$v ??
-        new _$GGetTasksData_getTasks_goal._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GGetTasksData_getTasks_goal', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GGetTasksData_getTasks_goal', 'id'),
-            title: BuiltValueNullFieldError.checkNotNull(
-                title, r'GGetTasksData_getTasks_goal', 'title'));
+        _$GGetTasksData_getTasks_goal._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GGetTasksData_getTasks_goal', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GGetTasksData_getTasks_goal', 'id'),
+          title: BuiltValueNullFieldError.checkNotNull(
+              title, r'GGetTasksData_getTasks_goal', 'title'),
+        );
     replace(_$result);
     return _$result;
   }
@@ -891,19 +862,11 @@ class _$GGetTasksData_getTasks_tags extends GGetTasksData_getTasks_tags {
 
   factory _$GGetTasksData_getTasks_tags(
           [void Function(GGetTasksData_getTasks_tagsBuilder)? updates]) =>
-      (new GGetTasksData_getTasks_tagsBuilder()..update(updates))._build();
+      (GGetTasksData_getTasks_tagsBuilder()..update(updates))._build();
 
   _$GGetTasksData_getTasks_tags._(
       {required this.G__typename, required this.id, required this.name})
-      : super._() {
-    BuiltValueNullFieldError.checkNotNull(
-        G__typename, r'GGetTasksData_getTasks_tags', 'G__typename');
-    BuiltValueNullFieldError.checkNotNull(
-        id, r'GGetTasksData_getTasks_tags', 'id');
-    BuiltValueNullFieldError.checkNotNull(
-        name, r'GGetTasksData_getTasks_tags', 'name');
-  }
-
+      : super._();
   @override
   GGetTasksData_getTasks_tags rebuild(
           void Function(GGetTasksData_getTasks_tagsBuilder) updates) =>
@@ -911,7 +874,7 @@ class _$GGetTasksData_getTasks_tags extends GGetTasksData_getTasks_tags {
 
   @override
   GGetTasksData_getTasks_tagsBuilder toBuilder() =>
-      new GGetTasksData_getTasks_tagsBuilder()..replace(this);
+      GGetTasksData_getTasks_tagsBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
@@ -977,7 +940,6 @@ class GGetTasksData_getTasks_tagsBuilder
 
   @override
   void replace(GGetTasksData_getTasks_tags other) {
-    ArgumentError.checkNotNull(other, 'other');
     _$v = other as _$GGetTasksData_getTasks_tags;
   }
 
@@ -991,13 +953,14 @@ class GGetTasksData_getTasks_tagsBuilder
 
   _$GGetTasksData_getTasks_tags _build() {
     final _$result = _$v ??
-        new _$GGetTasksData_getTasks_tags._(
-            G__typename: BuiltValueNullFieldError.checkNotNull(
-                G__typename, r'GGetTasksData_getTasks_tags', 'G__typename'),
-            id: BuiltValueNullFieldError.checkNotNull(
-                id, r'GGetTasksData_getTasks_tags', 'id'),
-            name: BuiltValueNullFieldError.checkNotNull(
-                name, r'GGetTasksData_getTasks_tags', 'name'));
+        _$GGetTasksData_getTasks_tags._(
+          G__typename: BuiltValueNullFieldError.checkNotNull(
+              G__typename, r'GGetTasksData_getTasks_tags', 'G__typename'),
+          id: BuiltValueNullFieldError.checkNotNull(
+              id, r'GGetTasksData_getTasks_tags', 'id'),
+          name: BuiltValueNullFieldError.checkNotNull(
+              name, r'GGetTasksData_getTasks_tags', 'name'),
+        );
     replace(_$result);
     return _$result;
   }

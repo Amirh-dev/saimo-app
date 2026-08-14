@@ -13,7 +13,8 @@ abstract class GRefreshTokenVars
     implements Built<GRefreshTokenVars, GRefreshTokenVarsBuilder> {
   GRefreshTokenVars._();
 
-  factory GRefreshTokenVars([Function(GRefreshTokenVarsBuilder b) updates]) =
+  factory GRefreshTokenVars(
+          [void Function(GRefreshTokenVarsBuilder b) updates]) =
       _$GRefreshTokenVars;
 
   _i1.GRefreshTokenInput get input;
