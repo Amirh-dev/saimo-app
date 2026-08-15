@@ -131,7 +131,6 @@ class _AuthGate extends StatelessWidget {
         if (state is AuthNeedsRegistration) {
           return RegisterScreen(
             phoneNumber: state.phoneNumber,
-            code: state.code,
             completeProfileOnly: state.completeProfileOnly,
           );
         }

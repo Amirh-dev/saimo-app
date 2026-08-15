@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -1810,10 +1811,7 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const _SettingsRow(
-                  title: 'نسخه 1.0.1',
-                  subtitle: 'نسخه اپلیکیشن',
-                ),
+                AppVersionWidget(),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -1841,6 +1839,47 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+}
+
+class AppVersionWidget extends StatefulWidget {
+  const AppVersionWidget({
+    super.key,
+  });
+
+  @override
+  State<AppVersionWidget> createState() => _AppVersionWidgetState();
+}
+
+class _AppVersionWidgetState extends State<AppVersionWidget> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    if (!mounted) return;
+
+    setState(() {
+      _version = packageInfo.version;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_version.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return _SettingsRow(
+      title: 'نسخه $_version',
+      subtitle: 'نسخه اپلیکیشن',
     );
   }
 }
@@ -4794,10 +4833,10 @@ class _ProfileSummaryCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(3),
                       margin: const EdgeInsets.all(2),
                       decoration: BoxDecoration(color: AppColors.white.withAlpha(100), borderRadius: BorderRadius.circular(10)),
-                      child: Icon(IconsaxPlusBroken.edit, size: 16),
+                      child: Icon(IconsaxPlusBroken.edit, size: 14,color: AppColors.gray2),
                     ),
                   ],
                 ),

@@ -41,12 +41,10 @@ final class OtpSent extends AuthState {
 final class AuthNeedsRegistration extends AuthState {
   const AuthNeedsRegistration({
     required this.phoneNumber,
-    this.code,
     this.completeProfileOnly = false,
   });
 
   final String phoneNumber;
-  final String? code;
   final bool completeProfileOnly;
 }
 

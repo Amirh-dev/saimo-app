@@ -31,19 +31,16 @@ class AuthCubit extends Cubit<AuthState> {
   late final StreamSubscription<void> _sessionExpiredSubscription;
   static const _temporaryFullName = 'Simo User';
   _PendingRegistration? _pendingRegistration;
+  int _lastOtpExpiresInSeconds = 0;
+  String _lastOtpMessage = '';
 
-  void startRegistration() {
-    _pendingRegistration = null;
-    emit(const AuthNeedsRegistration(phoneNumber: ''));
-  }
-
-  Future<void> sendRegistrationOtp({
+  void prepareRegistrationForOtp({
     required String phoneNumber,
     required String fullName,
     required String username,
     required DateTime birthDate,
     required dynamic studyTime,
-  }) async {
+  }) {
     _pendingRegistration = _PendingRegistration(
       phoneNumber: phoneNumber,
       fullName: fullName,
@@ -51,20 +48,38 @@ class AuthCubit extends Cubit<AuthState> {
       birthDate: birthDate,
       studyTime: _resolveStudyTime(studyTime),
     );
-    await sendOtp(phoneNumber);
+
+    emit(
+      OtpSent(
+        phoneNumber: phoneNumber,
+        expiresInSeconds: _lastOtpExpiresInSeconds,
+        isRegistered: false,
+        message: _lastOtpMessage,
+      ),
+    );
   }
 
   Future<void> sendOtp(String phoneNumber) async {
+    final isPendingRegistrationResend =
+        _pendingRegistration?.phoneNumber == phoneNumber;
+
+    // A new phone number means a new auth flow.
+    // Do not destroy pending registration when this is an OTP resend.
+    if (!isPendingRegistrationResend) {
+      _pendingRegistration = null;
+    }
+
     emit(const AuthLoading(AuthAction.sendOtp));
 
     try {
       await _tokenStorage.clearTokens();
+
       final response = await _graphql.requestOnce(
         GSendOTPReq(
-          (request) {
+              (request) {
             request.vars.input.phoneNumber = phoneNumber;
             request.vars.input.client = GDeviceTokenPlatform.WEB;
-          }
+          },
         ),
         requiresAuth: false,
       );
@@ -83,6 +98,7 @@ class AuthCubit extends Cubit<AuthState> {
       }
 
       final payload = response.data?.sendOTP;
+
       if (payload == null || !payload.success) {
         emit(
           AuthFailure(
@@ -93,12 +109,44 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
+      _lastOtpExpiresInSeconds = payload.expiresInSeconds;
+      _lastOtpMessage = payload.message;
+
+      // Registered user:
+      // phone -> OTP -> login
+      if (payload.isRegistered) {
+        _pendingRegistration = null;
+
+        emit(
+          OtpSent(
+            phoneNumber: phoneNumber,
+            expiresInSeconds: payload.expiresInSeconds,
+            isRegistered: true,
+            message: payload.message,
+          ),
+        );
+        return;
+      }
+
+      // This is an OTP resend after the user already filled
+      // the registration form. Stay on OTP screen.
+      if (isPendingRegistrationResend) {
+        emit(
+          OtpSent(
+            phoneNumber: phoneNumber,
+            expiresInSeconds: payload.expiresInSeconds,
+            isRegistered: false,
+            message: payload.message,
+          ),
+        );
+        return;
+      }
+
+      // First time seeing this phone number:
+      // phone -> register screen
       emit(
-        OtpSent(
+        AuthNeedsRegistration(
           phoneNumber: phoneNumber,
-          expiresInSeconds: payload.expiresInSeconds,
-          isRegistered: payload.isRegistered,
-          message: payload.message,
         ),
       );
     } catch (error) {

@@ -90,18 +90,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     isLoading: isLoading,
                                     onPressed: _sendOtp,
                                     fontSize: 16,
-                                    text: 'ورود',
+                                    text: 'ورود / ثبت نام',
                                   ).tMargin(16),
-                                  ReButton(
-                                    isOutlined: true,
-                                    color: AppColors.gray2,
-                                    textColor: AppColors.black1,
-                                    background: AppColors.white,
-                                    isEnabled: !isLoading,
-                                    onPressed: _startRegistration,
-                                    fontSize: 16,
-                                    text: 'ثبت نام',
-                                  ).tMargin(8),
+                                  // ReButton(
+                                  //   isOutlined: true,
+                                  //   color: AppColors.gray2,
+                                  //   textColor: AppColors.black1,
+                                  //   background: AppColors.white,
+                                  //   isEnabled: !isLoading,
+                                  //   onPressed: _startRegistration,
+                                  //   fontSize: 16,
+                                  //   text: 'ثبت نام',
+                                  // ).tMargin(8),
                                 ],
                               ).hMargin(16).vMargin(18),
                             )
@@ -142,7 +142,4 @@ class _LoginScreenState extends State<LoginScreen> {
         );
   }
 
-  void _startRegistration() {
-    context.read<AuthCubit>().startRegistration();
-  }
 }

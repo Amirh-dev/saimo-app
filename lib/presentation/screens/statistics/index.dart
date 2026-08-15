@@ -102,41 +102,33 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(color: Color(0xffFCFCFC), borderRadius: BorderRadius.vertical(bottom: Radius.circular(48))),
-      child: SafeArea(
+      child: const SafeArea(
         bottom: false,
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              padding: EdgeInsets.symmetric(horizontal: 32.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(
+                  Icon(
                     IconsaxPlusLinear.notification,
                     size: 24,
                     color: Color(0xFF24242C),
                   ),
-                  const ReText(
+                  ReText(
                     'آمـــار',
                     color: AppColors.black1,
                     fontSize: 16,
                     fontWeight: 1000,
                   ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Icon(
-                      IconsaxPlusLinear.arrow_right_3,
-                      size: 20,
-                      color: Color(0xFF24242C),
-                    ),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            const _PeriodTabs(),
-            const SizedBox(height: 16),
+            SizedBox(height: 32),
+            _PeriodTabs(),
+            SizedBox(height: 16),
           ],
         ),
       ),

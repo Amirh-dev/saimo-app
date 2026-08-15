@@ -24,13 +24,11 @@ class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
     super.key,
     this.phoneNumber,
-    this.code,
     this.completeProfileOnly = false,
     this.usernameRepository,
   });
 
   final String? phoneNumber;
-  final String? code;
   final bool completeProfileOnly;
   final UsernameRepository? usernameRepository;
 
@@ -437,30 +435,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildPhoneField() {
-    return ReTextField(
-      controller: _phoneController,
-      keyboardType: TextInputType.number,
-      maxLength: 11,
-      placeholderAlign: TextAlign.right,
-      placeholder: 'شماره تماس',
-      backgroundColor: AppColors.gray1,
-      onChanged: (p0) {
-        setState(() {});
-      },
-      borderRadius: 100,
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      suffixIcon: const Padding(
-        padding: EdgeInsets.only(left: 15),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          widthFactor: 1,
-          child: ReText(
-            '98+',
-            isPersian: true,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black1,
+    return AbsorbPointer(
+      child: ReTextField(
+        controller: _phoneController,
+        keyboardType: TextInputType.number,
+        maxLength: 11,
+        placeholderAlign: TextAlign.right,
+        placeholder: 'شماره تماس',
+        backgroundColor: AppColors.gray1,
+        borderRadius: 100,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        suffixIcon: const Padding(
+          padding: EdgeInsets.only(left: 15),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: ReText(
+              '98+',
+              isPersian: true,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.black1,
+            ),
           ),
         ),
       ),
@@ -761,41 +758,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final phoneNumber = _normalizeDigits(_phoneController.text);
     final birthDate = _birthDate!.toGregorian();
+
     final registrationBirthDate = DateTime(
       birthDate.year,
       birthDate.month,
       birthDate.day,
     );
+
     if (widget.completeProfileOnly) {
       context.read<AuthCubit>().completeRegistrationProfile(
-            fullName: _fullNameController.text.trim(),
-            username: _validatedUsername!,
-            birthDate: registrationBirthDate,
-            studyTime: _studyTime,
-          );
+        fullName: _fullNameController.text.trim(),
+        username: _validatedUsername!,
+        birthDate: registrationBirthDate,
+        studyTime: _studyTime,
+      );
       return;
     }
 
-    final code = widget.code;
-    if (code == null || code.isEmpty) {
-      context.read<AuthCubit>().sendRegistrationOtp(
-            phoneNumber: phoneNumber,
-            fullName: _fullNameController.text.trim(),
-            username: _validatedUsername!,
-            birthDate: registrationBirthDate,
-            studyTime: _studyTime,
-          );
-      return;
-    }
-
-    context.read<AuthCubit>().verifyRegister(
-          phoneNumber: phoneNumber,
-          code: code,
-          fullName: _fullNameController.text.trim(),
-          username: _validatedUsername!,
-          birthDate: registrationBirthDate,
-          studyTime: _studyTime,
-        );
+    context.read<AuthCubit>().prepareRegistrationForOtp(
+      phoneNumber: phoneNumber,
+      fullName: _fullNameController.text.trim(),
+      username: _validatedUsername!,
+      birthDate: registrationBirthDate,
+      studyTime: _studyTime,
+    );
   }
 
   GUserStudyTime get _studyTime {
