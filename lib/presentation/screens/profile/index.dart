@@ -424,7 +424,7 @@ class _FriendProfileHeader extends StatelessWidget {
               const SizedBox(width: 8),
               const ClipOval(
                 child: ReImage(
-                  'Assets.profilePlaceholder',
+                  Assets.profilePlaceholder,
                   width: 46,
                   height: 46,
                 ),
@@ -1144,7 +1144,7 @@ class _MiniAvatarStack extends StatelessWidget {
                       )
                     : const ClipOval(
                         child: ReImage(
-                          'Assets.profilePlaceholder',
+                          Assets.profilePlaceholder,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -1327,7 +1327,7 @@ class _SuggestedProfileCard extends StatelessWidget {
         children: [
           ClipOval(
             child: const ReImage(
-              'Assets.profilePlaceholder',
+              Assets.profilePlaceholder,
               width: 48,
               height: 48,
             ),
@@ -3643,7 +3643,7 @@ class _FriendTileHeader extends StatelessWidget {
                   ],
                 ).rMargin(9),
                 _FriendAvatar(
-                  path: 'Assets.profilePlaceholder',
+                  path: Assets.profilePlaceholder,
                   isOnline: activity?.isOnline == true,
                 ),
               ],
@@ -4807,7 +4807,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                     isScrollControlled: true,
                     builder: (_) {
                       return ProfileAvatarBottomSheet(
-                        currentImageUrl: profile?.avatarURL ?? 'Assets.profilePlaceholder',
+                        currentImageUrl: profile?.avatarURL ?? Assets.profilePlaceholder,
                         onUpload: ({
                           required Uint8List imageBytes,
                           required String fileName,
@@ -4835,7 +4835,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(3),
                       margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(color: AppColors.white.withAlpha(100), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: AppColors.black1.withAlpha(100), borderRadius: BorderRadius.circular(10)),
                       child: Icon(IconsaxPlusBroken.edit, size: 14,color: AppColors.gray2),
                     ),
                   ],

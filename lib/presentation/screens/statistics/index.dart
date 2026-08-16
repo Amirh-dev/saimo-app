@@ -31,7 +31,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         currentIndex: 3,
         onTap: (index) => navigateToIndex(context, index, 3),
       ),
-      backgroundColor: const Color(0xffF5F5F9),
+      backgroundColor: AppColors.gray1,
       body: Column(
         children: [
           _statisticsAppBar(),

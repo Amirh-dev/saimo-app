@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
@@ -362,7 +363,7 @@ String formatTime(int seconds) {
     if(index == currentIndex) return;
     switch (index) {
       case 0:
-        context.toOff(const GoalScreen());
+        context.toOff(const DashboardScreen());
         break;
       case 1:
         context.toOff(const TasksScreen());
