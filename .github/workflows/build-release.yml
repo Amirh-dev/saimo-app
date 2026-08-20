@@ -59,18 +59,38 @@ jobs:
             exit 1
           fi
 
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-          {
-            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
-            echo "keyPassword=$ANDROID_KEY_PASSWORD"
-            echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "storeFile=upload-keystore.jks"
-          } > android/key.properties
+          keystore_path="$GITHUB_WORKSPACE/android/app/upload-keystore.jks"
+          signing_check="$RUNNER_TEMP/signing-check.p12"
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+
+          # Validate the store password and alias before starting the expensive build.
+          keytool -list \
+            -keystore "$keystore_path" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" > /dev/null
+
+          # Importing into a temporary store also verifies the private-key password.
+          keytool -importkeystore -noprompt \
+            -srckeystore "$keystore_path" \
+            -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -srcalias "$ANDROID_KEY_ALIAS" \
+            -srckeypass "$ANDROID_KEY_PASSWORD" \
+            -destkeystore "$signing_check" \
+            -deststoretype PKCS12 \
+            -deststorepass ci-signing-check \
+            -destkeypass ci-signing-check > /dev/null
+          rm -f "$signing_check"
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build signed APKs by ABI
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release --split-per-abi --build-number=${{ github.run_number }} --no-pub
 
       - name: Upload Android artifacts

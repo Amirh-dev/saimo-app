@@ -26,17 +26,30 @@ if (flutterVersionName == null) {
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
-def releaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
-    taskName.toLowerCase(Locale.ROOT).contains('release')
-}
-
-if (releaseTaskRequested && !keystorePropertiesFile.exists()) {
-    throw new GradleException('android/key.properties is required for release signing')
-}
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.withInputStream { stream ->
         keystoreProperties.load(stream)
     }
+}
+
+def releaseSigning = [
+    storeFile: System.getenv('ANDROID_KEYSTORE_PATH') ?: keystoreProperties.getProperty('storeFile'),
+    storePassword: System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: keystoreProperties.getProperty('storePassword'),
+    keyAlias: System.getenv('ANDROID_KEY_ALIAS') ?: keystoreProperties.getProperty('keyAlias'),
+    keyPassword: System.getenv('ANDROID_KEY_PASSWORD') ?: keystoreProperties.getProperty('keyPassword'),
+]
+def missingReleaseSigningValues = releaseSigning.findAll { key, value ->
+    value == null || value.toString().isBlank()
+}.keySet()
+def releaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase(Locale.ROOT).contains('release')
+}
+
+if (releaseTaskRequested && !missingReleaseSigningValues.isEmpty()) {
+    throw new GradleException(
+        "Missing release signing values: ${missingReleaseSigningValues.join(', ')}. " +
+        'Set the Android signing environment variables or android/key.properties.'
+    )
 }
 
 android {
@@ -61,11 +74,11 @@ android {
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
+            if (missingReleaseSigningValues.isEmpty()) {
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+                storeFile file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
             }
         }
     }
