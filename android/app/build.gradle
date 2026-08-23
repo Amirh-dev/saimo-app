@@ -1,0 +1,111 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // Firebase / Google Services (FCM) — must be applied after the Android plugin.
+    id "com.google.gms.google-services"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
+def releaseSigning = [
+    storeFile: System.getenv('ANDROID_KEYSTORE_PATH') ?: keystoreProperties.getProperty('storeFile'),
+    storePassword: System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: keystoreProperties.getProperty('storePassword'),
+    keyAlias: System.getenv('ANDROID_KEY_ALIAS') ?: keystoreProperties.getProperty('keyAlias'),
+    keyPassword: System.getenv('ANDROID_KEY_PASSWORD') ?: keystoreProperties.getProperty('keyPassword'),
+]
+def missingReleaseSigningValues = releaseSigning.findAll { key, value ->
+    value == null || value.toString().isBlank()
+}.keySet()
+def releaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase(Locale.ROOT).contains('release')
+}
+
+if (releaseTaskRequested && !missingReleaseSigningValues.isEmpty()) {
+    throw new GradleException(
+        "Missing release signing values: ${missingReleaseSigningValues.join(', ')}. " +
+        'Set the Android signing environment variables or android/key.properties.'
+    )
+}
+
+android {
+    namespace "app.ravi.saimo"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        // Required by flutter_local_notifications (uses java.time APIs).
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    signingConfigs {
+        release {
+            if (missingReleaseSigningValues.isEmpty()) {
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+                storeFile file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
+            }
+        }
+    }
+
+    defaultConfig {
+        applicationId "app.ravi.saimo"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        minSdkVersion flutter.minSdkVersion
+        compileSdkVersion 36
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+    // Required by flutter_local_notifications for core library desugaring.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}

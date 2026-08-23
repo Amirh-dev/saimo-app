@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -8,11 +6,11 @@ import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
 Row authHeaderWidget(
-    BuildContext context, {
-      required Enum authType,
-      VoidCallback? onBack,
-      bool backButton = false,
-    }) {
+  BuildContext context, {
+  required Enum authType,
+  VoidCallback? onBack,
+  bool backButton = false,
+}) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     crossAxisAlignment: CrossAxisAlignment.end,
@@ -34,22 +32,24 @@ Row authHeaderWidget(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          backButton ? GestureDetector(
-            onTap: onBack ?? () => context.back(),
-            child: Container(
-              width: 48,
-              height: 48,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0x23232b1a)),
-                  borderRadius: BorderRadius.circular(100)),
-              child: const Icon(
-                Icons.arrow_forward,
-                size: 18,
-                color: AppColors.gray,
-              ).hMargin(15).vMargin(15),
-            ),
-          ) : const SizedBox(),
+          backButton
+              ? GestureDetector(
+                  onTap: onBack ?? () => context.back(),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0x23232b1a)),
+                        borderRadius: BorderRadius.circular(100)),
+                    child: const Icon(
+                      Icons.arrow_forward,
+                      size: 18,
+                      color: AppColors.gray,
+                    ).hMargin(15).vMargin(15),
+                  ),
+                )
+              : const SizedBox(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

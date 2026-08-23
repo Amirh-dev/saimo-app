@@ -1,0 +1,159 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  android:
+    name: Android (signed split APKs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Configure release signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "One or more Android signing secrets are missing." >&2
+            exit 1
+          fi
+
+          keystore_path="$GITHUB_WORKSPACE/android/app/upload-keystore.jks"
+          signing_check="$RUNNER_TEMP/signing-check.p12"
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+
+          # Validate the store password and alias before starting the expensive build.
+          keytool -list \
+            -keystore "$keystore_path" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" > /dev/null
+
+          # Importing into a temporary store also verifies the private-key password.
+          keytool -importkeystore -noprompt \
+            -srckeystore "$keystore_path" \
+            -srcstorepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -srcalias "$ANDROID_KEY_ALIAS" \
+            -srckeypass "$ANDROID_KEY_PASSWORD" \
+            -destkeystore "$signing_check" \
+            -deststoretype PKCS12 \
+            -deststorepass ci-signing-check \
+            -destkeypass ci-signing-check > /dev/null
+          rm -f "$signing_check"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build signed APKs by ABI
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: flutter build apk --release --split-per-abi --build-number=${{ github.run_number }} --no-pub
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: saimo-android
+          path: build/app/outputs/flutter-apk/app-*-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  web:
+    name: Web (WASM with JavaScript fallback)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web app
+        run: flutter build web --release --wasm --no-pub
+
+      - name: Package web app
+        run: tar -czf build/saimo-web-wasm.tar.gz -C build/web .
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: saimo-web
+          path: build/saimo-web-wasm.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - android
+      - web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release/saimo-android/*.apk
+            release/saimo-web/saimo-web-wasm.tar.gz

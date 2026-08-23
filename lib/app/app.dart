@@ -21,10 +21,7 @@ import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:flutter_localization/flutter_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_localization/flutter_localization.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
