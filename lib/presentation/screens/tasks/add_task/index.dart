@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/core/global/global_data.dart';
+import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
@@ -22,7 +24,7 @@ DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
 
 List<String> _parseTagNames(String value) {
   return value
-      .split(RegExp(r'[,\u060C]'))
+      .split(' ')
       .map((tag) => tag.trim())
       .where((tag) => tag.isNotEmpty)
       .take(2)
@@ -144,18 +146,66 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     setState(() {});
   }
 
+  final List<ParentTagModel> _selectedTags = [];
+
+  List<ParentTagModel> get _availableTags {
+    return GlobalData.instance.parentTags;
+  }
+
+  List<String> get _selectedTagNames {
+    return _tagController.text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty)
+        .toList();
+  }
+
+  bool _isTagAlreadySelected(ParentTagModel tag) {
+    final selected = _tagController.text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty);
+
+    return selected.any(
+          (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
+    );
+  }
+
+  void _selectTag(ParentTagModel tag) {
+    if (_isTagAlreadySelected(tag)) return;
+
+    final currentText = _tagController.text.trim();
+
+    // Maximum 2 tags.
+    final currentParts = currentText
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (currentParts.length >= 2) return;
+
+    final newText = currentText.isEmpty
+        ? tag.name.trim()
+        : '$currentText ${tag.name.trim()}';
+
+    _tagController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+
+    setState(() {});
+
+    // Keep keyboard open so the user can select the second tag.
+    _tagFocusNode.requestFocus();
+  }
+
   bool get _isFormValid => _titleController.text.trim().isNotEmpty;
 
   int get _descriptionCount => _descriptionController.text.length;
 
   int get _noteCount => _noteController.text.length;
 
-  int get _tagsCount {
-    return _tagController.text
-        .split(RegExp(r'[,\u060C]'))
-        .where((tag) => tag.trim().isNotEmpty)
-        .length;
-  }
+  int get _tagsCount => _selectedTags.length;
 
   String get _scheduleDateLabel {
     final today = Jalali.now();
@@ -358,6 +408,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
     try {
       final taskDate = _toDateTime(_selectedDate);
+      final tagNames = _selectedTags
+          .map((tag) => tag.name)
+          .toList();
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -370,7 +423,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ..durationM = _selectedMinutes
               ..hasReminder = _isReminderEnabled
               ..recurringDays = _recurringDay(_selectedDate, _isWeeklyRepeat)
-              ..tagNames.addAll(_parseTagNames(tags));
+              ..tagNames.addAll(tagNames);
 
             final goalId = _emptyToNull(widget.goalId ?? '');
             if (goalId != null) {
@@ -480,12 +533,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                             '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
                       ),
                       SizedBox(height: sectionSpacing),
-                      _buildPillField(
-                        hintText: 'افزودن تگ',
-                        controller: _tagController,
-                        focusNode: _tagFocusNode,
-                        leadingPill: '${_tagsCount > 2 ? 2 : _tagsCount}/2',
-                      ),
+                      _buildTagSuggestionField(),
                       SizedBox(height: sectionSpacing + 2),
                       _buildDurationPicker(),
                       SizedBox(height: sectionSpacing),
@@ -530,6 +578,286 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTagSuggestionField() {
+    final isFocused = _tagFocusNode.hasFocus;
+
+    return RawAutocomplete<ParentTagModel>(
+      textEditingController: _tagController,
+      focusNode: _tagFocusNode,
+
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+
+        // Already have 2 tags.
+        if (_selectedTags.length >= 2) {
+          return const Iterable<ParentTagModel>.empty();
+        }
+
+        return GlobalData.instance.parentTags.where((tag) {
+          // Don't show already selected tags.
+          if (_selectedTags.any(
+                (selected) => selected.id == tag.id,
+          )) {
+            return false;
+          }
+
+          // When the user hasn't typed anything,
+          // show all available tags.
+          if (query.isEmpty) {
+            return true;
+          }
+
+          return tag.name.toLowerCase().contains(query);
+        });
+      },
+
+      displayStringForOption: (ParentTagModel tag) => tag.name,
+
+      onSelected: (ParentTagModel tag) {
+        if (_selectedTags.length >= 2) return;
+
+        setState(() {
+          _selectedTags.add(tag);
+        });
+
+        // The controller is ONLY the search/query text.
+        _tagController.clear();
+
+        // Let the user immediately type the second tag.
+        _tagFocusNode.requestFocus();
+      },
+
+      fieldViewBuilder: (
+          BuildContext context,
+          TextEditingController controller,
+          FocusNode focusNode,
+          VoidCallback onFieldSubmitted,
+          ) {
+        return Container(
+          constraints: const BoxConstraints(
+            minHeight: 55,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.gray1,
+            borderRadius: BorderRadius.circular(100),
+            border: isFocused
+                ? Border.all(
+              color: AppColors.primary,
+              width: 1.4,
+            )
+                : null,
+            boxShadow: isFocused
+                ? [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.10),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ]
+                : null,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 7,
+          ),
+          child: Row(
+            children: [
+              // Counter
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: ReText(
+                  '${_selectedTags.length}/2',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.black1.withOpacity(0.35),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    // Search / typing field
+                    if (_selectedTags.length < 2)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 70,
+                        ),
+                        child: IntrinsicWidth(
+                          child: TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            textAlign: TextAlign.right,
+                            textDirection: TextDirection.rtl,
+                            cursorColor: AppColors.primary,
+
+                            onChanged: (_) {
+                              setState(() {});
+                            },
+
+                            style: TextStyle(
+                              fontFamily: AppFonts.iranSansVar,
+                              color: AppColors.black1,
+                              fontSize: 15,
+                              fontVariations: AppFonts.fontVariations(
+                                FontWeight.w600,
+                              ),
+                            ),
+
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'افزودن تگ',
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintStyle: TextStyle(
+                                fontFamily: AppFonts.iranSansVar,
+                                color: AppColors.black1.withOpacity(0.45),
+                                fontSize: 13,
+                                fontVariations: AppFonts.fontVariations(
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Selected tag pills
+                    ..._selectedTags.map(
+                          (tag) => _buildSelectedTagChip(tag),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+
+      optionsViewBuilder: (
+          BuildContext context,
+          AutocompleteOnSelected<ParentTagModel> onSelected,
+          Iterable<ParentTagModel> options,
+          ) {
+        final items = options.toList();
+
+        if (items.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Align(
+          alignment: Alignment.topRight,
+          child: Material(
+            color: AppColors.white,
+            elevation: 8,
+            shadowColor: AppColors.black1.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: MediaQuery.of(context).size.width - 36,
+              constraints: const BoxConstraints(
+                maxHeight: 230,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: AppColors.gray2,
+                ),
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                ),
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (_, __) {
+                  return Divider(
+                    height: 1,
+                    color: AppColors.gray2,
+                  );
+                },
+                itemBuilder: (context, index) {
+                  final tag = items[index];
+
+                  return InkWell(
+                    onTap: () => onSelected(tag),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          ReText(
+                            tag.name,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.black1,
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSelectedTagChip(ParentTagModel tag) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.only(
+        left: 8,
+        right: 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.gray2,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedTags.removeWhere(
+                      (selected) => selected.id == tag.id,
+                );
+              });
+
+              _tagFocusNode.requestFocus();
+            },
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: AppColors.black1.withOpacity(0.45),
+            ),
+          ),
+
+          const SizedBox(width: 5),
+
+          ReText(
+            '#${tag.name}',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black1,
+          ),
+        ],
       ),
     );
   }
@@ -1059,6 +1387,59 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     super.dispose();
   }
 
+  final List<ParentTagModel> _selectedTags = [];
+
+  List<ParentTagModel> get _availableTags {
+    return GlobalData.instance.parentTags;
+  }
+
+  List<String> get _selectedTagNames {
+    return _tagController.text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty)
+        .toList();
+  }
+
+  bool _isTagAlreadySelected(ParentTagModel tag) {
+    final selected = _tagController.text
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty);
+
+    return selected.any(
+          (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
+    );
+  }
+
+  void _selectTag(ParentTagModel tag) {
+    if (_isTagAlreadySelected(tag)) return;
+
+    final currentText = _tagController.text.trim();
+
+    // Maximum 2 tags.
+    final currentParts = currentText
+        .split(RegExp(r'\s+'))
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (currentParts.length >= 2) return;
+
+    final newText = currentText.isEmpty
+        ? tag.name.trim()
+        : '$currentText ${tag.name.trim()}';
+
+    _tagController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+
+    setState(() {});
+
+    // Keep keyboard open so the user can select the second tag.
+    _tagFocusNode.requestFocus();
+  }
+
   void _handleFieldFocusChange() {
     if (!mounted) return;
     setState(() {});
@@ -1066,12 +1447,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   int get _descriptionCount => _descriptionController.text.length;
 
-  int get _tagsCount {
-    return _tagController.text
-        .split(RegExp(r'[,\u060C]'))
-        .where((tag) => tag.trim().isNotEmpty)
-        .length;
-  }
+  int get _tagsCount => _selectedTags.length;
 
   bool get _isFormValid => _titleController.text.trim().isNotEmpty;
 
@@ -1178,6 +1554,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     try {
       final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
+      final tagNames = _selectedTags
+          .map((tag) => tag.name)
+          .toList();
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -1188,7 +1567,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ..date.value = taskDate.toUtc().toIso8601String()
               ..hasReminder = _isReminderEnabled
               ..recurringDays = _recurringDay(_selectedDate, _isWeeklyRepeat)
-              ..tagNames.addAll(_parseTagNames(tags));
+              ..tagNames.addAll(tagNames);
 
             final goalId = _emptyToNull(widget.goalId ?? '');
             if (goalId != null) {
@@ -1206,6 +1585,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.createTask == null) {
+        debugPrint(response.graphqlErrors.toString());
+        debugPrint(response.linkException.toString());
         showReToast(
           context,
           graphQLResponseErrorMessage(response),
@@ -1289,12 +1670,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                             '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
                       ),
                       SizedBox(height: sectionSpacing),
-                      _buildField(
-                        hintText: 'افزودن تگ',
-                        controller: _tagController,
-                        focusNode: _tagFocusNode,
-                        leadingText: '${_tagsCount > 2 ? 2 : _tagsCount}/2',
-                      ),
+                      _buildTagSuggestionField(),
                       SizedBox(height: sectionSpacing + 4),
                       _buildDateCard(),
                       SizedBox(height: sectionSpacing + 2),
@@ -1337,6 +1713,286 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTagSuggestionField() {
+    final isFocused = _tagFocusNode.hasFocus;
+
+    return RawAutocomplete<ParentTagModel>(
+      textEditingController: _tagController,
+      focusNode: _tagFocusNode,
+
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+
+        // Already have 2 tags.
+        if (_selectedTags.length >= 2) {
+          return const Iterable<ParentTagModel>.empty();
+        }
+
+        return GlobalData.instance.parentTags.where((tag) {
+          // Don't show already selected tags.
+          if (_selectedTags.any(
+                (selected) => selected.id == tag.id,
+          )) {
+            return false;
+          }
+
+          // When the user hasn't typed anything,
+          // show all available tags.
+          if (query.isEmpty) {
+            return true;
+          }
+
+          return tag.name.toLowerCase().contains(query);
+        });
+      },
+
+      displayStringForOption: (ParentTagModel tag) => tag.name,
+
+      onSelected: (ParentTagModel tag) {
+        if (_selectedTags.length >= 2) return;
+
+        setState(() {
+          _selectedTags.add(tag);
+        });
+
+        // The controller is ONLY the search/query text.
+        _tagController.clear();
+
+        // Let the user immediately type the second tag.
+        _tagFocusNode.requestFocus();
+      },
+
+      fieldViewBuilder: (
+          BuildContext context,
+          TextEditingController controller,
+          FocusNode focusNode,
+          VoidCallback onFieldSubmitted,
+          ) {
+        return Container(
+          constraints: const BoxConstraints(
+            minHeight: 55,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.gray1,
+            borderRadius: BorderRadius.circular(100),
+            border: isFocused
+                ? Border.all(
+              color: AppColors.primary,
+              width: 1.4,
+            )
+                : null,
+            boxShadow: isFocused
+                ? [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.10),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ]
+                : null,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 7,
+          ),
+          child: Row(
+            children: [
+              // Counter
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: ReText(
+                  '${_selectedTags.length}/2',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.black1.withOpacity(0.35),
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              Expanded(
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    // Search / typing field
+                    if (_selectedTags.length < 2)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 70,
+                        ),
+                        child: IntrinsicWidth(
+                          child: TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            textAlign: TextAlign.right,
+                            textDirection: TextDirection.rtl,
+                            cursorColor: AppColors.primary,
+
+                            onChanged: (_) {
+                              setState(() {});
+                            },
+
+                            style: TextStyle(
+                              fontFamily: AppFonts.iranSansVar,
+                              color: AppColors.black1,
+                              fontSize: 15,
+                              fontVariations: AppFonts.fontVariations(
+                                FontWeight.w600,
+                              ),
+                            ),
+
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'افزودن تگ',
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                              hintStyle: TextStyle(
+                                fontFamily: AppFonts.iranSansVar,
+                                color: AppColors.black1.withOpacity(0.45),
+                                fontSize: 13,
+                                fontVariations: AppFonts.fontVariations(
+                                  FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Selected tag pills
+                    ..._selectedTags.map(
+                          (tag) => _buildSelectedTagChip(tag),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+
+      optionsViewBuilder: (
+          BuildContext context,
+          AutocompleteOnSelected<ParentTagModel> onSelected,
+          Iterable<ParentTagModel> options,
+          ) {
+        final items = options.toList();
+
+        if (items.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Align(
+          alignment: Alignment.topRight,
+          child: Material(
+            color: AppColors.white,
+            elevation: 8,
+            shadowColor: AppColors.black1.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: MediaQuery.of(context).size.width - 36,
+              constraints: const BoxConstraints(
+                maxHeight: 230,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: AppColors.gray2,
+                ),
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                ),
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (_, __) {
+                  return Divider(
+                    height: 1,
+                    color: AppColors.gray2,
+                  );
+                },
+                itemBuilder: (context, index) {
+                  final tag = items[index];
+
+                  return InkWell(
+                    onTap: () => onSelected(tag),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          ReText(
+                            tag.name,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.black1,
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSelectedTagChip(ParentTagModel tag) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.only(
+        left: 8,
+        right: 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.gray2,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedTags.removeWhere(
+                      (selected) => selected.id == tag.id,
+                );
+              });
+
+              _tagFocusNode.requestFocus();
+            },
+            child: Icon(
+              Icons.close,
+              size: 18,
+              color: AppColors.black1.withOpacity(0.45),
+            ),
+          ),
+
+          const SizedBox(width: 5),
+
+          ReText(
+            '#${tag.name}',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black1,
+          ),
+        ],
       ),
     );
   }

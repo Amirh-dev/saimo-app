@@ -5,8 +5,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ferry/ferry.dart' show FetchPolicy;
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -19,6 +22,7 @@ import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
+import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -27,8 +31,7 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
-class _TasksScreenState extends State<TasksScreen>
-    with TickerProviderStateMixin {
+class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin {
   late final Jalali _today;
   late Jalali _selectedDate;
   late AnimationController _animationController;
@@ -141,8 +144,7 @@ class _TasksScreenState extends State<TasksScreen>
   String _timeFromIso(String value) {
     final parsed = DateTime.tryParse(value)?.toLocal();
     if (parsed == null) return '';
-    final formatted =
-        '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+    final formatted = '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
     return convertToPersianNumbers(formatted);
   }
 
@@ -255,15 +257,217 @@ class _TasksScreenState extends State<TasksScreen>
     }
   }
 
+  Future<void> _completeChecklistTask(int index) async {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    final task = _checklistTasks[index];
+    final taskId = task['id'] as String?;
+
+    if (taskId == null || taskId.isEmpty) {
+      showReToast(
+        context,
+        'شناسه تسک پیدا نشد',
+        ReToastType.failed,
+      );
+      return;
+    }
+
+    // Don't send the request again if it's already completed.
+    if (task['status'] == 'done') return;
+
+    try {
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GUpdateTaskReq(
+          (request) {
+            request.vars.id = taskId;
+            request.vars.input.status = GTaskStatus.COMPLETED;
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.updateTask == null) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      // API succeeded -> update UI.
+      setState(() {
+        task['previousStatus'] = task['status'] ?? 'pending';
+        task['status'] = 'done';
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      showReToast(
+        context,
+        error.toString(),
+        ReToastType.failed,
+      );
+    }
+  }
+
+  Future<void> _deleteTask(int index) async {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    final task = _checklistTasks[index];
+    final taskId = task['id'] as String?;
+
+    if (taskId == null || taskId.isEmpty) {
+      showReToast(
+        context,
+        'شناسه تسک پیدا نشد',
+        ReToastType.failed,
+      );
+      return;
+    }
+
+    try {
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GDeleteTaskReq(
+          (request) {
+            request.vars.id = taskId;
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      setState(() {
+        _checklistTasks.removeAt(index);
+      });
+
+      showReToast(
+        context,
+        'تسک حذف شد',
+        ReToastType.success,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      showReToast(
+        context,
+        error.toString(),
+        ReToastType.failed,
+      );
+    }
+  }
+
+  Future<void> _addTaskToToday(int index) async {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    final task = _checklistTasks[index];
+    final taskId = task['id'] as String?;
+
+    if (taskId == null || taskId.isEmpty) {
+      showReToast(
+        context,
+        'شناسه تسک پیدا نشد',
+        ReToastType.failed,
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final currentDateValue = task['date'];
+
+    if (currentDateValue == null) {
+      // If there is no date, treat it as needing to be added today.
+    } else {
+      final currentDate = DateTime.tryParse(
+        currentDateValue.toString(),
+      );
+
+      if (currentDate != null) {
+        final taskDay = DateTime(
+          currentDate.toLocal().year,
+          currentDate.toLocal().month,
+          currentDate.toLocal().day,
+        );
+
+        // Already today.
+        if (taskDay == today) {
+          showReToast(
+            context,
+            'این تسک برای امروز است',
+            ReToastType.info,
+          );
+          return;
+        }
+      }
+    }
+
+    try {
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GUpdateTaskReq(
+          (request) {
+            request.vars.id = taskId;
+
+            final todayRfc3339 = today.toUtc().toIso8601String();
+
+            request.vars.input.date.value = todayRfc3339;
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.updateTask == null) {
+        showReToast(
+          context,
+          graphQLResponseErrorMessage(response),
+          ReToastType.failed,
+        );
+        return;
+      }
+
+      setState(() {
+        task['date'] = today.toIso8601String();
+      });
+
+      showReToast(
+        context,
+        'تسک به امروز اضافه شد',
+        ReToastType.success,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      showReToast(
+        context,
+        error.toString(),
+        ReToastType.failed,
+      );
+    }
+  }
+
   double _checklistRowHeightAt(int index) {
-    return _expandedChecklistTaskIndex == index
-        ? _checklistItemExpandedHeight
-        : _checklistItemCollapsedHeight;
+    return _expandedChecklistTaskIndex == index ? _checklistItemExpandedHeight : _checklistItemCollapsedHeight;
   }
 
   void _ensureTimedTaskTicker() {
-    final hasRunningTask =
-        _timedTasks.any((task) => task['status'] == 'running');
+    final hasRunningTask = _timedTasks.any((task) => task['status'] == 'running');
     if (!hasRunningTask) {
       _timedTaskTicker?.cancel();
       _timedTaskTicker = null;
@@ -313,8 +517,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   void _toggleChecklistTaskActions(int index) {
     setState(() {
-      _expandedChecklistTaskIndex =
-          _expandedChecklistTaskIndex == index ? null : index;
+      _expandedChecklistTaskIndex = _expandedChecklistTaskIndex == index ? null : index;
     });
   }
 
@@ -324,7 +527,7 @@ class _TasksScreenState extends State<TasksScreen>
     });
   }
 
-  Future<bool> _confirmDeleteTask() async {
+  Future<bool> _confirmDeleteTask(index) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -383,7 +586,11 @@ class _TasksScreenState extends State<TasksScreen>
                         text: 'حذف',
                         background: AppColors.errorColor,
                         textColor: AppColors.white,
-                        onTap: () => Navigator.of(context).pop(true),
+                        onTap: () async {
+                          await _deleteTask(index);
+                          Navigator.of(context).pop(false);
+                          unawaited(_loadTasksForSelectedDate());
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -409,7 +616,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   Future<void> _requestDeleteChecklistTask(int index) async {
     if (index < 0 || index >= _checklistTasks.length) return;
-    final confirmed = await _confirmDeleteTask();
+    final confirmed = await _confirmDeleteTask(index);
     if (!confirmed || !mounted) return;
     _deleteChecklistTask(index);
   }
@@ -421,8 +628,7 @@ class _TasksScreenState extends State<TasksScreen>
       _timedTasks.removeAt(index);
       if (_expandedTimedTaskIndex == index) {
         _expandedTimedTaskIndex = null;
-      } else if (_expandedTimedTaskIndex != null &&
-          _expandedTimedTaskIndex! > index) {
+      } else if (_expandedTimedTaskIndex != null && _expandedTimedTaskIndex! > index) {
         _expandedTimedTaskIndex = _expandedTimedTaskIndex! - 1;
       }
     });
@@ -432,7 +638,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   Future<void> _requestDeleteTimedTask(int index) async {
     if (index < 0 || index >= _timedTasks.length) return;
-    final confirmed = await _confirmDeleteTask();
+    final confirmed = await _confirmDeleteTask(index);
     if (!confirmed || !mounted) return;
     _deleteTimedTask(index);
   }
@@ -445,8 +651,7 @@ class _TasksScreenState extends State<TasksScreen>
 
       if (_expandedChecklistTaskIndex == index) {
         _expandedChecklistTaskIndex = null;
-      } else if (_expandedChecklistTaskIndex != null &&
-          _expandedChecklistTaskIndex! > index) {
+      } else if (_expandedChecklistTaskIndex != null && _expandedChecklistTaskIndex! > index) {
         _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! - 1;
       }
     });
@@ -461,8 +666,7 @@ class _TasksScreenState extends State<TasksScreen>
 
       task['status'] = 'pending';
       task['date'] = Jalali.now();
-      task['time'] =
-          '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
+      task['time'] = '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
 
       _checklistTasks.insert(0, task);
       _expandedChecklistTaskIndex = 0;
@@ -506,13 +710,6 @@ class _TasksScreenState extends State<TasksScreen>
           color: AppColors.white,
           borderRadius: BorderRadius.circular(isExpanded ? 36 : 100),
           border: Border.all(color: AppColors.gray2),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black1.withOpacity(0.06),
-              blurRadius: 100,
-              offset: const Offset(0, 6),
-            ),
-          ],
         ),
         child: Material(
           color: Colors.transparent,
@@ -547,9 +744,7 @@ class _TasksScreenState extends State<TasksScreen>
                                   fontSize: titleSize,
                                   fontWeight: FontWeight.w900,
                                   color: AppColors.black1,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : TextDecoration.none,
+                                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
                                 ),
                                 const SizedBox(height: 2),
                                 ReText(
@@ -561,9 +756,7 @@ class _TasksScreenState extends State<TasksScreen>
                                     0.25,
                                   ),
                                   fontWeight: FontWeight.w600,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : TextDecoration.none,
+                                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
                                 ),
                               ],
                             ),
@@ -590,11 +783,15 @@ class _TasksScreenState extends State<TasksScreen>
                             Expanded(
                               child: _TaskItemActionButton(
                                 text: 'افزودن به امروز',
+                                disable: DateTime.now().year == task['date'].toDateTime().year && DateTime.now().month == task['date'].toDateTime().month && DateTime.now().day == task['date'].toDateTime().day,
                                 textColor: AppColors.primary,
                                 background: const Color(0xFFFBEAE5),
                                 icon: Icons.add,
                                 iconColor: AppColors.primary,
-                                onTap: () => _addChecklistTaskToToday(index),
+                                onTap: () async {
+                                  await _addTaskToToday(index);
+                                  unawaited(_loadTasksForSelectedDate());
+                                },
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -638,54 +835,57 @@ class _TasksScreenState extends State<TasksScreen>
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Task cards
-            Expanded(
-              child: ListView.builder(
-                controller: _checklistCardsScrollController,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemCount: tasks.length,
-                itemBuilder: (_, index) => AnimatedContainer(
-                  duration: _taskExpansionDuration,
-                  curve: Curves.easeOutCubic,
-                  height: _checklistRowHeightAt(index),
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: _buildTaskTile(
-                    context,
-                    tasks[index],
-                    index,
-                  ).lMargin(12),
-                ),
-              ),
-            ),
-
-            // Dots timeline
-            SizedBox(
-              width: 50,
-              child: ListView.builder(
-                controller: _checklistDotsScrollController,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                itemCount: tasks.length,
-                itemBuilder: (_, index) {
-                  final task = tasks[index];
-                  return AnimatedContainer(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Task cards
+              Expanded(
+                child: ListView.builder(
+                  controller: _checklistCardsScrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  itemCount: tasks.length,
+                  itemBuilder: (_, index) => AnimatedContainer(
                     duration: _taskExpansionDuration,
                     curve: Curves.easeOutCubic,
                     height: _checklistRowHeightAt(index),
-                    child: ReTimelineDot(
-                      showTopLine: index != 0,
-                      showBottomLine: index != tasks.length - 1,
-                      isDone: task['status'] == 'done',
-                      height: _checklistRowHeightAt(index),
-                      onTap: () => _toggleChecklistTaskStatus(index),
-                    ),
-                  );
-                },
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: _buildTaskTile(
+                      context,
+                      tasks[index],
+                      index,
+                    ).lMargin(12),
+                  ),
+                ),
               ),
-            ),
-          ],
+
+              // Dots timeline
+              SizedBox(
+                width: 50,
+                child: ListView.builder(
+                  controller: _checklistDotsScrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  itemCount: tasks.length,
+                  itemBuilder: (_, index) {
+                    final task = tasks[index];
+                    return AnimatedContainer(
+                      duration: _taskExpansionDuration,
+                      curve: Curves.easeOutCubic,
+                      height: _checklistRowHeightAt(index),
+                      child: ReTimelineDot(
+                        showTopLine: index != 0,
+                        showBottomLine: index != tasks.length - 1,
+                        isDone: task['status'] == 'done',
+                        height: _checklistRowHeightAt(index),
+                        onTap: () => _completeChecklistTask(index),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -753,8 +953,7 @@ class _TasksScreenState extends State<TasksScreen>
     final safeSeconds = math.max(0, seconds);
     final minutes = safeSeconds ~/ 60;
     final remainingSeconds = safeSeconds % 60;
-    final formatted =
-        '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    final formatted = '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
     return convertToPersianNumbers(formatted);
   }
 
@@ -922,7 +1121,7 @@ class _TasksScreenState extends State<TasksScreen>
           ],
         ),
         padding: EdgeInsets.symmetric(
-          horizontal: 14,
+          horizontal: 16,
           vertical: hasProgress ? 10 : 8,
         ),
         child: Column(
@@ -958,8 +1157,7 @@ class _TasksScreenState extends State<TasksScreen>
                           fontSize: titleSize,
                           fontWeight: FontWeight.w900,
                           color: AppColors.black1,
-                          decoration:
-                              isDone ? TextDecoration.lineThrough : null,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
                         ),
                         const SizedBox(height: 2),
                         ReText(
@@ -971,8 +1169,7 @@ class _TasksScreenState extends State<TasksScreen>
                             0.25,
                           ),
                           fontWeight: FontWeight.w600,
-                          decoration:
-                              isDone ? TextDecoration.lineThrough : null,
+                          decoration: isDone ? TextDecoration.lineThrough : null,
                         ),
                       ],
                     ),
@@ -1051,9 +1248,7 @@ class _TasksScreenState extends State<TasksScreen>
                             text: status == 'running' ? 'توقف' : 'شروع',
                             textColor: AppColors.primary,
                             background: const Color(0xFFFBEAE5),
-                            icon: status == 'running'
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
+                            icon: status == 'running' ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             iconColor: AppColors.primary,
                             onTap: () => _toggleTimedTaskTimer(index),
                           ),
@@ -1189,8 +1384,7 @@ class _TasksScreenState extends State<TasksScreen>
                     children: [
                       GestureDetector(
                         onTap: () {
-                          final controller =
-                              DefaultTabController.maybeOf(tabContext);
+                          final controller = DefaultTabController.maybeOf(tabContext);
                           if (controller != null && controller.index == 1) {
                             _openAddTimedTaskScreen();
                             return;
@@ -1358,17 +1552,59 @@ class _TasksScreenState extends State<TasksScreen>
         children: [
           Row(
             children: [
-              Container(
-                margin: const EdgeInsets.only(right: 4),
-                width: 44,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: const Icon(
-                  SolarIconsOutline.calendar,
-                  color: AppColors.black1,
+              GestureDetector(
+                onTap: () async {
+                  Jalali? picked = await showPersianDatePicker(
+                    context: context,
+                    initialDate: Jalali.now(),
+                    firstDate: Jalali(1385, 8),
+                    lastDate: Jalali(1450, 9),
+                    holidayConfig: const PersianHolidayConfig(weekendDays: {7}),
+                    initialEntryMode: PersianDatePickerEntryMode.calendarOnly,
+                    initialDatePickerMode: PersianDatePickerMode.day,
+                    locale: const Locale('fa', "IR"),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          primaryColor: AppColors.black1, // Override primary color
+                          colorScheme: const ColorScheme(
+                            brightness: Brightness.light,
+                            primary: AppColors.black1,
+                            onPrimary: AppColors.white,
+                            secondary: AppColors.gray1,
+                            onSecondary: AppColors.black1,
+                            error: AppColors.white,
+                            onError: AppColors.white,
+                            surface: AppColors.white,
+                            onSurface: AppColors.gray,
+                          ),
+                          // Add more customization here
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _selectedDate = picked;
+                      _animationController.forward(from: 0.0);
+                      _slideAnimationController.forward(from: 0.0);
+                      unawaited(_loadTasksForSelectedDate());
+                    });
+                  }
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  width: 44,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Icon(
+                    IconsaxPlusLinear.calendar,
+                    color: AppColors.black1,
+                  ),
                 ),
               ),
               const SizedBox(width: 0),
@@ -1399,9 +1635,7 @@ class _TasksScreenState extends State<TasksScreen>
                         curve: Curves.easeInOutCubic,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.black1
-                              : Colors.transparent,
+                          color: isSelected ? AppColors.black1 : Colors.transparent,
                           borderRadius: BorderRadius.circular(100),
                         ),
                         padding: EdgeInsets.symmetric(
@@ -1508,6 +1742,7 @@ class _TaskItemActionButton extends StatelessWidget {
     required this.iconColor,
     required this.onTap,
     this.borderColor,
+    this.disable,
   });
 
   final String text;
@@ -1517,35 +1752,39 @@ class _TaskItemActionButton extends StatelessWidget {
   final Color iconColor;
   final VoidCallback onTap;
   final Color? borderColor;
+  final bool? disable;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(100),
-          border: borderColor == null ? null : Border.all(color: borderColor!),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 26,
-              color: iconColor,
-            ),
-            const Spacer(),
-            ReText(
-              text,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: textColor,
-            ),
-          ],
+    return Opacity(
+      opacity: disable ?? false ? 0.4 : 1,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: disable ?? false ? () {} : onTap,
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(100),
+            border: borderColor == null ? null : Border.all(color: borderColor!),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: iconColor,
+              ),
+              const Spacer(),
+              ReText(
+                text,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: textColor,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
+
+import '../../../graphql/queries/__generated__/statistics_dashboard.data.gql.dart';
 
 // --- Data Models ---
 
@@ -38,9 +42,17 @@ class ChartData {
 // --- Main Widget ---
 
 class StudyChart extends StatefulWidget {
-  final bool isDateChart;
+  final bool isDailyChart;
+  final List<GStatisticsDashboardData_statisticsDashboard_dailyBuckets> dailyBuckets;
 
-  const StudyChart({required this.isDateChart, super.key});
+  final List<GStatisticsDashboardData_statisticsDashboard_subjectBuckets> subjectBuckets;
+
+  const StudyChart({
+    required this.isDailyChart,
+    required this.dailyBuckets,
+    required this.subjectBuckets,
+    super.key,
+  });
 
   @override
   State<StudyChart> createState() => _StudyChartState();
@@ -50,202 +62,150 @@ class _StudyChartState extends State<StudyChart> {
   int? _selectedIndex;
   Timer? _closeTimer;
 
-  final List<ChartData> _dateData = [
-    ChartData(
-      topLabel: '۲:۱۲"',
-      day: '۲۸',
-      label: 'فروردین',
-      hoursValue: 2.2,
-      performance: Performance.medium,
-      tasksCount: '۲',
-      dayOfWeek: 'دوشنبه',
-      dayOfMonth: '۲۸ فروردین',
-      hours: '۲',
-      minutes: '۱۲',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۵:۴۵"',
-      day: '۲۹',
-      label: 'فروردین',
-      hoursValue: 5.75,
-      performance: Performance.good,
-      tasksCount: '۵',
-      dayOfWeek: 'سه‌شنبه',
-      dayOfMonth: '۲۹ فروردین',
-      hours: '۵',
-      minutes: '۴۵',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۳:۳۲"',
-      day: '۳۰',
-      label: 'فروردین',
-      hoursValue: 3.5,
-      performance: Performance.medium,
-      tasksCount: '۳',
-      dayOfWeek: 'چهارشنبه',
-      dayOfMonth: '۳۰ فروردین',
-      hours: '۳',
-      minutes: '۳۲',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۳:۰۰"',
-      day: '۳۱',
-      label: 'فروردین',
-      hoursValue: 1.0,
-      performance: Performance.weak,
-      tasksCount: '۱',
-      dayOfWeek: 'پنج‌شنبه',
-      dayOfMonth: '۳۱ فروردین',
-      hours: '۱',
-      minutes: '۰',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۱:۱۵"',
-      day: '۱',
-      label: 'اردیبهشت',
-      hoursValue: 1.25,
-      performance: Performance.weak,
-      tasksCount: '۱',
-      dayOfWeek: 'جمعه',
-      dayOfMonth: '۱ اردیبهشت',
-      hours: '۱',
-      minutes: '۱۵',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۰',
-      day: '۲',
-      label: 'اردیبهشت',
-      hoursValue: 0.0,
-      performance: Performance.none,
-      tasksCount: '۴',
-      dayOfWeek: 'شنبه',
-      dayOfMonth: '۲ اردیبهشت',
-      hours: '۴',
-      minutes: '۱۰',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۰',
-      day: '۳',
-      label: 'اردیبهشت',
-      hoursValue: 0.0,
-      performance: Performance.none,
-      tasksCount: '۰',
-      dayOfWeek: 'یکشنبه',
-      dayOfMonth: '۳ اردیبهشت',
-      hours: '۰',
-      minutes: '۰',
-      year: '۱۴۰۴',
-    ),
-  ];
+  List<ChartData> get _dateData {
+    return widget.dailyBuckets.map<ChartData>((bucket) {
+      Jalali startTime = Jalali.fromDateTime(DateTime.parse(bucket.start.value));
+      final seconds = bucket.studySeconds;
+      final duration = Duration(seconds: seconds);
 
-  final List<ChartData> _tagData = [
-    ChartData(
-      topLabel: '۲:۱۲"',
-      day: '۲۸',
-      label: 'عربی',
-      hoursValue: 2.2,
-      performance: Performance.medium,
-      tasksCount: '۲',
-      dayOfWeek: 'دوشنبه',
-      dayOfMonth: '۲۸ فروردین',
-      hours: '۲',
-      minutes: '۱۲',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۵:۴۵"',
-      day: '۲۹',
-      label: 'ریاضی',
-      hoursValue: 5.75,
-      performance: Performance.good,
-      tasksCount: '۵',
-      dayOfWeek: 'سه‌شنبه',
-      dayOfMonth: '۲۹ فروردین',
-      hours: '۵',
-      minutes: '۴۵',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۳:۳۲"',
-      day: '۳۰',
-      label: 'انگلیسی',
-      hoursValue: 3.5,
-      performance: Performance.medium,
-      tasksCount: '۳',
-      dayOfWeek: 'چهارشنبه',
-      dayOfMonth: '۳۰ فروردین',
-      hours: '۳',
-      minutes: '۳۲',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۳:۰۰"',
-      day: '۳۱',
-      label: 'فارسی',
-      hoursValue: 1.0,
-      performance: Performance.weak,
-      tasksCount: '۱',
-      dayOfWeek: 'پنج‌شنبه',
-      dayOfMonth: '۳۱ فروردین',
-      hours: '۱',
-      minutes: '۰',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۱:۱۵"',
-      day: '۱',
-      label: 'کتاب',
-      hoursValue: 1.25,
-      performance: Performance.weak,
-      tasksCount: '۱',
-      dayOfWeek: 'جمعه',
-      dayOfMonth: '۱ اردیبهشت',
-      hours: '۱',
-      minutes: '۱۵',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۰',
-      day: '۲',
-      label: 'شیمی',
-      hoursValue: 0.0,
-      performance: Performance.none,
-      tasksCount: '۴',
-      dayOfWeek: 'شنبه',
-      dayOfMonth: '۲ اردیبهشت',
-      hours: '۴',
-      minutes: '۱۰',
-      year: '۱۴۰۴',
-    ),
-    ChartData(
-      topLabel: '۰',
-      day: '۳',
-      label: 'فیزیک',
-      hoursValue: 0.0,
-      performance: Performance.none,
-      tasksCount: '۰',
-      dayOfWeek: 'یکشنبه',
-      dayOfMonth: '۳ اردیبهشت',
-      hours: '۰',
-      minutes: '۰',
-      year: '۱۴۰۴',
-    ),
-  ];
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes.remainder(60);
 
-  List<ChartData> get _currentData =>
-      widget.isDateChart ? _dateData : _tagData;
+      return ChartData(
+        topLabel: _formatDuration(hours, minutes),
+        day: _toPersianNumber(startTime.day.toString()),
+        label: _getPersianMonth(startTime.month),
+        hoursValue: seconds / 3600.0,
+        performance: _getPerformance(bucket),
+        tasksCount: _toPersianNumber(
+          bucket.completedTasks.toString(),
+        ),
+        dayOfMonth: _toPersianNumber(
+          '${startTime.day} ${_getPersianMonth(startTime.month)}',
+        ),
+        dayOfWeek: _getPersianWeekday(startTime.toDateTime()),
+        hours: _toPersianNumber(hours.toString()),
+        minutes: _toPersianNumber(minutes.toString()),
+        year: _toPersianNumber(
+          startTime.year.toString(),
+        ),
+      );
+    }).toList();
+  }
+
+  List<ChartData> get _tagData {
+    return widget.subjectBuckets.map<ChartData>((bucket) {
+      final seconds = bucket.studySeconds;
+      final duration = Duration(seconds: seconds);
+
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes.remainder(60);
+
+      return ChartData(
+        topLabel: _formatDuration(hours, minutes),
+        day: '',
+        label: bucket.tagName,
+        hoursValue: seconds / 3600.0,
+        performance: _getPerformance(bucket),
+        tasksCount: _toPersianNumber(
+          bucket.completedTasks.toString(),
+        ),
+        dayOfWeek: '',
+        dayOfMonth: '',
+        hours: _toPersianNumber(hours.toString()),
+        minutes: _toPersianNumber(minutes.toString()),
+        year: '',
+      );
+    }).toList();
+  }
+
+  String _formatDuration(int hours, int minutes) {
+    if (hours == 0 && minutes == 0) {
+      return '۰';
+    }
+
+    return '${_toPersianNumber(hours.toString())}:'
+        '${_toPersianNumber(minutes.toString().padLeft(2, '0'))}"';
+  }
+
+  Performance _getPerformance(dynamic bucket) {
+    final seconds = bucket.studySeconds as int;
+
+    if (seconds <= 0) {
+      return Performance.none;
+    }
+
+    final hours = seconds / 3600.0;
+
+    if (hours >= 4) {
+      return Performance.good;
+    }
+
+    if (hours >= 2) {
+      return Performance.medium;
+    }
+
+    return Performance.weak;
+  }
+
+  Jalali _toJalali(DateTime date) {
+    return Jalali.fromDateTime(date);
+  }
+
+  String _getPersianMonth(int month) {
+    const months = [
+      'فروردین',
+      'اردیبهشت',
+      'خرداد',
+      'تیر',
+      'مرداد',
+      'شهریور',
+      'مهر',
+      'آبان',
+      'آذر',
+      'دی',
+      'بهمن',
+      'اسفند',
+    ];
+
+    return months[month - 1];
+  }
+
+  String _getPersianWeekday(DateTime date) {
+    const weekdays = [
+      'دوشنبه',
+      'سه‌شنبه',
+      'چهارشنبه',
+      'پنج‌شنبه',
+      'جمعه',
+      'شنبه',
+      'یکشنبه',
+    ];
+
+    return weekdays[date.weekday - 1];
+  }
+
+  String _toPersianNumber(String value) {
+    const english = '0123456789';
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+
+    for (var i = 0; i < english.length; i++) {
+      value = value.replaceAll(
+        english[i],
+        persian[i],
+      );
+    }
+
+    return value;
+  }
+
+  List<ChartData> get _currentData => widget.isDailyChart ? _dateData : _tagData;
 
   @override
   void didUpdateWidget(covariant StudyChart oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.isDateChart != widget.isDateChart) {
+    if (oldWidget.isDailyChart != widget.isDailyChart) {
       _selectedIndex = null;
       _closeTimer?.cancel();
     }
@@ -334,7 +294,7 @@ class _StudyChartState extends State<StudyChart> {
                                 _buildGridLines(),
                                 _buildAxesLines(),
                                 _buildBars(constraints),
-                                if (_selectedIndex != null) _buildTooltip(constraints),
+                                if (_selectedIndex != null) _buildTooltip(constraints, widget.isDailyChart),
                               ],
                             );
                           },
@@ -350,6 +310,14 @@ class _StudyChartState extends State<StudyChart> {
         ),
       ),
     );
+  }
+
+  double get _maxHours {
+    if (_currentData.isEmpty) return 8.0;
+
+    final maxValue = _currentData.map((item) => item.hoursValue).reduce((a, b) => a > b ? a : b);
+
+    return maxValue <= 0 ? 1.0 : maxValue;
   }
 
   Widget _buildYAxis() {
@@ -409,8 +377,7 @@ class _StudyChartState extends State<StudyChart> {
             final chartHeight = constraints.maxHeight - 48;
 
             // Minimum height for 0 values to show the grey dot
-            final barHeight = item.hoursValue > 0 ? (item.hoursValue / 8.0) * chartHeight : 12.0;
-
+            final barHeight = item.hoursValue > 0 ? (item.hoursValue / 8) * chartHeight : 12.0;
             final isSelected = _selectedIndex == index;
 
             return GestureDetector(
@@ -445,12 +412,12 @@ class _StudyChartState extends State<StudyChart> {
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                         boxShadow: isSelected
                             ? [
-                          BoxShadow(
-                            color: _getColor(item.performance).withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
+                                BoxShadow(
+                                  color: _getColor(item.performance).withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )
+                              ]
                             : [],
                       ),
                     ),
@@ -486,7 +453,7 @@ class _StudyChartState extends State<StudyChart> {
     );
   }
 
-  Widget _buildTooltip(BoxConstraints constraints) {
+  Widget _buildTooltip(BoxConstraints constraints, bool isDaily) {
     if (_selectedIndex == null) return const SizedBox.shrink();
 
     final item = _currentData[_selectedIndex!];
@@ -544,43 +511,46 @@ class _StudyChartState extends State<StudyChart> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      item.dayOfWeek,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                    Text(
-                      ' ${item.dayOfMonth} ',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    Text(
-                      item.year,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
+                isDaily
+                    ? Row(
+                        children: [
+                          ReText(
+                            item.dayOfWeek,
+                            color: Colors.white, fontSize: 12,
+                          ),
+                          ReText(
+                            ' ${item.dayOfMonth} ',
+                            color: Colors.white70, fontSize: 12,
+                          ),
+                          ReText(
+                           ' ${item.year}',
+                            color: Colors.white70, fontSize: 12,
+                          ),
+                        ],
+                      )
+                    : const SizedBox(),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
+                    ReText(
                       item.hours,
-                      style: const TextStyle(color: AppColors.white, fontSize: 12),
+                      color: AppColors.white,
+                      fontSize: 12,
                     ),
-                    const Text(
+                    const ReText(
                       ' ساعت و ',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      color: Colors.white70, fontSize: 12,
                     ),
-                    Text(
-                      item.minutes,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ReText(
+                      ' ${item.minutes}',
+                      color: Colors.white70, fontSize: 12,
                     ),
-                    const Text(
+                    const ReText(
                       ' دقیقه',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      color: Colors.white70, fontSize: 12,
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -617,7 +587,7 @@ class _StudyChartState extends State<StudyChart> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.black1)),
+        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
       ],
     );
   }
@@ -663,7 +633,7 @@ class GridPainter extends CustomPainter {
 class TooltipPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF222226);
+    final paint = Paint()..color = AppColors.black1;
 
     final path = Path();
     const double radius = 12.0;

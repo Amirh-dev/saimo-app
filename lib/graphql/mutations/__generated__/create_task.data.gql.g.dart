@@ -10,9 +10,6 @@ Serializer<GCreateTaskData> _$gCreateTaskDataSerializer =
     _$GCreateTaskDataSerializer();
 Serializer<GCreateTaskData_createTask> _$gCreateTaskDataCreateTaskSerializer =
     _$GCreateTaskData_createTaskSerializer();
-Serializer<GCreateTaskData_createTask_tags>
-    _$gCreateTaskDataCreateTaskTagsSerializer =
-    _$GCreateTaskData_createTask_tagsSerializer();
 
 class _$GCreateTaskDataSerializer
     implements StructuredSerializer<GCreateTaskData> {
@@ -84,6 +81,12 @@ class _$GCreateTaskData_createTaskSerializer
           specifiedType: const FullType(String)),
       'id',
       serializers.serialize(object.id, specifiedType: const FullType(String)),
+      'createdAt',
+      serializers.serialize(object.createdAt,
+          specifiedType: const FullType(_i2.GTime)),
+      'updatedAt',
+      serializers.serialize(object.updatedAt,
+          specifiedType: const FullType(_i2.GTime)),
       'title',
       serializers.serialize(object.title,
           specifiedType: const FullType(String)),
@@ -93,12 +96,18 @@ class _$GCreateTaskData_createTaskSerializer
       'date',
       serializers.serialize(object.date,
           specifiedType: const FullType(_i2.GTime)),
+      'elapsedSeconds',
+      serializers.serialize(object.elapsedSeconds,
+          specifiedType: const FullType(int)),
       'hasReminder',
       serializers.serialize(object.hasReminder,
           specifiedType: const FullType(bool)),
       'status',
       serializers.serialize(object.status,
           specifiedType: const FullType(_i2.GTaskStatus)),
+      'userID',
+      serializers.serialize(object.userID,
+          specifiedType: const FullType(String)),
     ];
     Object? value;
     value = object.shortDescription;
@@ -121,6 +130,20 @@ class _$GCreateTaskData_createTaskSerializer
         ..add('durationM')
         ..add(serializers.serialize(value, specifiedType: const FullType(int)));
     }
+    value = object.timerStartedAt;
+    if (value != null) {
+      result
+        ..add('timerStartedAt')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(_i2.GTime)));
+    }
+    value = object.completedAt;
+    if (value != null) {
+      result
+        ..add('completedAt')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(_i2.GTime)));
+    }
     value = object.reminderTime;
     if (value != null) {
       result
@@ -135,13 +158,19 @@ class _$GCreateTaskData_createTaskSerializer
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
-    value = object.tags;
+    value = object.goalID;
     if (value != null) {
       result
-        ..add('tags')
+        ..add('goalID')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(BuiltList,
-                const [const FullType(GCreateTaskData_createTask_tags)])));
+            specifiedType: const FullType(String)));
+    }
+    value = object.subjectTagID;
+    if (value != null) {
+      result
+        ..add('subjectTagID')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(String)));
     }
     return result;
   }
@@ -165,6 +194,14 @@ class _$GCreateTaskData_createTaskSerializer
         case 'id':
           result.id = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
+          break;
+        case 'createdAt':
+          result.createdAt.replace(serializers.deserialize(value,
+              specifiedType: const FullType(_i2.GTime))! as _i2.GTime);
+          break;
+        case 'updatedAt':
+          result.updatedAt.replace(serializers.deserialize(value,
+              specifiedType: const FullType(_i2.GTime))! as _i2.GTime);
           break;
         case 'title':
           result.title = serializers.deserialize(value,
@@ -190,6 +227,18 @@ class _$GCreateTaskData_createTaskSerializer
           result.durationM = serializers.deserialize(value,
               specifiedType: const FullType(int)) as int?;
           break;
+        case 'elapsedSeconds':
+          result.elapsedSeconds = serializers.deserialize(value,
+              specifiedType: const FullType(int))! as int;
+          break;
+        case 'timerStartedAt':
+          result.timerStartedAt.replace(serializers.deserialize(value,
+              specifiedType: const FullType(_i2.GTime))! as _i2.GTime);
+          break;
+        case 'completedAt':
+          result.completedAt.replace(serializers.deserialize(value,
+              specifiedType: const FullType(_i2.GTime))! as _i2.GTime);
+          break;
         case 'hasReminder':
           result.hasReminder = serializers.deserialize(value,
               specifiedType: const FullType(bool))! as bool;
@@ -207,69 +256,17 @@ class _$GCreateTaskData_createTaskSerializer
                   specifiedType: const FullType(_i2.GTaskStatus))!
               as _i2.GTaskStatus;
           break;
-        case 'tags':
-          result.tags.replace(serializers.deserialize(value,
-              specifiedType: const FullType(BuiltList, const [
-                const FullType(GCreateTaskData_createTask_tags)
-              ]))! as BuiltList<Object?>);
-          break;
-      }
-    }
-
-    return result.build();
-  }
-}
-
-class _$GCreateTaskData_createTask_tagsSerializer
-    implements StructuredSerializer<GCreateTaskData_createTask_tags> {
-  @override
-  final Iterable<Type> types = const [
-    GCreateTaskData_createTask_tags,
-    _$GCreateTaskData_createTask_tags
-  ];
-  @override
-  final String wireName = 'GCreateTaskData_createTask_tags';
-
-  @override
-  Iterable<Object?> serialize(
-      Serializers serializers, GCreateTaskData_createTask_tags object,
-      {FullType specifiedType = FullType.unspecified}) {
-    final result = <Object?>[
-      '__typename',
-      serializers.serialize(object.G__typename,
-          specifiedType: const FullType(String)),
-      'id',
-      serializers.serialize(object.id, specifiedType: const FullType(String)),
-      'name',
-      serializers.serialize(object.name, specifiedType: const FullType(String)),
-    ];
-
-    return result;
-  }
-
-  @override
-  GCreateTaskData_createTask_tags deserialize(
-      Serializers serializers, Iterable<Object?> serialized,
-      {FullType specifiedType = FullType.unspecified}) {
-    final result = GCreateTaskData_createTask_tagsBuilder();
-
-    final iterator = serialized.iterator;
-    while (iterator.moveNext()) {
-      final key = iterator.current! as String;
-      iterator.moveNext();
-      final Object? value = iterator.current;
-      switch (key) {
-        case '__typename':
-          result.G__typename = serializers.deserialize(value,
+        case 'userID':
+          result.userID = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
-        case 'id':
-          result.id = serializers.deserialize(value,
-              specifiedType: const FullType(String))! as String;
+        case 'goalID':
+          result.goalID = serializers.deserialize(value,
+              specifiedType: const FullType(String)) as String?;
           break;
-        case 'name':
-          result.name = serializers.deserialize(value,
-              specifiedType: const FullType(String))! as String;
+        case 'subjectTagID':
+          result.subjectTagID = serializers.deserialize(value,
+              specifiedType: const FullType(String)) as String?;
           break;
       }
     }
@@ -394,6 +391,10 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
   @override
   final String id;
   @override
+  final _i2.GTime createdAt;
+  @override
+  final _i2.GTime updatedAt;
+  @override
   final String title;
   @override
   final String? shortDescription;
@@ -406,6 +407,12 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
   @override
   final int? durationM;
   @override
+  final int elapsedSeconds;
+  @override
+  final _i2.GTime? timerStartedAt;
+  @override
+  final _i2.GTime? completedAt;
+  @override
   final bool hasReminder;
   @override
   final _i2.GTime? reminderTime;
@@ -414,7 +421,11 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
   @override
   final _i2.GTaskStatus status;
   @override
-  final BuiltList<GCreateTaskData_createTask_tags>? tags;
+  final String userID;
+  @override
+  final String? goalID;
+  @override
+  final String? subjectTagID;
 
   factory _$GCreateTaskData_createTask(
           [void Function(GCreateTaskData_createTaskBuilder)? updates]) =>
@@ -423,17 +434,24 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
   _$GCreateTaskData_createTask._(
       {required this.G__typename,
       required this.id,
+      required this.createdAt,
+      required this.updatedAt,
       required this.title,
       this.shortDescription,
       this.note,
       required this.type,
       required this.date,
       this.durationM,
+      required this.elapsedSeconds,
+      this.timerStartedAt,
+      this.completedAt,
       required this.hasReminder,
       this.reminderTime,
       this.recurringDays,
       required this.status,
-      this.tags})
+      required this.userID,
+      this.goalID,
+      this.subjectTagID})
       : super._();
   @override
   GCreateTaskData_createTask rebuild(
@@ -450,17 +468,24 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
     return other is GCreateTaskData_createTask &&
         G__typename == other.G__typename &&
         id == other.id &&
+        createdAt == other.createdAt &&
+        updatedAt == other.updatedAt &&
         title == other.title &&
         shortDescription == other.shortDescription &&
         note == other.note &&
         type == other.type &&
         date == other.date &&
         durationM == other.durationM &&
+        elapsedSeconds == other.elapsedSeconds &&
+        timerStartedAt == other.timerStartedAt &&
+        completedAt == other.completedAt &&
         hasReminder == other.hasReminder &&
         reminderTime == other.reminderTime &&
         recurringDays == other.recurringDays &&
         status == other.status &&
-        tags == other.tags;
+        userID == other.userID &&
+        goalID == other.goalID &&
+        subjectTagID == other.subjectTagID;
   }
 
   @override
@@ -468,17 +493,24 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
     var _$hash = 0;
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, id.hashCode);
+    _$hash = $jc(_$hash, createdAt.hashCode);
+    _$hash = $jc(_$hash, updatedAt.hashCode);
     _$hash = $jc(_$hash, title.hashCode);
     _$hash = $jc(_$hash, shortDescription.hashCode);
     _$hash = $jc(_$hash, note.hashCode);
     _$hash = $jc(_$hash, type.hashCode);
     _$hash = $jc(_$hash, date.hashCode);
     _$hash = $jc(_$hash, durationM.hashCode);
+    _$hash = $jc(_$hash, elapsedSeconds.hashCode);
+    _$hash = $jc(_$hash, timerStartedAt.hashCode);
+    _$hash = $jc(_$hash, completedAt.hashCode);
     _$hash = $jc(_$hash, hasReminder.hashCode);
     _$hash = $jc(_$hash, reminderTime.hashCode);
     _$hash = $jc(_$hash, recurringDays.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
-    _$hash = $jc(_$hash, tags.hashCode);
+    _$hash = $jc(_$hash, userID.hashCode);
+    _$hash = $jc(_$hash, goalID.hashCode);
+    _$hash = $jc(_$hash, subjectTagID.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -488,17 +520,24 @@ class _$GCreateTaskData_createTask extends GCreateTaskData_createTask {
     return (newBuiltValueToStringHelper(r'GCreateTaskData_createTask')
           ..add('G__typename', G__typename)
           ..add('id', id)
+          ..add('createdAt', createdAt)
+          ..add('updatedAt', updatedAt)
           ..add('title', title)
           ..add('shortDescription', shortDescription)
           ..add('note', note)
           ..add('type', type)
           ..add('date', date)
           ..add('durationM', durationM)
+          ..add('elapsedSeconds', elapsedSeconds)
+          ..add('timerStartedAt', timerStartedAt)
+          ..add('completedAt', completedAt)
           ..add('hasReminder', hasReminder)
           ..add('reminderTime', reminderTime)
           ..add('recurringDays', recurringDays)
           ..add('status', status)
-          ..add('tags', tags))
+          ..add('userID', userID)
+          ..add('goalID', goalID)
+          ..add('subjectTagID', subjectTagID))
         .toString();
   }
 }
@@ -515,6 +554,14 @@ class GCreateTaskData_createTaskBuilder
   String? _id;
   String? get id => _$this._id;
   set id(String? id) => _$this._id = id;
+
+  _i2.GTimeBuilder? _createdAt;
+  _i2.GTimeBuilder get createdAt => _$this._createdAt ??= _i2.GTimeBuilder();
+  set createdAt(_i2.GTimeBuilder? createdAt) => _$this._createdAt = createdAt;
+
+  _i2.GTimeBuilder? _updatedAt;
+  _i2.GTimeBuilder get updatedAt => _$this._updatedAt ??= _i2.GTimeBuilder();
+  set updatedAt(_i2.GTimeBuilder? updatedAt) => _$this._updatedAt = updatedAt;
 
   String? _title;
   String? get title => _$this._title;
@@ -541,6 +588,23 @@ class GCreateTaskData_createTaskBuilder
   int? get durationM => _$this._durationM;
   set durationM(int? durationM) => _$this._durationM = durationM;
 
+  int? _elapsedSeconds;
+  int? get elapsedSeconds => _$this._elapsedSeconds;
+  set elapsedSeconds(int? elapsedSeconds) =>
+      _$this._elapsedSeconds = elapsedSeconds;
+
+  _i2.GTimeBuilder? _timerStartedAt;
+  _i2.GTimeBuilder get timerStartedAt =>
+      _$this._timerStartedAt ??= _i2.GTimeBuilder();
+  set timerStartedAt(_i2.GTimeBuilder? timerStartedAt) =>
+      _$this._timerStartedAt = timerStartedAt;
+
+  _i2.GTimeBuilder? _completedAt;
+  _i2.GTimeBuilder get completedAt =>
+      _$this._completedAt ??= _i2.GTimeBuilder();
+  set completedAt(_i2.GTimeBuilder? completedAt) =>
+      _$this._completedAt = completedAt;
+
   bool? _hasReminder;
   bool? get hasReminder => _$this._hasReminder;
   set hasReminder(bool? hasReminder) => _$this._hasReminder = hasReminder;
@@ -560,11 +624,17 @@ class GCreateTaskData_createTaskBuilder
   _i2.GTaskStatus? get status => _$this._status;
   set status(_i2.GTaskStatus? status) => _$this._status = status;
 
-  ListBuilder<GCreateTaskData_createTask_tags>? _tags;
-  ListBuilder<GCreateTaskData_createTask_tags> get tags =>
-      _$this._tags ??= ListBuilder<GCreateTaskData_createTask_tags>();
-  set tags(ListBuilder<GCreateTaskData_createTask_tags>? tags) =>
-      _$this._tags = tags;
+  String? _userID;
+  String? get userID => _$this._userID;
+  set userID(String? userID) => _$this._userID = userID;
+
+  String? _goalID;
+  String? get goalID => _$this._goalID;
+  set goalID(String? goalID) => _$this._goalID = goalID;
+
+  String? _subjectTagID;
+  String? get subjectTagID => _$this._subjectTagID;
+  set subjectTagID(String? subjectTagID) => _$this._subjectTagID = subjectTagID;
 
   GCreateTaskData_createTaskBuilder() {
     GCreateTaskData_createTask._initializeBuilder(this);
@@ -575,17 +645,24 @@ class GCreateTaskData_createTaskBuilder
     if ($v != null) {
       _G__typename = $v.G__typename;
       _id = $v.id;
+      _createdAt = $v.createdAt.toBuilder();
+      _updatedAt = $v.updatedAt.toBuilder();
       _title = $v.title;
       _shortDescription = $v.shortDescription;
       _note = $v.note;
       _type = $v.type;
       _date = $v.date.toBuilder();
       _durationM = $v.durationM;
+      _elapsedSeconds = $v.elapsedSeconds;
+      _timerStartedAt = $v.timerStartedAt?.toBuilder();
+      _completedAt = $v.completedAt?.toBuilder();
       _hasReminder = $v.hasReminder;
       _reminderTime = $v.reminderTime?.toBuilder();
       _recurringDays = $v.recurringDays;
       _status = $v.status;
-      _tags = $v.tags?.toBuilder();
+      _userID = $v.userID;
+      _goalID = $v.goalID;
+      _subjectTagID = $v.subjectTagID;
       _$v = null;
     }
     return this;
@@ -613,6 +690,8 @@ class GCreateTaskData_createTaskBuilder
                 G__typename, r'GCreateTaskData_createTask', 'G__typename'),
             id: BuiltValueNullFieldError.checkNotNull(
                 id, r'GCreateTaskData_createTask', 'id'),
+            createdAt: createdAt.build(),
+            updatedAt: updatedAt.build(),
             title: BuiltValueNullFieldError.checkNotNull(
                 title, r'GCreateTaskData_createTask', 'title'),
             shortDescription: shortDescription,
@@ -621,146 +700,47 @@ class GCreateTaskData_createTaskBuilder
                 type, r'GCreateTaskData_createTask', 'type'),
             date: date.build(),
             durationM: durationM,
+            elapsedSeconds: BuiltValueNullFieldError.checkNotNull(
+                elapsedSeconds,
+                r'GCreateTaskData_createTask',
+                'elapsedSeconds'),
+            timerStartedAt: _timerStartedAt?.build(),
+            completedAt: _completedAt?.build(),
             hasReminder: BuiltValueNullFieldError.checkNotNull(
                 hasReminder, r'GCreateTaskData_createTask', 'hasReminder'),
             reminderTime: _reminderTime?.build(),
             recurringDays: recurringDays,
             status: BuiltValueNullFieldError.checkNotNull(
                 status, r'GCreateTaskData_createTask', 'status'),
-            tags: _tags?.build(),
+            userID: BuiltValueNullFieldError.checkNotNull(
+                userID, r'GCreateTaskData_createTask', 'userID'),
+            goalID: goalID,
+            subjectTagID: subjectTagID,
           );
     } catch (_) {
       late String _$failedField;
       try {
+        _$failedField = 'createdAt';
+        createdAt.build();
+        _$failedField = 'updatedAt';
+        updatedAt.build();
+
         _$failedField = 'date';
         date.build();
 
+        _$failedField = 'timerStartedAt';
+        _timerStartedAt?.build();
+        _$failedField = 'completedAt';
+        _completedAt?.build();
+
         _$failedField = 'reminderTime';
         _reminderTime?.build();
-
-        _$failedField = 'tags';
-        _tags?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'GCreateTaskData_createTask', _$failedField, e.toString());
       }
       rethrow;
     }
-    replace(_$result);
-    return _$result;
-  }
-}
-
-class _$GCreateTaskData_createTask_tags
-    extends GCreateTaskData_createTask_tags {
-  @override
-  final String G__typename;
-  @override
-  final String id;
-  @override
-  final String name;
-
-  factory _$GCreateTaskData_createTask_tags(
-          [void Function(GCreateTaskData_createTask_tagsBuilder)? updates]) =>
-      (GCreateTaskData_createTask_tagsBuilder()..update(updates))._build();
-
-  _$GCreateTaskData_createTask_tags._(
-      {required this.G__typename, required this.id, required this.name})
-      : super._();
-  @override
-  GCreateTaskData_createTask_tags rebuild(
-          void Function(GCreateTaskData_createTask_tagsBuilder) updates) =>
-      (toBuilder()..update(updates)).build();
-
-  @override
-  GCreateTaskData_createTask_tagsBuilder toBuilder() =>
-      GCreateTaskData_createTask_tagsBuilder()..replace(this);
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(other, this)) return true;
-    return other is GCreateTaskData_createTask_tags &&
-        G__typename == other.G__typename &&
-        id == other.id &&
-        name == other.name;
-  }
-
-  @override
-  int get hashCode {
-    var _$hash = 0;
-    _$hash = $jc(_$hash, G__typename.hashCode);
-    _$hash = $jc(_$hash, id.hashCode);
-    _$hash = $jc(_$hash, name.hashCode);
-    _$hash = $jf(_$hash);
-    return _$hash;
-  }
-
-  @override
-  String toString() {
-    return (newBuiltValueToStringHelper(r'GCreateTaskData_createTask_tags')
-          ..add('G__typename', G__typename)
-          ..add('id', id)
-          ..add('name', name))
-        .toString();
-  }
-}
-
-class GCreateTaskData_createTask_tagsBuilder
-    implements
-        Builder<GCreateTaskData_createTask_tags,
-            GCreateTaskData_createTask_tagsBuilder> {
-  _$GCreateTaskData_createTask_tags? _$v;
-
-  String? _G__typename;
-  String? get G__typename => _$this._G__typename;
-  set G__typename(String? G__typename) => _$this._G__typename = G__typename;
-
-  String? _id;
-  String? get id => _$this._id;
-  set id(String? id) => _$this._id = id;
-
-  String? _name;
-  String? get name => _$this._name;
-  set name(String? name) => _$this._name = name;
-
-  GCreateTaskData_createTask_tagsBuilder() {
-    GCreateTaskData_createTask_tags._initializeBuilder(this);
-  }
-
-  GCreateTaskData_createTask_tagsBuilder get _$this {
-    final $v = _$v;
-    if ($v != null) {
-      _G__typename = $v.G__typename;
-      _id = $v.id;
-      _name = $v.name;
-      _$v = null;
-    }
-    return this;
-  }
-
-  @override
-  void replace(GCreateTaskData_createTask_tags other) {
-    _$v = other as _$GCreateTaskData_createTask_tags;
-  }
-
-  @override
-  void update(void Function(GCreateTaskData_createTask_tagsBuilder)? updates) {
-    if (updates != null) updates(this);
-  }
-
-  @override
-  GCreateTaskData_createTask_tags build() => _build();
-
-  _$GCreateTaskData_createTask_tags _build() {
-    final _$result = _$v ??
-        _$GCreateTaskData_createTask_tags._(
-          G__typename: BuiltValueNullFieldError.checkNotNull(
-              G__typename, r'GCreateTaskData_createTask_tags', 'G__typename'),
-          id: BuiltValueNullFieldError.checkNotNull(
-              id, r'GCreateTaskData_createTask_tags', 'id'),
-          name: BuiltValueNullFieldError.checkNotNull(
-              name, r'GCreateTaskData_createTask_tags', 'name'),
-        );
     replace(_$result);
     return _$result;
   }

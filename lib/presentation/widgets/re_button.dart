@@ -165,3 +165,41 @@ class ReButton extends StatelessWidget {
     );
   }
 }
+
+class ReOutlineButton extends StatelessWidget {
+  const ReOutlineButton({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: AppColors.gray),
+            const SizedBox(width: 7),
+            ReText(
+              title,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

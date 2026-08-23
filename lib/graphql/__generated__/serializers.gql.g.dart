@@ -8,16 +8,41 @@ part of 'serializers.gql.dart';
 
 Serializers _$serializers = (Serializers().toBuilder()
       ..add(FetchPolicy.serializer)
+      ..add(GAuthSessionOrder.serializer)
+      ..add(GAuthSessionOrderField.serializer)
+      ..add(GAuthSessionWhereInput.serializer)
+      ..add(GBeginCounselingPaymentInput.serializer)
+      ..add(GChatOrder.serializer)
+      ..add(GChatOrderField.serializer)
+      ..add(GChatParticipantOrder.serializer)
+      ..add(GChatParticipantOrderField.serializer)
+      ..add(GChatParticipantWhereInput.serializer)
       ..add(GChatType.serializer)
+      ..add(GChatWhereInput.serializer)
+      ..add(GCounselingPaymentAttemptCurrency.serializer)
+      ..add(GCounselingPaymentAttemptStatus.serializer)
+      ..add(GCounselingSubscriptionCancellationReason.serializer)
+      ..add(GCounselingSubscriptionCurrency.serializer)
+      ..add(GCounselingSubscriptionOrder.serializer)
+      ..add(GCounselingSubscriptionOrderField.serializer)
+      ..add(GCounselingSubscriptionPlanType.serializer)
+      ..add(GCounselingSubscriptionStatus.serializer)
+      ..add(GCounselingSubscriptionWhereInput.serializer)
+      ..add(GCounselorProfileOrder.serializer)
+      ..add(GCounselorProfileOrderField.serializer)
+      ..add(GCounselorProfileWhereInput.serializer)
+      ..add(GCounselorReviewOrder.serializer)
+      ..add(GCounselorReviewOrderField.serializer)
+      ..add(GCounselorReviewWhereInput.serializer)
       ..add(GCreateDirectChatData.serializer)
       ..add(GCreateDirectChatData_createDirectChat.serializer)
       ..add(GCreateDirectChatInput.serializer)
       ..add(GCreateDirectChatReq.serializer)
       ..add(GCreateDirectChatVars.serializer)
       ..add(GCreateGoalInput.serializer)
+      ..add(GCreateGroupChatInput.serializer)
       ..add(GCreateTaskData.serializer)
       ..add(GCreateTaskData_createTask.serializer)
-      ..add(GCreateTaskData_createTask_tags.serializer)
       ..add(GCreateTaskInput.serializer)
       ..add(GCreateTaskReq.serializer)
       ..add(GCreateTaskVars.serializer)
@@ -26,8 +51,17 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GDeleteMessageData_deleteMessage.serializer)
       ..add(GDeleteMessageReq.serializer)
       ..add(GDeleteMessageVars.serializer)
+      ..add(GDeleteTaskData.serializer)
+      ..add(GDeleteTaskReq.serializer)
+      ..add(GDeleteTaskVars.serializer)
+      ..add(GDeviceTokenOrder.serializer)
+      ..add(GDeviceTokenOrderField.serializer)
       ..add(GDeviceTokenPlatform.serializer)
+      ..add(GDeviceTokenWhereInput.serializer)
+      ..add(GFriendshipOrder.serializer)
+      ..add(GFriendshipOrderField.serializer)
       ..add(GFriendshipStatus.serializer)
+      ..add(GFriendshipWhereInput.serializer)
       ..add(GGetChatMessagesData.serializer)
       ..add(GGetChatMessagesData_getChatMessages.serializer)
       ..add(GGetChatMessagesData_getChatMessages_replyTo.serializer)
@@ -55,8 +89,16 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GGoalStatus.serializer)
       ..add(GGoalWhereInput.serializer)
       ..add(GInterestWhereInput.serializer)
+      ..add(GMessageOrder.serializer)
+      ..add(GMessageOrderField.serializer)
       ..add(GMessageType.serializer)
+      ..add(GMessageWhereInput.serializer)
+      ..add(GOTPClient.serializer)
       ..add(GOrderDirection.serializer)
+      ..add(GParentTagsData.serializer)
+      ..add(GParentTagsData_parentTags.serializer)
+      ..add(GParentTagsReq.serializer)
+      ..add(GParentTagsVars.serializer)
       ..add(GRefreshTokenData.serializer)
       ..add(GRefreshTokenData_refreshToken.serializer)
       ..add(GRefreshTokenData_refreshToken_user.serializer)
@@ -66,6 +108,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GRegisterDeviceTokenData.serializer)
       ..add(GRegisterDeviceTokenReq.serializer)
       ..add(GRegisterDeviceTokenVars.serializer)
+      ..add(GRequestCounselingInput.serializer)
+      ..add(GSaveTaskCompletionReportInput.serializer)
       ..add(GSendMessageData.serializer)
       ..add(GSendMessageData_sendMessage.serializer)
       ..add(GSendMessageInput.serializer)
@@ -76,7 +120,31 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GSendOTPInput.serializer)
       ..add(GSendOTPReq.serializer)
       ..add(GSendOTPVars.serializer)
+      ..add(GStatisticsDashboardData.serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard.serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard_comparison.serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard_comparison_current
+          .serializer)
+      ..add(
+          GStatisticsDashboardData_statisticsDashboard_comparison_current_planVsCompleted
+              .serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard_comparison_previous
+          .serializer)
+      ..add(
+          GStatisticsDashboardData_statisticsDashboard_dailyBuckets.serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard_subjectBuckets
+          .serializer)
+      ..add(GStatisticsDashboardInput.serializer)
+      ..add(GStatisticsDashboardReq.serializer)
+      ..add(GStatisticsDashboardVars.serializer)
+      ..add(GSubmitCounselorReviewInput.serializer)
+      ..add(GTagKeywordWhereInput.serializer)
+      ..add(GTagKind.serializer)
+      ..add(GTagModerationStatus.serializer)
       ..add(GTagWhereInput.serializer)
+      ..add(GTaskCompletionReportOrder.serializer)
+      ..add(GTaskCompletionReportOrderField.serializer)
+      ..add(GTaskCompletionReportWhereInput.serializer)
       ..add(GTaskOrder.serializer)
       ..add(GTaskOrderField.serializer)
       ..add(GTaskStatus.serializer)
@@ -87,9 +155,14 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GUnregisterDeviceTokenData.serializer)
       ..add(GUnregisterDeviceTokenReq.serializer)
       ..add(GUnregisterDeviceTokenVars.serializer)
+      ..add(GUpdateCounselorProfileInput.serializer)
       ..add(GUpdateGoalInput.serializer)
       ..add(GUpdateProfileInput.serializer)
+      ..add(GUpdateTaskData.serializer)
+      ..add(GUpdateTaskData_updateTask.serializer)
       ..add(GUpdateTaskInput.serializer)
+      ..add(GUpdateTaskReq.serializer)
+      ..add(GUpdateTaskVars.serializer)
       ..add(GUserOrder.serializer)
       ..add(GUserOrderField.serializer)
       ..add(GUserRole.serializer)
@@ -108,9 +181,539 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GVerifyOTPAndRegisterReq.serializer)
       ..add(GVerifyOTPAndRegisterVars.serializer)
       ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GAuthSessionWhereInput)]),
+          () => ListBuilder<GAuthSessionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GAuthSessionWhereInput)]),
+          () => ListBuilder<GAuthSessionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GChatParticipantWhereInput)]),
+          () => ListBuilder<GChatParticipantWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GChatParticipantWhereInput)]),
+          () => ListBuilder<GChatParticipantWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatWhereInput)]),
+          () => ListBuilder<GChatWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatWhereInput)]),
+          () => ListBuilder<GChatWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatWhereInput)]),
+          () => ListBuilder<GChatWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatType)]),
+          () => ListBuilder<GChatType>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatType)]),
+          () => ListBuilder<GChatType>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GChatParticipantWhereInput)]),
+          () => ListBuilder<GChatParticipantWhereInput>())
+      ..addBuilderFactory(
           const FullType(BuiltList,
-              const [const FullType(GCreateTaskData_createTask_tags)]),
-          () => ListBuilder<GCreateTaskData_createTask_tags>())
+              const [const FullType(GCounselingSubscriptionWhereInput)]),
+          () => ListBuilder<GCounselingSubscriptionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionWhereInput)]),
+          () => ListBuilder<GCounselingSubscriptionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionPlanType)]),
+          () => ListBuilder<GCounselingSubscriptionPlanType>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionPlanType)]),
+          () => ListBuilder<GCounselingSubscriptionPlanType>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselingSubscriptionStatus)]),
+          () => ListBuilder<GCounselingSubscriptionStatus>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselingSubscriptionStatus)]),
+          () => ListBuilder<GCounselingSubscriptionStatus>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(GCounselingSubscriptionCancellationReason)
+          ]),
+          () => ListBuilder<GCounselingSubscriptionCancellationReason>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(GCounselingSubscriptionCancellationReason)
+          ]),
+          () => ListBuilder<GCounselingSubscriptionCancellationReason>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionCurrency)]),
+          () => ListBuilder<GCounselingSubscriptionCurrency>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionCurrency)]),
+          () => ListBuilder<GCounselingSubscriptionCurrency>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorReviewWhereInput)]),
+          () => ListBuilder<GCounselorReviewWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorProfileWhereInput)]),
+          () => ListBuilder<GCounselorProfileWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorProfileWhereInput)]),
+          () => ListBuilder<GCounselorProfileWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorProfileWhereInput)]),
+          () => ListBuilder<GCounselorProfileWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(double)]),
+          () => ListBuilder<double>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(double)]),
+          () => ListBuilder<double>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorReviewWhereInput)]),
+          () => ListBuilder<GCounselorReviewWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionWhereInput)]),
+          () => ListBuilder<GCounselingSubscriptionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorReviewWhereInput)]),
+          () => ListBuilder<GCounselorReviewWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorReviewWhereInput)]),
+          () => ListBuilder<GCounselorReviewWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorProfileWhereInput)]),
+          () => ListBuilder<GCounselorProfileWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionWhereInput)]),
+          () => ListBuilder<GCounselingSubscriptionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GDeviceTokenWhereInput)]),
+          () => ListBuilder<GDeviceTokenWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GDeviceTokenWhereInput)]),
+          () => ListBuilder<GDeviceTokenWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GDeviceTokenPlatform)]),
+          () => ListBuilder<GDeviceTokenPlatform>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GDeviceTokenPlatform)]),
+          () => ListBuilder<GDeviceTokenPlatform>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GFriendshipWhereInput)]),
+          () => ListBuilder<GFriendshipWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GFriendshipWhereInput)]),
+          () => ListBuilder<GFriendshipWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUUID)]),
+          () => ListBuilder<GUUID>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUUID)]),
+          () => ListBuilder<GUUID>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUUID)]),
+          () => ListBuilder<GUUID>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUUID)]),
+          () => ListBuilder<GUUID>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GFriendshipStatus)]),
+          () => ListBuilder<GFriendshipStatus>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GFriendshipStatus)]),
+          () => ListBuilder<GFriendshipStatus>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(GGetChatMessagesData_getChatMessages)]),
@@ -176,6 +779,12 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(GGoalStatus)]),
           () => ListBuilder<GGoalStatus>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
           () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
@@ -205,6 +814,134 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
           () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageType)]),
+          () => ListBuilder<GMessageType>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageType)]),
+          () => ListBuilder<GMessageType>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GChatWhereInput)]),
+          () => ListBuilder<GChatWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GParentTagsData_parentTags)]),
+          () => ListBuilder<GParentTagsData_parentTags>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(
+                GStatisticsDashboardData_statisticsDashboard_dailyBuckets)
+          ]),
+          () => ListBuilder<
+              GStatisticsDashboardData_statisticsDashboard_dailyBuckets>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [
+            const FullType(
+                GStatisticsDashboardData_statisticsDashboard_subjectBuckets)
+          ]),
+          () => ListBuilder<
+              GStatisticsDashboardData_statisticsDashboard_subjectBuckets>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GTagKeywordWhereInput)]),
+          () => ListBuilder<GTagKeywordWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GTagKeywordWhereInput)]),
+          () => ListBuilder<GTagKeywordWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
+          () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
           () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
@@ -216,6 +953,101 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagKind)]),
+          () => ListBuilder<GTagKind>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagKind)]),
+          () => ListBuilder<GTagKind>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GTagModerationStatus)]),
+          () => ListBuilder<GTagModerationStatus>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GTagModerationStatus)]),
+          () => ListBuilder<GTagModerationStatus>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
+          () => ListBuilder<GTaskWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GTagKeywordWhereInput)]),
+          () => ListBuilder<GTagKeywordWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
+          () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
+          () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
+          () => ListBuilder<GUserWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
+          () => ListBuilder<GTaskWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GTaskCompletionReportWhereInput)]),
+          () => ListBuilder<GTaskCompletionReportWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GTaskCompletionReportWhereInput)]),
+          () => ListBuilder<GTaskCompletionReportWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -286,6 +1118,24 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(int)]),
           () => ListBuilder<int>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(int)]),
+          () => ListBuilder<int>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
           () => ListBuilder<GTime>())
       ..addBuilderFactory(
@@ -303,6 +1153,24 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskStatus)]),
           () => ListBuilder<GTaskStatus>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
           () => ListBuilder<GUserWhereInput>())
@@ -313,6 +1181,16 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
           () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
+          () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GTaskCompletionReportWhereInput)]),
+          () => ListBuilder<GTaskCompletionReportWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GUUID)]),
+          () => ListBuilder<GUUID>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
           () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
@@ -336,6 +1214,18 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTime)]),
           () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -390,6 +1280,16 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTime)]),
+          () => ListBuilder<GTime>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GAuthSessionWhereInput)]),
+          () => ListBuilder<GAuthSessionWhereInput>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GInterestWhereInput)]),
@@ -400,6 +1300,38 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
           () => ListBuilder<GTaskWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GChatParticipantWhereInput)]),
+          () => ListBuilder<GChatParticipantWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GMessageWhereInput)]),
+          () => ListBuilder<GMessageWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorProfileWhereInput)]),
+          () => ListBuilder<GCounselorProfileWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GCounselorReviewWhereInput)]),
+          () => ListBuilder<GCounselorReviewWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GCounselingSubscriptionWhereInput)]),
+          () => ListBuilder<GCounselingSubscriptionWhereInput>())
+      ..addBuilderFactory(
+          const FullType(
+              BuiltList, const [const FullType(GDeviceTokenWhereInput)]),
+          () => ListBuilder<GDeviceTokenWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
+          () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())

@@ -1,0 +1,8 @@
+query ParentTags {
+  parentTags {
+    id
+    name
+    kind
+    moderationStatus
+  }
+}

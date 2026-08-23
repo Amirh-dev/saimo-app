@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.data.gql.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/fonts.dart';
@@ -11,12 +13,16 @@ class DayData {
   final int correctAnswers; // Green bar
   final int totalQuestions;
   final bool hasData;
+  final String year;
+  final String dayOfWeek;
 
   DayData({
     required this.dateDay,
     required this.dateMonth,
     this.correctAnswers = 0,
     this.totalQuestions = 0,
+    this.year = "",
+    this.dayOfWeek = "",
     required this.hasData,
   });
 
@@ -26,7 +32,8 @@ class DayData {
 // --- Main Widget ---
 
 class TestChart extends StatefulWidget {
-  const TestChart({super.key});
+  final List<GStatisticsDashboardData_statisticsDashboard_dailyBuckets> dailyBuckets;
+  const TestChart({super.key, required this.dailyBuckets});
 
   @override
   State<TestChart> createState() => _TestChartState();
@@ -36,39 +43,59 @@ class _TestChartState extends State<TestChart> {
   int? _selectedIndex;
   Timer? _closeTimer;
 
-  final List<DayData> _data = [
-    DayData(
-      dateDay: '۲۸',
-      dateMonth: 'فروردین',
-      correctAnswers: 9,
-      totalQuestions: 25,
-      hasData: true,
-    ),
-    DayData(
-      dateDay: '۲۹',
-      dateMonth: 'فروردین',
-      correctAnswers: 73,
-      totalQuestions: 75,
-      hasData: true,
-    ),
-    DayData(
-      dateDay: '۳۰',
-      dateMonth: 'فروردین',
-      correctAnswers: 32,
-      totalQuestions: 45,
-      hasData: true,
-    ),
-    DayData(
-      dateDay: '۳۱',
-      dateMonth: 'فروردین',
-      correctAnswers: 32,
-      totalQuestions: 45,
-      hasData: true,
-    ),
-    DayData(dateDay: '۱', dateMonth: 'اردیبهشت', hasData: false),
-    DayData(dateDay: '۲', dateMonth: 'اردیبهشت', hasData: false),
-    DayData(dateDay: '۳', dateMonth: 'اردیبهشت', hasData: false),
-  ];
+  List<DayData> get _data {
+    return widget.dailyBuckets.map<DayData>((bucket) {
+      Jalali startTime = Jalali.fromDateTime(DateTime.parse(bucket.start.value));
+      final seconds = bucket.studySeconds;
+      final duration = Duration(seconds: seconds);
+
+      final hours = duration.inHours;
+      final minutes = duration.inMinutes.remainder(60);
+
+      return DayData(
+        dateDay: toPersianNumber(startTime.day.toString()),
+        dateMonth: _getPersianMonth(startTime.month),
+        dayOfWeek: _getPersianWeekday(startTime.toDateTime()),
+        year: toPersianNumber(startTime.year.toString(), separated: false),
+        correctAnswers: bucket.correctAnswers,
+        totalQuestions: bucket.totalQuestions,
+        hasData: !(bucket.correctAnswers == 0 && bucket.totalQuestions == 0),
+      );
+    }).toList();
+  }
+
+  String _getPersianMonth(int month) {
+    const months = [
+      'فروردین',
+      'اردیبهشت',
+      'خرداد',
+      'تیر',
+      'مرداد',
+      'شهریور',
+      'مهر',
+      'آبان',
+      'آذر',
+      'دی',
+      'بهمن',
+      'اسفند',
+    ];
+
+    return months[month - 1];
+  }
+
+  String _getPersianWeekday(DateTime date) {
+    const weekdays = [
+      'دوشنبه',
+      'سه‌شنبه',
+      'چهارشنبه',
+      'پنج‌شنبه',
+      'جمعه',
+      'شنبه',
+      'یکشنبه',
+    ];
+
+    return weekdays[date.weekday - 1];
+  }
 
   @override
   void dispose() {
@@ -107,9 +134,9 @@ class _TestChartState extends State<TestChart> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
-        height: 300,
+        height: 250,
         decoration: BoxDecoration(
-          color: AppColors.gray2,
+          color: const Color(0xfffafafa),
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
@@ -123,16 +150,18 @@ class _TestChartState extends State<TestChart> {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.only(left: 24, right: 24,top: 24),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(blurRadius: 10, color: AppColors.black1.withAlpha(15)),
+                  ],
                 ),
                 child: Directionality(
                   textDirection: TextDirection.ltr,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    textDirection: TextDirection.ltr,
                     children: [
                       _buildYAxis(),
                       const SizedBox(width: 12),
@@ -165,17 +194,20 @@ class _TestChartState extends State<TestChart> {
 
   // Issue 5: Corrected format to "۱۰۰ تست"
   Widget _buildYAxis() {
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text('۵۰۰ تست', style: TextStyle(color: Colors.grey, fontSize: 7), textDirection: TextDirection.rtl),
-        Text('۱۰۰ تست', style: TextStyle(color: Colors.grey, fontSize: 7), textDirection: TextDirection.rtl),
-        Text('۵۰ تست', style: TextStyle(color: Colors.grey, fontSize: 7), textDirection: TextDirection.rtl),
-        Text('۲۰ تست', style: TextStyle(color: Colors.grey, fontSize: 7), textDirection: TextDirection.rtl),
-        Text('۰ تست', style: TextStyle(color: Colors.grey, fontSize: 7), textDirection: TextDirection.rtl),
-        SizedBox(height: 20),
-      ],
+    return const Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text('۵۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          Text('۱۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          Text('۵۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          Text('۲۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          Text('۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          SizedBox(height: 18),
+        ],
+      ),
     );
   }
 
@@ -279,22 +311,24 @@ class _TestChartState extends State<TestChart> {
                               // Green Bar (Correct) - Issue 6: Width set to 6px
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
+                                margin: EdgeInsets.only(bottom: isSelected ? 5 : 0),
                                 width: 6,
                                 height: (item.correctAnswers / item.totalQuestions) * 100,
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppColors.success,
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
                                 ),
                               ),
                               const SizedBox(width: 3),
                               // Red Bar (Wrong) - Issue 6: Width set to 6px
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
+                                margin: EdgeInsets.only(bottom: isSelected ? 5 : 0),
                                 width: 6,
                                 height: ((item.totalQuestions - item.correctAnswers) / item.totalQuestions) * 100,
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: AppColors.errorColor,
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
                                 ),
                               ),
                             ],
@@ -322,14 +356,14 @@ class _TestChartState extends State<TestChart> {
                           item.dateDay,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 10,
                           ),
                         ),
                         Text(
                           item.dateMonth,
                           style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 8,
+                            color: AppColors.black1,
+                            fontSize: 6,
                           ),
                         ),
                       ],
@@ -381,29 +415,64 @@ class _TestChartState extends State<TestChart> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '${item.correctAnswers} پاسخ صحیح',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    const ReText(
+                      ' پاسخ صحیح',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    ReText(
+                      ' ${item.correctAnswers} ',
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${item.totalQuestions} مجموع سوالات',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    const ReText(
+                      'مجموع سوالات ',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    ReText(
+                      ' ${item.totalQuestions} ',
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'سه‌شنبه ۴ تیر ۱۴۰۵',
-                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    ReText(
+                      ' ${item.year}',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    ReText(
+                      ' ${item.dateMonth} ',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    ReText(
+                      ' ${item.dateDay} ',
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                    ReText(
+                      item.dayOfWeek,
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -430,16 +499,16 @@ class _TestChartState extends State<TestChart> {
   Widget _legendItem(String title, Color color) {
     return Row(
       children: [
-        Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(width: 8),
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
         ),
+        const SizedBox(width: 8),
+        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
       ],
     );
   }

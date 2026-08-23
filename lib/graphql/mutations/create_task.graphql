@@ -1,19 +1,23 @@
 mutation CreateTask($input: CreateTaskInput!) {
   createTask(input: $input) {
     id
+    createdAt
+    updatedAt
     title
     shortDescription
     note
     type
     date
     durationM
+    elapsedSeconds
+    timerStartedAt
+    completedAt
     hasReminder
     reminderTime
     recurringDays
     status
-    tags {
-      id
-      name
-    }
+    userID
+    goalID
+    subjectTagID
   }
 }

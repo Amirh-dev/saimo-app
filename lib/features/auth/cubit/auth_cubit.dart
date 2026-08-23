@@ -78,7 +78,7 @@ class AuthCubit extends Cubit<AuthState> {
         GSendOTPReq(
               (request) {
             request.vars.input.phoneNumber = phoneNumber;
-            request.vars.input.client = GDeviceTokenPlatform.WEB;
+            request.vars.input.client = GOTPClient.WEB;
           },
         ),
         requiresAuth: false,

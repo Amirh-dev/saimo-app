@@ -1,0 +1,51 @@
+query StatisticsDashboard($input: StatisticsDashboardInput!) {
+  statisticsDashboard(input: $input) {
+    comparison {
+      current {
+        studySeconds
+        adherencePercentage
+        totalQuestions
+        correctAnswers
+        tasksWithTests
+        planVsCompleted {
+          plannedSeconds
+          completedOnlySeconds
+          completedAndStudiedSeconds
+          completedOnlyPercentage
+          completedAndStudiedPercentage
+        }
+      }
+      previous {
+        studySeconds
+        adherencePercentage
+        totalQuestions
+        correctAnswers
+        tasksWithTests
+      }
+      studySecondsChangePercentage
+      adherenceChangePercentage
+      totalQuestionsChangePercentage
+      correctAnswersChangePercentage
+    }
+
+    dailyBuckets {
+      start
+      studySeconds
+      completedTasks
+      totalQuestions
+      correctAnswers
+      incorrectAnswers
+    }
+
+    subjectBuckets {
+      tagID
+      tagName
+      isMiscellaneous
+      studySeconds
+      completedTasks
+      totalQuestions
+      correctAnswers
+      incorrectAnswers
+    }
+  }
+}
