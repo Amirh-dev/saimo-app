@@ -1,11 +1,15 @@
 // ignore_for_file: deprecated_member_use
 
-import 'dart:math' as math;
-
+import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
+import 'package:simo_learn/features/goals/cubit/goals_state.dart';
+import 'package:simo_learn/features/goals/goals_repository.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
+import 'package:simo_learn/presentation/widgets/re_dots_loader.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -18,10 +22,11 @@ class GoalScreen extends StatefulWidget {
 }
 
 class _GoalScreenState extends State<GoalScreen> {
-  static const Duration _goalListAnimationDuration = Duration(
-    milliseconds: 260,
-  );
+  static const Duration _goalListAnimationDuration = Duration(milliseconds: 260);
   static const double _goalItemHeight = 90.0;
+  static const double _goalSheetItemExtent = 48;
+  static const int _goalSheetVisibleWheelItems = 3;
+
   static const List<String> _persianMonths = [
     'فروردین',
     'اردیبهشت',
@@ -37,12 +42,9 @@ class _GoalScreenState extends State<GoalScreen> {
     'اسفند',
   ];
 
-  static const double _goalSheetItemExtent = 48;
-  static const int _goalSheetVisibleWheelItems = 3;
-
-  final List<Map<String, dynamic>> _goals = [];
   late final ScrollController _goalCardsScrollController;
   late final ScrollController _goalDotsScrollController;
+
   bool _isSyncingGoalScroll = false;
 
   @override
@@ -51,31 +53,34 @@ class _GoalScreenState extends State<GoalScreen> {
     _goalCardsScrollController = ScrollController();
     _goalDotsScrollController = ScrollController();
 
-    _goalCardsScrollController.addListener(() {
-      if (_isSyncingGoalScroll) return;
-      if (!_goalDotsScrollController.hasClients) return;
-      _isSyncingGoalScroll = true;
-      _goalDotsScrollController.jumpTo(
-        _goalCardsScrollController.offset.clamp(
-          _goalDotsScrollController.position.minScrollExtent,
-          _goalDotsScrollController.position.maxScrollExtent,
-        ),
-      );
-      _isSyncingGoalScroll = false;
-    });
+    _goalCardsScrollController.addListener(_syncDotsScroll);
+    _goalDotsScrollController.addListener(_syncCardsScroll);
+  }
 
-    _goalDotsScrollController.addListener(() {
-      if (_isSyncingGoalScroll) return;
-      if (!_goalCardsScrollController.hasClients) return;
-      _isSyncingGoalScroll = true;
-      _goalCardsScrollController.jumpTo(
-        _goalDotsScrollController.offset.clamp(
-          _goalCardsScrollController.position.minScrollExtent,
-          _goalCardsScrollController.position.maxScrollExtent,
-        ),
-      );
-      _isSyncingGoalScroll = false;
-    });
+  void _syncDotsScroll() {
+    if (_isSyncingGoalScroll || !_goalDotsScrollController.hasClients) return;
+
+    _isSyncingGoalScroll = true;
+    _goalDotsScrollController.jumpTo(
+      _goalCardsScrollController.offset.clamp(
+        _goalDotsScrollController.position.minScrollExtent,
+        _goalDotsScrollController.position.maxScrollExtent,
+      ),
+    );
+    _isSyncingGoalScroll = false;
+  }
+
+  void _syncCardsScroll() {
+    if (_isSyncingGoalScroll || !_goalCardsScrollController.hasClients) return;
+
+    _isSyncingGoalScroll = true;
+    _goalCardsScrollController.jumpTo(
+      _goalDotsScrollController.offset.clamp(
+        _goalCardsScrollController.position.minScrollExtent,
+        _goalCardsScrollController.position.maxScrollExtent,
+      ),
+    );
+    _isSyncingGoalScroll = false;
   }
 
   @override
@@ -85,27 +90,37 @@ class _GoalScreenState extends State<GoalScreen> {
     super.dispose();
   }
 
-  Future<void> _openAddGoalModal({
-    int? editIndex,
-    Map<String, dynamic>? initialGoal,
-  }) async {
+  Future<void> _openAddGoalModal() async {
+    await _openGoalFormModal();
+  }
+
+  Future<void> _openEditGoalModal(Goal goal) async {
+    await _openGoalFormModal(goal: goal);
+  }
+
+  Future<void> _openGoalFormModal({Goal? goal}) async {
     final today = Jalali.now();
-    final rawInitialDate = initialGoal?['dueDate'] as Jalali? ?? today;
-    final initialDate =
-        _compareJalaliDate(rawInitialDate, today) < 0 ? today : rawInitialDate;
-    final titleController = TextEditingController(
-      text: initialGoal?['title']?.toString() ?? '',
-    );
-    final noteController = TextEditingController(
-      text: initialGoal?['note']?.toString() ?? '',
-    );
-    var selectedDay = initialDate.day;
-    var selectedMonth = initialDate.month;
-    var selectedYear = initialDate.year;
+    final isEditing = goal != null;
+
+    final titleController = TextEditingController(text: goal?.title ?? '');
+    final noteController = TextEditingController(text: goal?.note ?? '');
+
+    final initialDate = _goalTargetDate(goal);
+    var selectedDay = initialDate?.day ?? today.day;
+    var selectedMonth = initialDate?.month ?? today.month;
+    var selectedYear = initialDate?.year ?? today.year;
     var noteLength = noteController.text.length;
+
     final years = [
-      for (var year = initialDate.year - 4; year <= 1500; year++) year
+      for (var year = today.year - 4; year <= 1500; year++) year,
     ];
+
+    if (!years.contains(selectedYear)) {
+      selectedYear = today.year;
+      selectedMonth = today.month;
+      selectedDay = today.day;
+    }
+
     final dayController = FixedExtentScrollController(
       initialItem: selectedDay - 1,
     );
@@ -115,37 +130,51 @@ class _GoalScreenState extends State<GoalScreen> {
     final yearController = FixedExtentScrollController(
       initialItem: years.indexOf(selectedYear),
     );
-    var isPickerDisposed = false;
 
-    void jumpToWheelItem(FixedExtentScrollController controller, int item) {
+    var pickerDisposed = false;
+
+    void jumpToWheelItem(
+      FixedExtentScrollController controller,
+      int item,
+    ) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || isPickerDisposed || !controller.hasClients) return;
+        if (!mounted || pickerDisposed || !controller.hasClients) return;
         controller.jumpToItem(item);
       });
     }
 
     void clampSelectedDateToToday() {
-      final selectedDate = Jalali(selectedYear, selectedMonth, selectedDay);
+      if (isEditing) return;
+
+      final selectedDate = Jalali(
+        selectedYear,
+        selectedMonth,
+        selectedDay,
+      );
+
       if (_compareJalaliDate(selectedDate, today) >= 0) return;
 
       selectedDay = today.day;
       selectedMonth = today.month;
       selectedYear = today.year;
+
       jumpToWheelItem(dayController, selectedDay - 1);
       jumpToWheelItem(monthController, selectedMonth - 1);
-      final yearIndex = years.indexOf(selectedYear);
-      if (yearIndex >= 0) {
-        jumpToWheelItem(yearController, yearIndex);
-      }
+      jumpToWheelItem(yearController, years.indexOf(selectedYear));
     }
 
-    final newGoal = await showReModalBottomSheet<Map<String, dynamic>>(
+    final submitted = await showReModalBottomSheet<bool>(
       context: context,
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-            final maxDay = Jalali(selectedYear, selectedMonth, 1).monthLength;
+            final maxDay = Jalali(
+              selectedYear,
+              selectedMonth,
+              1,
+            ).monthLength;
+
             if (selectedDay > maxDay) {
               selectedDay = maxDay;
               jumpToWheelItem(dayController, selectedDay - 1);
@@ -169,19 +198,16 @@ class _GoalScreenState extends State<GoalScreen> {
                       ),
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildGoalSheetHeader(context),
+                        _buildGoalFormHeader(sheetContext, isEditing),
                         const SizedBox(height: 25),
                         ReTextField(
                           controller: titleController,
                           placeholder: 'عنوان هدف',
                           height: 56,
                           borderRadius: 32,
-                          backgroundColor: AppColors.gray.withOpacity(
-                            0.1,
-                          ),
+                          backgroundColor: AppColors.gray.withOpacity(0.1),
                           showFocusShadow: false,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -231,18 +257,21 @@ class _GoalScreenState extends State<GoalScreen> {
                           controller: noteController,
                           noteLength: noteLength,
                           onChanged: (value) {
-                            setModalState(() => noteLength = value.length);
+                            setModalState(() {
+                              noteLength = value.length;
+                            });
                           },
                         ),
                         const SizedBox(height: 36),
-                        _buildGoalSheetActions(
-                          context,
+                        _buildGoalFormActions(
+                          sheetContext,
+                          isEditing: isEditing,
+                          goal: goal,
                           titleController: titleController,
                           noteController: noteController,
                           selectedDay: selectedDay,
                           selectedMonth: selectedMonth,
                           selectedYear: selectedYear,
-                          existingGoal: initialGoal,
                         ),
                       ],
                     ),
@@ -256,43 +285,20 @@ class _GoalScreenState extends State<GoalScreen> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 350));
+
+    pickerDisposed = true;
     titleController.dispose();
     noteController.dispose();
-    isPickerDisposed = true;
     dayController.dispose();
     monthController.dispose();
     yearController.dispose();
 
-    if (newGoal == null || !mounted) return;
-
-    setState(() {
-      if (editIndex != null &&
-          editIndex >= 0 &&
-          editIndex < _goals.length &&
-          initialGoal != null) {
-        _goals[editIndex] = newGoal;
-      } else {
-        _goals.insert(0, newGoal);
-      }
-    });
-
-    if (_goalCardsScrollController.hasClients) {
-      _goalCardsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    }
-    if (_goalDotsScrollController.hasClients) {
-      _goalDotsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+    if (submitted == true && mounted) {
+      _scrollGoalsToTop();
     }
   }
 
-  Widget _buildGoalSheetHeader(BuildContext context) {
+  Widget _buildGoalFormHeader(BuildContext context, bool isEditing) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -304,7 +310,10 @@ class _GoalScreenState extends State<GoalScreen> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gray2, width: 1.5),
+              border: Border.all(
+                color: AppColors.gray2,
+                width: 1.5,
+              ),
             ),
             child: const Icon(
               Icons.close,
@@ -317,14 +326,14 @@ class _GoalScreenState extends State<GoalScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ReText(
-              'افزودن هدف',
+            ReText(
+              isEditing ? 'ویرایش هدف' : 'افزودن هدف',
               fontSize: 16,
               fontWeight: 1000,
               color: AppColors.black1,
             ),
             ReText(
-              'هدف جدیدی برای خود مشخص کنید.',
+              isEditing ? 'اطلاعات هدف را ویرایش کنید.' : 'هدف جدیدی برای خود مشخص کنید.',
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.black1.withOpacity(0.5),
@@ -348,10 +357,7 @@ class _GoalScreenState extends State<GoalScreen> {
     required ValueChanged<int> onYearChanged,
   }) {
     final days = [
-      for (var day = 1;
-          day <= Jalali(selectedYear, selectedMonth, 1).monthLength;
-          day++)
-        day
+      for (var day = 1; day <= Jalali(selectedYear, selectedMonth, 1).monthLength; day++) day,
     ];
 
     return SizedBox(
@@ -373,14 +379,20 @@ class _GoalScreenState extends State<GoalScreen> {
               ),
               Expanded(
                 child: Center(
-                  child:
-                      ReText('ماه', fontSize: 13, fontWeight: FontWeight.w600),
+                  child: ReText(
+                    'ماه',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               Expanded(
                 child: Center(
-                  child:
-                      ReText('سال', fontSize: 13, fontWeight: FontWeight.w600),
+                  child: ReText(
+                    'سال',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -410,7 +422,10 @@ class _GoalScreenState extends State<GoalScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: _wheelItemColor(
-                          (index + 1) == selectedDay, index, selectedDay - 1),
+                        index + 1 == selectedDay,
+                        index,
+                        selectedDay - 1,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -432,14 +447,20 @@ class _GoalScreenState extends State<GoalScreen> {
                     selectedDecoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: AppColors.gray2, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.gray2,
+                        width: 1.5,
+                      ),
                     ),
                     itemBuilder: (index) => ReText(
                       _persianMonths[index],
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
-                      color: _wheelItemColor((index + 1) == selectedMonth,
-                          index, selectedMonth - 1),
+                      color: _wheelItemColor(
+                        index + 1 == selectedMonth,
+                        index,
+                        selectedMonth - 1,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -460,14 +481,20 @@ class _GoalScreenState extends State<GoalScreen> {
                     selectedDecoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: AppColors.gray2, width: 1.5),
+                      border: Border.all(
+                        color: AppColors.gray2,
+                        width: 1.5,
+                      ),
                     ),
                     itemBuilder: (index) => ReText(
                       years[index].toString(),
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
-                      color: _wheelItemColor(years[index] == selectedYear,
-                          index, years.indexOf(selectedYear)),
+                      color: _wheelItemColor(
+                        years[index] == selectedYear,
+                        index,
+                        years.indexOf(selectedYear),
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -505,9 +532,9 @@ class _GoalScreenState extends State<GoalScreen> {
               onSelectedItemChanged: onSelected,
               childDelegate: ListWheelChildBuilderDelegate(
                 childCount: itemCount,
-                builder: (context, index) {
-                  return Center(child: itemBuilder(index));
-                },
+                builder: (context, index) => Center(
+                  child: itemBuilder(index),
+                ),
               ),
             ),
             IgnorePointer(
@@ -535,9 +562,8 @@ class _GoalScreenState extends State<GoalScreen> {
 
   Color _wheelItemColor(bool isSelected, int index, int selectedIndex) {
     if (isSelected) return Colors.transparent;
-    return (index - selectedIndex).abs() == 1
-        ? AppColors.gray
-        : AppColors.gray2;
+
+    return (index - selectedIndex).abs() == 1 ? AppColors.gray : AppColors.gray2;
   }
 
   Widget _buildGoalNoteField({
@@ -578,116 +604,15 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 
-  int _compareJalaliDate(Jalali a, Jalali b) {
-    if (a.year != b.year) return a.year.compareTo(b.year);
-    if (a.month != b.month) return a.month.compareTo(b.month);
-    return a.day.compareTo(b.day);
-  }
-
-  Widget _buildRemainingTimeText({
-    required Jalali dueDate,
-    required Color valueColor,
-    required double valueFontSize,
-    required double unitFontSize,
-    FontWeight valueFontWeight = FontWeight.w600,
-    FontWeight unitFontWeight = FontWeight.w600,
-    bool valueFirst = false,
-  }) {
-    final remaining = _goalRemainingTime(dueDate);
-    final value = ReText(
-      remaining.value.toString(),
-      fontSize: valueFontSize,
-      fontWeight: valueFontWeight,
-      color: valueColor,
-      textDirection: TextDirection.ltr,
-    );
-    final unit = ReText(
-      remaining.unit,
-      fontSize: unitFontSize,
-      fontWeight: unitFontWeight,
-      color: AppColors.gray,
-    );
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: valueFirst
-          ? [value, const SizedBox(width: 4), unit]
-          : [unit, const SizedBox(width: 4), value],
-    );
-  }
-
-  _GoalRemainingTime _goalRemainingTime(Jalali dueDate) {
-    final remainingDays = _goalRemainingDays(dueDate);
-    if (remainingDays == 1) {
-      final now = DateTime.now();
-      final dueDateTime = dueDate.toDateTime();
-      final dueDay = DateTime(
-        dueDateTime.year,
-        dueDateTime.month,
-        dueDateTime.day,
-      );
-      final remainingHours = dueDay.difference(now).inHours;
-
-      return _GoalRemainingTime(
-        value: math.max(1, remainingHours),
-        unit: 'ساعت باقی مانده',
-      );
-    }
-
-    return _GoalRemainingTime(
-      value: remainingDays,
-      unit: 'روز باقی مانده',
-    );
-  }
-
-  void _submitGoal(
-    BuildContext context, {
+  Widget _buildGoalFormActions(
+    BuildContext sheetContext, {
+    required bool isEditing,
+    required Goal? goal,
     required TextEditingController titleController,
     required TextEditingController noteController,
     required int selectedDay,
     required int selectedMonth,
     required int selectedYear,
-    Map<String, dynamic>? existingGoal,
-  }) {
-    final title = titleController.text.trim();
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: ReText(
-            'عنوان هدف را وارد کنید',
-            color: AppColors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-      return;
-    }
-
-    final dueDate = Jalali(selectedYear, selectedMonth, selectedDay);
-    final createdDate = existingGoal?['createdDate'] as Jalali? ?? Jalali.now();
-    final totalDays = _goalDaysBetween(createdDate, dueDate);
-    Navigator.of(context).pop(
-      <String, dynamic>{
-        'title': title,
-        'note': noteController.text.trim(),
-        'dueDate': dueDate,
-        'createdDate': createdDate,
-        'totalDays': math.max(1, totalDays),
-        'color': existingGoal?['color'] as Color? ??
-            (_goals.length.isEven ? AppColors.primary : AppColors.secondary),
-      },
-    );
-  }
-
-  Widget _buildGoalSheetActions(
-    BuildContext context, {
-    required TextEditingController titleController,
-    required TextEditingController noteController,
-    required int selectedDay,
-    required int selectedMonth,
-    required int selectedYear,
-    Map<String, dynamic>? existingGoal,
   }) {
     return Row(
       textDirection: TextDirection.rtl,
@@ -696,7 +621,7 @@ class _GoalScreenState extends State<GoalScreen> {
           width: 118,
           height: 58,
           child: ReButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(sheetContext).pop(),
             text: 'لغو',
             icon: Icons.close,
             textDirection: TextDirection.ltr,
@@ -714,25 +639,46 @@ class _GoalScreenState extends State<GoalScreen> {
         Expanded(
           child: SizedBox(
             height: 58,
-            child: ReButton(
-              onPressed: () => _submitGoal(
-                context,
-                titleController: titleController,
-                noteController: noteController,
-                selectedDay: selectedDay,
-                selectedMonth: selectedMonth,
-                selectedYear: selectedYear,
-                existingGoal: existingGoal,
-              ),
-              text: 'افزودن',
-              icon: Icons.add,
-              textDirection: TextDirection.ltr,
-              background: AppColors.primary,
-              textColor: AppColors.white,
-              borderRadius: 32,
-              fontSize: 16,
-              iconSize: 16,
-              fontWeight: FontWeight.w600,
+            child: BlocBuilder<GoalsCubit, GoalsState>(
+              buildWhen: (previous, current) => previous.isCreating != current.isCreating || previous.isUpdating != current.isUpdating,
+              builder: (context, state) {
+                final isBusy = isEditing ? state.isUpdating : state.isCreating;
+
+                return ReButton(
+                  onPressed: isBusy
+                      ? null
+                      : () {
+                          _submitGoal(
+                            sheetContext: sheetContext,
+                            goal: goal,
+                            isEditing: isEditing,
+                            titleController: titleController,
+                            noteController: noteController,
+                            selectedDay: selectedDay,
+                            selectedMonth: selectedMonth,
+                            selectedYear: selectedYear,
+                          );
+                        },
+                  text: isBusy
+                      ? 'در حال ذخیره...'
+                      : isEditing
+                          ? 'ذخیره'
+                          : 'افزودن',
+                  textDirection: TextDirection.ltr,
+                  icon: isBusy
+                      ? null
+                      : isEditing
+                          ? Icons.check
+                          : Icons.add,
+                  iconColor: AppColors.white,
+                  color: AppColors.primary,
+                  background: AppColors.primary,
+                  textColor: AppColors.white,
+                  borderRadius: 32,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                );
+              },
             ),
           ),
         ),
@@ -740,289 +686,146 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 
+  Future<void> _submitGoal({
+    required BuildContext sheetContext,
+    required Goal? goal,
+    required bool isEditing,
+    required TextEditingController titleController,
+    required TextEditingController noteController,
+    required int selectedDay,
+    required int selectedMonth,
+    required int selectedYear,
+  }) async {
+    final title = titleController.text.trim();
+
+    if (title.isEmpty) {
+      showReToast(
+        context,
+        'لطفاً عنوان هدف را وارد کنید.',
+        ReToastType.failed,
+      );
+      return;
+    }
+
+    final jalaliDate = Jalali(selectedYear, selectedMonth, selectedDay);
+    final gregorianDate = jalaliDate.toGregorian();
+    final targetDate = DateTime(
+      gregorianDate.year,
+      gregorianDate.month,
+      gregorianDate.day,
+      12,
+    );
+    final note = noteController.text.trim();
+
+    final success = isEditing
+        ? await context.read<GoalsCubit>().updateGoal(
+              id: goal!.id,
+              title: title,
+              note: note.isEmpty ? '' : note,
+              targetDate: targetDate,
+            )
+        : await context.read<GoalsCubit>().createGoal(
+              title: title,
+              note: note.isEmpty ? null : note,
+              targetDate: targetDate,
+            );
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(sheetContext).pop(true);
+      return;
+    }
+
+    final message = context.read<GoalsCubit>().state.errorMessage ?? (isEditing ? 'ویرایش هدف ناموفق بود.' : 'ایجاد هدف ناموفق بود.');
+
+    showReToast(context, message, ReToastType.failed);
+  }
+
+  int _compareJalaliDate(Jalali a, Jalali b) {
+    if (a.year != b.year) return a.year.compareTo(b.year);
+    if (a.month != b.month) return a.month.compareTo(b.month);
+    return a.day.compareTo(b.day);
+  }
+
   int _goalRemainingDays(Jalali dueDate) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDateTime = dueDate.toDateTime();
-    final dueDay = DateTime(
-      dueDateTime.year,
-      dueDateTime.month,
-      dueDateTime.day,
+    final today = Jalali.now();
+    final todayGregorian = today.toGregorian();
+    final dueGregorian = dueDate.toGregorian();
+
+    final todayDate = DateTime(
+      todayGregorian.year,
+      todayGregorian.month,
+      todayGregorian.day,
+    );
+    final dueDateTime = DateTime(
+      dueGregorian.year,
+      dueGregorian.month,
+      dueGregorian.day,
     );
 
-    return math.max(0, dueDay.difference(today).inDays);
+    return dueDateTime.difference(todayDate).inDays;
   }
 
-  int _goalDaysBetween(Jalali startDate, Jalali endDate) {
-    final startDateTime = startDate.toDateTime();
-    final endDateTime = endDate.toDateTime();
-    final startDay = DateTime(
-      startDateTime.year,
-      startDateTime.month,
-      startDateTime.day,
-    );
-    final endDay = DateTime(
-      endDateTime.year,
-      endDateTime.month,
-      endDateTime.day,
-    );
-
-    return math.max(0, endDay.difference(startDay).inDays);
-  }
-
-  String _formatGoalDate(Jalali date) {
-    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
-  }
-
-  double _goalProgress(Map<String, dynamic> goal) {
-    final dueDate = goal['dueDate'] as Jalali;
-    final totalDays = goal['totalDays'] as int? ??
-        _goalDaysBetween(
-          goal['createdDate'] as Jalali? ?? Jalali.now(),
-          dueDate,
-        );
+  _GoalRemainingTime _goalRemainingTime(Jalali dueDate) {
     final remainingDays = _goalRemainingDays(dueDate);
 
-    if (totalDays <= 0) return 1;
-    return ((totalDays - remainingDays) / totalDays).clamp(0.0, 1.0);
-  }
+    if (remainingDays <= 0) {
+      return const _GoalRemainingTime(value: 0, unit: 'روز');
+    }
 
-  void _deleteGoal(int index) {
-    if (index < 0 || index >= _goals.length) return;
+    if (remainingDays < 30) {
+      return _GoalRemainingTime(value: remainingDays, unit: 'روز');
+    }
 
-    setState(() {
-      _goals.removeAt(index);
-    });
-  }
+    if (remainingDays < 365) {
+      return _GoalRemainingTime(
+        value: (remainingDays / 30).ceil(),
+        unit: 'ماه',
+      );
+    }
 
-  Future<void> _openGoalDetailsModal(int index) async {
-    if (index < 0 || index >= _goals.length) return;
-
-    await showReModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            if (index >= _goals.length) return const SizedBox.shrink();
-
-            final goal = _goals[index];
-            final dueDate = goal['dueDate'] as Jalali;
-            final progress = _goalProgress(goal);
-            final note = (goal['note']?.toString().trim().isNotEmpty ?? false)
-                ? goal['note'].toString().trim()
-                : 'برای این هدف هنوز یادداشتی ثبت نشده است.';
-
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(44, 32, 44, 48),
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => Navigator.of(sheetContext).pop(),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.gray2,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              color: AppColors.gray,
-                              size: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ReText(
-                              goal['title']?.toString() ?? '',
-                              fontSize: 16,
-                              fontWeight: 1000,
-                              color: AppColors.black1,
-                              maxLines: 2,
-                            ),
-                            const SizedBox(height: 4),
-                            ReText(
-                              _formatGoalDate(dueDate),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.gray,
-                              textDirection: TextDirection.ltr,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Container(
-                      height: 1,
-                      color: AppColors.gray2,
-                      margin: const EdgeInsets.only(top: 25, bottom: 25),
-                    ),
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: ReText(
-                        note,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gray,
-                        lineHeight: 1.85,
-                        maxLines: 3,
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-                    Row(
-                      textDirection: TextDirection.rtl,
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 3,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Container(
-                                      height: 1,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.gray2,
-                                        borderRadius:
-                                            BorderRadius.circular(100),
-                                      ),
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Container(
-                                        width: constraints.maxWidth * progress,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius:
-                                              BorderRadius.circular(100),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        _buildRemainingTimeText(
-                          dueDate: dueDate,
-                          valueColor: AppColors.black1,
-                          valueFontSize: 13,
-                          unitFontSize: 13,
-                          valueFontWeight: FontWeight.w700,
-                          unitFontWeight: FontWeight.w400,
-                          valueFirst: true,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 25),
-                    Row(
-                      textDirection: TextDirection.rtl,
-                      children: [
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            _deleteGoal(index);
-                            Navigator.of(sheetContext).pop();
-                          },
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.gray2,
-                                width: 1,
-                              ),
-                            ),
-                            child: const Icon(
-                              IconsaxPlusBroken.trash,
-                              color: AppColors.black1,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SizedBox(
-                            width: 118,
-                            height: 58,
-                            child: ReButton(
-                              onPressed: () {
-                                final goalToEdit =
-                                    Map<String, dynamic>.from(goal);
-                                Navigator.of(sheetContext).pop();
-                                Future<void>.delayed(
-                                  const Duration(milliseconds: 250),
-                                  () {
-                                    if (!mounted) return;
-                                    _openAddGoalModal(
-                                      editIndex: index,
-                                      initialGoal: goalToEdit,
-                                    );
-                                  },
-                                );
-                              },
-                              text: 'ویرایش',
-                              icon: SolarIconsOutline.penNewSquare,
-                              textDirection: TextDirection.ltr,
-                              isOutlined: true,
-                              background: AppColors.white,
-                              color: AppColors.gray2,
-                              textColor: AppColors.black1,
-                              borderRadius: 32,
-                              fontSize: 16,
-                              iconSize: 18,
-                              iconColor: AppColors.black1,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    return _GoalRemainingTime(
+      value: (remainingDays / 365).ceil(),
+      unit: 'سال',
     );
   }
 
-  Widget _buildGoalTile(Map<String, dynamic> goal, int index) {
-    final dueDate = goal['dueDate'] as Jalali;
-    final color = goal['color'] as Color? ?? AppColors.primary;
+  Jalali? _goalTargetDate(Goal? goal) {
+    final targetDate = goal?.targetDate;
+    if (targetDate == null) return null;
+
+    final parsed = DateTime.tryParse(targetDate.value);
+    if (parsed == null) return null;
+
+    return Jalali.fromDateTime(parsed.toLocal());
+  }
+
+  DateTime? _goalCreatedDate(Goal goal) {
+    final parsed = DateTime.tryParse(goal.createdAt.value);
+    return parsed?.toLocal();
+  }
+
+  double _goalProgress(Goal goal, Jalali? dueDate) {
+    DateTime now = DateTime.now();
+    DateTime target = goal.targetDate == null ? DateTime.now() : DateTime.parse(goal.targetDate!.value);
+    DateTime createdAt = DateTime.parse(goal.createdAt.value);
+    debugPrint("""
+    cr: ${goal.createdAt.value}
+    trg: ${goal.targetDate?.value}
+    now: ${now.toIso8601String()}
+    """);
+    debugPrint(now.difference(createdAt).inHours.toString());
+    return ((now.difference(createdAt).inHours) / (target.difference(createdAt).inHours));
+  }
+
+  Widget _buildGoalTile(Goal goal, int index) {
+    final dueDate = _goalTargetDate(goal);
+    final color = index.isEven ? Color(0xffF14922) : Color(0xff4361EE);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => _openGoalDetailsModal(index),
+      onTap: () => _openGoalDetailsModal(goal),
       child: Container(
         height: 72,
         decoration: BoxDecoration(
@@ -1051,19 +854,20 @@ class _GoalScreenState extends State<GoalScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     ReText(
-                      goal['title']?.toString() ?? '',
+                      goal.title,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
                       color: AppColors.black1,
                       maxLines: 1,
                     ),
                     const SizedBox(height: 2),
-                    _buildRemainingTimeText(
-                      dueDate: dueDate,
-                      valueColor: color,
-                      valueFontSize: 13,
-                      unitFontSize: 10,
-                    ),
+                    if (dueDate != null)
+                      _buildRemainingTimeText(
+                        dueDate: dueDate,
+                        valueColor: color,
+                        valueFontSize: 13,
+                        unitFontSize: 10,
+                      ),
                   ],
                 ),
               ),
@@ -1074,8 +878,399 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 
-  Widget _buildGoalList() {
-    if (_goals.isEmpty) {
+  Future<void> _openGoalDetailsModal(Goal goal) async {
+    await showReModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        final dueDate = _goalTargetDate(goal);
+        final remainingDays = dueDate == null ? null : _goalRemainingDays(dueDate);
+        final progress = _goalProgress(goal, dueDate);
+        debugPrint(progress.toString());
+        return Container(
+          padding: const EdgeInsets.fromLTRB(32, 8, 32, 32),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(32),
+              topRight: Radius.circular(32),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 75,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 30),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          ReText(
+                            goal.title,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.black1,
+                            maxLines: 2,
+                          ),
+                          if (dueDate != null) ...[
+                            const SizedBox(height: 2),
+                            ReText(
+                              _formatJalaliShortDate(dueDate),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.gray,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () => Navigator.of(sheetContext).pop(),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.gray2,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: AppColors.gray,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Container(
+                  height: 1,
+                  color: AppColors.gray2,
+                ),
+                if (goal.note?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 30),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ReText(
+                      goal.note!.trim(),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray,
+                      maxLines: 4,
+                    ),
+                  ),
+                ],
+                if (dueDate != null) ...[
+                  const SizedBox(height: 34),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ReText(
+                        remainingDays != null && remainingDays > 0
+                            ? 'روز باقی مانده'
+                            : remainingDays == 0
+                                ? 'امروز موعد هدف است'
+                                : 'از موعد هدف گذشته',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gray,
+                      ),
+                      const SizedBox(width: 6),
+                      if (remainingDays != null && remainingDays > 0)
+                        ReText(
+                          _remainingDaysText(remainingDays),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.black1,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  remainingDays == 0 || progress <= 0
+                      ? const SizedBox()
+                      : LinearProgressIndicator(
+                          color: const Color(0xffF14922),
+                          backgroundColor: AppColors.gray2,
+                          value: progress,
+                        )
+                ],
+                const SizedBox(height: 34),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 58,
+                        child: ReButton(
+                          onPressed: () async {
+                            Navigator.of(sheetContext).pop();
+                            await Future<void>.delayed(
+                              const Duration(milliseconds: 250),
+                            );
+                            if (mounted) {
+                              await _openEditGoalModal(goal);
+                            }
+                          },
+                          text: 'ویرایش',
+                          icon: IconsaxPlusLinear.edit,
+                          iconColor: AppColors.black1,
+                          color: AppColors.gray2,
+                          background: AppColors.white,
+                          textColor: AppColors.black1,
+                          isOutlined: true,
+                          textDirection: TextDirection.ltr,
+                          borderRadius: 32,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () async {
+                        final confirmed = await _confirmDeleteGoal(goal);
+                        if (!confirmed || !mounted) return;
+
+                        final success = await context.read<GoalsCubit>().deleteGoal(goal.id);
+
+                        if (!mounted) return;
+
+                        if (success) {
+                          Navigator.of(sheetContext).pop();
+                          showReToast(
+                            context,
+                            'هدف حذف شد',
+                            ReToastType.success,
+                          );
+                        } else {
+                          final message = context.read<GoalsCubit>().state.errorMessage ?? 'حذف هدف ناموفق بود.';
+                          showReToast(
+                            context,
+                            message,
+                            ReToastType.failed,
+                          );
+                        }
+                      },
+                      child: Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.gray2,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          SolarIconsOutline.trashBinMinimalistic,
+                          size: 22,
+                          color: AppColors.black1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmDeleteGoal(Goal goal) async {
+    final result = await showReModalBottomSheet<bool>(
+      context: context,
+      builder: (sheetContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: SafeArea(
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.errorColor),
+                      ),
+                      child: const Icon(
+                        SolarIconsOutline.trashBinMinimalistic,
+                        color: AppColors.errorColor,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ReText(
+                    'هدف «${goal.title}» حذف شود؟',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.black1,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  const ReText(
+                    'درصورت تایید، این هدف برای همیشه حذف می‌شود.',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      Expanded(
+                        child: ReButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(true),
+                          text: 'حذف',
+                          color: AppColors.errorColor,
+                          background: AppColors.errorColor,
+                          textColor: AppColors.white,
+                          borderRadius: 24,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ReButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(false),
+                          text: 'لغو',
+                          color: AppColors.gray2,
+                          background: AppColors.white,
+                          textColor: AppColors.black1,
+                          isOutlined: true,
+                          borderRadius: 24,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  String _formatJalaliShortDate(Jalali date) {
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+
+  String _remainingDaysText(int days) {
+    return convertToPersianNumbers(days.toString());
+  }
+
+  String _goalStatusText(Goal goal) {
+    switch (goal.status.name) {
+      case 'COMPLETED':
+        return 'تکمیل شده';
+      case 'PAUSED':
+        return 'متوقف شده';
+      case 'ARCHIVED':
+        return 'بایگانی شده';
+      case 'IN_PROGRESS':
+      default:
+        return 'در حال انجام';
+    }
+  }
+
+  Widget _buildRemainingTimeText({
+    required Jalali dueDate,
+    required Color valueColor,
+    required double valueFontSize,
+    required double unitFontSize,
+    FontWeight valueFontWeight = FontWeight.w600,
+    FontWeight unitFontWeight = FontWeight.w600,
+    bool valueFirst = false,
+  }) {
+    final remaining = _goalRemainingTime(dueDate);
+    final value = ReText(
+      remaining.value.toString(),
+      fontSize: valueFontSize,
+      fontWeight: valueFontWeight,
+      color: valueColor,
+      textDirection: TextDirection.ltr,
+    );
+    final unit = ReText(
+      remaining.unit,
+      fontSize: unitFontSize,
+      fontWeight: unitFontWeight,
+      color: AppColors.gray,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: valueFirst ? [value, const SizedBox(width: 4), unit] : [unit, const SizedBox(width: 4), value],
+    );
+  }
+
+  Widget _buildGoalList(GoalsState state) {
+    if (state.isLoading && state.goals.isEmpty) {
+      return const Center(child: ReDotsLoader());
+    }
+
+    if (state.status == GoalsStatus.failure && state.goals.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReText(
+              state.errorMessage ?? 'خطا در دریافت اهداف',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ReButton(
+              onPressed: () => context.read<GoalsCubit>().loadGoals(),
+              text: 'تلاش مجدد',
+              textDirection: TextDirection.rtl,
+              icon: Icons.refresh,
+              iconColor: AppColors.primary,
+              color: AppColors.gray2,
+              background: AppColors.gray1,
+              textColor: AppColors.black1,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ).sizedBox(height: 44, width: 130),
+          ],
+        ),
+      );
+    }
+
+    if (state.goals.isEmpty) {
       return ReEmptyList(
         imageWidth: 220,
         onTap: _openAddGoalModal,
@@ -1085,65 +1280,94 @@ class _GoalScreenState extends State<GoalScreen> {
       );
     }
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ListView.builder(
-                controller: _goalCardsScrollController,
-                padding: const EdgeInsets.fromLTRB(32, 0, 0, 24),
-                itemCount: _goals.length,
-                itemBuilder: (_, index) => AnimatedContainer(
-                  duration: _goalListAnimationDuration,
-                  curve: Curves.easeOutCubic,
-                  height: _goalItemHeight,
-                  alignment: Alignment.center,
-                  child: _buildGoalTile(_goals[index], index),
+    return RefreshIndicator(
+      onRefresh: context.read<GoalsCubit>().refresh,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _goalCardsScrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(32, 0, 0, 24),
+                  itemCount: state.goals.length,
+                  itemBuilder: (_, index) {
+                    final goal = state.goals[index];
+                    return AnimatedContainer(
+                      duration: _goalListAnimationDuration,
+                      curve: Curves.easeOutCubic,
+                      height: _goalItemHeight,
+                      alignment: Alignment.center,
+                      child: _buildGoalTile(goal, index),
+                    );
+                  },
                 ),
               ),
-            ),
-            SizedBox(
-              width: 68,
-              child: ListView.builder(
-                controller: _goalDotsScrollController,
-                padding: const EdgeInsets.only(top: 0, bottom: 24, right: 8),
-                itemCount: _goals.length,
-                itemBuilder: (_, index) {
-                  final color =
-                      _goals[index]['color'] as Color? ?? AppColors.primary;
-                  return AnimatedContainer(
-                    duration: _goalListAnimationDuration,
-                    curve: Curves.easeOutCubic,
-                    height: _goalItemHeight,
-                    child: ReTimelineDot(
-                      showTopLine: index != 0,
-                      showBottomLine: index != _goals.length - 1,
-                      isDone: true,
+              SizedBox(
+                width: 68,
+                child: ListView.builder(
+                  controller: _goalDotsScrollController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(
+                    top: 0,
+                    bottom: 24,
+                    right: 8,
+                  ),
+                  itemCount: state.goals.length,
+                  itemBuilder: (_, index) {
+                    final color = index.isEven ? const Color(0xffF14922) : const Color(0xff4361EE);
+                    return AnimatedContainer(
+                      duration: _goalListAnimationDuration,
+                      curve: Curves.easeOutCubic,
                       height: _goalItemHeight,
-                      width: 56,
-                      circleSize: 35,
-                      innerCircleSize: 32,
-                      lineColor: AppColors.black1.withOpacity(0.2),
-                      activeBackgroundColor: color.withOpacity(0.12),
-                      innerPadding: const EdgeInsets.all(5),
-                      child: Icon(
-                        SolarIconsBold.target,
-                        color: color,
-                        size: 16,
+                      child: ReTimelineDot(
+                        showTopLine: index != 0,
+                        showBottomLine: index != state.goals.length - 1,
+                        isDone: true,
+                        height: _goalItemHeight,
+                        width: 56,
+                        circleSize: 35,
+                        innerCircleSize: 32,
+                        lineColor: AppColors.black1.withOpacity(0.2),
+                        activeBackgroundColor: color.withOpacity(0.12),
+                        innerPadding: const EdgeInsets.all(5),
+                        child: Icon(
+                          SolarIconsBold.target,
+                          color: color,
+                          size: 16,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _scrollGoalsToTop() {
+    if (_goalCardsScrollController.hasClients) {
+      _goalCardsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+
+    if (_goalDotsScrollController.hasClients) {
+      _goalDotsScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -1173,55 +1397,52 @@ class _GoalScreenState extends State<GoalScreen> {
                       child: const SizedBox(
                         width: 48,
                         height: 48,
-                        child: Icon(
-                          SolarIconsOutline.bell,
-                          size: 24,
-                        ),
+                        child: Icon(SolarIconsOutline.bell, size: 24),
                       ),
                     ),
                     suffixIcon: GestureDetector(
                       child: const SizedBox(
                         width: 48,
                         height: 48,
-                        child: Icon(
-                          SolarIconsOutline.history,
-                          size: 24,
-                        ),
+                        child: Icon(SolarIconsOutline.history, size: 24),
                       ),
                     ),
-                  ).bMargin(24)
+                  ).bMargin(24),
                 ],
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ReButton(
-                  onPressed: _openAddGoalModal,
-                  text: 'افزودن هدف',
-                  textDirection: TextDirection.ltr,
-                  icon: Icons.add,
-                  iconColor: AppColors.primary,
-                  color: AppColors.gray2,
-                  iconSize: 18,
-                  isOutlined: true,
-                  background: AppColors.gray1,
-                  textColor: AppColors.black1,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ).sizedBox(
-                  height: 40,
-                  width: 132,
-                ),
-                const ReText(
-                  'اهداف شما',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ).tMargin(2)
-              ],
-            ).hMargin(32).tMargin(16).bMargin(8),
+            BlocBuilder<GoalsCubit, GoalsState>(
+              builder: (context, state) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ReButton(
+                      onPressed: state.isMutating ? null : _openAddGoalModal,
+                      text: 'افزودن هدف',
+                      textDirection: TextDirection.ltr,
+                      icon: Icons.add,
+                      iconColor: AppColors.primary,
+                      color: AppColors.gray2,
+                      iconSize: 18,
+                      isOutlined: true,
+                      background: AppColors.gray1,
+                      textColor: AppColors.black1,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ).sizedBox(height: 40, width: 132),
+                    const ReText(
+                      'اهداف شما',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ).tMargin(2),
+                  ],
+                ).hMargin(32).tMargin(16).bMargin(8);
+              },
+            ),
             Expanded(
-              child: _buildGoalList(),
+              child: BlocBuilder<GoalsCubit, GoalsState>(
+                builder: (context, state) => _buildGoalList(state),
+              ),
             ),
           ],
         ),

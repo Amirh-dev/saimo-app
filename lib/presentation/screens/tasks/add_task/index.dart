@@ -422,8 +422,21 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ..date.value = taskDate.toUtc().toIso8601String()
               ..durationM = _selectedMinutes
               ..hasReminder = _isReminderEnabled
-              ..recurringDays = _recurringDay(_selectedDate, _isWeeklyRepeat)
               ..tagNames.addAll(tagNames);
+
+            if (_isWeeklyRepeat) {
+              final recurringDays = _recurringDay(
+                _selectedDate,
+                _isWeeklyRepeat,
+              );
+
+              if (recurringDays != null && recurringDays.isNotEmpty) {
+                request.vars.input.recurringDays = recurringDays;
+              }
+
+              debugPrint('CREATE TASK recurringDays = "$recurringDays"');
+              debugPrint('CREATE TASK goalId = "${widget.goalId}"');
+            }
 
             final goalId = _emptyToNull(widget.goalId ?? '');
             if (goalId != null) {
@@ -436,6 +449,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             }
           },
         ),
+      );
+
+      final recurringDays = _recurringDay(
+        _selectedDate,
+        _isWeeklyRepeat,
       );
 
       if (!mounted) return;

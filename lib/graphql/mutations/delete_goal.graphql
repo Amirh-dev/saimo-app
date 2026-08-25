@@ -1,0 +1,3 @@
+mutation DeleteGoal($id: ID!) {
+    deleteGoal(id: $id)
+}

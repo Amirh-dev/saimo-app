@@ -106,7 +106,9 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ReText(
-                            '$title ${_toPersianNumber(duration.toString())} دقیقه',
+                            duration > 0
+                                ? '$title ${_toPersianNumber(duration.toString())} دقیقه'
+                                : '$title --',
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -470,18 +472,20 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
           if (!isEmpty) ...[
             const SizedBox(height: 8),
             ReText(
-              _toPersianNumber(duration.toString()),
+              task['durationText']?.toString() ??
+                  _toPersianNumber(duration.toString()),
               fontSize: 14,
               fontWeight: FontWeight.w900,
               textAlign: TextAlign.center,
             ),
-            ReText(
-              'دقیقه',
-              fontSize: 9,
-              color: Colors.grey.shade500,
-              fontWeight: FontWeight.bold,
-              textAlign: TextAlign.center,
-            ),
+            if ((task['durationText']?.toString() ?? '') != '--')
+              ReText(
+                'دقیقه',
+                fontSize: 9,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.bold,
+                textAlign: TextAlign.center,
+              ),
           ],
         ],
       ),

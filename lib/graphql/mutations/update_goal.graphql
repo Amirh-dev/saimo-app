@@ -1,0 +1,12 @@
+mutation UpdateGoal($id: ID!, $input: UpdateGoalInput!) {
+    updateGoal(id: $id, input: $input) {
+        id
+        createdAt
+        updatedAt
+        title
+        note
+        targetDate
+        status
+        userID
+    }
+}

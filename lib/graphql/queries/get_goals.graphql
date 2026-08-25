@@ -1,0 +1,12 @@
+query GetGoals {
+    getGoals {
+        id
+        createdAt
+        updatedAt
+        title
+        note
+        targetDate
+        status
+        userID
+    }
+}

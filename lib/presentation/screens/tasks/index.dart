@@ -1102,7 +1102,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final hasProgress = _timedTaskShowsProgress(task);
     final isDone = status == 'done';
     final isExpanded = _expandedTimedTaskIndex == index;
-    final cardHeight = hasProgress ? 84.0 : 60.0;
+    final cardHeight = (hasProgress ? 84.0 : 60.0) + (isExpanded ? 58 : 0);
 
     return Opacity(
       opacity: isDone ? 0.55 : 1,

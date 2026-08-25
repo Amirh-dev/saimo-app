@@ -97,12 +97,24 @@ import 'package:simo_learn/graphql/mutations/__generated__/create_direct_chat.re
     show GCreateDirectChatReq;
 import 'package:simo_learn/graphql/mutations/__generated__/create_direct_chat.var.gql.dart'
     show GCreateDirectChatVars;
+import 'package:simo_learn/graphql/mutations/__generated__/create_goal.data.gql.dart'
+    show GCreateGoalData, GCreateGoalData_createGoal;
+import 'package:simo_learn/graphql/mutations/__generated__/create_goal.req.gql.dart'
+    show GCreateGoalReq;
+import 'package:simo_learn/graphql/mutations/__generated__/create_goal.var.gql.dart'
+    show GCreateGoalVars;
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.data.gql.dart'
     show GCreateTaskData, GCreateTaskData_createTask;
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart'
     show GCreateTaskReq;
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.var.gql.dart'
     show GCreateTaskVars;
+import 'package:simo_learn/graphql/mutations/__generated__/delete_goal.data.gql.dart'
+    show GDeleteGoalData;
+import 'package:simo_learn/graphql/mutations/__generated__/delete_goal.req.gql.dart'
+    show GDeleteGoalReq;
+import 'package:simo_learn/graphql/mutations/__generated__/delete_goal.var.gql.dart'
+    show GDeleteGoalVars;
 import 'package:simo_learn/graphql/mutations/__generated__/delete_message.data.gql.dart'
     show GDeleteMessageData, GDeleteMessageData_deleteMessage;
 import 'package:simo_learn/graphql/mutations/__generated__/delete_message.req.gql.dart'
@@ -148,6 +160,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_tok
     show GUnregisterDeviceTokenReq;
 import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.var.gql.dart'
     show GUnregisterDeviceTokenVars;
+import 'package:simo_learn/graphql/mutations/__generated__/update_goal.data.gql.dart'
+    show GUpdateGoalData, GUpdateGoalData_updateGoal;
+import 'package:simo_learn/graphql/mutations/__generated__/update_goal.req.gql.dart'
+    show GUpdateGoalReq;
+import 'package:simo_learn/graphql/mutations/__generated__/update_goal.var.gql.dart'
+    show GUpdateGoalVars;
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.data.gql.dart'
     show GUpdateTaskData, GUpdateTaskData_updateTask;
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart'
@@ -192,6 +210,12 @@ import 'package:simo_learn/graphql/queries/__generated__/get_friends.req.gql.dar
     show GGetFriendsReq;
 import 'package:simo_learn/graphql/queries/__generated__/get_friends.var.gql.dart'
     show GGetFriendsVars;
+import 'package:simo_learn/graphql/queries/__generated__/get_goals.data.gql.dart'
+    show GGetGoalsData, GGetGoalsData_getGoals;
+import 'package:simo_learn/graphql/queries/__generated__/get_goals.req.gql.dart'
+    show GGetGoalsReq;
+import 'package:simo_learn/graphql/queries/__generated__/get_goals.var.gql.dart'
+    show GGetGoalsVars;
 import 'package:simo_learn/graphql/queries/__generated__/get_me.data.gql.dart'
     show GGetMeData, GGetMeData_getMe;
 import 'package:simo_learn/graphql/queries/__generated__/get_me.req.gql.dart'
@@ -266,7 +290,11 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GCreateDirectChatInput,
   GCreateDirectChatReq,
   GCreateDirectChatVars,
+  GCreateGoalData,
+  GCreateGoalData_createGoal,
   GCreateGoalInput,
+  GCreateGoalReq,
+  GCreateGoalVars,
   GCreateGroupChatInput,
   GCreateTaskData,
   GCreateTaskData_createTask,
@@ -274,6 +302,9 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GCreateTaskReq,
   GCreateTaskVars,
   GCursor,
+  GDeleteGoalData,
+  GDeleteGoalReq,
+  GDeleteGoalVars,
   GDeleteMessageData,
   GDeleteMessageData_deleteMessage,
   GDeleteMessageReq,
@@ -301,6 +332,10 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GGetFriendsData_getFriends_requester,
   GGetFriendsReq,
   GGetFriendsVars,
+  GGetGoalsData,
+  GGetGoalsData_getGoals,
+  GGetGoalsReq,
+  GGetGoalsVars,
   GGetMeData,
   GGetMeData_getMe,
   GGetMeReq,
@@ -377,7 +412,11 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GUnregisterDeviceTokenReq,
   GUnregisterDeviceTokenVars,
   GUpdateCounselorProfileInput,
+  GUpdateGoalData,
+  GUpdateGoalData_updateGoal,
   GUpdateGoalInput,
+  GUpdateGoalReq,
+  GUpdateGoalVars,
   GUpdateProfileInput,
   GUpdateTaskData,
   GUpdateTaskData_updateTask,
