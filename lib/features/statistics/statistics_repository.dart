@@ -1,13 +1,15 @@
 import 'package:ferry/ferry.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.data.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.req.gql.dart';
 
-/// Shorter alias for the very long generated name.
-typedef StatisticsDashboard = GStatisticsDashboardData_statisticsDashboard;
+typedef StatisticsDashboard =
+GStatisticsDashboardData_statisticsDashboard;
 
 class StatisticsFailure implements Exception {
   const StatisticsFailure(this.message);
+
   final String message;
 
   @override
@@ -15,17 +17,17 @@ class StatisticsFailure implements Exception {
 }
 
 class StatisticsRepository {
-  const StatisticsRepository(this._client);
+  const StatisticsRepository(this._graphql);
 
-  final Client _client;
+  final GraphQLRepository _graphql;
 
-  Stream<StatisticsDashboard> watchDashboard({
+  Future<StatisticsDashboard> fetchDashboard({
     required DateTime start,
     required DateTime end,
     required DateTime previousStart,
     required DateTime previousEnd,
-    FetchPolicy fetchPolicy = FetchPolicy.CacheAndNetwork,
-  }) async* {
+    FetchPolicy fetchPolicy = FetchPolicy.NetworkOnly,
+  }) async {
     final request = GStatisticsDashboardReq(
           (b) => b
         ..fetchPolicy = fetchPolicy
@@ -35,36 +37,60 @@ class StatisticsRepository {
         ..vars.input.previousEnd.replace(_time(previousEnd)),
     );
 
-    await for (final response in _client.request(request)) {
-      // First emission of CacheAndNetwork is usually an empty loading frame.
-      if (response.loading && response.data == null) continue;
+    final response = await _graphql.requestOnce(
+      request,
+    );
 
-      if (response.hasErrors) {
-        throw StatisticsFailure(_messageOf(response));
-      }
-
-      final dashboard = response.data?.statisticsDashboard;
-      if (dashboard != null) yield dashboard;
+    if (response.hasErrors) {
+      throw StatisticsFailure(
+        _messageOf(response),
+      );
     }
+
+    final dashboard = response.data?.statisticsDashboard;
+
+    if (dashboard == null) {
+      throw const StatisticsFailure(
+        'اطلاعات آمار از سرور دریافت نشد.',
+      );
+    }
+
+    return dashboard;
   }
 
-  String _messageOf(OperationResponse response) {
-    final errors = response.graphqlErrors;
-    if (errors != null && errors.isNotEmpty) return errors.first.message;
+  String _messageOf(
+      OperationResponse<dynamic, dynamic> response,
+      ) {
+    final graphqlErrors = response.graphqlErrors;
+
+    if (graphqlErrors != null && graphqlErrors.isNotEmpty) {
+      return graphqlErrors
+          .map((error) => error.message)
+          .where((message) => message.isNotEmpty)
+          .join('\n');
+    }
+
     if (response.linkException != null) {
       return 'خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.';
     }
-    return 'خطای ناشناخته';
+
+    return 'خطای ناشناخته در دریافت آمار.';
   }
 
-  // The API wants a fixed Tehran offset, so we format the DateTime as a
-  // wall-clock value and append +03:30 instead of using toIso8601String().
-  static GTime _time(DateTime wallClock) => GTime(
-    '${_pad(wallClock.year, 4)}-${_pad(wallClock.month, 2)}-${_pad(wallClock.day, 2)}'
-        'T${_pad(wallClock.hour, 2)}:${_pad(wallClock.minute, 2)}:${_pad(wallClock.second, 2)}'
-        '+03:30',
-  );
+  static GTime _time(DateTime wallClock) {
+    return GTime(
+      '${_pad(wallClock.year, 4)}-'
+          '${_pad(wallClock.month, 2)}-'
+          '${_pad(wallClock.day, 2)}'
+          'T'
+          '${_pad(wallClock.hour, 2)}:'
+          '${_pad(wallClock.minute, 2)}:'
+          '${_pad(wallClock.second, 2)}'
+          '+03:30',
+    );
+  }
 
-  static String _pad(int value, int width) =>
-      value.toString().padLeft(width, '0');
+  static String _pad(int value, int width) {
+    return value.toString().padLeft(width, '0');
+  }
 }

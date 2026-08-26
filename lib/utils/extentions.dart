@@ -63,7 +63,7 @@ extension ContextRouterExtension on BuildContext {
   void toNamed(String path, {Object? arguments}) =>
       Navigator.of(this).pushNamed(path, arguments: arguments);
 
-  void back() => Navigator.pop(this);
+  Future<bool> back() => Navigator.of(this).maybePop();
   void backTillFirst() => Navigator.of(this).popUntil((route) => route.isFirst);
   void backTill(String routeName, {String? secondRouteName}) =>
       Navigator.of(this).popUntil((route) {

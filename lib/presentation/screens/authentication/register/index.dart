@@ -452,7 +452,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             alignment: Alignment.centerLeft,
             widthFactor: 1,
             child: ReText(
-              '98+',
+              '..0912',
               isPersian: true,
               fontSize: 13,
               fontWeight: FontWeight.w600,

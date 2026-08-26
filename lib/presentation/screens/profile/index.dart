@@ -25,6 +25,7 @@ import 'package:simo_learn/presentation/screens/authentication/register/widgets/
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/premium/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
+import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -109,23 +110,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profileState = context.watch<ProfileCubit>().state;
-    return AppBottomNavigationScaffold(
-      currentIndex: 4,
-      onTap: (index) {
-        if (index == 4) {
-          _setSection(ProfileContentSection.profile);
-          unawaited(_loadProfile(forceRefresh: true));
-          return;
-        }
-        navigateToIndex(context, index, 4);
-      },
-      body: ColoredBox(
-        color: AppColors.white,
-        child: SafeArea(
-          bottom: false,
-          child: ColoredBox(
-            color: AppColors.gray1,
-            child: _buildSection(profileState),
+    return AppExitGuard(
+      child: AppBottomNavigationScaffold(
+        currentIndex: 4,
+        onTap: (index) {
+          if (index == 4) {
+            _setSection(ProfileContentSection.profile);
+            unawaited(_loadProfile(forceRefresh: true));
+            return;
+          }
+          navigateToIndex(context, index, 4);
+        },
+        body: ColoredBox(
+          color: AppColors.white,
+          child: SafeArea(
+            bottom: false,
+            child: ColoredBox(
+              color: AppColors.gray1,
+              child: _buildSection(profileState),
+            ),
           ),
         ),
       ),

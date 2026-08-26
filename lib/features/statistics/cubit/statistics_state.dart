@@ -2,8 +2,18 @@ import 'package:equatable/equatable.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
-enum StatisticsPeriod { today, week, month }
-enum StatisticsStatus { initial, loading, success, failure }
+enum StatisticsPeriod {
+  today,
+  week,
+  month,
+}
+
+enum StatisticsStatus {
+  initial,
+  loading,
+  success,
+  failure,
+}
 
 class StatisticsRange extends Equatable {
   const StatisticsRange({
@@ -26,46 +36,91 @@ class StatisticsRange extends Equatable {
 
     switch (period) {
       case StatisticsPeriod.today:
-        return StatisticsRange._of(today, today.addDays(1), today.addDays(-1), today);
+        return StatisticsRange._of(
+          today,
+          today.addDays(1),
+          today.addDays(-1),
+          today,
+        );
+
       case StatisticsPeriod.week:
-        final start = today.addDays(-(today.weekDay - 1));
+        final start = today.addDays(
+          -(today.weekDay - 1),
+        );
+
         return StatisticsRange._of(
-            start, start.addDays(7), start.addDays(-7), start);
+          start,
+          start.addDays(7),
+          start.addDays(-7),
+          start,
+        );
+
       case StatisticsPeriod.month:
-        final start = Jalali(today.year, today.month, 1);
+        final start = Jalali(
+          today.year,
+          today.month,
+          1,
+        );
+
         return StatisticsRange._of(
-            start, start.addMonths(1), start.addMonths(-1), start);
+          start,
+          start.addMonths(1),
+          start.addMonths(-1),
+          start,
+        );
     }
   }
 
-  factory StatisticsRange.custom(Jalali start, Jalali end) {
-    final startMidnight = _midnight(start);
-    final endMidnight = _midnight(end.addDays(1));
-    final duration = endMidnight.difference(startMidnight);
+  factory StatisticsRange.custom(
+      Jalali start,
+      Jalali end,
+      ) {
+    final startDate = _midnight(start);
+    final endDate = _midnight(
+      end.addDays(1),
+    );
+
+    final duration = endDate.difference(startDate);
 
     return StatisticsRange(
-      start: startMidnight,
-      end: endMidnight,
-      previousStart: startMidnight.subtract(duration),
-      previousEnd: startMidnight,
+      start: startDate,
+      end: endDate,
+      previousStart: startDate.subtract(duration),
+      previousEnd: startDate,
     );
   }
 
-  factory StatisticsRange._of(Jalali s, Jalali e, Jalali ps, Jalali pe) =>
-      StatisticsRange(
-        start: _midnight(s),
-        end: _midnight(e),
-        previousStart: _midnight(ps),
-        previousEnd: _midnight(pe),
-      );
+  factory StatisticsRange._of(
+      Jalali start,
+      Jalali end,
+      Jalali previousStart,
+      Jalali previousEnd,
+      ) {
+    return StatisticsRange(
+      start: _midnight(start),
+      end: _midnight(end),
+      previousStart: _midnight(previousStart),
+      previousEnd: _midnight(previousEnd),
+    );
+  }
 
-  static DateTime _midnight(Jalali jalali) {
-    final g = jalali.toGregorian();
-    return DateTime(g.year, g.month, g.day);
+  static DateTime _midnight(Jalali date) {
+    final gregorian = date.toGregorian();
+
+    return DateTime(
+      gregorian.year,
+      gregorian.month,
+      gregorian.day,
+    );
   }
 
   @override
-  List<Object?> get props => [start, end, previousStart, previousEnd];
+  List<Object?> get props => [
+    start,
+    end,
+    previousStart,
+    previousEnd,
+  ];
 }
 
 class StatisticsState extends Equatable {
@@ -74,25 +129,44 @@ class StatisticsState extends Equatable {
     this.status = StatisticsStatus.initial,
     this.period = StatisticsPeriod.week,
     this.dashboard,
-    this.weeklyDashboard, // NEW: Dedicated variable for the charts
+    this.weeklyDashboard,
     this.errorMessage,
   });
 
   final StatisticsStatus status;
+
+  /// Period selected by the user for the statistics grid.
   final StatisticsPeriod period;
+
+  /// Range used by the statistics grid.
   final StatisticsRange range;
-  final StatisticsDashboard? dashboard; // Used by _StatsGrid
-  final StatisticsDashboard? weeklyDashboard; // Used by Charts
+
+  /// Data for the currently selected period.
+  final StatisticsDashboard? dashboard;
+
+  /// Data ALWAYS representing the current week.
+  ///
+  /// The charts use this data regardless of whether the user selects
+  /// Today / Week / Month in the grid.
+  final StatisticsDashboard? weeklyDashboard;
+
   final String? errorMessage;
 
-  bool get isFirstLoad =>
-      status == StatisticsStatus.loading && dashboard == null;
+  bool get isLoading =>
+      status == StatisticsStatus.loading;
 
-  String get comparisonLabel => switch (period) {
-    StatisticsPeriod.today => 'از دیروز',
-    StatisticsPeriod.week => 'از هفته قبل',
-    StatisticsPeriod.month => 'از ماه قبل',
-  };
+  bool get isFailure =>
+      status == StatisticsStatus.failure;
+
+  bool get hasDashboard =>
+      dashboard != null;
+
+  bool get hasWeeklyDashboard =>
+      weeklyDashboard != null;
+
+  bool get hasData =>
+      dashboard != null &&
+          weeklyDashboard != null;
 
   StatisticsState copyWith({
     StatisticsStatus? status,
@@ -101,18 +175,33 @@ class StatisticsState extends Equatable {
     StatisticsDashboard? dashboard,
     StatisticsDashboard? weeklyDashboard,
     String? errorMessage,
-    bool clearError = false,
     bool clearDashboard = false,
-  }) =>
-      StatisticsState(
-        status: status ?? this.status,
-        period: period ?? this.period,
-        range: range ?? this.range,
-        dashboard: clearDashboard ? null : (dashboard ?? this.dashboard),
-        weeklyDashboard: weeklyDashboard ?? this.weeklyDashboard,
-        errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      );
+    bool clearWeeklyDashboard = false,
+    bool clearError = false,
+  }) {
+    return StatisticsState(
+      status: status ?? this.status,
+      period: period ?? this.period,
+      range: range ?? this.range,
+      dashboard: clearDashboard
+          ? null
+          : dashboard ?? this.dashboard,
+      weeklyDashboard: clearWeeklyDashboard
+          ? null
+          : weeklyDashboard ?? this.weeklyDashboard,
+      errorMessage: clearError
+          ? null
+          : errorMessage ?? this.errorMessage,
+    );
+  }
 
   @override
-  List<Object?> get props => [status, period, range, dashboard, weeklyDashboard, errorMessage];
+  List<Object?> get props => [
+    status,
+    period,
+    range,
+    dashboard,
+    weeklyDashboard,
+    errorMessage,
+  ];
 }

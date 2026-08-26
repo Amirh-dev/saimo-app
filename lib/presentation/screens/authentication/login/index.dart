@@ -75,11 +75,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         alignment: Alignment.centerLeft,
                                         widthFactor: 1,
                                         child: ReText(
-                                          '98+',
+                                          '..0912',
                                           isPersian: true,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
-                                          color: AppColors.black1,
+                                          color: AppColors.gray,
                                         ),
                                       ),
                                     ),

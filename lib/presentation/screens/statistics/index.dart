@@ -16,6 +16,7 @@ import 'package:simo_learn/presentation/screens/statistics/study_chart.dart';
 import 'package:simo_learn/presentation/screens/statistics/test_chart.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
+import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/colors.dart';
@@ -34,11 +35,24 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   String statGridTimeUnit = 'هفته';
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context.read<StatisticsCubit>().load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: AppBottomNavigationBar(
-        currentIndex: 3,
-        onTap: (index) => navigateToIndex(context, index, 3),
+      bottomNavigationBar: AppExitGuard(
+        child: AppBottomNavigationBar(
+          currentIndex: 3,
+          onTap: (index) => navigateToIndex(context, index, 3),
+        ),
       ),
       backgroundColor: AppColors.gray1,
       body: Column(
@@ -54,93 +68,128 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             }
           }),
           Expanded(
-            child: BlocBuilder<StatisticsCubit, StatisticsState>(builder: (context, state) {
-              final dashboard = state.dashboard;
-              final weeklyDashboard = state.weeklyDashboard;
+            child: BlocBuilder<StatisticsCubit, StatisticsState>(
+              builder: (context, state) {
+                final dashboard = state.dashboard;
+                final weeklyDashboard = state.weeklyDashboard;
 
-              // We need BOTH the dynamic stats and the permanent weekly charts to render
-              if (dashboard == null || weeklyDashboard == null) {
-                if (state.status == StatisticsStatus.failure && state.errorMessage != null) {
+                if (state.status == StatisticsStatus.failure) {
                   return _errorView(
-                    message: state.errorMessage ?? 'خطا در دریافت اطلاعات',
-                    onRetry: () => context.read<StatisticsCubit>().refresh(),
+                    message: state.errorMessage ??
+                        'دریافت اطلاعات آمار با مشکل مواجه شد.',
+                    onRetry: () {
+                      context.read<StatisticsCubit>().refresh();
+                    },
                   );
                 }
-                return const Center(child: CupertinoActivityIndicator());
-              }
 
-              // The grid takes the dynamically selected range data
-              final comparison = dashboard.comparison;
+                if (dashboard == null || weeklyDashboard == null) {
+                  return const Center(
+                    child: CupertinoActivityIndicator(),
+                  );
+                }
 
-              return RefreshIndicator(
-                onRefresh: () => context.read<StatisticsCubit>().refresh(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _StatsGrid(
-                        unit: statGridTimeUnit,
-                        data: {
-                          'commitment': '${comparison.current.adherencePercentage.round()}٪',
-                          'commitmentChanges': (comparison.adherenceChangePercentage ?? 0).round(),
-                          'studyHours': (comparison.current.studySeconds ~/ 60) ~/ 60,
-                          'studyHoursChanges': (comparison.studySecondsChangePercentage ?? 0).round(),
-                          'doneTests': comparison.current.totalQuestions,
-                          'doneTestsChanges': (comparison.totalQuestionsChangePercentage ?? 0).round(),
-                          'correctTests': comparison.current.correctAnswers,
-                          'correctTestsChanges': (comparison.correctAnswersChangePercentage ?? 0).round(),
-                        },
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32),
-                        child: ReText(
-                          'نمودار میزان مطالعه',
-                          fontWeight: FontWeight(800),
-                          fontSize: 16,
+                final comparison = dashboard.comparison;
+
+                return RefreshIndicator(
+                  onRefresh: () {
+                    return context.read<StatisticsCubit>().refresh();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _StatsGrid(
+                          unit: statGridTimeUnit,
+                          data: {
+                            'commitment':
+                            '${comparison.current.adherencePercentage.round()}٪',
+                            'commitmentChanges':
+                            (comparison.adherenceChangePercentage ?? 0)
+                                .round(),
+                            'studyHours':
+                            (comparison.current.studySeconds ~/ 60) ~/ 60,
+                            'studyHoursChanges':
+                            (comparison.studySecondsChangePercentage ?? 0)
+                                .round(),
+                            'doneTests':
+                            comparison.current.totalQuestions,
+                            'doneTestsChanges':
+                            (comparison.totalQuestionsChangePercentage ?? 0)
+                                .round(),
+                            'correctTests':
+                            comparison.current.correctAnswers,
+                            'correctTestsChanges':
+                            (comparison.correctAnswersChangePercentage ?? 0)
+                                .round(),
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      _StudyTabs(
-                        onChanged: (final int selected) {
-                          setState(() {
-                            _isDateStudyChart = selected == 0;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                        child: StudyChart(
-                          isDailyChart: _isDateStudyChart,
-                          // The charts strictly take the weeklyDashboard data
-                          dailyBuckets: weeklyDashboard.dailyBuckets.toList(),
-                          subjectBuckets: weeklyDashboard.subjectBuckets.toList(),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: ReText(
+                            'نمودار میزان مطالعه',
+                            fontWeight: FontWeight(800),
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32),
-                        child: ReText(
-                          'نمودار تعداد تست',
-                          fontWeight: FontWeight(800),
-                          fontSize: 16,
+
+                        const SizedBox(height: 8),
+
+                        _StudyTabs(
+                          onChanged: (selected) {
+                            setState(() {
+                              _isDateStudyChart = selected == 0;
+                            });
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                        child: TestChart(
-                          // The charts strictly take the weeklyDashboard data
-                          dailyBuckets: weeklyDashboard.dailyBuckets.toList(),
+
+                        const SizedBox(height: 8),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                          ),
+                          child: StudyChart(
+                            isDailyChart: _isDateStudyChart,
+                            dailyBuckets:
+                            weeklyDashboard.dailyBuckets.toList(),
+                            subjectBuckets:
+                            weeklyDashboard.subjectBuckets.toList(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 50),
-                    ],
+
+                        const SizedBox(height: 16),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: ReText(
+                            'نمودار تعداد تست',
+                            fontWeight: FontWeight(800),
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                          ),
+                          child: TestChart(
+                            dailyBuckets:
+                            weeklyDashboard.dailyBuckets.toList(),
+                          ),
+                        ),
+
+                        const SizedBox(height: 50),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -215,24 +264,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
       ),
     );
-  }
-
-  void _onBottomNavigationTap(int index) {
-    if (index == 2) return;
-    switch (index) {
-      case 0:
-        context.toOff(const GoalScreen());
-        break;
-      case 1:
-        context.toOff(const TrophiesScreen());
-        break;
-      case 3:
-        context.toOff(const StatisticsScreen());
-        break;
-      case 4:
-        context.toOff(const ProfileScreen());
-        break;
-    }
   }
 }
 

@@ -79,7 +79,7 @@ Future<void> main() async {
     "${tokenStorage.currentAccessToken} <-",
   );
 
-  await globalDataRepository.loadParentTags();
+  globalDataRepository.loadParentTags();
 
   final tags = GlobalData.instance.parentTags;
 
@@ -137,9 +137,9 @@ Future<void> main() async {
           BlocProvider(
             create: (context) => StatisticsCubit(
               StatisticsRepository(
-                context.read<Client>(),
+                context.read<GraphQLRepository>(),
               ),
-            )..load(),
+            ),
           ),
           BlocProvider(
             create: (context) => GoalsCubit(

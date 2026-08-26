@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -397,14 +398,17 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                       ),
                     )
                   else
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                        ),
-                        child: RotatedBox(
-                          quarterTurns: 1,
-                          child: DecoratedBox(
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: RotatedBox(
+                        quarterTurns: 1,
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                            sigmaX: 15,
+                            sigmaY: 15,
+                          ),
+                          child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(100),
                               color: (isDone || isDoing) ? AppColors.lightGray.withAlpha(20) : AppColors.gray1,
@@ -423,6 +427,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

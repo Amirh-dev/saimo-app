@@ -7,6 +7,7 @@ import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
+import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/assets.dart';
@@ -34,22 +35,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<DashboardCubit, DashboardState>(
-        builder: (context, state) {
-          return Scaffold(
-            backgroundColor: AppColors.gray1,
-            bottomNavigationBar: AppBottomNavigationBar(
-              currentIndex: 0,
-              onTap: (index) => navigateToIndex(context, index, 0),
-            ),
-            body: state.isLoading || state.status == DashboardStatus.initial
-                ? const _DashboardSkeleton()
-                : _DashboardContent(
-                    state: state,
-                  ),
-          );
-        },
-      );
+  Widget build(BuildContext context) => AppExitGuard(
+    child: BlocBuilder<DashboardCubit, DashboardState>(
+          builder: (context, state) {
+            return Scaffold(
+              backgroundColor: AppColors.gray1,
+              bottomNavigationBar: AppBottomNavigationBar(
+                currentIndex: 0,
+                onTap: (index) => navigateToIndex(context, index, 0),
+              ),
+              body: state.isLoading || state.status == DashboardStatus.initial
+                  ? const _DashboardSkeleton()
+                  : _DashboardContent(
+                      state: state,
+                    ),
+            );
+          },
+        ),
+  );
 }
 
 class _DashboardContent extends StatelessWidget {
