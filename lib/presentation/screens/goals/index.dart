@@ -1380,74 +1380,70 @@ class _GoalScreenState extends State<GoalScreen> {
           currentIndex: 2,
           onTap: (index) => navigateToIndex(context, index, 2),
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(48),
-                    bottomRight: Radius.circular(48),
+        body: Column(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(48),
+                  bottomRight: Radius.circular(48),
+                ),
+              ),
+              child: SafeArea(
+                child: reAppHeader(
+                  'اهداف',
+                  prefixIcon: GestureDetector(
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(SolarIconsOutline.bell, size: 24),
+                    ),
                   ),
-                ),
-                child: Column(
+                  suffixIcon: GestureDetector(
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
+                    ),
+                  ),
+                ).bMargin(24),
+              ),
+            ),
+            BlocBuilder<GoalsCubit, GoalsState>(
+              builder: (context, state) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    reAppHeader(
-                      'اهداف',
-                      prefixIcon: GestureDetector(
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Icon(SolarIconsOutline.bell, size: 24),
-                        ),
-                      ),
-                      suffixIcon: GestureDetector(
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: Icon(SolarIconsOutline.history, size: 24),
-                        ),
-                      ),
-                    ).bMargin(24),
+                    ReButton(
+                      onPressed: state.isMutating ? null : _openAddGoalModal,
+                      text: 'افزودن هدف',
+                      textDirection: TextDirection.ltr,
+                      icon: Icons.add,
+                      iconColor: AppColors.primary,
+                      color: AppColors.gray2,
+                      iconSize: 18,
+                      isOutlined: true,
+                      background: AppColors.gray1,
+                      textColor: AppColors.black1,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ).sizedBox(height: 40, width: 132),
+                    const ReText(
+                      'اهداف شما',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ).tMargin(2),
                   ],
-                ),
+                ).hMargin(32).tMargin(16).bMargin(8);
+              },
+            ),
+            Expanded(
+              child: BlocBuilder<GoalsCubit, GoalsState>(
+                builder: (context, state) => _buildGoalList(state),
               ),
-              BlocBuilder<GoalsCubit, GoalsState>(
-                builder: (context, state) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ReButton(
-                        onPressed: state.isMutating ? null : _openAddGoalModal,
-                        text: 'افزودن هدف',
-                        textDirection: TextDirection.ltr,
-                        icon: Icons.add,
-                        iconColor: AppColors.primary,
-                        color: AppColors.gray2,
-                        iconSize: 18,
-                        isOutlined: true,
-                        background: AppColors.gray1,
-                        textColor: AppColors.black1,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ).sizedBox(height: 40, width: 132),
-                      const ReText(
-                        'اهداف شما',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ).tMargin(2),
-                    ],
-                  ).hMargin(32).tMargin(16).bMargin(8);
-                },
-              ),
-              Expanded(
-                child: BlocBuilder<GoalsCubit, GoalsState>(
-                  builder: (context, state) => _buildGoalList(state),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

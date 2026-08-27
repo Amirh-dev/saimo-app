@@ -26,6 +26,8 @@ import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/premium/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
+import 'package:simo_learn/presentation/widgets/modal.dart';
+import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -637,7 +639,8 @@ class _ProfileHomeContent extends StatelessWidget {
             _ProfileAccountMenu(
               isRefreshing: isRefreshing,
               onRefresh: onRefresh,
-              onPremium: () => context.to(const PremiumPlansScreen()),
+              // onPremium: () => context.to(const PremiumPlansScreen()),
+              onPremium: () => showFreePremiumMessage(context),
               onAccountDetails: onOpenAccountDetails,
               onSettings: onOpenSettings,
               onSupport: () => showReToast(
@@ -2637,11 +2640,23 @@ class _ProfileTopCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _ProfileHeader(
-            title: 'پروفایل',
-            selectedSection: selectedSection,
-            onSectionSelected: onSectionSelected,
-          ).tMargin(20).hMargin(36),
+          reAppHeader(
+            'پروفایل',
+            prefixIcon: GestureDetector(
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Icon(SolarIconsOutline.bell, size: 24),
+              ),
+            ),
+            suffixIcon: GestureDetector(
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
+              ),
+            ),
+          ),
           _ProfileSummaryCard(profile: profile),
         ],
       ).bMargin(12),

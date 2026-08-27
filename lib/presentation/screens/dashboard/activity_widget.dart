@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -461,9 +463,9 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
             child: isEmpty
                 ? const SizedBox.shrink()
                 : Center(
-                    child: Icon(
-                      SolarIconsOutline.stopwatch,
-                      size: 16,
+                    child: SvgPicture.asset(
+                      'assets/icons/stop_watch.svg',
+                      width: 16,
                       color: isDone
                           ? const Color(0xFF4263EB)
                           : isDoing

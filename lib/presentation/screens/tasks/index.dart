@@ -823,10 +823,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   Widget _buildTaskList(
     BuildContext context,
     List<Map<String, dynamic>> tasks,
+    bool isTimeTask,
   ) {
     if (tasks.isEmpty) {
-      return const ReEmptyList(
-        title: 'چک لیستی ندارید!',
+      return ReEmptyList(
+        title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
         subtitle: 'برای امروز تسکی اضافه نکردید.',
       );
     }
@@ -1279,7 +1280,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   Widget _buildTimedTaskList(BuildContext context) {
     if (_timedTasks.isEmpty) {
-      return _buildTaskList(context, const []);
+      return _buildTaskList(context, const [], true);
     }
 
     return Align(
@@ -1330,46 +1331,33 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
           currentIndex: 1,
           onTap: (index) => navigateToIndex(context, index, 1),
         ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(50),
-                    bottomRight: Radius.circular(50),
-                  ),
+        body: Column(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(50),
+                  bottomRight: Radius.circular(50),
                 ),
+              ),
+              child: SafeArea(
                 child: Column(
                   children: [
                     reAppHeader(
                       'تسک ها',
-                      suffixIcon: const Icon(
-                        SolarIconsOutline.history,
-                      ),
-                      prefixIcon: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: AppColors.white,
+                      prefixIcon: GestureDetector(
+                        child: const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Icon(SolarIconsOutline.bell, size: 24),
                         ),
-                        child: Stack(
-                          alignment: Alignment.topRight,
-                          children: [
-                            const Icon(
-                              SolarIconsOutline.bell,
-                              size: 20,
-                            ).vMargin(10).hMargin(10),
-                            Container(
-                              margin: const EdgeInsets.only(top: 5, right: 5),
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(100),
-                                color: AppColors.errorColor,
-                              ),
-                            ),
-                          ],
+                      ),
+                      suffixIcon: GestureDetector(
+                        child: const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
                         ),
                       ),
                     ),
@@ -1377,99 +1365,99 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   ],
                 ),
               ),
-              Builder(
-                builder: (tabContext) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          final controller = DefaultTabController.maybeOf(tabContext);
-                          if (controller != null && controller.index == 1) {
-                            _openAddTimedTaskScreen();
-                            return;
-                          }
-                          _openAddTaskScreen();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.gray2),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.add,
-                                size: 18,
-                                color: AppColors.primary,
-                              ).rMargin(6),
-                              const ReText(
-                                'افزودن تسک',
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                color: AppColors.black1,
-                              ),
-                            ],
-                          ),
+            ),
+            Builder(
+              builder: (tabContext) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        final controller = DefaultTabController.maybeOf(tabContext);
+                        if (controller != null && controller.index == 1) {
+                          _openAddTimedTaskScreen();
+                          return;
+                        }
+                        _openAddTaskScreen();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.gray2),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.add,
+                              size: 18,
+                              color: AppColors.primary,
+                            ).rMargin(6),
+                            const ReText(
+                              'افزودن تسک',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: AppColors.black1,
+                            ),
+                          ],
                         ),
                       ),
-                      const ReText(
-                        'تسک های امروز',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.black1,
-                      ),
-                    ],
-                  ).hMargin(32).tMargin(16);
-                },
-              ),
-              const SizedBox(height: 16),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.gray2,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: TabBar(
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  labelColor: AppColors.black1,
-                  unselectedLabelColor: AppColors.gray,
-                  labelStyle: TextStyle(
-                    fontFamily: AppFonts.iranSansVar,
-                    fontVariations: AppFonts.fontVariations(FontWeight.w900),
-                    fontSize: 14,
-                  ),
-                  unselectedLabelStyle: TextStyle(
-                    fontFamily: AppFonts.iranSansVar,
-                    fontVariations: AppFonts.fontVariations(FontWeight.w500),
-                    fontSize: 14,
-                  ),
-                  tabs: const [
-                    Tab(text: 'چک لیست'),
-                    Tab(text: 'زمان دار'),
+                    ),
+                    const ReText(
+                      'تسک های امروز',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.black1,
+                    ),
                   ],
-                ),
+                ).hMargin(32).tMargin(16);
+              },
+            ),
+            const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.gray2,
+                borderRadius: BorderRadius.circular(30),
               ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    _buildTaskList(context, _checklistTasks),
-                    _buildTimedTaskList(context),
-                  ],
+              child: TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                labelColor: AppColors.black1,
+                unselectedLabelColor: AppColors.gray,
+                labelStyle: TextStyle(
+                  fontFamily: AppFonts.iranSansVar,
+                  fontVariations: AppFonts.fontVariations(FontWeight.w900),
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontFamily: AppFonts.iranSansVar,
+                  fontVariations: AppFonts.fontVariations(FontWeight.w500),
+                  fontSize: 14,
+                ),
+                tabs: const [
+                  Tab(text: 'چک لیست'),
+                  Tab(text: 'زمان دار'),
+                ],
               ),
-            ],
-          ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildTaskList(context, _checklistTasks, false),
+                  _buildTimedTaskList(context),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

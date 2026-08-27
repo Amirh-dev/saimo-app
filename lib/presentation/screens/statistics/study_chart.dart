@@ -325,11 +325,11 @@ class _StudyChartState extends State<StudyChart> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text('۸ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-        Text('۶ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-        Text('۴ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-        Text('۲ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-        Text('۰ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+        Text('۸ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+        Text('۶ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+        Text('۴ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+        Text('۲ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+        Text('۰ ساعت', style: TextStyle(color: AppColors.black1, fontSize: 10)),
         SizedBox(height: 18),
       ],
     );
@@ -430,14 +430,14 @@ class _StudyChartState extends State<StudyChart> {
                             item.day,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 10,
+                              fontSize: 12,
                             ),
                           ),
                           Text(
                             item.label,
                             style: const TextStyle(
                               color: AppColors.black1,
-                              fontSize: 6,
+                              fontSize: 8,
                             ),
                           ),
                         ],
@@ -587,7 +587,7 @@ class _StudyChartState extends State<StudyChart> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
+        Text(title, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
       ],
     );
   }

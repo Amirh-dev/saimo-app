@@ -17,11 +17,13 @@ import 'package:simo_learn/presentation/screens/statistics/test_chart.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
+import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/fonts.dart' show AppFonts;
+import 'package:solar_icons/solar_icons.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -217,47 +219,46 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final ValueChanged<int>? onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(color: Color(0xffFCFCFC), borderRadius: BorderRadius.vertical(bottom: Radius.circular(48))),
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(
-                    IconsaxPlusLinear.notification,
-                    size: 24,
-                    color: Color(0xFF24242C),
-                  ),
-                  ReText(
-                    'آمـــار',
-                    color: AppColors.black1,
-                    fontSize: 16,
-                    fontWeight: 1000,
-                  ),
-                ],
+            reAppHeader(
+              'آمــــار',
+              prefixIcon: GestureDetector(
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(SolarIconsOutline.bell, size: 24),
+                ),
+              ),
+              suffixIcon: GestureDetector(
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
+                ),
               ),
             ),
             const SizedBox(height: 32),
-            _PeriodTabs(
-              initialIndex: 1, // 'این هفته'
-              onChanged: (index) {
-                context.read<StatisticsCubit>().changePeriod(
-                      StatisticsPeriod.values[index], // Maps perfectly to today, week, month
-                    );
-                onChanged?.call(index);
-              },
-              onDateRangePicked: (startDate, endDate) {
-                context.read<StatisticsCubit>().selectDateRange(
-                      startDate,
-                      endDate ?? startDate,
-                    );
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _PeriodTabs(
+                initialIndex: 1, // 'این هفته'
+                onChanged: (index) {
+                  context.read<StatisticsCubit>().changePeriod(
+                        StatisticsPeriod.values[index], // Maps perfectly to today, week, month
+                      );
+                  onChanged?.call(index);
+                },
+                onDateRangePicked: (startDate, endDate) {
+                  context.read<StatisticsCubit>().selectDateRange(
+                        startDate,
+                        endDate ?? startDate,
+                      );
+                },
+              ),
             ),
             const SizedBox(height: 16),
           ],

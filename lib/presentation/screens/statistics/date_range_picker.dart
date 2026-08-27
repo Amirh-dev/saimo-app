@@ -95,7 +95,7 @@ class _DateRangePickerBottomSheetState
   String _formatJalali(Jalali? date) {
     if (date == null) return 'انتخاب تاریخ';
     final monthName = _persianMonths[date.month - 1];
-    return toPersianNumber('${date.day} $monthName ${date.year}');
+    return toPersianNumber('${date.day} $monthName ${date.year}', separated: false);
   }
 
   void _openWheelPicker(_PickerView view) {

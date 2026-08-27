@@ -5,9 +5,12 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
+import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
+import 'package:simo_learn/presentation/widgets/modal.dart';
+import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/assets.dart';
@@ -99,35 +102,33 @@ class _DashboardContent extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: 16,
-          ),
-          height: 129,
+          height: 143,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             color: AppColors.white,
           ),
-          child: const SafeArea(
+          child: SafeArea(
             child: Column(
               children: [
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Icon(
-                      IconsaxPlusLinear.notification,
-                      size: 24,
-                      color: Color(0xFF24242C),
+                reAppHeader(
+                  'خوش آمدید',
+                  prefixIcon: GestureDetector(
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(SolarIconsOutline.bell, size: 24),
                     ),
-                    ReText(
-                      'خوش آمدید',
-                      color: AppColors.black1,
-                      fontSize: 16,
-                      fontWeight: 1000,
+                  ),
+                  suffixIcon: GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => ChatScreen())),
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
                     ),
-                  ],
+                  ),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 11),
               ],
             ),
           ),
@@ -669,19 +670,22 @@ class _MetricCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 27,
-            height: 27,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: AppColors.gray2,
+          GestureDetector(
+            onTap: () => openInfoModal(context),
+            child: Container(
+              width: 27,
+              height: 27,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.gray2,
+                ),
+                shape: BoxShape.circle,
               ),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              SolarIconsOutline.infoCircle,
-              size: 15,
-              color: AppColors.black1,
+              child: const Icon(
+                SolarIconsOutline.infoCircle,
+                size: 15,
+                color: AppColors.black1,
+              ),
             ),
           ),
           const SizedBox(width: 8),

@@ -200,11 +200,11 @@ class _TestChartState extends State<TestChart> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text('۵۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-          Text('۱۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-          Text('۵۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-          Text('۲۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
-          Text('۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 8)),
+          Text('۵۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+          Text('۱۰۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+          Text('۵۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+          Text('۲۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 10)),
+          Text('۰ تست', style: TextStyle(color: AppColors.black1, fontSize: 10)),
           SizedBox(height: 18),
         ],
       ),
@@ -356,14 +356,14 @@ class _TestChartState extends State<TestChart> {
                           item.dateDay,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 10,
+                            fontSize: 12,
                           ),
                         ),
                         Text(
                           item.dateMonth,
                           style: const TextStyle(
                             color: AppColors.black1,
-                            fontSize: 6,
+                            fontSize: 8,
                           ),
                         ),
                       ],
@@ -418,7 +418,7 @@ class _TestChartState extends State<TestChart> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const ReText(
                       ' پاسخ صحیح',
@@ -426,7 +426,7 @@ class _TestChartState extends State<TestChart> {
                       fontSize: 12,
                     ),
                     ReText(
-                      ' ${item.correctAnswers} ',
+                      '${item.correctAnswers} ',
                       color: Colors.white,
                       fontSize: 12,
                     ),
@@ -434,7 +434,7 @@ class _TestChartState extends State<TestChart> {
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const ReText(
                       'مجموع سوالات ',
@@ -442,7 +442,7 @@ class _TestChartState extends State<TestChart> {
                       fontSize: 12,
                     ),
                     ReText(
-                      ' ${item.totalQuestions} ',
+                      '${item.totalQuestions} ',
                       color: Colors.white,
                       fontSize: 12,
                     ),
@@ -450,7 +450,7 @@ class _TestChartState extends State<TestChart> {
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     ReText(
                       ' ${item.year}',
@@ -508,7 +508,7 @@ class _TestChartState extends State<TestChart> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
+        Text(title, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
       ],
     );
   }
