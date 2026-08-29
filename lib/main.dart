@@ -11,6 +11,7 @@ import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
+import 'firebase_options.dart';
 import 'data/auth/token_storage.dart';
 import 'data/notifications/notification_service.dart';
 import 'data/graphql/ferry_client.dart';
@@ -34,7 +35,9 @@ import 'package:simo_learn/features/goals/goals_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   FirebaseMessaging.onBackgroundMessage(
     firebaseMessagingBackgroundHandler,
