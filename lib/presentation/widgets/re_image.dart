@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:simo_learn/utils/assets.dart';
@@ -129,7 +130,7 @@ class ReImage extends StatelessWidget {
         alignment: alignment,
         errorBuilder: (input, __, ___) => _buildErrorImage(),
       );
-    } else if (File(path).existsSync()) {
+    } else if (!kIsWeb && File(path).existsSync()) {
       return Image.file(
         File(path),
         height: height,

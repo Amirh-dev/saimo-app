@@ -22,9 +22,9 @@ Row authHeaderWidget(
                 ? 'assets/images/login.png'
                 : 'assets/images/login.png',
         width: authType == AuthMode.login || authType == AuthMode.otpCode
-            ? 160
+            ? 145.fs
             : 170,
-        height: 160,
+        height: 160.fs,
         fit: BoxFit.fitWidth,
       ),
       const Spacer(),
@@ -59,7 +59,7 @@ Row authHeaderWidget(
                     : authType == AuthMode.login
                         ? 'ورود به حساب'
                         : 'کد تایید',
-                fontSize: 16,
+                fontSize: 14.fs,
                 fontWeight: FontWeight.w900,
               ),
               ReText(
@@ -68,7 +68,7 @@ Row authHeaderWidget(
                     : authType == AuthMode.login
                         ? 'به حساب کاربری خود وارد شوید.'
                         : 'کد تایید ارسال شده را وارد کنید.',
-                fontSize: 13,
+                fontSize: 11.fs,
                 color: AppColors.gray,
                 fontWeight: FontWeight.w600,
               ).tMargin(2)

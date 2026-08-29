@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -15,11 +16,28 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController phoneController = TextEditingController();
+  String _version = '0.0.0';
+
+  @override
+  void initState() {
+    _loadVersion();
+    super.initState();
+  }
 
   @override
   void dispose() {
     phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    if (!mounted) return;
+
+    setState(() {
+      _version = packageInfo.version;
+    });
   }
 
   @override
@@ -69,20 +87,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                     fontSize: 13,
                                     maxLength: 11,
                                     keyboardType: TextInputType.number,
-                                    suffixIcon: const Padding(
+                                    suffixIcon: phoneController.text.isEmpty ? const Padding(
                                       padding: EdgeInsets.only(left: 15),
                                       child: Align(
                                         alignment: Alignment.centerLeft,
                                         widthFactor: 1,
                                         child: ReText(
-                                          '..0912',
+                                          '******* 0912',
                                           isPersian: true,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.gray,
                                         ),
                                       ),
-                                    ),
+                                    ) : const SizedBox(),
                                   ),
                                   ReButton(
                                     isEnabled:
@@ -107,9 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           ],
                         ).tMargin(130),
-                        const ReText(
-                          'سایمو لرن',
-                          color: AppColors.black1,
+                        ReText(
+                          'نسخه $_version',
+                          color: AppColors.gray,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ).bMargin(10)

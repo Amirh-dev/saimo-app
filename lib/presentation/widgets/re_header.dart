@@ -3,26 +3,20 @@ import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/extentions.dart';
 
-Widget reAppHeader(String title, {Widget? suffixIcon, Widget? prefixIcon}) {
+Widget reAppHeader(String title, {Widget? secondIcon, Widget? firstIcon}) {
   return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
-      prefixIcon ?? const SizedBox(width: 48),
+      firstIcon ?? const SizedBox(width: 48),
+      secondIcon ?? const SizedBox(width: 48),
       Expanded(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Center(
-            child: ReText(
-              title,
-              color: AppColors.black1,
-              fontSize: 16,
-              fontWeight: 1000,
-            ),
-          ),
+        child: ReText(
+          title,
+          textAlign: TextAlign.start,
+          color: AppColors.black1,
+          fontSize: 16,
+          fontWeight: 1000,
         ),
       ),
-      suffixIcon ?? const SizedBox(width: 48),
     ],
-  ).tMargin(20).hMargin(32);
+  ).tMargin(20).hMargin(16);
 }

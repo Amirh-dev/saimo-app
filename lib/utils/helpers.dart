@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
@@ -288,52 +287,6 @@ String getHijriMonthName(int month) {
   ];
 
   return arabicMonths[month - 1];
-}
-
-Future<(Map<String, String>, String)> getDeviceInfo() async {
-  final deviceInfoPlugin = DeviceInfoPlugin();
-  String brand = '';
-  String model = '';
-  String version = '';
-  String sdkVersion = '';
-  String buildNumber = '';
-  String deviceId = '';
-
-  if (Platform.isAndroid) {
-    final info = await deviceInfoPlugin.androidInfo;
-    brand = info.brand;
-    model = info.model;
-    version = info.version.release; // Android version name (e.g., "10")
-    sdkVersion = info.version.sdkInt.toString(); // SDK version (e.g., "29")
-    buildNumber = info.version.incremental; // Build number
-    deviceId = info.id; // Device ID
-  } else {
-    final info = await deviceInfoPlugin.iosInfo;
-    brand = 'Apple';
-    model = info.utsname.machine;
-    version = info.systemVersion;
-    sdkVersion = info.systemVersion;
-    buildNumber = info.systemName;
-    deviceId = info.identifierForVendor ?? '';
-  }
-
-  String sendingInfo = (
-    Platform.isAndroid
-        ? (await deviceInfoPlugin.androidInfo)
-        : (await deviceInfoPlugin.iosInfo),
-  ).toString();
-
-  return (
-    {
-      'brand': brand,
-      'model': model,
-      'version': version,
-      'sdkVersion': sdkVersion,
-      'buildNumber': buildNumber,
-      'deviceId': deviceId,
-    },
-    sendingInfo,
-  );
 }
 
 String formatTime(int seconds) {

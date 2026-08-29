@@ -1393,14 +1393,14 @@ class _GoalScreenState extends State<GoalScreen> {
               child: SafeArea(
                 child: reAppHeader(
                   'اهداف',
-                  prefixIcon: GestureDetector(
+                  firstIcon: GestureDetector(
                     child: const SizedBox(
                       width: 48,
                       height: 48,
                       child: Icon(SolarIconsOutline.bell, size: 24),
                     ),
                   ),
-                  suffixIcon: GestureDetector(
+                  secondIcon: GestureDetector(
                     child: const SizedBox(
                       width: 48,
                       height: 48,

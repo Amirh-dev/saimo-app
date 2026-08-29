@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
@@ -17,6 +18,7 @@ import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
@@ -64,6 +66,19 @@ class MyApp extends StatelessWidget {
           });
         },
         child: MaterialApp(
+          builder: (context, child) {
+            if(!kIsWeb){
+              return child!;
+            }
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 480,
+                ),
+                child: child!,
+              ),
+            );
+          },
           supportedLocales: const [
             Locale("fa", "IR"),
             Locale("en", "US"),
@@ -125,7 +140,7 @@ class _AuthGate extends StatelessWidget {
         }
 
         if (state is AuthAuthenticated) {
-          return const GoalScreen();
+          return const DashboardScreen();
         }
 
         if (state is AuthNeedsRegistration) {

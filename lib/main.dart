@@ -1,9 +1,8 @@
 export 'package:simo_learn/app/app.dart';
 
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-
 import 'package:ferry/ferry.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
@@ -31,22 +30,17 @@ import 'presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
 
-import 'presentation/screens/statistics/index.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase + push/local notifications.
-  //
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
+  await Firebase.initializeApp();
 
-  // FirebaseMessaging.onBackgroundMessage(
-  //   firebaseMessagingBackgroundHandler,
-  // );
-  //
-  // await NotificationService.instance.initialize();
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
+
+  await NotificationService.instance.initialize();
 
   final tokenStorage = await TokenStorage.create();
 

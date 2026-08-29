@@ -75,51 +75,23 @@ class _DashboardContent extends StatelessWidget {
         )
         .toList(growable: false);
 
-    return Stack(
+    return Column(
       children: [
-        SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 80),
-              _dashboardUserInfo(state, context),
-              const SizedBox(height: 24),
-              _goals(state, context),
-              const SizedBox(height: 24),
-              TodayActivityWidget(
-                date: '${now.year}/${now.month}/${now.day}',
-                onAllTasksTap: () {
-                  navigateToIndex(
-                    context,
-                    1,
-                    0,
-                  );
-                },
-                onAddTap: () {},
-                tasks: tasks,
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
         Container(
-          height: 143,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
-            color: AppColors.white,
-          ),
+          color: AppColors.white,
           child: SafeArea(
             child: Column(
               children: [
                 reAppHeader(
                   'خوش آمدید',
-                  prefixIcon: GestureDetector(
+                  firstIcon: GestureDetector(
                     child: const SizedBox(
                       width: 48,
                       height: 48,
                       child: Icon(SolarIconsOutline.bell, size: 24),
                     ),
                   ),
-                  suffixIcon: GestureDetector(
+                  secondIcon: GestureDetector(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => ChatScreen())),
                     child: const SizedBox(
                       width: 48,
@@ -128,7 +100,32 @@ class _DashboardContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 11),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _dashboardUserInfo(state, context),
+                const SizedBox(height: 24),
+                _goals(state, context),
+                const SizedBox(height: 24),
+                TodayActivityWidget(
+                  date: '${now.year}/${now.month}/${now.day}',
+                  onAllTasksTap: () {
+                    navigateToIndex(
+                      context,
+                      1,
+                      0,
+                    );
+                  },
+                  onAddTap: () {},
+                  tasks: tasks,
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -212,153 +209,150 @@ class _DashboardContent extends StatelessWidget {
     final score = profile?.score ?? 0;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ),
       decoration: const BoxDecoration(
         color: Color(0xffFCFCFC),
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(48),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.gray1,
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    textDirection: TextDirection.rtl,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: ReImage(
-                          profile?.avatarURL ?? Assets.profilePlaceholder,
-                          fit: BoxFit.cover,
-                          width: 56,
-                          height: 56,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            ReText(
-                              profile?.displayName ?? 'کاربر سیمو',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            const SizedBox(height: 7),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                const SizedBox(
-                                  width: 10,
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 11,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.simoCoin,
-                                    borderRadius: BorderRadius.circular(
-                                      100,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ReText(
-                                        isPremium ? 'کاربر ویژه' : 'کاربر عادی',
-                                        fontSize: 11.5,
-                                        color: AppColors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      const SizedBox(
-                                        width: 4,
-                                      ),
-                                      const Icon(
-                                        SolarIconsOutline.stars,
-                                        size: 14,
-                                        color: AppColors.white,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          navigateToIndex(
-                            context,
-                            4,
-                            0,
-                          );
-                        },
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.white,
-                          ),
-                          child: const Icon(
-                            IconsaxPlusLinear.setting_2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MetricCard(
-                          value: '$score×',
-                          label: 'ضریب امتیاز',
-                          color: const Color(
-                            0xFFFF3040,
-                          ),
-                          icon: SvgPicture.asset(
-                            'assets/icons/flame.svg',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _MetricCard(
-                          value: '$simoCoins',
-                          label: 'سایموکوین',
-                          color: const Color(
-                            0xFFFFC94C,
-                          ),
-                          icon: SvgPicture.asset(
-                            'assets/icons/simo_coin.svg',
-                            color: const Color(
-                              0xffe56929,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(
+              horizontal: 16,
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.gray1,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  textDirection: TextDirection.rtl,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: ReImage(
+                        profile?.avatarURL ?? Assets.profilePlaceholder,
+                        fit: BoxFit.cover,
+                        width: 56,
+                        height: 56,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          ReText(
+                            profile?.displayName ?? 'کاربر سایمو',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          const SizedBox(height: 7),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              const SizedBox(
+                                width: 10,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 11,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.simoCoin,
+                                  borderRadius: BorderRadius.circular(
+                                    100,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ReText(
+                                      isPremium ? 'کاربر ویژه' : 'کاربر عادی',
+                                      fontSize: 11.5,
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    const SizedBox(
+                                      width: 4,
+                                    ),
+                                    const Icon(
+                                      SolarIconsOutline.stars,
+                                      size: 14,
+                                      color: AppColors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        navigateToIndex(
+                          context,
+                          4,
+                          0,
+                        );
+                      },
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.white,
+                        ),
+                        child: const Icon(
+                          IconsaxPlusLinear.setting_2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetricCard(
+                        value: '$score×',
+                        label: 'ضریب امتیاز',
+                        color: const Color(
+                          0xFFFF3040,
+                        ),
+                        icon: SvgPicture.asset(
+                          'assets/icons/flame.svg',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _MetricCard(
+                        value: '$simoCoins',
+                        label: 'سایموکوین',
+                        color: const Color(
+                          0xFFFFC94C,
+                        ),
+                        icon: SvgPicture.asset(
+                          'assets/icons/simo_coin.svg',
+                          color: const Color(
+                            0xffe56929,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

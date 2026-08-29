@@ -1346,14 +1346,14 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   children: [
                     reAppHeader(
                       'تسک ها',
-                      prefixIcon: GestureDetector(
+                      firstIcon: GestureDetector(
                         child: const SizedBox(
                           width: 48,
                           height: 48,
                           child: Icon(SolarIconsOutline.bell, size: 24),
                         ),
                       ),
-                      suffixIcon: GestureDetector(
+                      secondIcon: GestureDetector(
                         child: const SizedBox(
                           width: 48,
                           height: 48,

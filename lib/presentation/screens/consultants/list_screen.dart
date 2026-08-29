@@ -164,8 +164,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
               ),
               child: reAppHeader(
                 'مشاوران',
-                prefixIcon: const SizedBox(width: 48),
-                suffixIcon: GestureDetector(
+                firstIcon: const SizedBox(width: 48),
+                secondIcon: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => Navigator.of(context).maybePop(),
                   child: const SizedBox(

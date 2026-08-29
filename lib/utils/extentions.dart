@@ -9,6 +9,10 @@ import 'package:simo_learn/utils/helpers.dart';
 
 extension OSInfo on BuildContext {
   String get os {
+    if (kIsWeb) {
+      return 'web';
+    }
+
     if (Platform.isAndroid) {
       return 'android';
     } else if (Platform.isIOS) {
@@ -17,11 +21,9 @@ extension OSInfo on BuildContext {
       return 'linux';
     } else if (Platform.isMacOS) {
       return 'macos';
-    } else if (kIsWeb) {
-      return 'web';
-    } else {
-      return 'unknown';
     }
+
+    return 'unknown';
   }
 }
 
