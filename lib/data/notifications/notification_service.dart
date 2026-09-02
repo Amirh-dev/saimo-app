@@ -10,6 +10,15 @@ import 'active_chat_tracker.dart';
 /// Android notification channel id. Must match the value declared in
 /// AndroidManifest.xml (`default_notification_channel_id`) so FCM system
 /// notifications and our local notifications land in the same channel.
+/// Web Push certificate key pair (VAPID) from Firebase console →
+/// Project settings → Cloud Messaging → Web configuration. Required for
+/// [FirebaseMessaging.getToken] on web; ignored on mobile.
+const String _webVapidKey = String.fromEnvironment(
+  'FCM_VAPID_KEY',
+  defaultValue:
+      'BM6nWkj1zNeBH-YGBbzXE6wC3aWKIHyE9diHHmNp71KGTvgOXnAtsOWB3PeG4IR6FE88oThi5xU-s0pdEUwnEGo',
+);
+
 const String kMessagesChannelId = 'high_importance_channel';
 const String _messagesChannelName = 'پیام‌ها';
 const String _messagesChannelDescription =
@@ -131,7 +140,11 @@ class NotificationService {
     if (_initialized) return;
     _initialized = true;
 
-    await _initLocalNotifications();
+    // flutter_local_notifications has no web support; on web the service
+    // worker (firebase-messaging-sw.js) renders notifications instead.
+    if (!kIsWeb) {
+      await _initLocalNotifications();
+    }
     await _requestPermissions();
     await _configureFcm();
   }
@@ -202,7 +215,9 @@ class NotificationService {
 
     _messaging.onTokenRefresh.listen(_publishToken);
     try {
-      final token = await _messaging.getToken();
+      final token = kIsWeb
+          ? await _messaging.getToken(vapidKey: _webVapidKey)
+          : await _messaging.getToken();
       if (token != null) await _publishToken(token);
     } catch (error) {
       _log('getToken failed: ${error.runtimeType}');
@@ -287,6 +302,9 @@ class NotificationService {
     String? senderID,
     String? chatID,
   }) async {
+    // No local-notification plugin on web; the browser/service worker handles
+    // display there.
+    if (kIsWeb) return;
     final payload = jsonEncode({
       if (senderID != null) _payloadSenderIDKey: senderID,
       if (chatID != null) _payloadChatIDKey: chatID,

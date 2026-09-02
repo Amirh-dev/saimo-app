@@ -9,6 +9,7 @@ import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
+import 'firebase_options.dart';
 import 'data/auth/token_storage.dart';
 import 'data/graphql/ferry_client.dart';
 import 'data/graphql/graphql_console_logger.dart';
@@ -27,17 +28,18 @@ import 'presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // await Firebase.initializeApp();
-  //
-  // FirebaseMessaging.onBackgroundMessage(
-  //   firebaseMessagingBackgroundHandler,
-  // );
-  //
-  // await NotificationService.instance.initialize();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
+
+  await NotificationService.instance.initialize();
 
   final tokenStorage = await TokenStorage.create();
 
