@@ -74,7 +74,7 @@ class DashboardPayload {
 
   final ProfileUser profile;
   final List<DashboardGoal> goals;
-  final List<DashboardTask> tasks;
+  final List<DashboardTask>  tasks;
 }
 
 class DashboardGoal {
@@ -109,6 +109,7 @@ class DashboardTask {
     required this.status,
     required this.createdAt,
     required this.completedAt,
+    required this.date,
     required this.durationM,
     required this.elapsedSeconds,
     required this.timerStartedAt,
@@ -120,6 +121,7 @@ class DashboardTask {
   final String status;
   final DateTime? createdAt;
   final DateTime? completedAt;
+  final DateTime? date;
   final int durationM;
   final int elapsedSeconds;
   final DateTime? timerStartedAt;
@@ -137,6 +139,9 @@ class DashboardTask {
       ),
       completedAt: DateTime.tryParse(
         json['completedAt']?.toString() ?? '',
+      ),
+      date: DateTime.tryParse(
+        json['date']?.toString() ?? '',
       ),
       durationM: (json['durationM'] as num?)?.toInt() ?? 0,
       elapsedSeconds:

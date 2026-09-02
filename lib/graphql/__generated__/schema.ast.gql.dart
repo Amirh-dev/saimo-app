@@ -15218,6 +15218,10 @@ const TaskStatus = _i1.EnumTypeDefinitionNode(
       name: _i1.NameNode(value: 'CANCELED'),
       directives: [],
     ),
+    _i1.EnumValueDefinitionNode(
+      name: _i1.NameNode(value: 'PAUSED'),
+      directives: [],
+    ),
   ],
 );
 const TaskType = _i1.EnumTypeDefinitionNode(

@@ -66,19 +66,6 @@ class MyApp extends StatelessWidget {
           });
         },
         child: MaterialApp(
-          builder: (context, child) {
-            if(!kIsWeb){
-              return child!;
-            }
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 480,
-                ),
-                child: child!,
-              ),
-            );
-          },
           supportedLocales: const [
             Locale("fa", "IR"),
             Locale("en", "US"),

@@ -285,6 +285,10 @@ class _ReTextFieldState extends State<ReTextField> {
                 width: 1.5,
               ),
             ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(resolvedRadius),
+              borderSide: BorderSide.none,
+            ),
             suffixIcon: widget.suffixIcon ??
                 (widget.byText == null
                     ? null

@@ -666,6 +666,7 @@ const GTaskStatus _$gTaskStatusTODO = const GTaskStatus._('TODO');
 const GTaskStatus _$gTaskStatusIN_PROGRESS = const GTaskStatus._('IN_PROGRESS');
 const GTaskStatus _$gTaskStatusCOMPLETED = const GTaskStatus._('COMPLETED');
 const GTaskStatus _$gTaskStatusCANCELED = const GTaskStatus._('CANCELED');
+const GTaskStatus _$gTaskStatusPAUSED = const GTaskStatus._('PAUSED');
 
 GTaskStatus _$gTaskStatusValueOf(String name) {
   switch (name) {
@@ -677,6 +678,8 @@ GTaskStatus _$gTaskStatusValueOf(String name) {
       return _$gTaskStatusCOMPLETED;
     case 'CANCELED':
       return _$gTaskStatusCANCELED;
+    case 'PAUSED':
+      return _$gTaskStatusPAUSED;
     default:
       throw ArgumentError(name);
   }
@@ -688,6 +691,7 @@ final BuiltSet<GTaskStatus> _$gTaskStatusValues =
   _$gTaskStatusIN_PROGRESS,
   _$gTaskStatusCOMPLETED,
   _$gTaskStatusCANCELED,
+  _$gTaskStatusPAUSED,
 ]);
 
 const GTaskType _$gTaskTypeNORMAL = const GTaskType._('NORMAL');

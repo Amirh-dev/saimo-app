@@ -2395,6 +2395,8 @@ class GTaskStatus extends EnumClass {
 
   static const GTaskStatus CANCELED = _$gTaskStatusCANCELED;
 
+  static const GTaskStatus PAUSED = _$gTaskStatusPAUSED;
+
   static Serializer<GTaskStatus> get serializer => _$gTaskStatusSerializer;
 
   static BuiltSet<GTaskStatus> get values => _$gTaskStatusValues;

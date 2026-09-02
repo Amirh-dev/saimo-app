@@ -2272,6 +2272,7 @@ enum TaskStatus {
   IN_PROGRESS
   COMPLETED
   CANCELED
+  PAUSED
 }
 
 """TaskType is enum for the field type"""

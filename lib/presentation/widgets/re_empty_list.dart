@@ -36,22 +36,22 @@ class ReEmptyList extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                margin: const EdgeInsets.only(right: 20),
-                width: 72,
-                height: 48,
-                // padding: const EdgeInsets.symmetric(
-                //   vertical: 12,
-                //   horizontal: 30,
-                // ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: AppColors.white,
-                ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: AppColors.primary,
+                Container(
+                  margin: const EdgeInsets.only(right: 20),
+                  width: 72,
+                  height: 48,
+                  // padding: const EdgeInsets.symmetric(
+                  //   vertical: 12,
+                  //   horizontal: 30,
+                  // ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.white,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: AppColors.primary,
                 ),
               ),
               Column(

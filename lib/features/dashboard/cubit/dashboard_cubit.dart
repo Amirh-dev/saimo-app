@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 
@@ -30,9 +31,9 @@ class DashboardCubit extends Cubit<DashboardState> {
 
       final dashboardTasks = payload.tasks
           .where(
-            (task) =>
-        _isCreatedToday(task, today) ||
-            _isDoneToday(task, today),
+            (task) {
+              return (task.date?.difference(DateTime.now()).inHours.abs() ?? 24) < 24 && task.type == 'TIMED';
+            }
       )
           .toList()
         ..sort(
@@ -109,15 +110,15 @@ class DashboardCubit extends Cubit<DashboardState> {
     final isTimed = task.type == 'TIMED';
 
     // NORMAL TASK
-    if (!isTimed) {
-      return DashboardTaskItem(
-        title: task.title,
-        percentage: isDone ? 100 : 0,
-        doneDuration: 0,
-        maxDuration: 0,
-        durationText: '--',
-      );
-    }
+    // if (!isTimed) {
+    //   return DashboardTaskItem(
+    //     title: task.title,
+    //     percentage: (task.elapsedSeconds / (task.durationM * 60)) * 100,
+    //     doneDuration: 0,
+    //     maxDuration: 0,
+    //     durationText: '--',
+    //   );
+    // }
 
     // TIMED TASK
     final maxDuration =
@@ -153,14 +154,7 @@ class DashboardCubit extends Cubit<DashboardState> {
       elapsedSeconds = maxSeconds;
     }
 
-    final percentage = maxSeconds == 0
-        ? 0.0
-        : (
-        (elapsedSeconds / maxSeconds) * 100
-    ).clamp(
-      0.0,
-      100.0,
-    );
+    final percentage = (task.elapsedSeconds / (task.durationM * 60)) * 100;
 
     return DashboardTaskItem(
       title: task.title,

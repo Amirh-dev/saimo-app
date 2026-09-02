@@ -1,0 +1,7 @@
+mutation StartTimedTask($id: ID!) {
+  startTimedTask(id: $id) {
+    id createdAt updatedAt title shortDescription note type date durationM
+    elapsedSeconds timerStartedAt completedAt hasReminder reminderTime
+    recurringDays status userID goalID subjectTagID
+  }
+}

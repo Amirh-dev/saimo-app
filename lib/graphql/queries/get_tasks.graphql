@@ -16,6 +16,7 @@ query GetTasks($date: Time, $status: TaskStatus, $goalID: ID, $limit: Int, $offs
     hasReminder
     reminderTime
     recurringDays
+    elapsedSeconds
     status
     goal {
       id

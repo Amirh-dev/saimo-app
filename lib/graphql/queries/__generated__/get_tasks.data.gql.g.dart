@@ -98,6 +98,9 @@ class _$GGetTasksData_getTasksSerializer
       'hasReminder',
       serializers.serialize(object.hasReminder,
           specifiedType: const FullType(bool)),
+      'elapsedSeconds',
+      serializers.serialize(object.elapsedSeconds,
+          specifiedType: const FullType(int)),
       'status',
       serializers.serialize(object.status,
           specifiedType: const FullType(_i2.GTaskStatus)),
@@ -210,6 +213,10 @@ class _$GGetTasksData_getTasksSerializer
         case 'recurringDays':
           result.recurringDays = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
+          break;
+        case 'elapsedSeconds':
+          result.elapsedSeconds = serializers.deserialize(value,
+              specifiedType: const FullType(int))! as int;
           break;
         case 'status':
           result.status = serializers.deserialize(value,
@@ -485,6 +492,8 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
   @override
   final String? recurringDays;
   @override
+  final int elapsedSeconds;
+  @override
   final _i2.GTaskStatus status;
   @override
   final GGetTasksData_getTasks_goal? goal;
@@ -507,6 +516,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
       required this.hasReminder,
       this.reminderTime,
       this.recurringDays,
+      required this.elapsedSeconds,
       required this.status,
       this.goal,
       this.tags})
@@ -535,6 +545,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
         hasReminder == other.hasReminder &&
         reminderTime == other.reminderTime &&
         recurringDays == other.recurringDays &&
+        elapsedSeconds == other.elapsedSeconds &&
         status == other.status &&
         goal == other.goal &&
         tags == other.tags;
@@ -554,6 +565,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
     _$hash = $jc(_$hash, hasReminder.hashCode);
     _$hash = $jc(_$hash, reminderTime.hashCode);
     _$hash = $jc(_$hash, recurringDays.hashCode);
+    _$hash = $jc(_$hash, elapsedSeconds.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, goal.hashCode);
     _$hash = $jc(_$hash, tags.hashCode);
@@ -575,6 +587,7 @@ class _$GGetTasksData_getTasks extends GGetTasksData_getTasks {
           ..add('hasReminder', hasReminder)
           ..add('reminderTime', reminderTime)
           ..add('recurringDays', recurringDays)
+          ..add('elapsedSeconds', elapsedSeconds)
           ..add('status', status)
           ..add('goal', goal)
           ..add('tags', tags))
@@ -634,6 +647,11 @@ class GGetTasksData_getTasksBuilder
   set recurringDays(String? recurringDays) =>
       _$this._recurringDays = recurringDays;
 
+  int? _elapsedSeconds;
+  int? get elapsedSeconds => _$this._elapsedSeconds;
+  set elapsedSeconds(int? elapsedSeconds) =>
+      _$this._elapsedSeconds = elapsedSeconds;
+
   _i2.GTaskStatus? _status;
   _i2.GTaskStatus? get status => _$this._status;
   set status(_i2.GTaskStatus? status) => _$this._status = status;
@@ -667,6 +685,7 @@ class GGetTasksData_getTasksBuilder
       _hasReminder = $v.hasReminder;
       _reminderTime = $v.reminderTime?.toBuilder();
       _recurringDays = $v.recurringDays;
+      _elapsedSeconds = $v.elapsedSeconds;
       _status = $v.status;
       _goal = $v.goal?.toBuilder();
       _tags = $v.tags?.toBuilder();
@@ -709,6 +728,8 @@ class GGetTasksData_getTasksBuilder
                 hasReminder, r'GGetTasksData_getTasks', 'hasReminder'),
             reminderTime: _reminderTime?.build(),
             recurringDays: recurringDays,
+            elapsedSeconds: BuiltValueNullFieldError.checkNotNull(
+                elapsedSeconds, r'GGetTasksData_getTasks', 'elapsedSeconds'),
             status: BuiltValueNullFieldError.checkNotNull(
                 status, r'GGetTasksData_getTasks', 'status'),
             goal: _goal?.build(),

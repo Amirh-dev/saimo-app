@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ferry/ferry.dart' show FetchPolicy;
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.dart';
@@ -13,13 +14,10 @@ import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.d
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
-import 'package:simo_learn/presentation/screens/goals/index.dart';
-import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
-import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
@@ -153,6 +151,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       GTaskStatus.COMPLETED => 'done',
       GTaskStatus.IN_PROGRESS => 'running',
       GTaskStatus.CANCELED => 'done',
+      GTaskStatus.PAUSED => 'paused',
       _ => 'pending',
     };
   }
@@ -181,6 +180,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       'goalId': task.goal?.id,
       'goalTitle': task.goal?.title,
       'reminder': task.hasReminder,
+      'note': task.note,
     };
   }
 
@@ -193,16 +193,17 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       'id': task.id,
       'title': task.title,
       'subtitle': _taskSubtitle(task),
-      'elapsed': '۰۰:۰۰',
       'duration': _formatTimedTaskSeconds(durationSeconds),
       'durationSeconds': durationSeconds,
-      'remainingSeconds': status == 'done' ? 0 : durationSeconds,
+      'remainingSeconds': durationSeconds - task.elapsedSeconds,
       'status': status,
       'label': '${convertToPersianNumbers(minutes.toString())} دقیقه',
       'date': _jalaliFromIso(task.date.value),
       'goalId': task.goal?.id,
       'goalTitle': task.goal?.title,
       'reminder': task.hasReminder,
+      'note': task.note,
+      'elapsedSeconds': task.elapsedSeconds
     };
   }
 
@@ -829,6 +830,13 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       return ReEmptyList(
         title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
         subtitle: 'برای امروز تسکی اضافه نکردید.',
+        onTap: () {
+          if (isTimeTask) {
+            _openAddTimedTaskScreen();
+            return;
+          }
+          _openAddTaskScreen();
+        },
       );
     }
 
@@ -959,6 +967,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   String _timedTaskRemainingLabel(Map<String, dynamic> task) {
+    if(task['status'] == 'running'){
+      return _formatTimedTaskSeconds(GlobalData.instance.globalRemainingSeconds as int? ?? 0);
+    }
     return _formatTimedTaskSeconds(task['remainingSeconds'] as int? ?? 0);
   }
 
@@ -1058,10 +1069,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color.withOpacity(0.12),
-                    border: Border.all(color: color.withOpacity(0.70)),
                   ),
                   child: Icon(
-                    _timedTaskMarkerIcon(status),
+                    // _timedTaskMarkerIcon(status),
+                    status == 'done' ? Icons.check : Icons.timer_outlined,
                     size: 12,
                     color: color,
                   ),
@@ -1103,15 +1114,17 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final hasProgress = _timedTaskShowsProgress(task);
     final isDone = status == 'done';
     final isExpanded = _expandedTimedTaskIndex == index;
-    final cardHeight = (hasProgress ? 84.0 : 60.0) + (isExpanded ? 58 : 0);
+    final cardHeight = (hasProgress ? 120.0 : 70.0) + (isExpanded ? 58 : 0);
 
     return Opacity(
       opacity: isDone ? 0.55 : 1,
       child: Container(
+        alignment: Alignment.center,
+        margin: EdgeInsets.symmetric(vertical: hasProgress ? 8 : 0),
         height: cardHeight,
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(isExpanded ? 36 : 34),
+          color: const Color(0xfffafafa),
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppColors.gray2),
           boxShadow: [
             BoxShadow(
@@ -1121,157 +1134,187 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: hasProgress ? 10 : 8,
-        ),
         child: Column(
           children: [
-            Row(
-              textDirection: TextDirection.ltr,
-              children: [
-                GestureDetector(
-                  onTap: () => _toggleTimedTaskActions(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedRotation(
-                    duration: _taskExpansionDuration,
-                    curve: Curves.easeOutCubic,
-                    turns: isExpanded ? -0.25 : 0,
-                    child: const Icon(
-                      Icons.arrow_back_ios,
-                      size: 11,
-                      color: AppColors.gray,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Expanded(
-                  flex: 6,
-                  child: GestureDetector(
-                    onTap: () => _toggleTimedTaskActions(index),
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        ReText(
-                          task['title'] ?? '',
-                          fontSize: titleSize,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.black1,
-                          decoration: isDone ? TextDecoration.lineThrough : null,
-                        ),
-                        const SizedBox(height: 2),
-                        ReText(
-                          task['subtitle'] ?? '',
-                          fontSize: subtitleSize,
-                          color: Color.lerp(
-                            AppColors.gray,
-                            Colors.transparent,
-                            0.25,
-                          ),
-                          fontWeight: FontWeight.w600,
-                          decoration: isDone ? TextDecoration.lineThrough : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () => _toggleTimedTaskTimer(index),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _timedTaskIcon(status),
-                      color: AppColors.white,
-                      size: status == 'done' ? 17 : 21,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (hasProgress) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  ReText(
-                    _timedTaskRemainingLabel(task),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.black1,
-                    textDirection: TextDirection.ltr,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 2,
-                        backgroundColor: AppColors.gray2,
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  ReText(
-                    _timedTaskDurationLabel(task),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gray,
-                    textDirection: TextDirection.ltr,
+            Container(
+              alignment: Alignment.center,
+              height: 68,
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: hasProgress ? 10 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black1.withOpacity(0.05),
+                    blurRadius: 80,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-            ],
-            ClipRect(
-              child: AnimatedAlign(
-                duration: _taskExpansionDuration,
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                heightFactor: isExpanded ? 1 : 0,
-                child: AnimatedOpacity(
-                  duration: _taskExpansionDuration,
-                  curve: Curves.easeOutCubic,
-                  opacity: isExpanded ? 1 : 0,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _TaskItemActionButton(
-                            text: status == 'running' ? 'توقف' : 'شروع',
-                            textColor: AppColors.primary,
-                            background: const Color(0xFFFBEAE5),
-                            icon: status == 'running' ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            iconColor: AppColors.primary,
-                            onTap: () => _toggleTimedTaskTimer(index),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _TaskItemActionButton(
-                            text: 'حذف تسک',
-                            textColor: AppColors.black1,
-                            background: AppColors.white,
-                            borderColor: AppColors.gray2,
-                            icon: SolarIconsOutline.trashBinMinimalistic,
-                            iconColor: AppColors.dark5Color,
-                            onTap: () => _requestDeleteTimedTask(index),
-                          ),
-                        ),
-                      ],
+              child: Row(
+                textDirection: TextDirection.ltr,
+                children: [
+                  GestureDetector(
+                    // onTap: () => _toggleTimedTaskActions(index),
+                    behavior: HitTestBehavior.opaque,
+                    child: AnimatedRotation(
+                      duration: _taskExpansionDuration,
+                      curve: Curves.easeOutCubic,
+                      turns: isExpanded ? -0.25 : 0,
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 11,
+                        color: AppColors.gray,
+                      ),
                     ),
                   ),
-                ),
+                  const Spacer(),
+                  Expanded(
+                    flex: 6,
+                    child: GestureDetector(
+                      // onTap: () => _toggleTimedTaskActions(index),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          ReText(
+                            task['title'] ?? '',
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.black1,
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                          ),
+                          const SizedBox(height: 2),
+                          ReText(
+                            task['subtitle'] ?? '',
+                            fontSize: subtitleSize,
+                            color: Color.lerp(
+                              AppColors.gray,
+                              Colors.transparent,
+                              0.25,
+                            ),
+                            fontWeight: FontWeight.w600,
+                            decoration: isDone ? TextDecoration.lineThrough : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  status == 'done' ? const SizedBox() : GestureDetector(
+                    // onTap: () => _toggleTimedTaskTimer(index),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (final _) => TaskTimerScreen(
+                          task: task,
+                          onPop: (){
+                            _loadTasksForSelectedDate();
+                          }
+                        ),
+                      ),
+                    ),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _timedTaskIcon(status),
+                        color: AppColors.white,
+                        size: status == 'done' ? 17 : 21,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (hasProgress) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    ReText(
+                      '${_timedTaskRemainingLabel(task)}    / ',
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.black1,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    const SizedBox(width: 6),
+                    ReText(
+                      _timedTaskDurationLabel(task),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: LinearProgressIndicator(
+                          value: (task['durationSeconds'] - task['remainingSeconds']) / task['durationSeconds'],
+                          minHeight: 2,
+                          backgroundColor: AppColors.gray2,
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            // ClipRect(
+            //   child: AnimatedAlign(
+            //     duration: _taskExpansionDuration,
+            //     curve: Curves.easeOutCubic,
+            //     alignment: Alignment.topCenter,
+            //     heightFactor: isExpanded ? 1 : 0,
+            //     child: AnimatedOpacity(
+            //       duration: _taskExpansionDuration,
+            //       curve: Curves.easeOutCubic,
+            //       opacity: isExpanded ? 1 : 0,
+            //       child: Padding(
+            //         padding: const EdgeInsets.only(top: 10),
+            //         child: Row(
+            //           children: [
+            //             Expanded(
+            //               child: _TaskItemActionButton(
+            //                 text: status == 'running' ? 'توقف' : 'شروع',
+            //                 textColor: AppColors.primary,
+            //                 background: const Color(0xFFFBEAE5),
+            //                 icon: status == 'running' ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            //                 iconColor: AppColors.primary,
+            //                 onTap: () => _toggleTimedTaskTimer(index),
+            //               ),
+            //             ),
+            //             const SizedBox(width: 10),
+            //             Expanded(
+            //               child: _TaskItemActionButton(
+            //                 text: 'حذف تسک',
+            //                 textColor: AppColors.black1,
+            //                 background: AppColors.white,
+            //                 borderColor: AppColors.gray2,
+            //                 icon: SolarIconsOutline.trashBinMinimalistic,
+            //                 iconColor: AppColors.dark5Color,
+            //                 onTap: () => _requestDeleteTimedTask(index),
+            //               ),
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
@@ -1293,11 +1336,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
           itemBuilder: (context, index) {
             final task = _timedTasks[index];
             final rowHeight = _timedTaskRowHeight(task, index);
-
             return SizedBox(
-              height: rowHeight,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Align(
@@ -1305,7 +1346,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                       child: _buildTimedTaskTile(task, index),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 4),
                   _buildTimedTaskMarker(
                     task: task,
                     showTopLine: index != 0,
@@ -1323,8 +1364,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+
     return DefaultTabController(
       length: 2,
+      initialIndex: 1,
       child: Scaffold(
         backgroundColor: AppColors.gray1,
         bottomNavigationBar: AppBottomNavigationBar(

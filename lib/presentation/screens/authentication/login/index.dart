@@ -56,83 +56,89 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppColors.gray1,
           body: SafeArea(
             top: false,
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            authHeaderWidget(context, authType: AuthMode.login),
-                            Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
-                                  color: AppColors.white,
-                                  borderRadius: BorderRadius.circular(40)),
-                              child: Column(
-                                children: [
-                                  ReTextField(
-                                    fontWeight: FontWeight.w600,
-                                    borderRadius: 100,
-                                    onChanged: (p0) {
-                                      setState(() {});
-                                    },
-                                    controller: phoneController,
-                                    placeholderAlign: TextAlign.right,
-                                    backgroundColor: AppColors.gray1,
-                                    placeholder: 'شماره تماس',
-                                    fontSize: 13,
-                                    maxLength: 11,
-                                    keyboardType: TextInputType.number,
-                                    suffixIcon: phoneController.text.isEmpty ? const Padding(
-                                      padding: EdgeInsets.only(left: 15),
-                                      child: Align(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor: 1,
-                                        child: ReText(
-                                          '******* 0912',
-                                          isPersian: true,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.gray,
-                                        ),
+                            Column(
+                              children: [
+                                authHeaderWidget(context, authType: AuthMode.login),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 10),
+                                  decoration: BoxDecoration(
+                                      color: AppColors.white,
+                                      borderRadius: BorderRadius.circular(40)),
+                                  child: Column(
+                                    children: [
+                                      ReTextField(
+                                        fontWeight: FontWeight.w600,
+                                        borderRadius: 100,
+                                        onChanged: (p0) {
+                                          setState(() {});
+                                        },
+                                        showFocusShadow: false,
+                                        controller: phoneController,
+                                        placeholderAlign: TextAlign.right,
+                                        backgroundColor: AppColors.gray1,
+                                        placeholder: 'شماره تماس',
+                                        fontSize: 13,
+                                        maxLength: 11,
+                                        keyboardType: TextInputType.number,
+                                        suffixIcon: phoneController.text.isEmpty ? const Padding(
+                                          padding: EdgeInsets.only(left: 15),
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            widthFactor: 1,
+                                            child: ReText(
+                                              '******* 0912',
+                                              isPersian: true,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.gray,
+                                            ),
+                                          ),
+                                        ) : const SizedBox(),
                                       ),
-                                    ) : const SizedBox(),
-                                  ),
-                                  ReButton(
-                                    isEnabled:
-                                        phoneController.text.length == 11,
-                                    isLoading: isLoading,
-                                    onPressed: _sendOtp,
-                                    fontSize: 16,
-                                    text: 'ورود / ثبت نام',
-                                  ).tMargin(16),
-                                  // ReButton(
-                                  //   isOutlined: true,
-                                  //   color: AppColors.gray2,
-                                  //   textColor: AppColors.black1,
-                                  //   background: AppColors.white,
-                                  //   isEnabled: !isLoading,
-                                  //   onPressed: _startRegistration,
-                                  //   fontSize: 16,
-                                  //   text: 'ثبت نام',
-                                  // ).tMargin(8),
-                                ],
-                              ).hMargin(16).vMargin(18),
-                            )
+                                      ReButton(
+                                        isEnabled:
+                                            phoneController.text.length == 11,
+                                        isLoading: isLoading,
+                                        onPressed: _sendOtp,
+                                        fontSize: 16,
+                                        text: 'ورود / ثبت نام',
+                                      ).tMargin(16),
+                                      // ReButton(
+                                      //   isOutlined: true,
+                                      //   color: AppColors.gray2,
+                                      //   textColor: AppColors.black1,
+                                      //   background: AppColors.white,
+                                      //   isEnabled: !isLoading,
+                                      //   onPressed: _startRegistration,
+                                      //   fontSize: 16,
+                                      //   text: 'ثبت نام',
+                                      // ).tMargin(8),
+                                    ],
+                                  ).hMargin(16).vMargin(18),
+                                )
+                              ],
+                            ).tMargin(130),
+                            ReText(
+                              'نسخه $_version',
+                              color: AppColors.gray,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ).bMargin(10)
                           ],
-                        ).tMargin(130),
-                        ReText(
-                          'نسخه $_version',
-                          color: AppColors.gray,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ).bMargin(10)
-                      ],
-                    ).hMargin(30),
+                        ).hMargin(30),
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -91,6 +91,12 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GUserWhereInput,
         GVerifyOTPAndLoginInput,
         GVerifyOTPAndRegisterInput;
+import 'package:simo_learn/graphql/mutations/__generated__/complete_timed_task.data.gql.dart'
+    show GCompleteTimedTaskData, GCompleteTimedTaskData_completeTimedTask;
+import 'package:simo_learn/graphql/mutations/__generated__/complete_timed_task.req.gql.dart'
+    show GCompleteTimedTaskReq;
+import 'package:simo_learn/graphql/mutations/__generated__/complete_timed_task.var.gql.dart'
+    show GCompleteTimedTaskVars;
 import 'package:simo_learn/graphql/mutations/__generated__/create_direct_chat.data.gql.dart'
     show GCreateDirectChatData, GCreateDirectChatData_createDirectChat;
 import 'package:simo_learn/graphql/mutations/__generated__/create_direct_chat.req.gql.dart'
@@ -127,6 +133,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.d
     show GDeleteTaskReq;
 import 'package:simo_learn/graphql/mutations/__generated__/delete_task.var.gql.dart'
     show GDeleteTaskVars;
+import 'package:simo_learn/graphql/mutations/__generated__/pause_timed_task.data.gql.dart'
+    show GPauseTimedTaskData, GPauseTimedTaskData_pauseTimedTask;
+import 'package:simo_learn/graphql/mutations/__generated__/pause_timed_task.req.gql.dart'
+    show GPauseTimedTaskReq;
+import 'package:simo_learn/graphql/mutations/__generated__/pause_timed_task.var.gql.dart'
+    show GPauseTimedTaskVars;
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.data.gql.dart'
     show
         GRefreshTokenData,
@@ -154,6 +166,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart
     show GSendOTPReq;
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.var.gql.dart'
     show GSendOTPVars;
+import 'package:simo_learn/graphql/mutations/__generated__/start_timed_task.data.gql.dart'
+    show GStartTimedTaskData, GStartTimedTaskData_startTimedTask;
+import 'package:simo_learn/graphql/mutations/__generated__/start_timed_task.req.gql.dart'
+    show GStartTimedTaskReq;
+import 'package:simo_learn/graphql/mutations/__generated__/start_timed_task.var.gql.dart'
+    show GStartTimedTaskVars;
 import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.data.gql.dart'
     show GUnregisterDeviceTokenData;
 import 'package:simo_learn/graphql/mutations/__generated__/unregister_device_token.req.gql.dart'
@@ -270,6 +288,10 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GChatParticipantWhereInput,
   GChatType,
   GChatWhereInput,
+  GCompleteTimedTaskData,
+  GCompleteTimedTaskData_completeTimedTask,
+  GCompleteTimedTaskReq,
+  GCompleteTimedTaskVars,
   GCounselingPaymentAttemptCurrency,
   GCounselingPaymentAttemptStatus,
   GCounselingSubscriptionCancellationReason,
@@ -361,6 +383,10 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GParentTagsData_parentTags,
   GParentTagsReq,
   GParentTagsVars,
+  GPauseTimedTaskData,
+  GPauseTimedTaskData_pauseTimedTask,
+  GPauseTimedTaskReq,
+  GPauseTimedTaskVars,
   GRefreshTokenData,
   GRefreshTokenData_refreshToken,
   GRefreshTokenData_refreshToken_user,
@@ -382,6 +408,10 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GSendOTPInput,
   GSendOTPReq,
   GSendOTPVars,
+  GStartTimedTaskData,
+  GStartTimedTaskData_startTimedTask,
+  GStartTimedTaskReq,
+  GStartTimedTaskVars,
   GStatisticsDashboardData,
   GStatisticsDashboardData_statisticsDashboard,
   GStatisticsDashboardData_statisticsDashboard_comparison,

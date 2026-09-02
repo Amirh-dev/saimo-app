@@ -60,6 +60,7 @@ abstract class GGetTasksData_getTasks
   bool get hasReminder;
   _i2.GTime? get reminderTime;
   String? get recurringDays;
+  int get elapsedSeconds;
   _i2.GTaskStatus get status;
   GGetTasksData_getTasks_goal? get goal;
   BuiltList<GGetTasksData_getTasks_tags>? get tags;

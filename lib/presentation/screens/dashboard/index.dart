@@ -5,8 +5,10 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/create_task.ast.gql.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
+import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
@@ -39,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) => AppExitGuard(
-    child: BlocBuilder<DashboardCubit, DashboardState>(
+        child: BlocBuilder<DashboardCubit, DashboardState>(
           builder: (context, state) {
             return Scaffold(
               backgroundColor: AppColors.gray1,
@@ -55,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
         ),
-  );
+      );
 }
 
 class _DashboardContent extends StatelessWidget {
@@ -122,7 +124,12 @@ class _DashboardContent extends StatelessWidget {
                       0,
                     );
                   },
-                  onAddTap: () {},
+                  onAddTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (final _) => const AddTimedTaskScreen()),
+                    );
+                  },
                   tasks: tasks,
                 ),
                 const SizedBox(height: 32),
