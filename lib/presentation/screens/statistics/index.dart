@@ -9,6 +9,7 @@ import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_state.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/date_range_picker.dart';
@@ -234,6 +235,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
               secondIcon: GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
                 child: const SizedBox(
                   width: 48,
                   height: 48,

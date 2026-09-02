@@ -21,6 +21,7 @@ import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -79,6 +80,20 @@ class MyApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           navigatorKey: _rootNavigatorKey,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: TaskTimerBanner(
+                    navigatorKey: _rootNavigatorKey,
+                    bottomOffset: 110, // raise until it clears your bottom nav bar
+                  ),
+                ),
+              ],
+            );
+          },
           title: AppStrings.appName,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(

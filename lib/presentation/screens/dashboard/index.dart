@@ -94,7 +94,7 @@ class _DashboardContent extends StatelessWidget {
                     ),
                   ),
                   secondIcon: GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => ChatScreen())),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
                     child: const SizedBox(
                       width: 48,
                       height: 48,

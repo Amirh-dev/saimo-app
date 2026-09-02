@@ -8,6 +8,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
 import 'package:simo_learn/features/goals/cubit/goals_state.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
+import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_dots_loader.dart';
@@ -1401,6 +1402,7 @@ class _GoalScreenState extends State<GoalScreen> {
                     ),
                   ),
                   secondIcon: GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
                     child: const SizedBox(
                       width: 48,
                       height: 48,

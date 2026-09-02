@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ferry/ferry.dart' show FetchPolicy;
 import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.dart';
@@ -14,8 +13,11 @@ import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.d
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -37,7 +39,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   List<Map<String, dynamic>> _checklistTasks = [];
   List<Map<String, dynamic>> _timedTasks = [];
-  Timer? _timedTaskTicker;
+  final TaskTimerService _timer = TaskTimerService.instance;
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
   int? _expandedChecklistTaskIndex;
@@ -109,15 +111,19 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       _isSyncingChecklistScroll = false;
     });
 
-    _ensureTimedTaskTicker();
+    // Rebuild this screen on every tick of the global timer.
+    _timer.addListener(_onGlobalTimerChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _timer.bindRepository(TaskTimerRepository(context.read<GraphQLRepository>()));
       _loadTasksForSelectedDate();
     });
   }
 
   @override
   void dispose() {
-    _timedTaskTicker?.cancel();
+    // Only stop listening. The timer itself keeps running.
+    _timer.removeListener(_onGlobalTimerChanged);
     _checklistDotsScrollController.dispose();
     _checklistCardsScrollController.dispose();
     _animationController.dispose();
@@ -211,14 +217,14 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final selectedDate = _selectedDate;
       final response = await context.read<GraphQLRepository>().requestOnce(
-            GGetTasksReq(
+        GGetTasksReq(
               (request) => request.vars
-                ..limit = 100
-                ..offset = 0,
-            ).rebuild(
+            ..limit = 100
+            ..offset = 0,
+        ).rebuild(
               (request) => request.fetchPolicy = FetchPolicy.NetworkOnly,
-            ),
-          );
+        ),
+      );
 
       if (!mounted || !_isSameDay(selectedDate, _selectedDate)) return;
       if (response.hasErrors || response.data == null) {
@@ -251,7 +257,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         _expandedChecklistTaskIndex = null;
         _expandedTimedTaskIndex = null;
       });
-      _ensureTimedTaskTicker();
     } catch (error) {
       if (!mounted) return;
       showReToast(context, error.toString(), ReToastType.failed);
@@ -279,7 +284,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GUpdateTaskReq(
-          (request) {
+              (request) {
             request.vars.id = taskId;
             request.vars.input.status = GTaskStatus.COMPLETED;
           },
@@ -331,7 +336,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GDeleteTaskReq(
-          (request) {
+              (request) {
             request.vars.id = taskId;
           },
         ),
@@ -422,7 +427,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GUpdateTaskReq(
-          (request) {
+              (request) {
             request.vars.id = taskId;
 
             final todayRfc3339 = today.toUtc().toIso8601String();
@@ -467,37 +472,37 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     return _expandedChecklistTaskIndex == index ? _checklistItemExpandedHeight : _checklistItemCollapsedHeight;
   }
 
-  void _ensureTimedTaskTicker() {
-    final hasRunningTask = _timedTasks.any((task) => task['status'] == 'running');
-    if (!hasRunningTask) {
-      _timedTaskTicker?.cancel();
-      _timedTaskTicker = null;
-      return;
-    }
-
-    _timedTaskTicker ??= Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => _tickTimedTasks(),
-    );
+  /// Called on every tick / state change of the global timer.
+  /// The `mounted` guard is what prevents "setState() called after dispose()".
+  void _onGlobalTimerChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
-  void _tickTimedTasks() {
-    if (!mounted) return;
+  /// The status to render for a timed task: the global timer wins for the
+  /// task it currently owns, otherwise we fall back to the server value.
+  String _timedTaskStatus(Map<String, dynamic> task) {
+    final id = task['id'] as String?;
+    if (_timer.isActive(id)) {
+      if (_timer.isCompleted) return 'done';
+      return _timer.isRunning ? 'running' : 'paused';
+    }
 
-    setState(() {
-      for (final task in _timedTasks) {
-        if (task['status'] != 'running') continue;
+    final status = task['status'] as String? ?? 'pending';
 
-        final remaining = (task['remainingSeconds'] as int? ?? 0) - 1;
-        task['remainingSeconds'] = math.max(0, remaining);
+    // Only one task can ever be running. If the service has moved on to
+    // another task, this row cannot still be 'running', no matter what the
+    // last server payload said.
+    if (status == 'running' && _timer.hasActiveTask) return 'paused';
 
-        if ((task['remainingSeconds'] as int) == 0) {
-          task['status'] = 'done';
-        }
-      }
-    });
+    return status;
+  }
 
-    _ensureTimedTaskTicker();
+  /// Remaining seconds to render for a timed task, same precedence.
+  int _timedTaskRemainingSeconds(Map<String, dynamic> task) {
+    final id = task['id'] as String?;
+    if (_timer.isActive(id)) return _timer.remainingSeconds;
+    return task['remainingSeconds'] as int? ?? 0;
   }
 
   void _toggleChecklistTaskStatus(int index) {
@@ -633,8 +638,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         _expandedTimedTaskIndex = _expandedTimedTaskIndex! - 1;
       }
     });
-
-    _ensureTimedTaskTicker();
   }
 
   Future<void> _requestDeleteTimedTask(int index) async {
@@ -690,10 +693,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTaskTile(
-    BuildContext context,
-    Map<String, dynamic> task,
-    int index,
-  ) {
+      BuildContext context,
+      Map<String, dynamic> task,
+      int index,
+      ) {
     const padding = 16.0;
     const titleSize = 14.0;
     const subtitleSize = 10.0;
@@ -822,10 +825,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTaskList(
-    BuildContext context,
-    List<Map<String, dynamic>> tasks,
-    bool isTimeTask,
-  ) {
+      BuildContext context,
+      List<Map<String, dynamic>> tasks,
+      bool isTimeTask,
+      ) {
     if (tasks.isEmpty) {
       return ReEmptyList(
         title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
@@ -942,7 +945,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   bool _timedTaskShowsProgress(Map<String, dynamic> task) {
-    final status = task['status'] as String? ?? 'pending';
+    final status = _timedTaskStatus(task);
     return status == 'running' || status == 'paused';
   }
 
@@ -954,7 +957,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   double _timedTaskRemainingProgress(Map<String, dynamic> task) {
     final duration = task['durationSeconds'] as int? ?? 1;
-    final remaining = task['remainingSeconds'] as int? ?? 0;
+    final remaining = _timedTaskRemainingSeconds(task);
     return (remaining / duration).clamp(0.0, 1.0);
   }
 
@@ -967,42 +970,40 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   String _timedTaskRemainingLabel(Map<String, dynamic> task) {
-    if(task['status'] == 'running'){
-      return _formatTimedTaskSeconds(GlobalData.instance.globalRemainingSeconds as int? ?? 0);
-    }
-    return _formatTimedTaskSeconds(task['remainingSeconds'] as int? ?? 0);
+    return _formatTimedTaskSeconds(_timedTaskRemainingSeconds(task));
   }
 
   String _timedTaskDurationLabel(Map<String, dynamic> task) {
     return _formatTimedTaskSeconds(task['durationSeconds'] as int? ?? 0);
   }
 
-  void _toggleTimedTaskTimer(int index) {
+  Future<void> _toggleTimedTaskTimer(int index) async {
     if (index < 0 || index >= _timedTasks.length) return;
 
-    setState(() {
-      final task = _timedTasks[index];
-      final status = task['status'] as String? ?? 'pending';
-      final remaining = task['remainingSeconds'] as int? ?? 0;
+    final task = _timedTasks[index];
+    final id = task['id'] as String?;
+    if (id == null) return;
+    if (_timedTaskStatus(task) == 'done') return;
 
-      if (status == 'done' || remaining <= 0) return;
+    // Pause the task that is already running in the global timer.
+    if (_timer.isRunningTask(id)) {
+      await _timer.pause();
+      return;
+    }
 
-      // If currently running, pause it (button turns blue).
-      if (status == 'running') {
-        task['status'] = 'paused';
-        return;
-      }
+    // Starting another task: stop the current one first.
+    if (_timer.isRunning) {
+      await _timer.pause();
+    }
 
-      for (final timedTask in _timedTasks) {
-        if (timedTask['status'] == 'running') {
-          timedTask['status'] = 'paused';
-        }
-      }
-      // Start/resume selected task (button turns primary).
-      task['status'] = 'running';
-    });
-
-    _ensureTimedTaskTicker();
+    _timer.load(
+      taskId: id,
+      totalSeconds: task['durationSeconds'] as int? ?? 0,
+      elapsedSeconds: task['elapsedSeconds'] as int? ?? 0,
+      isDone: task['status'] == 'done',
+      taskData: task,
+    );
+    await _timer.start();
   }
 
   Widget _buildTimedConnector({
@@ -1021,7 +1022,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(
           count,
-          (_) => Container(
+              (_) => Container(
             width: 2,
             height: segmentHeight,
             decoration: BoxDecoration(
@@ -1040,7 +1041,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     required bool showBottomLine,
     required double height,
   }) {
-    final status = task['status'] as String? ?? 'pending';
+    final status = _timedTaskStatus(task);
     final color = _timedTaskColor(status);
 
     return SizedBox(
@@ -1108,7 +1109,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     const titleSize = 14.0;
     const subtitleSize = 10.0;
 
-    final status = task['status'] as String? ?? 'pending';
+    final status = _timedTaskStatus(task);
     final color = _timedTaskColor(status);
     final progress = _timedTaskRemainingProgress(task);
     final hasProgress = _timedTaskShowsProgress(task);
@@ -1211,10 +1212,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                       context,
                       MaterialPageRoute(
                         builder: (final _) => TaskTimerScreen(
-                          task: task,
-                          onPop: (){
-                            _loadTasksForSelectedDate();
-                          }
+                            task: task,
+                            onPop: (){
+                              _loadTasksForSelectedDate();
+                            }
                         ),
                       ),
                     ),
@@ -1397,6 +1398,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         ),
                       ),
                       secondIcon: GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
                         child: const SizedBox(
                           width: 48,
                           height: 48,
@@ -1559,9 +1561,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     }
     showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
     await _loadTasksForSelectedDate();
-    if (!mounted) return;
-
-    _ensureTimedTaskTicker();
   }
 
   Container calenderWidget() {
@@ -1676,62 +1675,62 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         child: Center(
                           child: isSelected
                               ? SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(-0.2, 0),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: _slideAnimationController,
-                                      curve: Curves.easeOutCubic,
-                                    ),
+                            position: Tween<Offset>(
+                              begin: const Offset(-0.2, 0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: _slideAnimationController,
+                                curve: Curves.easeOutCubic,
+                              ),
+                            ),
+                            child: FadeTransition(
+                              opacity: Tween<double>(
+                                begin: 0,
+                                end: 1,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: _slideAnimationController,
+                                  curve: Curves.easeInCubic,
+                                ),
+                              ),
+                              child: ScaleTransition(
+                                scale: Tween<double>(
+                                  begin: 0.8,
+                                  end: 1.0,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: _animationController,
+                                    curve: Curves.elasticOut,
                                   ),
-                                  child: FadeTransition(
-                                    opacity: Tween<double>(
-                                      begin: 0,
-                                      end: 1,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: _slideAnimationController,
-                                        curve: Curves.easeInCubic,
-                                      ),
-                                    ),
-                                    child: ScaleTransition(
-                                      scale: Tween<double>(
-                                        begin: 0.8,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: _animationController,
-                                          curve: Curves.elasticOut,
-                                        ),
-                                      ),
-                                      child: ReText(
-                                        '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        isBold: true,
-                                        color: AppColors.white,
-                                      ),
-                                    ),
-                                  ),
-                                )
+                                ),
+                                child: ReText(
+                                  '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  isBold: true,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                            ),
+                          )
                               : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 6),
-                                    ReText(
-                                      convertToPersianNumbers(
-                                        date.day.toString(),
-                                      ),
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 13,
-                                      isBold: true,
-                                      color: AppColors.black1.withOpacity(
-                                        0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ).hMargin(12),
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 6),
+                              ReText(
+                                convertToPersianNumbers(
+                                  date.day.toString(),
+                                ),
+                                fontWeight: FontWeight.w400,
+                                fontSize: 13,
+                                isBold: true,
+                                color: AppColors.black1.withOpacity(
+                                  0.5,
+                                ),
+                              ),
+                            ],
+                          ).hMargin(12),
                         ),
                       ),
                     );
