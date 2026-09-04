@@ -9,8 +9,12 @@ import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'firebase_options.dart';
 import 'data/auth/token_storage.dart';
+import 'data/notifications/notification_service.dart';
 import 'data/graphql/ferry_client.dart';
 import 'data/graphql/graphql_console_logger.dart';
 import 'data/graphql/graphql_endpoints.dart';
