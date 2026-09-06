@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -19,13 +20,16 @@ class AppBottomNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     const activeIconSize = 24.0;
     const inactiveIconSize = 20.0;
-    final inactiveColor = AppColors.black1.withOpacity(0.55);
+    final inactiveColor = AppColors.black1;
     const activeColor = AppColors.white;
 
     Widget buildNavIcon({
-      required IconData activeIcon,
-      required IconData inactiveIcon,
       required int index,
+      bool useSvg = false,
+      IconData? activeIcon,
+      IconData? inactiveIcon,
+      String? activeIconSvg,
+      String? inactiveIconSvg,
     }) {
       final isActive = index == currentIndex;
       return GestureDetector(
@@ -38,11 +42,16 @@ class AppBottomNavigationBar extends StatelessWidget {
             color: isActive ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(100),
           ),
-          child: Icon(
-            isActive ? activeIcon : inactiveIcon,
-            size: isActive ? activeIconSize : inactiveIconSize,
-            color: isActive ? activeColor : inactiveColor,
-          ),
+          child: useSvg
+              ? Padding(
+                padding: EdgeInsets.all(isActive ? 15.0 : 16.0),
+                child: SvgPicture.asset(isActive ? activeIconSvg! : inactiveIconSvg!),
+              )
+              : Icon(
+                  isActive ? activeIcon : inactiveIcon,
+                  size: isActive ? activeIconSize : inactiveIconSize,
+                  color: isActive ? activeColor : inactiveColor,
+                ),
         ),
       );
     }
@@ -85,18 +94,19 @@ class AppBottomNavigationBar extends StatelessWidget {
                         index: 4,
                       ),
                       buildNavIcon(
-                        activeIcon: SolarIconsBold.alarm,
-                        inactiveIcon: SolarIconsOutline.alarm,
+                        activeIcon: SolarIconsBold.chart_2,
+                        inactiveIcon: SolarIconsOutline.chart_2,
                         index: 3,
+                      ),
+                      buildNavIcon(
+                        useSvg: true,
+                        activeIconSvg: 'assets/icons/target.svg',
+                        inactiveIconSvg: 'assets/icons/target_out.svg',
+                        index: 2,
                       ),
                       buildNavIcon(
                         activeIcon: SolarIconsBold.checklistMinimalistic,
                         inactiveIcon: SolarIconsOutline.checklistMinimalistic,
-                        index: 2,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.cupFirst,
-                        inactiveIcon: SolarIconsOutline.cupFirst,
                         index: 1,
                       ),
                       buildNavIcon(
@@ -131,7 +141,7 @@ class AppBottomNavigationScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: AppColors.gray1,
+      backgroundColor: AppColors.gray1,
       body: body,
       bottomNavigationBar: AppBottomNavigationBar(
         currentIndex: currentIndex,

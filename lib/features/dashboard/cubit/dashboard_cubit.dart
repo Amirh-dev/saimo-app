@@ -40,12 +40,10 @@ class DashboardCubit extends Cubit<DashboardState> {
               (a, b) => _taskSortDate(b)
               .compareTo(_taskSortDate(a)),
         );
-
       final tasks = dashboardTasks
           .take(7)
           .map(_toDashboardTask)
           .toList(growable: false);
-
       emit(
         state.copyWith(
           status: DashboardStatus.success,
@@ -108,17 +106,6 @@ class DashboardCubit extends Cubit<DashboardState> {
             task.completedAt != null;
 
     final isTimed = task.type == 'TIMED';
-
-    // NORMAL TASK
-    // if (!isTimed) {
-    //   return DashboardTaskItem(
-    //     title: task.title,
-    //     percentage: (task.elapsedSeconds / (task.durationM * 60)) * 100,
-    //     doneDuration: 0,
-    //     maxDuration: 0,
-    //     durationText: '--',
-    //   );
-    // }
 
     // TIMED TASK
     final maxDuration =

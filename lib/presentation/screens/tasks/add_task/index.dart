@@ -50,9 +50,10 @@ String? _recurringDay(Jalali date, bool isWeeklyRepeat) {
 }
 
 class AddTimedTaskScreen extends StatefulWidget {
-  const AddTimedTaskScreen({super.key, this.goalId});
+  const AddTimedTaskScreen({super.key, this.goalId, this.onBack});
 
   final String? goalId;
+  final VoidCallback? onBack;
 
   @override
   State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
@@ -510,86 +511,91 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final horizontalPadding = width < 360 ? 14.0 : 18.0;
     final sectionSpacing = width < 360 ? 10.0 : 12.0;
 
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: AnimatedPadding(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    10,
-                    horizontalPadding,
-                    14,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildTimedHeader(context),
-                      SizedBox(height: sectionSpacing),
-                      _buildPillField(
-                        hintText: 'عنوان',
-                        controller: _titleController,
-                        focusNode: _titleFocusNode,
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      _buildPillField(
-                        hintText: 'توضیح کوتاه',
-                        controller: _descriptionController,
-                        focusNode: _descriptionFocusNode,
-                        maxLength: 50,
-                        leadingPill:
-                            '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      _buildTagSuggestionField(),
-                      SizedBox(height: sectionSpacing + 2),
-                      _buildDurationPicker(),
-                      SizedBox(height: sectionSpacing),
-                      _buildNoteField(),
-                      SizedBox(height: sectionSpacing),
-                      _buildDateCardCompact(),
-                      SizedBox(height: sectionSpacing),
-                      _buildReminderCardCompact(),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _ActionButton(
-                              text: 'افزودن',
-                              icon: Icons.add,
-                              background: AppColors.primary,
-                              textColor: AppColors.white,
-                              isLoading: _isSubmitting,
-                              onTap: _submitTimedTask,
+    return PopScope(
+      onPopInvokedWithResult: (final _, final __){
+        widget.onBack?.call();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      10,
+                      horizontalPadding,
+                      14,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTimedHeader(context),
+                        SizedBox(height: sectionSpacing),
+                        _buildPillField(
+                          hintText: 'عنوان',
+                          controller: _titleController,
+                          focusNode: _titleFocusNode,
+                        ),
+                        SizedBox(height: sectionSpacing),
+                        _buildPillField(
+                          hintText: 'توضیح کوتاه',
+                          controller: _descriptionController,
+                          focusNode: _descriptionFocusNode,
+                          maxLength: 50,
+                          leadingPill:
+                              '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
+                        ),
+                        SizedBox(height: sectionSpacing),
+                        _buildTagSuggestionField(),
+                        SizedBox(height: sectionSpacing + 2),
+                        _buildDurationPicker(),
+                        SizedBox(height: sectionSpacing),
+                        _buildNoteField(),
+                        SizedBox(height: sectionSpacing),
+                        _buildDateCardCompact(),
+                        SizedBox(height: sectionSpacing),
+                        _buildReminderCardCompact(),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _ActionButton(
+                                text: 'افزودن',
+                                icon: Icons.add,
+                                background: AppColors.primary,
+                                textColor: AppColors.white,
+                                isLoading: _isSubmitting,
+                                onTap: _submitTimedTask,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _ActionButton(
-                              text: 'لغو',
-                              icon: Icons.close,
-                              background: AppColors.white,
-                              textColor: AppColors.black1,
-                              borderColor: AppColors.gray2,
-                              onTap: _isSubmitting
-                                  ? () {}
-                                  : () => Navigator.of(context).pop(),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _ActionButton(
+                                text: 'لغو',
+                                icon: Icons.close,
+                                background: AppColors.white,
+                                textColor: AppColors.black1,
+                                borderColor: AppColors.gray2,
+                                onTap: _isSubmitting
+                                    ? () {}
+                                    : () => Navigator.of(context).pop(),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

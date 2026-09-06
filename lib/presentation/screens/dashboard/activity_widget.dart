@@ -109,20 +109,14 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ReText(
-                            duration > 0
-                                ? '$title ${_toPersianNumber(duration.toString())} دقیقه'
-                                : '$title --',
+                            duration > 0 ? '$title ${_toPersianNumber(duration.toString())} دقیقه' : '$title --',
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(width: 6),
-                          const Icon(
-                            SolarIconsOutline.stopwatch,
-                            color: Colors.white,
-                            size: 14,
-                          ),
+                          SvgPicture.asset('assets/icons/timer.svg',color: AppColors.white,width: 12)
                         ],
                       ),
                     ),
@@ -244,12 +238,12 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                   children: [
                     // Tasks Row layout
                     SizedBox(
-                      height: 200,
+                      height: 172,
                       child: Stack(
                         children: [
                           // Fix 1: Mathematically centered Dashed Line
                           Positioned(
-                            top: 131,
+                            top: 115,
                             left: 0,
                             right: 0,
                             child: CustomPaint(
@@ -266,7 +260,10 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                               final task = index < widget.tasks.length ? widget.tasks[index] : null;
 
                               return Expanded(
-                                child: _buildTaskItem(task),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                                  child: _buildTaskItem(task),
+                                ),
                               );
                             }),
                           ),
@@ -346,23 +343,14 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
         children: [
           // 1. Top Capsule (Height: 100)
           Container(
-            width: 38,
-            height: 100,
+            height: 93,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: isDoing ? const BorderRadius.vertical(top: Radius.circular(100), bottom: Radius.circular(70)) : BorderRadius.circular(100),
               color: Colors.white,
-              boxShadow: (isDone || isDoing)
-                  ? [
-                      BoxShadow(
-                        color: (isDone ? const Color(0xFF4263EB) : const Color(0xFFF14922)).withOpacity(0.2),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : null,
+              border: isEmpty ? Border.all(color: AppColors.gray2) : null,
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: isDoing ? const BorderRadius.vertical(top: Radius.circular(100), bottom: Radius.circular(70)) : BorderRadius.circular(100),
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
@@ -378,17 +366,24 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                     FractionallySizedBox(
                       heightFactor: percentage / 100,
                       child: Container(
-                        color: const Color(0xFFF14922),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF14922),
+                          borderRadius: BorderRadius.circular(80)
+                        ),
+
                       ),
                     ),
                   if (isNotStarted)
-                    CustomPaint(
-                      painter: StripedPainter(
-                        color: const Color(0xFFE5E7EB),
-                      ),
-                      size: const Size(
-                        double.infinity,
-                        double.infinity,
+                    RotatedBox(
+                      quarterTurns: 3,
+                      child: CustomPaint(
+                        painter: StripedPainter(
+                          color: const Color(0xFFE5E7EB),
+                        ),
+                        size: const Size(
+                          double.infinity,
+                          double.infinity,
+                        ),
                       ),
                     ),
                   if (isEmpty)
@@ -400,28 +395,27 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                       ),
                     )
                   else
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: RotatedBox(
-                        quarterTurns: 1,
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(
-                            sigmaX: 15,
-                            sigmaY: 15,
-                          ),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: RotatedBox(
+                          quarterTurns: 3,
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(100),
-                              color: (isDone || isDoing) ? AppColors.lightGray.withAlpha(20) : AppColors.gray1,
+                              color: isDoing
+                                  ? const Color(0xfff26d4d)
+                                  : isDone
+                                      ? const Color(0xff607bf5)
+                                      : AppColors.gray1,
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
                               child: ReText(
                                 title,
-                                fontSize: 11,
+                                fontSize: 10,
                                 color: (isDone || isDoing) ? Colors.white : Colors.grey.shade600,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w400,
                                 textAlign: TextAlign.center,
                               ),
                             ),
@@ -429,60 +423,71 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
           ),
 
           // 2. Exact Spacing (Height: 16)
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // 3. Timer Circle aligned perfectly over Y=131 line
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
+          DecoratedBox(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: isNotStarted ? const Color(0xFFF8F9FA) : Colors.white,
-              border: isNotStarted || isEmpty
-                  ? Border.all(
-                      color: const Color(0xFFE5E7EB),
-                      width: 1.5,
-                    )
-                  : null,
-              boxShadow: (isNotStarted || isEmpty)
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 6,
-                      ),
-                    ],
+              color: AppColors.white,
             ),
-            child: isEmpty
-                ? const SizedBox.shrink()
-                : Center(
-                    child: SvgPicture.asset(
-                      'assets/icons/stop_watch.svg',
-                      width: 16,
-                      color: isDone
-                          ? const Color(0xFF4263EB)
-                          : isDoing
-                              ? const Color(0xFFF14922)
-                              : const Color(0xFF24242C),
+            child: Container(
+              margin: const EdgeInsets.all(4),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isNotStarted
+                    ? AppColors.gray2
+                    : isEmpty
+                        ? AppColors.white
+                        : isDoing
+                            ? const Color(0xfffbeae6)
+                            : const Color(0xffe8ecfb),
+                border: isEmpty
+                    ? Border.all(
+                        color: const Color(0xFFE5E7EB),
+                        width: 1.5,
+                      )
+                    : null,
+                boxShadow: (isNotStarted || isEmpty)
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 6,
+                        ),
+                      ],
+              ),
+              child: isEmpty
+                  ? const SizedBox.shrink()
+                  : Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/stop_watch.svg',
+                        width: 11,
+                        color: isDone
+                            ? AppColors.secondary
+                            : isDoing
+                                ? AppColors.primary
+                                : AppColors.black1,
+                      ),
                     ),
-                  ),
+            ),
           ),
 
           // 4. Texts Below
           if (!isEmpty) ...[
             const SizedBox(height: 8),
             ReText(
-              task['durationText']?.toString() ??
-                  _toPersianNumber(duration.toString()),
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
+              task['durationText']?.toString() ?? _toPersianNumber(duration.toString()),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
               textAlign: TextAlign.center,
             ),
             if ((task['durationText']?.toString() ?? '') != '--')
@@ -594,7 +599,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
           const SizedBox(width: 12),
           Expanded(
             child: Container(
-              height: 6,
+              height: 4,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -667,13 +672,13 @@ class StripedPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1
       ..isAntiAlias = true;
 
     for (double i = -size.height; i < size.width; i += gap) {
       canvas.drawLine(
-        Offset(i, 0),
         Offset(i + size.height, size.height),
+        Offset(i, 0),
         paint,
       );
     }
@@ -689,7 +694,7 @@ class StripedPainter extends CustomPainter {
 class DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    double dashWidth = 5;
+    double dashWidth = 1;
     double dashSpace = 4;
     double startX = 0;
 

@@ -127,7 +127,13 @@ class _DashboardContent extends StatelessWidget {
                   onAddTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (final _) => const AddTimedTaskScreen()),
+                      MaterialPageRoute(
+                        builder: (final _) => AddTimedTaskScreen(
+                          onBack: (){
+                            context.read<DashboardCubit>().load();
+                          }
+                        ),
+                      ),
                     );
                   },
                   tasks: tasks,
@@ -187,7 +193,7 @@ class _DashboardContent extends StatelessWidget {
               ),
               const ReText(
                 'اهداف',
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
               ),
             ],
@@ -674,18 +680,17 @@ class _MetricCard extends StatelessWidget {
           GestureDetector(
             onTap: () => openInfoModal(context),
             child: Container(
-              width: 27,
-              height: 27,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 border: Border.all(
                   color: AppColors.gray2,
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                SolarIconsOutline.infoCircle,
-                size: 15,
-                color: AppColors.black1,
+              child: Padding(
+                padding: const EdgeInsets.all(7.0),
+                child: SvgPicture.asset('assets/icons/info_circle.svg'),
               ),
             ),
           ),
@@ -713,8 +718,8 @@ class _MetricCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            width: 40,
-            height: 40,
+            width: 32,
+            height: 32,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color,
@@ -885,22 +890,22 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 75,
+          height: 72,
           child: Stack(
             alignment: Alignment.topCenter,
             clipBehavior: Clip.none,
             children: [
               Positioned(
-                bottom: -35,
+                bottom: -25,
                 left: 45,
                 right: 45,
                 child: Container(
                   margin: const EdgeInsetsDirectional.symmetric(
-                    horizontal: 32,
+                    horizontal: 36,
                   ),
                   height: 50,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE6E7EB),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE6E7EB).withAlpha(160),
                     borderRadius: BorderRadius.vertical(
                       bottom: Radius.circular(
                         50,
@@ -970,7 +975,7 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
             ),
             const SizedBox(width: 4),
             SizedBox(
-              width: 20,
+              width: 12,
               child: CustomPaint(
                 painter: DashedLinePainter(),
               ),
@@ -979,7 +984,7 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
             _buildCenterIndicator(),
             const SizedBox(width: 4),
             SizedBox(
-              width: 20,
+              width: 12,
               child: CustomPaint(
                 painter: DashedLinePainter(),
               ),
@@ -1024,7 +1029,7 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
           children: [
             Icon(
               Icons.arrow_back_ios_rounded,
-              color: Colors.grey.shade400,
+              color: AppColors.black1.withAlpha(150),
               size: 16,
             ),
             const Spacer(),
@@ -1044,12 +1049,14 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
                       'روز باقی مانده',
                       fontWeight: FontWeight.w600,
                       color: AppColors.gray,
+                      fontSize: 10,
                     ),
                     const SizedBox(
                       width: 4,
                     ),
                     ReText(
                       timeRemains,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: const Color(
                         0xFFF14922,
@@ -1072,8 +1079,8 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 42,
-        height: 42,
+        width: 32,
+        height: 32,
         decoration: const BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -1081,7 +1088,7 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
         child: Icon(
           icon,
           color: AppColors.black1,
-          size: 24,
+          size: 20,
         ),
       ),
     );
@@ -1089,24 +1096,22 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
 
   Widget _buildCenterIndicator() {
     return Container(
-      width: 48,
-      height: 48,
-      padding: const EdgeInsets.all(6),
+      width: 32,
+      height: 32,
+      padding: const EdgeInsets.all(4),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         shape: BoxShape.circle,
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(
-            0xFFF14922,
-          ).withOpacity(0.15),
+          color: AppColors.primary.withOpacity(0.15),
           shape: BoxShape.circle,
         ),
         child: Center(
           child: SvgPicture.asset(
             'assets/icons/goal.svg',
-            width: 18,
+            width: 14,
           ),
         ),
       ),
@@ -1125,7 +1130,7 @@ class DashedLinePainter extends CustomPainter {
     double startX = 0;
 
     final paint = Paint()
-      ..color = const Color(0xFFC4C5C9)
+      ..color = const Color(0xFFC4C5C9).withAlpha(170)
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 

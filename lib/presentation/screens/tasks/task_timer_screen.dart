@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
@@ -205,20 +206,19 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                           ),
                         ),
                       ),
-
                       // Top White Container with Timer
                       Container(
-                        padding: const EdgeInsets.only(top: 60, bottom: 60, left: 20, right: 20),
+                        padding: const EdgeInsets.only(top: 60, bottom: 20, left: 20, right: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.white,
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(40),
                             bottomRight: Radius.circular(40),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
-                              blurRadius: 15,
+                              color: Colors.black.withAlpha(30),
+                              blurRadius: 100,
                               offset: const Offset(0, 5),
                             )
                           ],
@@ -232,7 +232,7 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                                 child: const Icon(SolarIconsOutline.bell, size: 24),
                               ),
                             ),
-                            const SizedBox(height: 50),
+                            const SizedBox(height: 100),
                             // Custom Timer Arc
                             CustomPaint(
                               size: const Size(280, 240),
@@ -242,16 +242,15 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                                 hatchedSeconds: _timer.currentSessionSeconds.toDouble(),
                               ),
                               child: SizedBox(
-                                width: 280,
-                                height: 240,
+                                width: 250,
+                                height: 100,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const SizedBox(height: 20),
                                     ReText(
                                       isCompleted ? 'انجام شده' : formattedRemaining,
-                                      fontSize: isCompleted ? 25 : 54,
-                                      fontWeight: FontWeight.w900,
+                                      fontSize: isCompleted ? 20 : 32,
+                                      fontWeight: 1000,
                                       color: const Color(0xFF1F2937),
                                     ),
                                     ReText(
@@ -260,6 +259,7 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                                       color: Colors.grey.shade500,
                                       fontWeight: FontWeight.w500,
                                     ),
+                                    const SizedBox(height: 30),
                                   ],
                                 ),
                               ),
@@ -267,10 +267,16 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                           ],
                         ),
                       ),
-
+                      Positioned(
+                        bottom: -85,
+                        child: SvgPicture.asset(
+                          'assets/images/union.svg',
+                          color: AppColors.white,
+                        ),
+                      ),
                       // Floating Controls
                       Positioned(
-                        bottom: -35,
+                        bottom: -28,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -279,31 +285,24 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                               onTap: () async {
                                 showShieldBottomSheet(context);
                               },
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: AppColors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.08),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    )
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.success)),
-                                    child: const Icon(IconsaxPlusBold.shield_tick, color: AppColors.success, size: 20),
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppColors.success),
+                                    color: AppColors.success.withAlpha(10),
+                                  ),
+                                  child: const Icon(
+                                    IconsaxPlusBold.shield_tick,
+                                    color: AppColors.success,
+                                    size: 20,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 8),
 
                             // Play/Pause Button
                             Opacity(
@@ -311,55 +310,33 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                               child: GestureDetector(
                                 onTap: isCompleted ? () {} : _toggleTimer,
                                 child: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  width: 56,
+                                  height: 56,
                                   decoration: const BoxDecoration(
-                                    color: AppColors.white,
+                                    color: AppColors.primary,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Container(
-                                    width: 70,
-                                    height: 70,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      isRunning ? Icons.pause : Icons.play_arrow,
-                                      color: Colors.white,
-                                      size: 32,
-                                    ),
+                                  child: Icon(
+                                    isRunning ? Icons.pause : Icons.play_arrow,
+                                    color: AppColors.white,
+                                    size: 32,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 8),
 
                             // Close Button
                             GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
                               },
-                              child: Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: AppColors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.08),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    )
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gray)),
-                                    child: const Icon(Icons.close, color: AppColors.black1, size: 15),
-                                  ),
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gray)),
+                                  child: const Icon(Icons.close, color: AppColors.black1, size: 15),
                                 ),
                               ),
                             ),
@@ -398,9 +375,9 @@ class TimerPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     // Arc starts at 150 degrees (bottom-left) and sweeps 240 degrees to bottom-right
-    const startAngle = 5 * pi / 6;
-    const sweepAngle = 4 * pi / 3;
-    const strokeW = 34.0;
+    const startAngle = 6 * pi / 6;
+    const sweepAngle = 3 * pi / 3;
+    const strokeW = 40.0;
 
     // 1. Draw Background Arc (Light Gray)
     final bgPaint = Paint()
@@ -422,14 +399,14 @@ class TimerPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..shader = ui.Gradient.linear(
           Offset.zero,
-          const Offset(18, 18),
+          const Offset(5, 5),
           [
-            const Color(0xFFA5B4FC),
-            const Color(0xFFA5B4FC),
-            const Color(0xFF818CF8),
-            const Color(0xFF818CF8),
+            AppColors.secondary.withAlpha(200),
+            AppColors.secondary.withAlpha(200),
+            AppColors.secondary.withAlpha(150),
+            AppColors.secondary.withAlpha(150),
           ],
-          [0.0, 0.5, 0.5, 1.0],
+          [0.0, 0.2, 0.2, 1.0],
           TileMode.repeated,
         );
 
@@ -440,7 +417,7 @@ class TimerPainter extends CustomPainter {
     if (solidSeconds > 0) {
       final solidSweep = (solidSeconds / totalSeconds) * sweepAngle;
       final solidPaint = Paint()
-        ..color = const Color(0xFF3B82F6)
+        ..color = AppColors.secondary
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeW
         ..strokeCap = StrokeCap.round;
@@ -464,7 +441,7 @@ Future<void> showShieldBottomSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Colors.white,
+    backgroundColor: AppColors.white,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -512,7 +489,7 @@ class _ShieldSheetContent extends StatelessWidget {
                     ),
                     child: const Icon(
                       IconsaxPlusBold.shield_tick,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 28,
                     ),
                   ),

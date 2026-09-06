@@ -109,7 +109,7 @@ class TaskTimerBanner extends StatelessWidget {
         height: 58,
         decoration: BoxDecoration(
           color: _background,
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.28),
@@ -129,7 +129,7 @@ class TaskTimerBanner extends StatelessWidget {
                     const Icon(
                       Icons.timer_outlined,
                       color: AppColors.gray,
-                      size: 19,
+                      size: 17,
                     ),
                     const SizedBox(width: 12),
 
@@ -137,14 +137,14 @@ class TaskTimerBanner extends StatelessWidget {
                     ReText(
                       remaining,
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                     const SizedBox(width: 6),
                     ReText(
                       '$total  /',
                       color: Colors.white.withOpacity(0.55),
-                      fontSize: 15,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                     const SizedBox(width: 10),
@@ -152,7 +152,7 @@ class TaskTimerBanner extends StatelessWidget {
                     // Expand back into the full timer screen
                     _CircleAction(
                       icon: Icons.north_east,
-                      iconSize: 18,
+                      iconSize: 13,
                       color: Colors.white.withOpacity(0.7),
                       onTap: () => _openTimerScreen(context, timer),
                     ),

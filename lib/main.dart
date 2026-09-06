@@ -35,15 +35,15 @@ import 'package:simo_learn/features/goals/goals_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
-
-  await NotificationService.instance.initialize();
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
+  //
+  // FirebaseMessaging.onBackgroundMessage(
+  //   firebaseMessagingBackgroundHandler,
+  // );
+  //
+  // await NotificationService.instance.initialize();
 
   final tokenStorage = await TokenStorage.create();
 
