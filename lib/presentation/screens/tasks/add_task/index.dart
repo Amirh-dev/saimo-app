@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -23,12 +26,7 @@ DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
 }
 
 List<String> _parseTagNames(String value) {
-  return value
-      .split(' ')
-      .map((tag) => tag.trim())
-      .where((tag) => tag.isNotEmpty)
-      .take(2)
-      .toList();
+  return value.split(' ').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).take(2).toList();
 }
 
 String? _emptyToNull(String value) {
@@ -97,9 +95,16 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
   late FocusNode _tagFocusNode;
   late FocusNode _noteFocusNode;
 
+  List<ParentTagModel> availableTags = GlobalData.instance.parentTags;
+
   @override
   void initState() {
     super.initState();
+
+    _tagSuggestionRepository = TagSuggestionRepository(
+      context.read<GraphQLRepository>(),
+    );
+
     _selectedDate = Jalali.now();
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     _selectedMinutes = _minuteOptions.contains(45) ? 45 : _minuteOptions.first;
@@ -122,6 +127,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   @override
   void dispose() {
+    _tagSuggestionDebounce?.cancel();
+    _tagSuggestionRequestId++;
+
     _titleFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
@@ -149,26 +157,97 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   final List<ParentTagModel> _selectedTags = [];
 
-  List<ParentTagModel> get _availableTags {
-    return GlobalData.instance.parentTags;
+  late final TagSuggestionRepository _tagSuggestionRepository;
+  Timer? _tagSuggestionDebounce;
+  int _tagSuggestionRequestId = 0;
+  List<ParentTagModel> _specificSuggestedTags = <ParentTagModel>[];
+
+  void _onTitleChanged(String value) {
+    setState(() {
+      _tagSuggestionDebounce?.cancel();
+
+      final title = value.trim();
+
+      if (title.isEmpty) {
+        _tagSuggestionRequestId++;
+
+        if (mounted) {
+          _specificSuggestedTags = <ParentTagModel>[];
+          availableTags = GlobalData.instance.parentTags;
+        }
+
+        return;
+      }
+
+      // Clear the previous title's suggestions immediately.
+      // Until the new API result arrives, global public tags are used as backup.
+      if (mounted) {
+        _specificSuggestedTags = <ParentTagModel>[];
+        availableTags = GlobalData.instance.parentTags;
+      }
+
+      // Avoid sending one request for every keystroke.
+      _tagSuggestionDebounce = Timer(
+        const Duration(milliseconds: 450),
+            () => _loadSpecificSuggestedTags(title),
+      );
+    });
+  }
+
+  Future<void> _loadSpecificSuggestedTags(String title) async {
+    final requestId = ++_tagSuggestionRequestId;
+
+    try {
+      final names = await _tagSuggestionRepository.suggestTags(title);
+
+      // Ignore an old response if the user has already typed a newer title.
+      if (!mounted || requestId != _tagSuggestionRequestId) return;
+
+      final uniqueNames = <String>[];
+      final seen = <String>{};
+
+      for (final name in names) {
+        final normalized = name.trim();
+
+        if (normalized.isEmpty) continue;
+
+        final key = normalized.toLowerCase();
+
+        if (seen.add(key)) {
+          uniqueNames.add(normalized);
+        }
+      }
+
+        _specificSuggestedTags = [
+          for (var index = 0; index < uniqueNames.length; index++)
+            ParentTagModel(
+              id: 'suggested_${index}_${uniqueNames[index]}',
+              name: uniqueNames[index],
+              kind: 'SUGGESTED',
+              moderationStatus: 'APPROVED',
+            ),
+        ];
+        availableTags = _specificSuggestedTags;
+    } catch (error) {
+      if (!mounted || requestId != _tagSuggestionRequestId) return;
+
+      debugPrint('SUGGEST TAGS ERROR: $error');
+
+      // Empty means "use the global public tags as fallback".
+        _specificSuggestedTags = <ParentTagModel>[];
+        availableTags = GlobalData.instance.parentTags;
+    }
   }
 
   List<String> get _selectedTagNames {
-    return _tagController.text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty)
-        .toList();
+    return _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
   }
 
   bool _isTagAlreadySelected(ParentTagModel tag) {
-    final selected = _tagController.text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty);
+    final selected = _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty);
 
     return selected.any(
-          (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
+      (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
     );
   }
 
@@ -178,16 +257,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final currentText = _tagController.text.trim();
 
     // Maximum 2 tags.
-    final currentParts = currentText
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty)
-        .toList();
+    final currentParts = currentText.split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
 
     if (currentParts.length >= 2) return;
 
-    final newText = currentText.isEmpty
-        ? tag.name.trim()
-        : '$currentText ${tag.name.trim()}';
+    final newText = currentText.isEmpty ? tag.name.trim() : '$currentText ${tag.name.trim()}';
 
     _tagController.value = TextEditingValue(
       text: newText,
@@ -210,9 +284,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   String get _scheduleDateLabel {
     final today = Jalali.now();
-    final isToday = _selectedDate.year == today.year &&
-        _selectedDate.month == today.month &&
-        _selectedDate.day == today.day;
+    final isToday = _selectedDate.year == today.year && _selectedDate.month == today.month && _selectedDate.day == today.day;
     final prefix = isToday ? 'امروز، ' : '';
     return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
@@ -237,8 +309,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final leadingEmptyCells = _persianWeekStartOffset(firstDay);
     final dates = <Jalali?>[
       for (var i = 0; i < leadingEmptyCells; i++) null,
-      for (var day = 1; day <= firstDay.monthLength; day++)
-        Jalali(month.year, month.month, day),
+      for (var day = 1; day <= firstDay.monthLength; day++) Jalali(month.year, month.month, day),
     ];
     while (dates.length % 7 != 0) {
       dates.add(null);
@@ -257,8 +328,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final monthLabel =
-                '${_persianMonths[sheetMonth.month - 1]} ${sheetMonth.year}';
+            final monthLabel = '${_persianMonths[sheetMonth.month - 1]} ${sheetMonth.year}';
             final canGoPrev = _compareJalaliDate(
                   sheetMonth,
                   Jalali(today.year, today.month, 1),
@@ -325,8 +395,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       padding: EdgeInsets.zero,
                       itemCount: gridDates.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 7,
                         mainAxisSpacing: 6,
                         crossAxisSpacing: 6,
@@ -336,13 +405,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                         final date = gridDates[index];
                         if (date == null) return const SizedBox.shrink();
 
-                        final isSelected = date.year == _selectedDate.year &&
-                            date.month == _selectedDate.month &&
-                            date.day == _selectedDate.day;
+                        final isSelected = date.year == _selectedDate.year && date.month == _selectedDate.month && date.day == _selectedDate.day;
                         final isDisabled = _compareJalaliDate(date, today) < 0;
-                        final isToday = date.year == today.year &&
-                            date.month == today.month &&
-                            date.day == today.day;
+                        final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
 
                         return _CalendarDayCell(
                           date: date,
@@ -354,8 +419,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                               : () {
                                   setState(() {
                                     _selectedDate = date;
-                                    _visibleCalendarMonth =
-                                        Jalali(date.year, date.month, 1);
+                                    _visibleCalendarMonth = Jalali(date.year, date.month, 1);
                                   });
                                   Navigator.of(sheetContext).pop();
                                 },
@@ -409,9 +473,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
     try {
       final taskDate = _toDateTime(_selectedDate);
-      final tagNames = _selectedTags
-          .map((tag) => tag.name)
-          .toList();
+      final tagNames = _selectedTags.map((tag) => tag.name).toList();
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -445,8 +507,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value =
-                  taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
             }
           },
         ),
@@ -470,11 +531,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
       final task = response.data!.createTask;
       final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
-      final subtitle = task.shortDescription?.trim().isNotEmpty == true
-          ? task.shortDescription!.trim()
-          : (task.note?.trim().isNotEmpty == true
-              ? task.note!.trim()
-              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
+      final subtitle = task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (task.note?.trim().isNotEmpty == true ? task.note!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
       final durationSeconds = (task.durationM ?? _selectedMinutes) * 60;
 
       Navigator.of(context).pop(
@@ -512,7 +569,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final sectionSpacing = width < 360 ? 10.0 : 12.0;
 
     return PopScope(
-      onPopInvokedWithResult: (final _, final __){
+      onPopInvokedWithResult: (final _, final __) {
         widget.onBack?.call();
       },
       child: Scaffold(
@@ -545,6 +602,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                           hintText: 'عنوان',
                           controller: _titleController,
                           focusNode: _titleFocusNode,
+                          onChanged: _onTitleChanged,
                         ),
                         SizedBox(height: sectionSpacing),
                         _buildPillField(
@@ -552,8 +610,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                           controller: _descriptionController,
                           focusNode: _descriptionFocusNode,
                           maxLength: 50,
-                          leadingPill:
-                              '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
+                          leadingPill: '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
                         ),
                         SizedBox(height: sectionSpacing),
                         _buildTagSuggestionField(),
@@ -587,9 +644,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                                 background: AppColors.white,
                                 textColor: AppColors.black1,
                                 borderColor: AppColors.gray2,
-                                onTap: _isSubmitting
-                                    ? () {}
-                                    : () => Navigator.of(context).pop(),
+                                onTap: _isSubmitting ? () {} : () => Navigator.of(context).pop(),
                               ),
                             ),
                           ],
@@ -610,27 +665,22 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final isFocused = _tagFocusNode.hasFocus;
 
     return RawAutocomplete<ParentTagModel>(
-      textEditingController: _tagController,
-      focusNode: _tagFocusNode,
+      key: ValueKey(
+        _specificSuggestedTags
+            .map((e) => '${e.id}_${e.name}')
+            .join('|'),
+      ),
 
       optionsBuilder: (TextEditingValue textEditingValue) {
-        final query = textEditingValue.text.trim().toLowerCase();
+        final tags = availableTags;
 
-        // Already have 2 tags.
-        if (_selectedTags.length >= 2) {
-          return const Iterable<ParentTagModel>.empty();
-        }
+        debugPrint(
+          'AVAILABLE TAGS: ${tags.map((e) => e.name).toList()}',
+        );
 
-        return GlobalData.instance.parentTags.where((tag) {
-          // Don't show already selected tags.
-          if (_selectedTags.any(
-                (selected) => selected.id == tag.id,
-          )) {
-            return false;
-          }
+        return tags.where((tag) {
+          final query = textEditingValue.text.trim().toLowerCase();
 
-          // When the user hasn't typed anything,
-          // show all available tags.
           if (query.isEmpty) {
             return true;
           }
@@ -638,9 +688,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
           return tag.name.toLowerCase().contains(query);
         });
       },
-
       displayStringForOption: (ParentTagModel tag) => tag.name,
-
       onSelected: (ParentTagModel tag) {
         if (_selectedTags.length >= 2) return;
 
@@ -654,13 +702,12 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
         // Let the user immediately type the second tag.
         _tagFocusNode.requestFocus();
       },
-
       fieldViewBuilder: (
-          BuildContext context,
-          TextEditingController controller,
-          FocusNode focusNode,
-          VoidCallback onFieldSubmitted,
-          ) {
+        BuildContext context,
+        TextEditingController controller,
+        FocusNode focusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
         return Container(
           constraints: const BoxConstraints(
             minHeight: 55,
@@ -670,18 +717,18 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             borderRadius: BorderRadius.circular(100),
             border: isFocused
                 ? Border.all(
-              color: AppColors.primary,
-              width: 1.4,
-            )
+                    color: AppColors.primary,
+                    width: 1.4,
+                  )
                 : null,
             boxShadow: isFocused
                 ? [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.10),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ]
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.10),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
                 : null,
           ),
           padding: const EdgeInsets.symmetric(
@@ -723,11 +770,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                             textAlign: TextAlign.right,
                             textDirection: TextDirection.rtl,
                             cursorColor: AppColors.primary,
-
                             onChanged: (_) {
                               setState(() {});
                             },
-
                             style: TextStyle(
                               fontFamily: AppFonts.iranSansVar,
                               color: AppColors.black1,
@@ -736,7 +781,6 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                                 FontWeight.w600,
                               ),
                             ),
-
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: 'افزودن تگ',
@@ -757,7 +801,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
                     // Selected tag pills
                     ..._selectedTags.map(
-                          (tag) => _buildSelectedTagChip(tag),
+                      (tag) => _buildSelectedTagChip(tag),
                     ),
                   ],
                 ),
@@ -766,12 +810,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
           ),
         );
       },
-
       optionsViewBuilder: (
-          BuildContext context,
-          AutocompleteOnSelected<ParentTagModel> onSelected,
-          Iterable<ParentTagModel> options,
-          ) {
+        BuildContext context,
+        AutocompleteOnSelected<ParentTagModel> onSelected,
+        Iterable<ParentTagModel> options,
+      ) {
         final items = options.toList();
 
         if (items.isEmpty) {
@@ -860,7 +903,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             onTap: () {
               setState(() {
                 _selectedTags.removeWhere(
-                      (selected) => selected.id == tag.id,
+                  (selected) => selected.id == tag.id,
                 );
               });
 
@@ -872,9 +915,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               color: AppColors.black1.withOpacity(0.45),
             ),
           ),
-
           const SizedBox(width: 5),
-
           ReText(
             '#${tag.name}',
             fontSize: 13,
@@ -942,6 +983,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     required FocusNode focusNode,
     String? leadingPill,
     int? maxLength,
+    ValueChanged<String>? onChanged,
   }) {
     final isFocused = focusNode.hasFocus;
 
@@ -950,8 +992,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       decoration: BoxDecoration(
         color: AppColors.gray1,
         borderRadius: BorderRadius.circular(100),
-        border:
-            isFocused ? Border.all(color: AppColors.primary, width: 1.4) : null,
+        border: isFocused ? Border.all(color: AppColors.primary, width: 1.4) : null,
         boxShadow: isFocused
             ? [
                 BoxShadow(
@@ -996,14 +1037,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               textAlignVertical: TextAlignVertical.center,
               textDirection: TextDirection.rtl,
               cursorColor: AppColors.primary,
-              onTapOutside: (_) =>
-                  FocusManager.instance.primaryFocus?.unfocus(),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               inputFormatters: const [
                 PersianDigitsInputFormatter(),
               ],
-              onChanged: (_) {
-                setState(() {});
-              },
+              onChanged: onChanged,
               style: TextStyle(
                 fontFamily: AppFonts.iranSansVar,
                 color: AppColors.black1,
@@ -1112,8 +1150,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                               convertToPersianNumbers(value.toString()),
                               fontSize: isSelected ? 16 : 13,
                               fontWeight: FontWeight.w400,
-                              color:
-                                  isSelected ? AppColors.white : AppColors.gray,
+                              color: isSelected ? AppColors.white : AppColors.gray,
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -1139,9 +1176,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       decoration: BoxDecoration(
         color: AppColors.gray1,
         borderRadius: BorderRadius.circular(32),
-        border: isFocused
-            ? Border.all(color: AppColors.primary, width: 1.4)
-            : Border.all(color: Colors.transparent),
+        border: isFocused ? Border.all(color: AppColors.primary, width: 1.4) : Border.all(color: Colors.transparent),
       ),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Row(
@@ -1172,8 +1207,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               cursorColor: AppColors.primary,
-              onTapOutside: (_) =>
-                  FocusManager.instance.primaryFocus?.unfocus(),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               inputFormatters: const [
                 PersianDigitsInputFormatter(),
               ],
@@ -1365,6 +1399,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   late FocusNode _descriptionFocusNode;
   late FocusNode _tagFocusNode;
 
+  List<ParentTagModel> availableTags = GlobalData.instance.parentTags;
+
+
   static const List<String> _persianMonths = [
     'فروردین',
     'اردیبهشت',
@@ -1383,6 +1420,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   void initState() {
     super.initState();
+
+    _tagSuggestionRepository = TagSuggestionRepository(
+      context.read<GraphQLRepository>(),
+    );
+
     _selectedDate = Jalali.now();
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     _selectedTime = TimeOfDay.fromDateTime(DateTime.now());
@@ -1396,6 +1438,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   void dispose() {
+    _tagSuggestionDebounce?.cancel();
+    _tagSuggestionRequestId++;
+
     _titleFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
@@ -1413,26 +1458,105 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   final List<ParentTagModel> _selectedTags = [];
 
+  late final TagSuggestionRepository _tagSuggestionRepository;
+  Timer? _tagSuggestionDebounce;
+  int _tagSuggestionRequestId = 0;
+  List<ParentTagModel> _specificSuggestedTags = <ParentTagModel>[];
+
   List<ParentTagModel> get _availableTags {
+    if (_specificSuggestedTags.isNotEmpty) {
+      return _specificSuggestedTags;
+    }
+
     return GlobalData.instance.parentTags;
   }
 
+  void _onTitleChanged(String value) {
+    setState(() {
+      _tagSuggestionDebounce?.cancel();
+
+      final title = value.trim();
+
+      if (title.isEmpty) {
+        _tagSuggestionRequestId++;
+
+        if (mounted) {
+          _specificSuggestedTags = <ParentTagModel>[];
+          availableTags = GlobalData.instance.parentTags;
+        }
+
+        return;
+      }
+
+      // Clear the previous title's suggestions immediately.
+      // Until the new API result arrives, global public tags are used as backup.
+      if (mounted) {
+        _specificSuggestedTags = <ParentTagModel>[];
+        availableTags = GlobalData.instance.parentTags;
+      }
+
+      // Avoid sending one request for every keystroke.
+      _tagSuggestionDebounce = Timer(
+        const Duration(milliseconds: 450),
+            () => _loadSpecificSuggestedTags(title),
+      );
+    });
+  }
+
+  Future<void> _loadSpecificSuggestedTags(String title) async {
+    final requestId = ++_tagSuggestionRequestId;
+
+    try {
+      final names = await _tagSuggestionRepository.suggestTags(title);
+
+      // Ignore an old response if the user has already typed a newer title.
+      if (!mounted || requestId != _tagSuggestionRequestId) return;
+
+      final uniqueNames = <String>[];
+      final seen = <String>{};
+
+      for (final name in names) {
+        final normalized = name.trim();
+
+        if (normalized.isEmpty) continue;
+
+        final key = normalized.toLowerCase();
+
+        if (seen.add(key)) {
+          uniqueNames.add(normalized);
+        }
+      }
+
+      _specificSuggestedTags = [
+        for (var index = 0; index < uniqueNames.length; index++)
+          ParentTagModel(
+            id: 'suggested_${index}_${uniqueNames[index]}',
+            name: uniqueNames[index],
+            kind: 'SUGGESTED',
+            moderationStatus: 'APPROVED',
+          ),
+      ];
+      availableTags = _specificSuggestedTags;
+    } catch (error) {
+      if (!mounted || requestId != _tagSuggestionRequestId) return;
+
+      debugPrint('SUGGEST TAGS ERROR: $error');
+
+      // Empty means "use the global public tags as fallback".
+      _specificSuggestedTags = <ParentTagModel>[];
+      availableTags = GlobalData.instance.parentTags;
+    }
+  }
+
   List<String> get _selectedTagNames {
-    return _tagController.text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty)
-        .toList();
+    return _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
   }
 
   bool _isTagAlreadySelected(ParentTagModel tag) {
-    final selected = _tagController.text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty);
+    final selected = _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty);
 
     return selected.any(
-          (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
+      (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
     );
   }
 
@@ -1442,16 +1566,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final currentText = _tagController.text.trim();
 
     // Maximum 2 tags.
-    final currentParts = currentText
-        .split(RegExp(r'\s+'))
-        .where((value) => value.isNotEmpty)
-        .toList();
+    final currentParts = currentText.split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
 
     if (currentParts.length >= 2) return;
 
-    final newText = currentText.isEmpty
-        ? tag.name.trim()
-        : '$currentText ${tag.name.trim()}';
+    final newText = currentText.isEmpty ? tag.name.trim() : '$currentText ${tag.name.trim()}';
 
     _tagController.value = TextEditingValue(
       text: newText,
@@ -1477,9 +1596,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   String get _scheduleDateLabel {
     final today = Jalali.now();
-    final isToday = _selectedDate.year == today.year &&
-        _selectedDate.month == today.month &&
-        _selectedDate.day == today.day;
+    final isToday = _selectedDate.year == today.year && _selectedDate.month == today.month && _selectedDate.day == today.day;
     final prefix = isToday ? 'امروز، ' : '';
     return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
@@ -1487,8 +1604,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void _selectDateModeDirectly() {
     setState(() {
       _isWeeklyRepeat = false;
-      _visibleCalendarMonth =
-          Jalali(_selectedDate.year, _selectedDate.month, 1);
+      _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     });
     _openCalendarModal();
   }
@@ -1569,8 +1685,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     final description = _descriptionController.text.trim();
     final tags = _tagController.text.trim();
-    final time =
-        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+    final time = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
     setState(() {
       _isSubmitting = true;
@@ -1578,9 +1693,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     try {
       final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
-      final tagNames = _selectedTags
-          .map((tag) => tag.name)
-          .toList();
+      final tagNames = _selectedTags.map((tag) => tag.name).toList();
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -1599,8 +1712,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value =
-                  taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
             }
           },
         ),
@@ -1624,9 +1736,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         <String, dynamic>{
           'id': task.id,
           'title': task.title,
-          'subtitle': task.shortDescription?.trim().isNotEmpty == true
-              ? task.shortDescription!.trim()
-              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
+          'subtitle': task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
           'time': time,
           'status': 'pending',
           'date': _selectedDate,
@@ -1683,6 +1793,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         hintText: 'عنوان',
                         controller: _titleController,
                         focusNode: _titleFocusNode,
+                        onChanged: _onTitleChanged,
                       ),
                       SizedBox(height: sectionSpacing),
                       _buildField(
@@ -1690,8 +1801,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         controller: _descriptionController,
                         focusNode: _descriptionFocusNode,
                         maxLength: 50,
-                        leadingText:
-                            '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
+                        leadingText: '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
                       ),
                       SizedBox(height: sectionSpacing),
                       _buildTagSuggestionField(),
@@ -1745,27 +1855,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final isFocused = _tagFocusNode.hasFocus;
 
     return RawAutocomplete<ParentTagModel>(
-      textEditingController: _tagController,
-      focusNode: _tagFocusNode,
+      key: ValueKey(
+        _specificSuggestedTags
+            .map((e) => '${e.id}_${e.name}')
+            .join('|'),
+      ),
 
       optionsBuilder: (TextEditingValue textEditingValue) {
-        final query = textEditingValue.text.trim().toLowerCase();
+        final tags = availableTags;
 
-        // Already have 2 tags.
-        if (_selectedTags.length >= 2) {
-          return const Iterable<ParentTagModel>.empty();
-        }
+        debugPrint(
+          'AVAILABLE TAGS: ${tags.map((e) => e.name).toList()}',
+        );
 
-        return GlobalData.instance.parentTags.where((tag) {
-          // Don't show already selected tags.
-          if (_selectedTags.any(
-                (selected) => selected.id == tag.id,
-          )) {
-            return false;
-          }
+        return tags.where((tag) {
+          final query = textEditingValue.text.trim().toLowerCase();
 
-          // When the user hasn't typed anything,
-          // show all available tags.
           if (query.isEmpty) {
             return true;
           }
@@ -1773,9 +1878,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           return tag.name.toLowerCase().contains(query);
         });
       },
-
       displayStringForOption: (ParentTagModel tag) => tag.name,
-
       onSelected: (ParentTagModel tag) {
         if (_selectedTags.length >= 2) return;
 
@@ -1789,7 +1892,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         // Let the user immediately type the second tag.
         _tagFocusNode.requestFocus();
       },
-
       fieldViewBuilder: (
           BuildContext context,
           TextEditingController controller,
@@ -1858,11 +1960,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                             textAlign: TextAlign.right,
                             textDirection: TextDirection.rtl,
                             cursorColor: AppColors.primary,
-
                             onChanged: (_) {
                               setState(() {});
                             },
-
                             style: TextStyle(
                               fontFamily: AppFonts.iranSansVar,
                               color: AppColors.black1,
@@ -1871,7 +1971,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                                 FontWeight.w600,
                               ),
                             ),
-
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: 'افزودن تگ',
@@ -1901,7 +2000,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           ),
         );
       },
-
       optionsViewBuilder: (
           BuildContext context,
           AutocompleteOnSelected<ParentTagModel> onSelected,
@@ -1995,7 +2093,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             onTap: () {
               setState(() {
                 _selectedTags.removeWhere(
-                      (selected) => selected.id == tag.id,
+                  (selected) => selected.id == tag.id,
                 );
               });
 
@@ -2007,9 +2105,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               color: AppColors.black1.withOpacity(0.45),
             ),
           ),
-
           const SizedBox(width: 5),
-
           ReText(
             '#${tag.name}',
             fontSize: 13,
@@ -2077,6 +2173,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     required FocusNode focusNode,
     String? leadingText,
     int? maxLength,
+    ValueChanged<String>? onChanged,
   }) {
     final isFocused = focusNode.hasFocus;
 
@@ -2127,14 +2224,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               textAlignVertical: TextAlignVertical.center,
               textDirection: TextDirection.rtl,
               cursorColor: AppColors.primary,
-              onTapOutside: (_) =>
-                  FocusManager.instance.primaryFocus?.unfocus(),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               inputFormatters: const [
                 PersianDigitsInputFormatter(),
               ],
-              onChanged: (_) {
-                setState(() {});
-              },
+              onChanged: onChanged,
               style: TextStyle(
                 fontFamily: AppFonts.iranSansVar,
                 color: AppColors.black1,
@@ -2216,25 +2310,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           height: 28,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: _isReminderEnabled
-                ? AppColors.primary.withOpacity(0.25)
-                : AppColors.gray2,
+            color: _isReminderEnabled ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
             borderRadius: BorderRadius.circular(100),
           ),
           child: AnimatedAlign(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
-            alignment: _isReminderEnabled
-                ? Alignment.centerRight
-                : Alignment.centerLeft,
+            alignment: _isReminderEnabled ? Alignment.centerRight : Alignment.centerLeft,
             child: Container(
               width: 20,
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _isReminderEnabled
-                    ? AppColors.primary
-                    : AppColors.dark4Color,
+                color: _isReminderEnabled ? AppColors.primary : AppColors.dark4Color,
               ),
             ),
           ),
@@ -2300,8 +2388,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
     final leadingEmptyCells = _persianWeekStartOffset(firstDay);
     final dates = <Jalali?>[
       for (var i = 0; i < leadingEmptyCells; i++) null,
-      for (var day = 1; day <= firstDay.monthLength; day++)
-        Jalali(visibleMonth.year, visibleMonth.month, day),
+      for (var day = 1; day <= firstDay.monthLength; day++) Jalali(visibleMonth.year, visibleMonth.month, day),
     ];
     while (dates.length % 7 != 0) {
       dates.add(null);
@@ -2337,9 +2424,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
                     'تاریخ',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDateModeSelected
-                        ? AppColors.black1
-                        : AppColors.dark7Color,
+                    color: isDateModeSelected ? AppColors.black1 : AppColors.dark7Color,
                   ),
                   const SizedBox(width: 8),
                   _RadioDot(isSelected: isDateModeSelected),
@@ -2375,9 +2460,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
                       'تـکــــرار هفتگی',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isWeeklyRepeat
-                          ? AppColors.black1
-                          : AppColors.dark7Color,
+                      color: isWeeklyRepeat ? AppColors.black1 : AppColors.dark7Color,
                     ),
                     const SizedBox(width: 8),
                     _RadioDot(isSelected: isWeeklyRepeat).bMargin(8),
@@ -2391,7 +2474,7 @@ class _ScheduleSelectionCard extends StatelessWidget {
     );
   }
 
-  // Calendar UI now opens in a modal sheet to match the design.
+// Calendar UI now opens in a modal sheet to match the design.
 }
 
 class _SelectedDateSummary extends StatelessWidget {
@@ -2502,12 +2585,8 @@ class _CalendarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected
-        ? AppColors.primary
-        : (isToday ? AppColors.primary.withOpacity(0.45) : AppColors.gray2);
-    final textColor = isSelected
-        ? AppColors.white
-        : (isDisabled ? AppColors.dark5Color : AppColors.black1);
+    final borderColor = isSelected ? AppColors.primary : (isToday ? AppColors.primary.withOpacity(0.45) : AppColors.gray2);
+    final textColor = isSelected ? AppColors.white : (isDisabled ? AppColors.dark5Color : AppColors.black1);
 
     return GestureDetector(
       onTap: onTap,
@@ -2616,9 +2695,7 @@ class _CircleCheckbox extends StatelessWidget {
       height: 22,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isChecked
-            ? AppColors.primary.withOpacity(0.12)
-            : Colors.transparent,
+        color: isChecked ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
         border: Border.all(
           color: isChecked ? AppColors.primary : AppColors.dark4Color,
           width: 1.2,
@@ -2659,8 +2736,7 @@ class _ReminderSwitch extends StatelessWidget {
           height: 28,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color:
-                value ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
+            color: value ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
             borderRadius: BorderRadius.circular(100),
           ),
           child: AnimatedAlign(
@@ -2694,12 +2770,10 @@ class _ThreeColumnJalaliDatePickerSheet extends StatefulWidget {
   final List<String> monthNames;
 
   @override
-  State<_ThreeColumnJalaliDatePickerSheet> createState() =>
-      _ThreeColumnJalaliDatePickerSheetState();
+  State<_ThreeColumnJalaliDatePickerSheet> createState() => _ThreeColumnJalaliDatePickerSheetState();
 }
 
-class _ThreeColumnJalaliDatePickerSheetState
-    extends State<_ThreeColumnJalaliDatePickerSheet> {
+class _ThreeColumnJalaliDatePickerSheetState extends State<_ThreeColumnJalaliDatePickerSheet> {
   static const double _wheelItemExtent = 56.0;
   static const double _dayChipSize = 46.0;
   static const double _yearChipSize = 54.0;
@@ -2770,8 +2844,7 @@ class _ThreeColumnJalaliDatePickerSheetState
     return a.day.compareTo(b.day);
   }
 
-  Jalali get _selectedDate =>
-      Jalali(_selectedYear, _selectedMonth, _selectedDay);
+  Jalali get _selectedDate => Jalali(_selectedYear, _selectedMonth, _selectedDay);
 
   bool get _canSubmit => _compareJalaliDate(_selectedDate, widget.minDate) >= 0;
 
@@ -2909,9 +2982,7 @@ class _ThreeColumnJalaliDatePickerSheetState
                           child: Container(
                             width: 64,
                             height: 48,
-                            decoration: BoxDecoration(
-                                color: AppColors.black1,
-                                borderRadius: BorderRadius.circular(100)),
+                            decoration: BoxDecoration(color: AppColors.black1, borderRadius: BorderRadius.circular(100)),
                             alignment: Alignment.center,
                             child: ReText(
                               convertToPersianNumbers(_selectedDay.toString()),

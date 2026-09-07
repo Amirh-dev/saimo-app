@@ -73,10 +73,12 @@ Future<void> main() async {
 
   debugPrint(
     "ACCESS TOKEN: -> "
-    "${tokenStorage.currentAccessToken} <-",
+        "${tokenStorage.currentAccessToken} <-",
   );
 
-  globalDataRepository.loadParentTags();
+  // Load public tags before the app starts so they are available
+  // as the fallback for title-based tag suggestions.
+  await globalDataRepository.loadParentTags();
 
   final tags = GlobalData.instance.parentTags;
 

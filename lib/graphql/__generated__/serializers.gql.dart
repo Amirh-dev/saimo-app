@@ -270,6 +270,12 @@ import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.re
     show GStatisticsDashboardReq;
 import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.var.gql.dart'
     show GStatisticsDashboardVars;
+import 'package:simo_learn/graphql/queries/__generated__/suggest_tag.data.gql.dart'
+    show GSuggestTagsData;
+import 'package:simo_learn/graphql/queries/__generated__/suggest_tag.req.gql.dart'
+    show GSuggestTagsReq;
+import 'package:simo_learn/graphql/queries/__generated__/suggest_tag.var.gql.dart'
+    show GSuggestTagsVars;
 
 part 'serializers.gql.g.dart';
 
@@ -424,6 +430,9 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GStatisticsDashboardReq,
   GStatisticsDashboardVars,
   GSubmitCounselorReviewInput,
+  GSuggestTagsData,
+  GSuggestTagsReq,
+  GSuggestTagsVars,
   GTagKeywordWhereInput,
   GTagKind,
   GTagModerationStatus,

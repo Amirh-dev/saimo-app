@@ -36,7 +36,9 @@ class ReEmptyList extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-                Container(
+              GestureDetector(
+                onTap: onTap,
+                child: Container(
                   margin: const EdgeInsets.only(right: 20),
                   width: 72,
                   height: 48,
@@ -52,6 +54,7 @@ class ReEmptyList extends StatelessWidget {
                     icon,
                     size: 18,
                     color: AppColors.primary,
+                  ),
                 ),
               ),
               Column(
@@ -75,14 +78,6 @@ class ReEmptyList extends StatelessWidget {
         ],
       ),
     );
-
-    if (onTap != null) {
-      content = GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: content,
-      );
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(

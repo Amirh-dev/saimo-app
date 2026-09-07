@@ -37,6 +37,12 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   late AnimationController _animationController;
   late AnimationController _slideAnimationController;
 
+  // Add Menu Animation Controllers
+  bool _isAddMenuOpen = false;
+  late AnimationController _menuAnimationController;
+  late Animation<double> _menuScaleAnimation;
+  late Animation<double> _menuOpacityAnimation;
+
   List<Map<String, dynamic>> _checklistTasks = [];
   List<Map<String, dynamic>> _timedTasks = [];
   final TaskTimerService _timer = TaskTimerService.instance;
@@ -80,6 +86,17 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     _animationController.value = 1.0;
     _slideAnimationController.value = 1.0;
 
+    _menuAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _menuScaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(parent: _menuAnimationController, curve: Curves.easeOutCubic),
+    );
+    _menuOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _menuAnimationController, curve: Curves.easeOut),
+    );
+
     _checklistDotsScrollController = ScrollController();
     _checklistCardsScrollController = ScrollController();
 
@@ -111,7 +128,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       _isSyncingChecklistScroll = false;
     });
 
-    // Rebuild this screen on every tick of the global timer.
     _timer.addListener(_onGlobalTimerChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,13 +138,70 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   @override
   void dispose() {
-    // Only stop listening. The timer itself keeps running.
     _timer.removeListener(_onGlobalTimerChanged);
     _checklistDotsScrollController.dispose();
     _checklistCardsScrollController.dispose();
     _animationController.dispose();
     _slideAnimationController.dispose();
+    _menuAnimationController.dispose();
     super.dispose();
+  }
+
+  void _toggleAddMenu() {
+    setState(() {
+      _isAddMenuOpen = !_isAddMenuOpen;
+      if (_isAddMenuOpen) {
+        _menuAnimationController.forward();
+      } else {
+        _menuAnimationController.reverse();
+      }
+    });
+  }
+
+  Widget _buildMenuItem({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 204,
+        height: 56,
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black1.withOpacity(0.08),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Icon(Icons.add, size: 16, color: AppColors.gray),
+            Row(
+              children: [
+                ReText(
+                  title,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.black1,
+                ),
+                const SizedBox(width: 10),
+                Icon(icon, size: 16, color: AppColors.black1),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Jalali> get _weekDaysList {
@@ -270,15 +343,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final taskId = task['id'] as String?;
 
     if (taskId == null || taskId.isEmpty) {
-      showReToast(
-        context,
-        'شناسه تسک پیدا نشد',
-        ReToastType.failed,
-      );
+      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
       return;
     }
 
-    // Don't send the request again if it's already completed.
     if (task['status'] == 'done') return;
 
     try {
@@ -294,27 +362,17 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
+        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
 
-      // API succeeded -> update UI.
       setState(() {
         task['previousStatus'] = task['status'] ?? 'pending';
         task['status'] = 'done';
       });
     } catch (error) {
       if (!mounted) return;
-
-      showReToast(
-        context,
-        error.toString(),
-        ReToastType.failed,
-      );
+      showReToast(context, error.toString(), ReToastType.failed);
     }
   }
 
@@ -325,11 +383,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final taskId = task['id'] as String?;
 
     if (taskId == null || taskId.isEmpty) {
-      showReToast(
-        context,
-        'شناسه تسک پیدا نشد',
-        ReToastType.failed,
-      );
+      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
       return;
     }
 
@@ -345,11 +399,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       if (!mounted) return;
 
       if (response.hasErrors) {
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
+        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
 
@@ -357,19 +407,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         _checklistTasks.removeAt(index);
       });
 
-      showReToast(
-        context,
-        'تسک حذف شد',
-        ReToastType.success,
-      );
+      showReToast(context, 'تسک حذف شد', ReToastType.success);
     } catch (error) {
       if (!mounted) return;
-
-      showReToast(
-        context,
-        error.toString(),
-        ReToastType.failed,
-      );
+      showReToast(context, error.toString(), ReToastType.failed);
     }
   }
 
@@ -380,45 +421,20 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final taskId = task['id'] as String?;
 
     if (taskId == null || taskId.isEmpty) {
-      showReToast(
-        context,
-        'شناسه تسک پیدا نشد',
-        ReToastType.failed,
-      );
+      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
       return;
     }
 
     final now = DateTime.now();
-
-    final today = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
-
+    final today = DateTime(now.year, now.month, now.day);
     final currentDateValue = task['date'];
 
-    if (currentDateValue == null) {
-      // If there is no date, treat it as needing to be added today.
-    } else {
-      final currentDate = DateTime.tryParse(
-        currentDateValue.toString(),
-      );
-
+    if (currentDateValue != null) {
+      final currentDate = DateTime.tryParse(currentDateValue.toString());
       if (currentDate != null) {
-        final taskDay = DateTime(
-          currentDate.toLocal().year,
-          currentDate.toLocal().month,
-          currentDate.toLocal().day,
-        );
-
-        // Already today.
+        final taskDay = DateTime(currentDate.toLocal().year, currentDate.toLocal().month, currentDate.toLocal().day);
         if (taskDay == today) {
-          showReToast(
-            context,
-            'این تسک برای امروز است',
-            ReToastType.info,
-          );
+          showReToast(context, 'این تسک برای امروز است', ReToastType.info);
           return;
         }
       }
@@ -429,9 +445,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         GUpdateTaskReq(
               (request) {
             request.vars.id = taskId;
-
             final todayRfc3339 = today.toUtc().toIso8601String();
-
             request.vars.input.date.value = todayRfc3339;
           },
         ),
@@ -440,11 +454,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
+        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
 
@@ -452,19 +462,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         task['date'] = today.toIso8601String();
       });
 
-      showReToast(
-        context,
-        'تسک به امروز اضافه شد',
-        ReToastType.success,
-      );
+      showReToast(context, 'تسک به امروز اضافه شد', ReToastType.success);
     } catch (error) {
       if (!mounted) return;
-
-      showReToast(
-        context,
-        error.toString(),
-        ReToastType.failed,
-      );
+      showReToast(context, error.toString(), ReToastType.failed);
     }
   }
 
@@ -472,15 +473,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     return _expandedChecklistTaskIndex == index ? _checklistItemExpandedHeight : _checklistItemCollapsedHeight;
   }
 
-  /// Called on every tick / state change of the global timer.
-  /// The `mounted` guard is what prevents "setState() called after dispose()".
   void _onGlobalTimerChanged() {
     if (!mounted) return;
     setState(() {});
   }
 
-  /// The status to render for a timed task: the global timer wins for the
-  /// task it currently owns, otherwise we fall back to the server value.
   String _timedTaskStatus(Map<String, dynamic> task) {
     final id = task['id'] as String?;
     if (_timer.isActive(id)) {
@@ -489,16 +486,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     }
 
     final status = task['status'] as String? ?? 'pending';
-
-    // Only one task can ever be running. If the service has moved on to
-    // another task, this row cannot still be 'running', no matter what the
-    // last server payload said.
     if (status == 'running' && _timer.hasActiveTask) return 'paused';
 
     return status;
   }
 
-  /// Remaining seconds to render for a timed task, same precedence.
   int _timedTaskRemainingSeconds(Map<String, dynamic> task) {
     final id = task['id'] as String?;
     if (_timer.isActive(id)) return _timer.remainingSeconds;
@@ -692,11 +684,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     }
   }
 
-  Widget _buildTaskTile(
-      BuildContext context,
-      Map<String, dynamic> task,
-      int index,
-      ) {
+  Widget _buildTaskTile(BuildContext context, Map<String, dynamic> task, int index) {
     const padding = 16.0;
     const titleSize = 14.0;
     const subtitleSize = 10.0;
@@ -748,7 +736,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                   fontSize: titleSize,
                                   fontWeight: FontWeight.w900,
                                   color: AppColors.black1,
-                                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
                                 ),
                                 const SizedBox(height: 2),
                                 ReText(
@@ -760,7 +747,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                     0.25,
                                   ),
                                   fontWeight: FontWeight.w600,
-                                  decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
                                 ),
                               ],
                             ),
@@ -824,11 +810,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildTaskList(
-      BuildContext context,
-      List<Map<String, dynamic>> tasks,
-      bool isTimeTask,
-      ) {
+  Widget _buildTaskList(BuildContext context, List<Map<String, dynamic>> tasks, bool isTimeTask) {
     if (tasks.isEmpty) {
       return ReEmptyList(
         title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
@@ -852,7 +834,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Task cards
               Expanded(
                 child: ListView.builder(
                   controller: _checklistCardsScrollController,
@@ -871,8 +852,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // Dots timeline
               SizedBox(
                 width: 50,
                 child: ListView.builder(
@@ -985,13 +964,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     if (id == null) return;
     if (_timedTaskStatus(task) == 'done') return;
 
-    // Pause the task that is already running in the global timer.
     if (_timer.isRunningTask(id)) {
       await _timer.pause();
       return;
     }
 
-    // Starting another task: stop the current one first.
     if (_timer.isRunning) {
       await _timer.pause();
     }
@@ -1006,10 +983,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     await _timer.start();
   }
 
-  Widget _buildTimedConnector({
-    required bool visible,
-    required double height,
-  }) {
+  Widget _buildTimedConnector({required bool visible, required double height}) {
     if (!visible) return SizedBox(height: height);
 
     const segmentHeight = 3.0;
@@ -1072,7 +1046,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                     color: color.withOpacity(0.12),
                   ),
                   child: Icon(
-                    // _timedTaskMarkerIcon(status),
                     status == 'done' ? Icons.check : Icons.timer_outlined,
                     size: 12,
                     color: color,
@@ -1111,7 +1084,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
     final status = _timedTaskStatus(task);
     final color = _timedTaskColor(status);
-    final progress = _timedTaskRemainingProgress(task);
     final hasProgress = _timedTaskShowsProgress(task);
     final isDone = status == 'done';
     final isExpanded = _expandedTimedTaskIndex == index;
@@ -1159,7 +1131,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                 textDirection: TextDirection.ltr,
                 children: [
                   GestureDetector(
-                    // onTap: () => _toggleTimedTaskActions(index),
                     behavior: HitTestBehavior.opaque,
                     child: AnimatedRotation(
                       duration: _taskExpansionDuration,
@@ -1176,7 +1147,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   Expanded(
                     flex: 6,
                     child: GestureDetector(
-                      // onTap: () => _toggleTimedTaskActions(index),
                       behavior: HitTestBehavior.opaque,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1187,7 +1157,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                             fontSize: titleSize,
                             fontWeight: FontWeight.w900,
                             color: AppColors.black1,
-                            decoration: isDone ? TextDecoration.lineThrough : null,
                           ),
                           const SizedBox(height: 2),
                           ReText(
@@ -1199,7 +1168,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                               0.25,
                             ),
                             fontWeight: FontWeight.w600,
-                            decoration: isDone ? TextDecoration.lineThrough : null,
                           ),
                         ],
                       ),
@@ -1207,7 +1175,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   ),
                   const SizedBox(width: 12),
                   status == 'done' ? const SizedBox() : GestureDetector(
-                    // onTap: () => _toggleTimedTaskTimer(index),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1274,48 +1241,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                 ),
               ),
             ],
-            // ClipRect(
-            //   child: AnimatedAlign(
-            //     duration: _taskExpansionDuration,
-            //     curve: Curves.easeOutCubic,
-            //     alignment: Alignment.topCenter,
-            //     heightFactor: isExpanded ? 1 : 0,
-            //     child: AnimatedOpacity(
-            //       duration: _taskExpansionDuration,
-            //       curve: Curves.easeOutCubic,
-            //       opacity: isExpanded ? 1 : 0,
-            //       child: Padding(
-            //         padding: const EdgeInsets.only(top: 10),
-            //         child: Row(
-            //           children: [
-            //             Expanded(
-            //               child: _TaskItemActionButton(
-            //                 text: status == 'running' ? 'توقف' : 'شروع',
-            //                 textColor: AppColors.primary,
-            //                 background: const Color(0xFFFBEAE5),
-            //                 icon: status == 'running' ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            //                 iconColor: AppColors.primary,
-            //                 onTap: () => _toggleTimedTaskTimer(index),
-            //               ),
-            //             ),
-            //             const SizedBox(width: 10),
-            //             Expanded(
-            //               child: _TaskItemActionButton(
-            //                 text: 'حذف تسک',
-            //                 textColor: AppColors.black1,
-            //                 background: AppColors.white,
-            //                 borderColor: AppColors.gray2,
-            //                 icon: SolarIconsOutline.trashBinMinimalistic,
-            //                 iconColor: AppColors.dark5Color,
-            //                 onTap: () => _requestDeleteTimedTask(index),
-            //               ),
-            //             ),
-            //           ],
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -1365,7 +1290,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-
     return DefaultTabController(
       length: 2,
       initialIndex: 1,
@@ -1411,94 +1335,148 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                 ),
               ),
             ),
-            Builder(
-              builder: (tabContext) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        final controller = DefaultTabController.maybeOf(tabContext);
-                        if (controller != null && controller.index == 1) {
-                          _openAddTimedTaskScreen();
-                          return;
-                        }
-                        _openAddTaskScreen();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.gray2),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.add,
-                              size: 18,
-                              color: AppColors.primary,
-                            ).rMargin(6),
-                            const ReText(
-                              'افزودن تسک',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: AppColors.black1,
+            Expanded(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Main Scrollable and Tabbable Layout
+                  Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: _toggleAddMenu,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _isAddMenuOpen ? AppColors.primary : Colors.transparent,
+                                border: Border.all(
+                                  color: _isAddMenuOpen ? AppColors.primary : AppColors.gray2,
+                                ),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    size: 18,
+                                    color: _isAddMenuOpen ? AppColors.white : AppColors.primary,
+                                  ).rMargin(6),
+                                  ReText(
+                                    'افزودن تسک',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: _isAddMenuOpen ? AppColors.white : AppColors.black1,
+                                  ),
+                                ],
+                              ),
                             ),
+                          ),
+                          const ReText(
+                            'تسک های امروز',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.black1,
+                          ),
+                        ],
+                      ).hMargin(32).tMargin(16),
+                      const SizedBox(height: 16),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.gray2,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: TabBar(
+                          dividerColor: Colors.transparent,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicator: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          labelColor: AppColors.black1,
+                          unselectedLabelColor: AppColors.gray,
+                          labelStyle: TextStyle(
+                            fontFamily: AppFonts.iranSansVar,
+                            fontVariations: AppFonts.fontVariations(FontWeight.w900),
+                            fontSize: 14,
+                          ),
+                          unselectedLabelStyle: TextStyle(
+                            fontFamily: AppFonts.iranSansVar,
+                            fontVariations: AppFonts.fontVariations(FontWeight.w500),
+                            fontSize: 14,
+                          ),
+                          tabs: const [
+                            Tab(text: 'چک لیست'),
+                            Tab(text: 'زمان دار'),
                           ],
                         ),
                       ),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            _buildTaskList(context, _checklistTasks, false),
+                            _buildTimedTaskList(context),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Invisible Full Screen Blocker to Dismiss the Dropdown
+                  if (_isAddMenuOpen)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: _toggleAddMenu,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          color: Colors.transparent,
+                        ),
+                      ),
                     ),
-                    const ReText(
-                      'تسک های امروز',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.black1,
+
+                  // Floating Expanding Menu Options
+                  if (_isAddMenuOpen)
+                    Positioned(
+                      left: 32,
+                      top: 64, // Positioned slightly below the Add Task button
+                      child: FadeTransition(
+                        opacity: _menuOpacityAnimation,
+                        child: ScaleTransition(
+                          scale: _menuScaleAnimation,
+                          alignment: Alignment.topLeft,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildMenuItem(
+                                title: 'تسک زمان دار',
+                                icon: IconsaxPlusLinear.timer_1,
+                                onTap: () {
+                                  if(_isAddMenuOpen){
+                                    _toggleAddMenu();
+                                    _openAddTimedTaskScreen();
+                                  }
+                                },
+                              ),
+                              _buildMenuItem(
+                                title: 'چک لیست',
+                                icon: IconsaxPlusLinear.tick_square,
+                                onTap: () {
+                                  _toggleAddMenu();
+                                  _openAddTaskScreen();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
-                ).hMargin(32).tMargin(16);
-              },
-            ),
-            const SizedBox(height: 16),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.gray2,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TabBar(
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                labelColor: AppColors.black1,
-                unselectedLabelColor: AppColors.gray,
-                labelStyle: TextStyle(
-                  fontFamily: AppFonts.iranSansVar,
-                  fontVariations: AppFonts.fontVariations(FontWeight.w900),
-                  fontSize: 14,
-                ),
-                unselectedLabelStyle: TextStyle(
-                  fontFamily: AppFonts.iranSansVar,
-                  fontVariations: AppFonts.fontVariations(FontWeight.w500),
-                  fontSize: 14,
-                ),
-                tabs: const [
-                  Tab(text: 'چک لیست'),
-                  Tab(text: 'زمان دار'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildTaskList(context, _checklistTasks, false),
-                  _buildTimedTaskList(context),
                 ],
               ),
             ),
@@ -1596,7 +1574,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
-                          primaryColor: AppColors.black1, // Override primary color
+                          primaryColor: AppColors.black1,
                           colorScheme: const ColorScheme(
                             brightness: Brightness.light,
                             primary: AppColors.black1,
@@ -1608,7 +1586,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                             surface: AppColors.white,
                             onSurface: AppColors.gray,
                           ),
-                          // Add more customization here
                         ),
                         child: child!,
                       );
@@ -1739,24 +1716,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
               ),
             ],
           ),
-          // Container(
-          //   margin: const EdgeInsets.only(left: 50),
-          //   alignment: Alignment.topRight,
-          //   width: 50,
-          //   height: 80,
-          //   decoration: BoxDecoration(
-          //       gradient: LinearGradient(
-          //           begin: Alignment.centerRight,
-          //           stops: const [0, 0.8],
-          //           end: Alignment.centerLeft,
-          //           colors: [
-          //             const Color(0xFFEBECF0).withOpacity(0.0),
-          //             const Color(0xFFEBECF0),
-          //           ]),
-          //       borderRadius: const BorderRadius.only(
-          //           topLeft: Radius.circular(100),
-          //           bottomLeft: Radius.circular(100))),
-          // )
         ],
       ),
     );

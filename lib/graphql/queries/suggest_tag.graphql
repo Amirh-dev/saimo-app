@@ -1,0 +1,3 @@
+query SuggestTags($title: String!) {
+  suggestTags(title: $title)
+}

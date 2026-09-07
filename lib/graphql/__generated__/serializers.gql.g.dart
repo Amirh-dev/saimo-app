@@ -161,6 +161,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GStatisticsDashboardReq.serializer)
       ..add(GStatisticsDashboardVars.serializer)
       ..add(GSubmitCounselorReviewInput.serializer)
+      ..add(GSuggestTagsData.serializer)
+      ..add(GSuggestTagsReq.serializer)
+      ..add(GSuggestTagsVars.serializer)
       ..add(GTagKeywordWhereInput.serializer)
       ..add(GTagKind.serializer)
       ..add(GTagModerationStatus.serializer)
@@ -1360,6 +1363,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
           () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
