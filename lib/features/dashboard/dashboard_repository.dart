@@ -155,6 +155,7 @@ class DashboardTask {
 
 class DashboardTaskItem {
   const DashboardTaskItem({
+    required this.id,
     required this.title,
     required this.percentage,
     required this.doneDuration,
@@ -162,6 +163,7 @@ class DashboardTaskItem {
     required this.durationText,
   });
 
+  final String id;
   final String title;
   final double percentage;
   final int doneDuration;
@@ -170,6 +172,7 @@ class DashboardTaskItem {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'title': title,
       'percentage': percentage,
       'doneDuration': doneDuration,

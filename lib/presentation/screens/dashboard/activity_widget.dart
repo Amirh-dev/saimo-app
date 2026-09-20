@@ -4,6 +4,7 @@ import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -328,6 +329,9 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
 
     return GestureDetector(
       key: itemKey,
+      onDoubleTap: isEmpty
+          ? widget.onAddTap
+          : () => Navigator.of(context).push(MaterialPageRoute(builder: (final _) => TaskTimerScreen(task: task, onPop: (){}))),
       onTap: isEmpty
           ? widget.onAddTap
           : () => _showSmartPopup(

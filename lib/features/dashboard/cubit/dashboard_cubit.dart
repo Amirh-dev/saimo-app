@@ -53,6 +53,7 @@ class DashboardCubit extends Cubit<DashboardState> {
           clearError: true,
         ),
       );
+      debugPrint(tasks.map((e) => e.toMap()).toList().toString());
     } catch (error) {
       emit(
         state.copyWith(
@@ -145,6 +146,7 @@ class DashboardCubit extends Cubit<DashboardState> {
 
     return DashboardTaskItem(
       title: task.title,
+      id: task.id,
       percentage: percentage,
       doneDuration:
       (elapsedSeconds / 60).floor(),
