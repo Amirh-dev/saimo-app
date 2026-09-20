@@ -1004,16 +1004,20 @@ input CreateGroupChatInput {
   memberIDs: [UUID!]!
 }
 
+input RecurrenceInput {
+  weekdays: [String!]!
+}
+
 input CreateTaskInput {
   title: String!
   shortDescription: String
   type: TaskType
   note: String
-  date: Time!
+  date: Time
   durationM: Int
   hasReminder: Boolean
   reminderTime: Time
-  recurringDays: String
+  recurrence: RecurrenceInput
   goalID: ID
   tagNames: [String!]
   subjectTagID: ID
@@ -2555,7 +2559,7 @@ input UpdateTaskInput {
   durationM: Int
   hasReminder: Boolean
   reminderTime: Time
-  recurringDays: String
+  recurrence: RecurrenceInput
   status: TaskStatus
   goalID: ID
   tagNames: [String!]

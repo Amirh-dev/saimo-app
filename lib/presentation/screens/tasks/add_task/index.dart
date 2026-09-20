@@ -51,10 +51,8 @@ const List<WeekDayOption> _weekDayOptions = [
   WeekDayOption('FRI', 'جمعه'),
 ];
 
-String? _recurringDaysValue(Set<String> selectedDays) {
-  if (selectedDays.isEmpty) return null;
-  final ordered = _weekDayOptions.map((day) => day.code).where(selectedDays.contains);
-  return ordered.join(',');
+List<String> _recurrenceWeekdays(Set<String> selectedDays) {
+  return _weekDayOptions.map((day) => day.code).where(selectedDays.contains).toList();
 }
 
 class AddTimedTaskScreen extends StatefulWidget {
@@ -383,17 +381,16 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ..shortDescription = _emptyToNull(description)
               ..type = GTaskType.TIMED
               ..note = _emptyToNull(note)
-              ..date.value = taskDate.toUtc().toIso8601String()
               ..durationM = _selectedMinutes
               ..hasReminder = _isReminderEnabled
               ..tagNames.addAll(tagNames);
 
-            if (_isWeeklyRepeat) {
-              final recurringDays = _recurringDaysValue(_selectedWeekDays);
-
-              if (recurringDays != null) {
-                request.vars.input.recurringDays = recurringDays;
-              }
+            // The server requires exactly one of `date` or `recurrence`.
+            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            if (weekdays.isNotEmpty) {
+              request.vars.input.recurrence.weekdays.replace(weekdays);
+            } else {
+              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
             }
 
             final goalId = _emptyToNull(widget.goalId ?? '');
@@ -1475,10 +1472,16 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ..title = _titleController.text.trim()
               ..shortDescription = _emptyToNull(description)
               ..type = GTaskType.NORMAL
-              ..date.value = taskDate.toUtc().toIso8601String()
               ..hasReminder = _isReminderEnabled
-              ..recurringDays = _isWeeklyRepeat ? _recurringDaysValue(_selectedWeekDays) : null
               ..tagNames.addAll(tagNames);
+
+            // The server requires exactly one of `date` or `recurrence`.
+            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            if (weekdays.isNotEmpty) {
+              request.vars.input.recurrence.weekdays.replace(weekdays);
+            } else {
+              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
+            }
 
             final goalId = _emptyToNull(widget.goalId ?? '');
             if (goalId != null) {

@@ -6418,6 +6418,24 @@ const CreateGroupChatInput = _i1.InputObjectTypeDefinitionNode(
     ),
   ],
 );
+const RecurrenceInput = _i1.InputObjectTypeDefinitionNode(
+  name: _i1.NameNode(value: 'RecurrenceInput'),
+  directives: [],
+  fields: [
+    _i1.InputValueDefinitionNode(
+      name: _i1.NameNode(value: 'weekdays'),
+      directives: [],
+      type: _i1.ListTypeNode(
+        type: _i1.NamedTypeNode(
+          name: _i1.NameNode(value: 'String'),
+          isNonNull: true,
+        ),
+        isNonNull: true,
+      ),
+      defaultValue: null,
+    )
+  ],
+);
 const CreateTaskInput = _i1.InputObjectTypeDefinitionNode(
   name: _i1.NameNode(value: 'CreateTaskInput'),
   directives: [],
@@ -6463,7 +6481,7 @@ const CreateTaskInput = _i1.InputObjectTypeDefinitionNode(
       directives: [],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'Time'),
-        isNonNull: true,
+        isNonNull: false,
       ),
       defaultValue: null,
     ),
@@ -6495,10 +6513,10 @@ const CreateTaskInput = _i1.InputObjectTypeDefinitionNode(
       defaultValue: null,
     ),
     _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'recurringDays'),
+      name: _i1.NameNode(value: 'recurrence'),
       directives: [],
       type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'String'),
+        name: _i1.NameNode(value: 'RecurrenceInput'),
         isNonNull: false,
       ),
       defaultValue: null,
@@ -17237,10 +17255,10 @@ const UpdateTaskInput = _i1.InputObjectTypeDefinitionNode(
       defaultValue: null,
     ),
     _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'recurringDays'),
+      name: _i1.NameNode(value: 'recurrence'),
       directives: [],
       type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'String'),
+        name: _i1.NameNode(value: 'RecurrenceInput'),
         isNonNull: false,
       ),
       defaultValue: null,
@@ -19709,6 +19727,7 @@ const document = _i1.DocumentNode(definitions: [
   CreateDirectChatInput,
   CreateGoalInput,
   CreateGroupChatInput,
+  RecurrenceInput,
   CreateTaskInput,
   Cursor,
   DailyStatisticsBucket,

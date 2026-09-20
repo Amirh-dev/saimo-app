@@ -859,6 +859,8 @@ Serializer<GCreateGoalInput> _$gCreateGoalInputSerializer =
     _$GCreateGoalInputSerializer();
 Serializer<GCreateGroupChatInput> _$gCreateGroupChatInputSerializer =
     _$GCreateGroupChatInputSerializer();
+Serializer<GRecurrenceInput> _$gRecurrenceInputSerializer =
+    _$GRecurrenceInputSerializer();
 Serializer<GCreateTaskInput> _$gCreateTaskInputSerializer =
     _$GCreateTaskInputSerializer();
 Serializer<GDeviceTokenOrder> _$gDeviceTokenOrderSerializer =
@@ -7735,6 +7737,51 @@ class _$GCreateGroupChatInputSerializer
   }
 }
 
+class _$GRecurrenceInputSerializer
+    implements StructuredSerializer<GRecurrenceInput> {
+  @override
+  final Iterable<Type> types = const [GRecurrenceInput, _$GRecurrenceInput];
+  @override
+  final String wireName = 'GRecurrenceInput';
+
+  @override
+  Iterable<Object?> serialize(Serializers serializers, GRecurrenceInput object,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = <Object?>[
+      'weekdays',
+      serializers.serialize(object.weekdays,
+          specifiedType:
+              const FullType(BuiltList, const [const FullType(String)])),
+    ];
+
+    return result;
+  }
+
+  @override
+  GRecurrenceInput deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = GRecurrenceInputBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'weekdays':
+          result.weekdays.replace(serializers.deserialize(value,
+                  specifiedType: const FullType(
+                      BuiltList, const [const FullType(String)]))!
+              as BuiltList<Object?>);
+          break;
+      }
+    }
+
+    return result.build();
+  }
+}
+
 class _$GCreateTaskInputSerializer
     implements StructuredSerializer<GCreateTaskInput> {
   @override
@@ -7749,8 +7796,6 @@ class _$GCreateTaskInputSerializer
       'title',
       serializers.serialize(object.title,
           specifiedType: const FullType(String)),
-      'date',
-      serializers.serialize(object.date, specifiedType: const FullType(GTime)),
     ];
     Object? value;
     value = object.shortDescription;
@@ -7774,6 +7819,13 @@ class _$GCreateTaskInputSerializer
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
+    value = object.date;
+    if (value != null) {
+      result
+        ..add('date')
+        ..add(
+            serializers.serialize(value, specifiedType: const FullType(GTime)));
+    }
     value = object.durationM;
     if (value != null) {
       result
@@ -7794,12 +7846,12 @@ class _$GCreateTaskInputSerializer
         ..add(
             serializers.serialize(value, specifiedType: const FullType(GTime)));
     }
-    value = object.recurringDays;
+    value = object.recurrence;
     if (value != null) {
       result
-        ..add('recurringDays')
+        ..add('recurrence')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
+            specifiedType: const FullType(GRecurrenceInput)));
     }
     value = object.goalID;
     if (value != null) {
@@ -7870,9 +7922,10 @@ class _$GCreateTaskInputSerializer
           result.reminderTime.replace(serializers.deserialize(value,
               specifiedType: const FullType(GTime))! as GTime);
           break;
-        case 'recurringDays':
-          result.recurringDays = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
+        case 'recurrence':
+          result.recurrence.replace(serializers.deserialize(value,
+                  specifiedType: const FullType(GRecurrenceInput))!
+              as GRecurrenceInput);
           break;
         case 'goalID':
           result.goalID = serializers.deserialize(value,
@@ -16949,12 +17002,12 @@ class _$GUpdateTaskInputSerializer
         ..add(
             serializers.serialize(value, specifiedType: const FullType(GTime)));
     }
-    value = object.recurringDays;
+    value = object.recurrence;
     if (value != null) {
       result
-        ..add('recurringDays')
+        ..add('recurrence')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
+            specifiedType: const FullType(GRecurrenceInput)));
     }
     value = object.status;
     if (value != null) {
@@ -17039,9 +17092,10 @@ class _$GUpdateTaskInputSerializer
           result.reminderTime.replace(serializers.deserialize(value,
               specifiedType: const FullType(GTime))! as GTime);
           break;
-        case 'recurringDays':
-          result.recurringDays = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
+        case 'recurrence':
+          result.recurrence.replace(serializers.deserialize(value,
+                  specifiedType: const FullType(GRecurrenceInput))!
+              as GRecurrenceInput);
           break;
         case 'status':
           result.status = serializers.deserialize(value,
@@ -27905,6 +27959,101 @@ class GCreateGroupChatInputBuilder
   }
 }
 
+class _$GRecurrenceInput extends GRecurrenceInput {
+  @override
+  final BuiltList<String> weekdays;
+
+  factory _$GRecurrenceInput(
+          [void Function(GRecurrenceInputBuilder)? updates]) =>
+      (GRecurrenceInputBuilder()..update(updates))._build();
+
+  _$GRecurrenceInput._({required this.weekdays}) : super._();
+  @override
+  GRecurrenceInput rebuild(void Function(GRecurrenceInputBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GRecurrenceInputBuilder toBuilder() =>
+      GRecurrenceInputBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GRecurrenceInput && weekdays == other.weekdays;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, weekdays.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GRecurrenceInput')
+          ..add('weekdays', weekdays))
+        .toString();
+  }
+}
+
+class GRecurrenceInputBuilder
+    implements Builder<GRecurrenceInput, GRecurrenceInputBuilder> {
+  _$GRecurrenceInput? _$v;
+
+  ListBuilder<String>? _weekdays;
+  ListBuilder<String> get weekdays =>
+      _$this._weekdays ??= ListBuilder<String>();
+  set weekdays(ListBuilder<String>? weekdays) => _$this._weekdays = weekdays;
+
+  GRecurrenceInputBuilder();
+
+  GRecurrenceInputBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _weekdays = $v.weekdays.toBuilder();
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GRecurrenceInput other) {
+    _$v = other as _$GRecurrenceInput;
+  }
+
+  @override
+  void update(void Function(GRecurrenceInputBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GRecurrenceInput build() => _build();
+
+  _$GRecurrenceInput _build() {
+    _$GRecurrenceInput _$result;
+    try {
+      _$result = _$v ??
+          _$GRecurrenceInput._(
+            weekdays: weekdays.build(),
+          );
+    } catch (_) {
+      late String _$failedField;
+      try {
+        _$failedField = 'weekdays';
+        weekdays.build();
+      } catch (e) {
+        throw BuiltValueNestedFieldError(
+            r'GRecurrenceInput', _$failedField, e.toString());
+      }
+      rethrow;
+    }
+    replace(_$result);
+    return _$result;
+  }
+}
+
 class _$GCreateTaskInput extends GCreateTaskInput {
   @override
   final String title;
@@ -27915,7 +28064,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
   @override
   final String? note;
   @override
-  final GTime date;
+  final GTime? date;
   @override
   final int? durationM;
   @override
@@ -27923,7 +28072,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
   @override
   final GTime? reminderTime;
   @override
-  final String? recurringDays;
+  final GRecurrenceInput? recurrence;
   @override
   final String? goalID;
   @override
@@ -27940,11 +28089,11 @@ class _$GCreateTaskInput extends GCreateTaskInput {
       this.shortDescription,
       this.type,
       this.note,
-      required this.date,
+      this.date,
       this.durationM,
       this.hasReminder,
       this.reminderTime,
-      this.recurringDays,
+      this.recurrence,
       this.goalID,
       this.tagNames,
       this.subjectTagID})
@@ -27969,7 +28118,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
         durationM == other.durationM &&
         hasReminder == other.hasReminder &&
         reminderTime == other.reminderTime &&
-        recurringDays == other.recurringDays &&
+        recurrence == other.recurrence &&
         goalID == other.goalID &&
         tagNames == other.tagNames &&
         subjectTagID == other.subjectTagID;
@@ -27986,7 +28135,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
     _$hash = $jc(_$hash, durationM.hashCode);
     _$hash = $jc(_$hash, hasReminder.hashCode);
     _$hash = $jc(_$hash, reminderTime.hashCode);
-    _$hash = $jc(_$hash, recurringDays.hashCode);
+    _$hash = $jc(_$hash, recurrence.hashCode);
     _$hash = $jc(_$hash, goalID.hashCode);
     _$hash = $jc(_$hash, tagNames.hashCode);
     _$hash = $jc(_$hash, subjectTagID.hashCode);
@@ -28005,7 +28154,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
           ..add('durationM', durationM)
           ..add('hasReminder', hasReminder)
           ..add('reminderTime', reminderTime)
-          ..add('recurringDays', recurringDays)
+          ..add('recurrence', recurrence)
           ..add('goalID', goalID)
           ..add('tagNames', tagNames)
           ..add('subjectTagID', subjectTagID))
@@ -28051,10 +28200,11 @@ class GCreateTaskInputBuilder
   set reminderTime(GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
-  String? _recurringDays;
-  String? get recurringDays => _$this._recurringDays;
-  set recurringDays(String? recurringDays) =>
-      _$this._recurringDays = recurringDays;
+  GRecurrenceInputBuilder? _recurrence;
+  GRecurrenceInputBuilder get recurrence =>
+      _$this._recurrence ??= GRecurrenceInputBuilder();
+  set recurrence(GRecurrenceInputBuilder? recurrence) =>
+      _$this._recurrence = recurrence;
 
   String? _goalID;
   String? get goalID => _$this._goalID;
@@ -28078,11 +28228,11 @@ class GCreateTaskInputBuilder
       _shortDescription = $v.shortDescription;
       _type = $v.type;
       _note = $v.note;
-      _date = $v.date.toBuilder();
+      _date = $v.date?.toBuilder();
       _durationM = $v.durationM;
       _hasReminder = $v.hasReminder;
       _reminderTime = $v.reminderTime?.toBuilder();
-      _recurringDays = $v.recurringDays;
+      _recurrence = $v.recurrence?.toBuilder();
       _goalID = $v.goalID;
       _tagNames = $v.tagNames?.toBuilder();
       _subjectTagID = $v.subjectTagID;
@@ -28114,11 +28264,11 @@ class GCreateTaskInputBuilder
             shortDescription: shortDescription,
             type: type,
             note: note,
-            date: date.build(),
+            date: _date?.build(),
             durationM: durationM,
             hasReminder: hasReminder,
             reminderTime: _reminderTime?.build(),
-            recurringDays: recurringDays,
+            recurrence: _recurrence?.build(),
             goalID: goalID,
             tagNames: _tagNames?.build(),
             subjectTagID: subjectTagID,
@@ -28127,10 +28277,12 @@ class GCreateTaskInputBuilder
       late String _$failedField;
       try {
         _$failedField = 'date';
-        date.build();
+        _date?.build();
 
         _$failedField = 'reminderTime';
         _reminderTime?.build();
+        _$failedField = 'recurrence';
+        _recurrence?.build();
 
         _$failedField = 'tagNames';
         _tagNames?.build();
@@ -39557,7 +39709,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
   @override
   final GTime? reminderTime;
   @override
-  final String? recurringDays;
+  final GRecurrenceInput? recurrence;
   @override
   final GTaskStatus? status;
   @override
@@ -39582,7 +39734,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
       this.durationM,
       this.hasReminder,
       this.reminderTime,
-      this.recurringDays,
+      this.recurrence,
       this.status,
       this.goalID,
       this.tagNames,
@@ -39609,7 +39761,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
         durationM == other.durationM &&
         hasReminder == other.hasReminder &&
         reminderTime == other.reminderTime &&
-        recurringDays == other.recurringDays &&
+        recurrence == other.recurrence &&
         status == other.status &&
         goalID == other.goalID &&
         tagNames == other.tagNames &&
@@ -39628,7 +39780,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
     _$hash = $jc(_$hash, durationM.hashCode);
     _$hash = $jc(_$hash, hasReminder.hashCode);
     _$hash = $jc(_$hash, reminderTime.hashCode);
-    _$hash = $jc(_$hash, recurringDays.hashCode);
+    _$hash = $jc(_$hash, recurrence.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, goalID.hashCode);
     _$hash = $jc(_$hash, tagNames.hashCode);
@@ -39649,7 +39801,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
           ..add('durationM', durationM)
           ..add('hasReminder', hasReminder)
           ..add('reminderTime', reminderTime)
-          ..add('recurringDays', recurringDays)
+          ..add('recurrence', recurrence)
           ..add('status', status)
           ..add('goalID', goalID)
           ..add('tagNames', tagNames)
@@ -39697,10 +39849,11 @@ class GUpdateTaskInputBuilder
   set reminderTime(GTimeBuilder? reminderTime) =>
       _$this._reminderTime = reminderTime;
 
-  String? _recurringDays;
-  String? get recurringDays => _$this._recurringDays;
-  set recurringDays(String? recurringDays) =>
-      _$this._recurringDays = recurringDays;
+  GRecurrenceInputBuilder? _recurrence;
+  GRecurrenceInputBuilder get recurrence =>
+      _$this._recurrence ??= GRecurrenceInputBuilder();
+  set recurrence(GRecurrenceInputBuilder? recurrence) =>
+      _$this._recurrence = recurrence;
 
   GTaskStatus? _status;
   GTaskStatus? get status => _$this._status;
@@ -39737,7 +39890,7 @@ class GUpdateTaskInputBuilder
       _durationM = $v.durationM;
       _hasReminder = $v.hasReminder;
       _reminderTime = $v.reminderTime?.toBuilder();
-      _recurringDays = $v.recurringDays;
+      _recurrence = $v.recurrence?.toBuilder();
       _status = $v.status;
       _goalID = $v.goalID;
       _tagNames = $v.tagNames?.toBuilder();
@@ -39774,7 +39927,7 @@ class GUpdateTaskInputBuilder
             durationM: durationM,
             hasReminder: hasReminder,
             reminderTime: _reminderTime?.build(),
-            recurringDays: recurringDays,
+            recurrence: _recurrence?.build(),
             status: status,
             goalID: goalID,
             tagNames: _tagNames?.build(),
@@ -39789,6 +39942,8 @@ class GUpdateTaskInputBuilder
 
         _$failedField = 'reminderTime';
         _reminderTime?.build();
+        _$failedField = 'recurrence';
+        _recurrence?.build();
 
         _$failedField = 'tagNames';
         _tagNames?.build();

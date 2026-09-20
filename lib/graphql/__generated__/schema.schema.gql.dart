@@ -1141,6 +1141,29 @@ abstract class GCreateGroupChatInput
       );
 }
 
+abstract class GRecurrenceInput
+    implements Built<GRecurrenceInput, GRecurrenceInputBuilder> {
+  GRecurrenceInput._();
+
+  factory GRecurrenceInput([void Function(GRecurrenceInputBuilder b) updates]) =
+      _$GRecurrenceInput;
+
+  BuiltList<String> get weekdays;
+  static Serializer<GRecurrenceInput> get serializer =>
+      _$gRecurrenceInputSerializer;
+
+  Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
+        GRecurrenceInput.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GRecurrenceInput? fromJson(Map<String, dynamic> json) =>
+      _i1.serializers.deserializeWith(
+        GRecurrenceInput.serializer,
+        json,
+      );
+}
+
 abstract class GCreateTaskInput
     implements Built<GCreateTaskInput, GCreateTaskInputBuilder> {
   GCreateTaskInput._();
@@ -1152,11 +1175,11 @@ abstract class GCreateTaskInput
   String? get shortDescription;
   GTaskType? get type;
   String? get note;
-  GTime get date;
+  GTime? get date;
   int? get durationM;
   bool? get hasReminder;
   GTime? get reminderTime;
-  String? get recurringDays;
+  GRecurrenceInput? get recurrence;
   String? get goalID;
   BuiltList<String>? get tagNames;
   String? get subjectTagID;
@@ -2727,7 +2750,7 @@ abstract class GUpdateTaskInput
   int? get durationM;
   bool? get hasReminder;
   GTime? get reminderTime;
-  String? get recurringDays;
+  GRecurrenceInput? get recurrence;
   GTaskStatus? get status;
   String? get goalID;
   BuiltList<String>? get tagNames;

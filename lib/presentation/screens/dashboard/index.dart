@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +9,7 @@ import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.ast.gql.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
@@ -28,6 +31,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  Timer? _consultantPopupTimer;
+
   @override
   void initState() {
     super.initState();
@@ -35,8 +40,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<DashboardCubit>().load();
+        _consultantPopupTimer = ConsultantIntroPopup.schedule(context);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _consultantPopupTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -94,7 +106,10 @@ class _DashboardContent extends StatelessWidget {
                     ),
                   ),
                   secondIcon: GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (final _) => const ChatScreen())),
                     child: const SizedBox(
                       width: 48,
                       height: 48,
@@ -128,11 +143,9 @@ class _DashboardContent extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (final _) => AddTimedTaskScreen(
-                          onBack: (){
-                            context.read<DashboardCubit>().load();
-                          }
-                        ),
+                        builder: (final _) => AddTimedTaskScreen(onBack: () {
+                          context.read<DashboardCubit>().load();
+                        }),
                       ),
                     );
                   },
@@ -167,7 +180,9 @@ class _DashboardContent extends StatelessWidget {
               target.day,
             );
 
-      final days = targetDate == null ? 0 : targetDate.difference(todayDate).inDays.clamp(0, 999999);
+      final days = targetDate == null
+          ? 0
+          : targetDate.difference(todayDate).inDays.clamp(0, 999999);
 
       return {
         'title': goal.title,

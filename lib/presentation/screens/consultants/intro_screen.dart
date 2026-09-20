@@ -15,15 +15,6 @@ class ConsultantIntroScreen extends StatelessWidget {
 
   final VoidCallback? onStart;
 
-  static const String _illustration = 'assets/images/consultant_intro.png';
-
-  static const List<String> _benefits = [
-    'برنامه ریزی شخصی سازی شده',
-    'ارتباط مستقیم با مشاور',
-    'تحلیل وضعیت و عملکرد درسی',
-    'کمک به مدیریت استرس امتحان',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,7 +54,7 @@ class ConsultantIntroScreen extends StatelessWidget {
                 // Extra top padding leaves room for the hero art to overflow
                 // above the card without being clipped by the scroll viewport.
                 padding: const EdgeInsets.fromLTRB(32, 110, 32, 24),
-                child: _buildCard(context),
+                child: ConsultantIntroCard(onStart: onStart),
               ),
             ),
           ],
@@ -71,6 +62,30 @@ class ConsultantIntroScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The consultants pitch card (hero art, benefits, price, CTA). Shared by the
+/// intro screen and the "no consultant yet" popup.
+class ConsultantIntroCard extends StatelessWidget {
+  const ConsultantIntroCard({super.key, this.onStart, this.onClose});
+
+  /// Overrides the default navigation to [ConsultantListScreen].
+  final VoidCallback? onStart;
+
+  /// Makes the close button in the hero tappable.
+  final VoidCallback? onClose;
+
+  static const String _illustration = 'assets/images/consultant_intro.png';
+
+  static const List<String> _benefits = [
+    'برنامه ریزی شخصی سازی شده',
+    'ارتباط مستقیم با مشاور',
+    'تحلیل وضعیت و عملکرد درسی',
+    'کمک به مدیریت استرس امتحان',
+  ];
+
+  @override
+  Widget build(BuildContext context) => _buildCard(context);
 
   Widget _buildCard(BuildContext context) {
     return Container(
@@ -89,7 +104,7 @@ class ConsultantIntroScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHero(),
+          _buildHero(context),
           const SizedBox(height: 24),
           _buildSectionTitle(),
           const SizedBox(height: 16),
@@ -118,13 +133,13 @@ class ConsultantIntroScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHero() {
+  Widget _buildHero(context) {
     // Gray box is the hero background and spans the full illustration area, so
     // whatever is behind the (transparent) art is gray, not white. Only the top
     // slice of the art overflows above the card (Clip.none) onto the
     // transparent scaffold area, giving the "popping out" look.
     const double boxHeight = 200;
-    const double artHeight = 300;
+    const double artHeight = 200;
     const double artTop = -100; // ~100px of art pops above the gray box
     const double artSideInset = 50; // image inset from the card sides
 
@@ -133,8 +148,9 @@ class ConsultantIntroScreen extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
+          Positioned(
             child: Container(
+              height: 180,
               decoration: BoxDecoration(
                 color: AppColors.gray1,
                 borderRadius: BorderRadius.circular(24),
@@ -142,9 +158,9 @@ class ConsultantIntroScreen extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: artTop,
-            left: artSideInset,
-            right: artSideInset,
+            top: -50,
+            left: 0,
+            right: 0,
             child: Image.asset(
               _illustration,
               height: artHeight,
@@ -155,18 +171,22 @@ class ConsultantIntroScreen extends StatelessWidget {
           Positioned(
             top: 8,
             right: 8,
-            child: Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close_rounded,
-                size: 20,
-                color: AppColors.black1,
+            child: GestureDetector(
+              onTap: onClose,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: AppColors.black1,
+                ),
               ),
             ),
           ),

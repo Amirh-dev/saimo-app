@@ -118,6 +118,7 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GPauseTimedTaskData_pauseTimedTask.serializer)
       ..add(GPauseTimedTaskReq.serializer)
       ..add(GPauseTimedTaskVars.serializer)
+      ..add(GRecurrenceInput.serializer)
       ..add(GRefreshTokenData.serializer)
       ..add(GRefreshTokenData_refreshToken.serializer)
       ..add(GRefreshTokenData_refreshToken_user.serializer)
@@ -1363,6 +1364,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
           () => ListBuilder<GTagWhereInput>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
