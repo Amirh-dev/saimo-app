@@ -150,62 +150,64 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray1,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(48),
-                  bottomRight: Radius.circular(48),
-                ),
+      body: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(48),
+                bottomRight: Radius.circular(48),
               ),
-              child: reAppHeader(
-                'مشاوران',
-                firstIcon: const SizedBox(width: 48),
-                secondIcon: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).maybePop(),
-                  child: const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Icon(
+            ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  const Spacer(),
+                  const ReText(
+                    'مشاوران',
+                    textAlign: TextAlign.start,
+                    color: AppColors.black1,
+                    fontSize: 16,
+                    fontWeight: 1000,
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
                       SolarIconsOutline.altArrowRight,
                       size: 22,
                       color: AppColors.black1,
                     ),
                   ),
-                ),
-              ).bMargin(18),
+                ],
+              ),
             ),
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator.adaptive())
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
-                      itemCount: _consultants.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final consultant = _consultants[index];
-                        return _ConsultantCard(
-                          consultant: consultant,
-                          expanded: index == _expandedIndex,
-                          onToggle: () => _toggle(index),
-                          onSelect: () {
-                            if (widget.onSelect != null) {
-                              widget.onSelect!(consultant);
-                            } else {
-                              _startConsultationFlow(context, consultant);
-                            }
-                          },
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator.adaptive())
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+                    itemCount: _consultants.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final consultant = _consultants[index];
+                      return _ConsultantCard(
+                        consultant: consultant,
+                        expanded: index == _expandedIndex,
+                        onToggle: () => _toggle(index),
+                        onSelect: () {
+                          if (widget.onSelect != null) {
+                            widget.onSelect!(consultant);
+                          } else {
+                            _startConsultationFlow(context, consultant);
+                          }
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

@@ -27,6 +27,23 @@ class ConsultantRepository {
     }
   ''';
 
+  static const String _myActiveCounselorQuery = r'''
+    query MyActiveCounselor {
+      myActiveCounselor {
+        counselor {
+          id
+          userID
+          title
+          user {
+            fullName
+            username
+            avatarURL
+          }
+        }
+      }
+    }
+  ''';
+
   static const String _requestCounselingMutation = r'''
     mutation RequestCounseling($input: RequestCounselingInput!) {
       requestCounseling(input: $input) {
@@ -51,6 +68,37 @@ class ConsultantRepository {
     if (raw is! List) return const [];
 
     return raw.whereType<Map<String, dynamic>>().map(_mapCounselor).toList();
+  }
+
+  /// Returns the student's current counselor, or null when there is none.
+  Future<ActiveCounselor?> fetchMyActiveCounselor() async {
+    final data = await _graphql.rawRequest(
+      query: _myActiveCounselorQuery,
+      variables: const {},
+    );
+
+    final subscription = data['myActiveCounselor'];
+    if (subscription is! Map<String, dynamic>) return null;
+    final counselor = subscription['counselor'];
+    if (counselor is! Map<String, dynamic>) return null;
+
+    final userID = counselor['userID'];
+    if (userID is! String || userID.isEmpty) return null;
+
+    final user = counselor['user'];
+    final userMap = user is Map<String, dynamic> ? user : const {};
+    final name = (userMap['fullName'] as String?)?.trim();
+    final username = (userMap['username'] as String?)?.trim();
+    final avatarUrl = (userMap['avatarURL'] as String?)?.trim();
+
+    return ActiveCounselor(
+      userID: userID,
+      name: (name != null && name.isNotEmpty) ? name : username,
+      username: username,
+      avatar: (avatarUrl != null && avatarUrl.isNotEmpty)
+          ? avatarUrl
+          : _sampleAvatar,
+    );
   }
 
   /// Sends a counseling request. Returns the created subscription id.
@@ -116,4 +164,19 @@ class ConsultantRepository {
       resume: resume,
     );
   }
+}
+
+/// The counselor the signed-in student is currently subscribed to.
+class ActiveCounselor {
+  const ActiveCounselor({
+    required this.userID,
+    required this.avatar,
+    this.name,
+    this.username,
+  });
+
+  final String userID;
+  final String avatar;
+  final String? name;
+  final String? username;
 }

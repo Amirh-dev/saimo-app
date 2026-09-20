@@ -179,6 +179,7 @@ class ChatContact {
     required this.isPending,
     this.targetFullName,
     this.targetUsername,
+    this.targetAvatarURL,
   });
 
   final String friendshipID;
@@ -187,6 +188,7 @@ class ChatContact {
   final bool isPending;
   final String? targetFullName;
   final String? targetUsername;
+  final String? targetAvatarURL;
 
   bool get hasFullName => targetFullName?.trim().isNotEmpty == true;
 

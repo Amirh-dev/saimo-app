@@ -7,8 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
+import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -32,6 +35,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   late final ChatRepository _chatRepository;
+  late final ConsultantRepository _consultantRepository;
   late final InboxSubscriptionClient _inboxClient;
   StreamSubscription<InboxEvent>? _eventSubscription;
   StreamSubscription<InboxConnectionStatus>? _statusSubscription;
@@ -43,29 +47,25 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   var _connectionStatus = InboxConnectionStatus.idle;
   var _displayConnectionStatus = InboxConnectionStatus.connected;
   Timer? _connectionDebounce;
-  late final ScrollController _contactsController;
   Future<void>? _contactsLoadFuture;
   String? _currentUserID;
   String? _activeChatUserID;
   String? _error;
   bool _isLoading = true;
-  bool _isLoadingMoreContacts = false;
-  bool _hasMoreContacts = true;
   String? _openingUserID;
   bool _autoOpenAttempted = false;
 
-  static const int _contactsPageSize = 20;
   static const Duration _connectionGrace = Duration(seconds: 3);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _chatRepository = ChatRepository(context.read<GraphQLRepository>());
+    final graphql = context.read<GraphQLRepository>();
+    _chatRepository = ChatRepository(graphql);
+    _consultantRepository = ConsultantRepository(graphql);
     _inboxClient = context.read<InboxSubscriptionClient>();
     _connectionStatus = _inboxClient.currentStatus;
-    _contactsController = ScrollController()
-      ..addListener(_handleContactsScroll);
     _startInboxSubscription();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadContacts());
   }
@@ -76,7 +76,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
     _connectionDebounce?.cancel();
-    _contactsController.dispose();
     super.dispose();
   }
 
@@ -85,14 +84,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     if (state != AppLifecycleState.resumed) return;
     _inboxClient.connect(source: 'chat_list');
     _loadContacts(silent: true);
-  }
-
-  void _handleContactsScroll() {
-    if (!_contactsController.hasClients) return;
-    final position = _contactsController.position;
-    if (position.pixels >= position.maxScrollExtent - 160) {
-      _loadMoreContacts();
-    }
   }
 
   void _startInboxSubscription() {
@@ -158,18 +149,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       // once instead of on every (including silent/resume) refresh.
       final currentUserID =
           _currentUserID ?? await _chatRepository.getCurrentUserID();
-      final contacts = await _chatRepository.getFriends(
-        currentUserID,
-        limit: _contactsPageSize,
-        offset: 0,
-      );
+      final counselor = await _consultantRepository.fetchMyActiveCounselor();
+      final contacts = [
+        if (counselor != null)
+          ChatContact(
+            friendshipID: '',
+            targetUserID: counselor.userID,
+            status: 'ACCEPTED',
+            isPending: false,
+            targetFullName: counselor.name,
+            targetUsername: counselor.username,
+            targetAvatarURL: counselor.avatar,
+          ),
+      ];
       if (!mounted) return;
       _cacheContactsForNotifications(currentUserID, contacts);
       setState(() {
         _currentUserID = currentUserID;
         _contacts = contacts;
-        _hasMoreContacts = contacts.length == _contactsPageSize;
-        _isLoadingMoreContacts = false;
         final contactIDs =
             contacts.map((contact) => contact.targetUserID).toSet();
         _latestMessageByUserID.removeWhere(
@@ -220,40 +217,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_openChat(contact));
     });
-  }
-
-  Future<void> _loadMoreContacts() async {
-    final currentUserID = _currentUserID;
-    if (currentUserID == null ||
-        _isLoading ||
-        _isLoadingMoreContacts ||
-        !_hasMoreContacts) {
-      return;
-    }
-    setState(() => _isLoadingMoreContacts = true);
-
-    try {
-      final more = await _chatRepository.getFriends(
-        currentUserID,
-        limit: _contactsPageSize,
-        offset: _contacts.length,
-      );
-      if (!mounted) return;
-      _cacheContactsForNotifications(currentUserID, more);
-      setState(() {
-        final existingIDs =
-            _contacts.map((contact) => contact.targetUserID).toSet();
-        final fresh = more.where(
-          (contact) => existingIDs.add(contact.targetUserID),
-        );
-        _contacts = [..._contacts, ...fresh];
-        _hasMoreContacts = more.length == _contactsPageSize;
-        _isLoadingMoreContacts = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoadingMoreContacts = false);
-    }
   }
 
   void _handleInboxEvent(InboxEvent event) {
@@ -410,8 +373,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _selectConsultant() async {
+    await context.to(const ConsultantListScreen());
+    if (mounted) unawaited(_loadContacts(silent: true));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasUnread = _unreadByUserID.values.any((count) => count > 0);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -419,7 +389,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         body: SafeArea(
           child: Column(
             children: [
-              _ChatListHeader(onRefresh: _loadContacts),
+              _ChatListHeader(hasUnread: hasUnread),
               Expanded(child: _buildBody()),
             ],
           ),
@@ -443,46 +413,35 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       );
     }
 
-    if (_contacts.isEmpty) {
-      return _ChatStateView(
-        icon: SolarIconsOutline.chatRound,
-        title: 'هنوز گفتگویی ندارید',
-        subtitle:
-            'بعد از اضافه شدن دوستان، گفتگوهای مستقیم از اینجا شروع می‌شوند.',
-        actionText: 'بروزرسانی',
-        onAction: _loadContacts,
-      );
-    }
-
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: _loadContacts,
-      child: ListView.separated(
-        controller: _contactsController,
+      child: ListView(
         physics: const BouncingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
-        itemCount: _contacts.length + (_isLoadingMoreContacts ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index >= _contacts.length) {
-            return const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            );
-          }
-          final contact = _contacts[index];
-          return _ContactTile(
-            contact: contact,
-            activity: _activityByUserID[contact.targetUserID],
-            latestMessage: _latestMessageByUserID[contact.targetUserID],
-            unreadCount: _unreadByUserID[contact.targetUserID] ?? 0,
-            connectionStatus: _displayConnectionStatus,
-            isOpening: _openingUserID == contact.targetUserID,
-            onTap: () => _openChat(contact),
-          );
-        },
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        children: [
+          const _ChatSectionTitle(
+            title: 'مشاور',
+            icon: SolarIconsOutline.userSpeak,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: 16),
+          if (_contacts.isEmpty)
+            _NoConsultantCard(onSelect: _selectConsultant)
+          else
+            for (final contact in _contacts)
+              _ContactTile(
+                contact: contact,
+                activity: _activityByUserID[contact.targetUserID],
+                latestMessage: _latestMessageByUserID[contact.targetUserID],
+                unreadCount: _unreadByUserID[contact.targetUserID] ?? 0,
+                connectionStatus: _displayConnectionStatus,
+                isOpening: _openingUserID == contact.targetUserID,
+                onTap: () => _openChat(contact),
+              ),
+        ],
       ),
     );
   }
@@ -1276,46 +1235,249 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
 }
 
 class _ChatListHeader extends StatelessWidget {
-  const _ChatListHeader({required this.onRefresh});
+  const _ChatListHeader({required this.hasUnread});
 
-  final VoidCallback onRefresh;
+  final bool hasUnread;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 20),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(34),
-          bottomRight: Radius.circular(34),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
       child: Row(
         children: [
-          _CircleIconButton(icon: SolarIconsOutline.refresh, onTap: onRefresh),
-          const Spacer(),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ReText(
-                'پیام‌ها',
+          SizedBox(
+            width: 24,
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                SolarIconsOutline.altArrowRight,
+                size: 22,
                 color: AppColors.black1,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
               ),
-              ReText(
-                'گفتگو با دوستان',
-                color: AppColors.gray,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ],
+            ),
           ),
+          const ReText(
+            'پیام‌ها',
+            color: AppColors.black1,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+          const Spacer(),
+          _HeaderIcon(
+            icon: SolarIconsBold.chatRound,
+            showDot: hasUnread,
+            isActive: true,
+          ),
+          const SizedBox(width: 8),
+          const _HeaderIcon(icon: SolarIconsOutline.bell, showDot: false),
         ],
       ),
     );
   }
+}
+
+class _HeaderIcon extends StatelessWidget {
+  const _HeaderIcon({
+    required this.icon,
+    required this.showDot,
+    this.isActive = false,
+  });
+
+  final IconData icon;
+  final bool showDot;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isActive ? AppColors.black1 : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 24,
+              color: isActive ? AppColors.white : AppColors.black1,
+            ),
+          ),
+          if (showDot)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatSectionTitle extends StatelessWidget {
+  const _ChatSectionTitle({
+    required this.title,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        ReText(
+          title,
+          color: AppColors.black1,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ],
+    );
+  }
+}
+
+/// Shown while the student has no active counselor.
+class _NoConsultantCard extends StatelessWidget {
+  const _NoConsultantCard({required this.onSelect});
+
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: AppColors.gray.withOpacity(0.45),
+        radius: 40,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        height: 64,
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                SolarIconsOutline.userSpeak,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            ),
+            const Expanded(
+              child: ReText(
+                'هنوز مشاوری انتخاب نکردی!',
+                color: AppColors.black1,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                textAlign: TextAlign.start,
+              ),
+            ),
+            GestureDetector(
+              onTap: onSelect,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.withOpacity(0.05),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ReText(
+                      'انتخاب',
+                      color: AppColors.black1,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    SizedBox(width: 8),
+                    Icon(
+                      SolarIconsOutline.altArrowLeft,
+                      size: 14,
+                      color: AppColors.black1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(radius),
+        ),
+      );
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        canvas.drawPath(metric.extractPath(distance, distance + 5), paint);
+        distance += 9;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 class _ContactTile extends StatelessWidget {
@@ -1355,71 +1517,49 @@ class _ContactTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withOpacity(0.04),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
+            _ChatAvatar(size: 62, path: contact.targetAvatarURL),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ReText(
+                    contact.displayName,
+                    color: AppColors.black1,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    maxLines: 1,
+                  ),
+                  ReText(
+                    subtitle,
+                    color: subtitleColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    maxLines: 1,
+                  ).tMargin(4),
+                ],
+              ),
+            ),
             SizedBox(
-              width: 42,
               height: 42,
               child: isOpening
                   ? const CircularProgressIndicator.adaptive()
-                  : unreadCount > 0
-                      ? _UnreadBadge(count: unreadCount)
-                      : Icon(
-                          contact.isPending
-                              ? SolarIconsOutline.clockCircle
-                              : SolarIconsBold.chatRound,
-                          color: contact.isPending
-                              ? AppColors.simoCoin
-                              : AppColors.primary,
-                          size: 22,
+                  : Row(
+                      children: [
+                        if (unreadCount > 0) _UnreadBadge(count: unreadCount),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          SolarIconsOutline.altArrowLeft,
+                          size: 16,
+                          color: AppColors.gray,
                         ),
+                      ],
+                    ),
             ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ReText(
-                  contact.displayName,
-                  color: AppColors.black1,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                ),
-                if (contact.hasFullName && contact.usernameLabel != null)
-                  ReText(
-                    contact.usernameLabel!,
-                    color: AppColors.black1.withOpacity(0.5),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    isPersian: false,
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.right,
-                  ).tMargin(1),
-                SizedBox(
-                  width: 180,
-                  child: ReText(
-                    subtitle,
-                    color: subtitleColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ).tMargin(2),
-              ],
-            ).rMargin(10),
-            const _ChatAvatar(),
           ],
         ),
       ),
@@ -2813,9 +2953,10 @@ class _CircleIconButton extends StatelessWidget {
 }
 
 class _ChatAvatar extends StatelessWidget {
-  const _ChatAvatar({this.size = 46});
+  const _ChatAvatar({this.size = 46, this.path});
 
   final double size;
+  final String? path;
 
   @override
   Widget build(BuildContext context) {
@@ -2829,7 +2970,7 @@ class _ChatAvatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: ReImage(
-          'Assets.profilePlaceholder',
+          path ?? 'Assets.profilePlaceholder',
           width: size - 4,
           height: size - 4,
           fit: BoxFit.cover,
