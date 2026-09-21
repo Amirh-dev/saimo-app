@@ -9,6 +9,7 @@ import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -33,6 +34,36 @@ List<String> _parseTagNames(String value) {
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+/// Earliest selectable date: today, or the task's own date when editing a
+/// task that is already in the past.
+Jalali _pickerMinDate(Jalali selected) {
+  final now = Jalali.now();
+  final selectedIsPast = selected.year != now.year
+      ? selected.year < now.year
+      : selected.month != now.month
+          ? selected.month < now.month
+          : selected.day < now.day;
+  return selectedIsPast ? selected : now;
+}
+
+List<ParentTagModel> _tagsFromNames(Iterable<String> names) {
+  return [
+    for (final name in names)
+      ParentTagModel(
+        id: 'existing_$name',
+        name: name,
+        kind: 'SUGGESTED',
+        moderationStatus: 'APPROVED',
+      ),
+  ];
+}
+
+Set<String> _weekdaysFromRecurring(String? raw) {
+  if (raw == null) return {};
+  final known = _weekDayOptions.map((day) => day.code).toSet();
+  return RegExp(r'[A-Za-z]{3}').allMatches(raw).map((m) => m.group(0)!.toUpperCase()).where(known.contains).toSet();
 }
 
 class WeekDayOption {
@@ -80,10 +111,13 @@ Future<void> _scheduleReminder(
 }
 
 class AddTimedTaskScreen extends StatefulWidget {
-  const AddTimedTaskScreen({super.key, this.goalId, this.onBack});
+  const AddTimedTaskScreen({super.key, this.goalId, this.onBack, this.task});
 
   final String? goalId;
   final VoidCallback? onBack;
+
+  /// When set, the screen edits this task (update API) instead of creating one.
+  final Map<String, dynamic>? task;
 
   @override
   State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
@@ -105,7 +139,10 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     'اسفند',
   ];
 
-  static const List<int> _minuteOptions = [60, 55, 50, 45, 40, 35, 30];
+  static const List<int> _baseMinuteOptions = [60, 55, 50, 45, 40, 35, 30];
+  late List<int> _minuteOptions;
+
+  bool get _isEditing => widget.task != null;
 
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
@@ -140,8 +177,15 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     );
 
     _selectedDate = Jalali.now();
+    _selectedMinutes = 45;
+    final editing = widget.task;
+    if (editing != null) {
+      _selectedDate = editing['date'] as Jalali? ?? _selectedDate;
+      final seconds = editing['durationSeconds'] as int?;
+      if (seconds != null && seconds > 0) _selectedMinutes = seconds ~/ 60;
+    }
+    _minuteOptions = {..._baseMinuteOptions, _selectedMinutes}.toList()..sort((a, b) => b.compareTo(a));
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
-    _selectedMinutes = _minuteOptions.contains(45) ? 45 : _minuteOptions.first;
     _minutesPageController = PageController(
       initialPage: _minuteOptions.indexOf(_selectedMinutes).clamp(
             0,
@@ -149,10 +193,16 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
           ),
       viewportFraction: 0.22,
     );
-    _titleController = TextEditingController();
-    _descriptionController = TextEditingController();
+    _titleController = TextEditingController(text: widget.task?['title'] as String? ?? '');
+    _descriptionController = TextEditingController(text: widget.task?['shortDescription'] as String? ?? '');
     _tagController = TextEditingController();
-    _noteController = TextEditingController();
+    _noteController = TextEditingController(text: widget.task?['note'] as String? ?? '');
+    if (editing != null) {
+      _selectedTags.addAll(_tagsFromNames((editing['tags'] as List?)?.cast<String>() ?? const []));
+      _isReminderEnabled = editing['reminder'] as bool? ?? false;
+      _selectedWeekDays.addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
+      _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
+    }
     _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _tagFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
@@ -362,7 +412,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       builder: (sheetContext) {
         return _ThreeColumnJalaliDatePickerSheet(
           initialDate: _selectedDate,
-          minDate: Jalali.now(),
+          minDate: _pickerMinDate(_selectedDate),
           monthNames: _persianMonths,
         );
       },
@@ -375,6 +425,61 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     });
   }
 
+  Future<void> _updateTimedTask() async {
+    final taskId = widget.task!['id'] as String;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final taskDate = _toDateTime(_selectedDate);
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GUpdateTaskReq(
+          (request) {
+            request.vars.id = taskId;
+            request.vars.input
+              ..title = _titleController.text.trim()
+              ..shortDescription = _descriptionController.text.trim()
+              ..note = _noteController.text.trim()
+              ..durationM = _selectedMinutes
+              ..hasReminder = _isReminderEnabled
+              ..tagNames.replace(_selectedTags.map((tag) => tag.name));
+
+            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            if (weekdays.isNotEmpty) {
+              request.vars.input.recurrence.weekdays.replace(weekdays);
+            } else {
+              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
+            }
+
+            if (_isReminderEnabled) {
+              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+            }
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.updateTask == null) {
+        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        return;
+      }
+
+      final task = response.data!.updateTask;
+      await TaskReminderService.instance.cancel(taskId);
+      if (_isReminderEnabled) {
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays));
+      }
+      if (!mounted) return;
+
+      Navigator.of(context).pop(<String, dynamic>{'id': task.id, 'updated': true});
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, error.toString(), ReToastType.failed);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   Future<void> _submitTimedTask() async {
     if (!_isFormValid) {
       showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
@@ -383,6 +488,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
       showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      return;
+    }
+
+    if (_isEditing) {
+      await _updateTimedTask();
       return;
     }
 
@@ -536,7 +646,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                           Expanded(
                             flex: 2,
                             child: _ActionButton(
-                              text: 'افزودن',
+                              text: _isEditing ? 'ذخیره' : 'افزودن',
                               icon: Icons.add,
                               background: AppColors.primary,
                               textColor: AppColors.white,
@@ -840,18 +950,18 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          const Column(
+          Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               ReText(
-                'افزودن تسک زمان دار',
+                _isEditing ? 'ویرایش تسک زمان دار' : 'افزودن تسک زمان دار',
                 color: AppColors.black1,
                 fontSize: 16,
                 fontWeight: 1100,
               ),
               ReText(
-                'افزودن تسک زمان دار',
+                _isEditing ? 'ویرایش تسک زمان دار' : 'افزودن تسک زمان دار',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray,
@@ -1190,9 +1300,12 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 }
 
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key, this.goalId});
+  const AddTaskScreen({super.key, this.goalId, this.task});
 
   final String? goalId;
+
+  /// When set, the screen edits this task (update API) instead of creating one.
+  final Map<String, dynamic>? task;
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -1202,6 +1315,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.task != null;
 
   final Set<String> _selectedWeekDays = {};
 
@@ -1245,8 +1360,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     _selectedDate = Jalali.now();
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     _selectedTime = TimeOfDay.fromDateTime(DateTime.now());
-    _titleController = TextEditingController();
-    _descriptionController = TextEditingController();
+    final editing = widget.task;
+    if (editing != null) {
+      _selectedDate = editing['date'] as Jalali? ?? _selectedDate;
+      _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
+      final dateTime = editing['dateTime'] as DateTime?;
+      if (dateTime != null) _selectedTime = TimeOfDay.fromDateTime(dateTime);
+      _selectedTags.addAll(_tagsFromNames((editing['tags'] as List?)?.cast<String>() ?? const []));
+      _isReminderEnabled = editing['reminder'] as bool? ?? false;
+      _selectedWeekDays.addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
+      _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
+    }
+    _titleController = TextEditingController(text: editing?['title'] as String? ?? '');
+    _descriptionController = TextEditingController(text: editing?['shortDescription'] as String? ?? '');
     _tagController = TextEditingController();
     _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
@@ -1457,7 +1583,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       builder: (sheetContext) {
         return _ThreeColumnJalaliDatePickerSheet(
           initialDate: _selectedDate,
-          minDate: Jalali.now(),
+          minDate: _pickerMinDate(_selectedDate),
           monthNames: _persianMonths,
         );
       },
@@ -1470,6 +1596,59 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
   }
 
+  Future<void> _updateTask() async {
+    final taskId = widget.task!['id'] as String;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
+      final response = await context.read<GraphQLRepository>().requestOnce(
+        GUpdateTaskReq(
+          (request) {
+            request.vars.id = taskId;
+            request.vars.input
+              ..title = _titleController.text.trim()
+              ..shortDescription = _descriptionController.text.trim()
+              ..hasReminder = _isReminderEnabled
+              ..tagNames.replace(_selectedTags.map((tag) => tag.name));
+
+            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            if (weekdays.isNotEmpty) {
+              request.vars.input.recurrence.weekdays.replace(weekdays);
+            } else {
+              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
+            }
+
+            if (_isReminderEnabled) {
+              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+            }
+          },
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.hasErrors || response.data?.updateTask == null) {
+        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        return;
+      }
+
+      final task = response.data!.updateTask;
+      await TaskReminderService.instance.cancel(taskId);
+      if (_isReminderEnabled) {
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _selectedTime));
+      }
+      if (!mounted) return;
+
+      Navigator.of(context).pop(<String, dynamic>{'id': task.id, 'updated': true});
+    } catch (error) {
+      if (!mounted) return;
+      showReToast(context, error.toString(), ReToastType.failed);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   Future<void> _submitTask() async {
     if (!_isFormValid) {
       showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
@@ -1478,6 +1657,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
       showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      return;
+    }
+
+    if (_isEditing) {
+      await _updateTask();
       return;
     }
 
@@ -1616,7 +1800,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         Expanded(
                           flex: 2,
                           child: _ActionButton(
-                            text: 'افزودن',
+                            text: _isEditing ? 'ذخیره' : 'افزودن',
                             icon: Icons.add,
                             background: AppColors.primary,
                             textColor: AppColors.white,
@@ -1923,18 +2107,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          const Column(
+          Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ReText(
-                'افزودن چک لیست',
+                _isEditing ? 'ویرایش چک لیست' : 'افزودن چک لیست',
                 color: AppColors.black1,
                 fontSize: 16,
                 fontWeight: 1000,
               ),
               ReText(
-                'افزودن تسک چک لیست',
+                _isEditing ? 'ویرایش تسک چک لیست' : 'افزودن تسک چک لیست',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray,

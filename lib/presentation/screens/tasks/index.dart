@@ -32,7 +32,8 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
-class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin {
+class _TasksScreenState extends State<TasksScreen>
+    with TickerProviderStateMixin {
   late final Jalali _today;
   late Jalali _selectedDate;
   late AnimationController _animationController;
@@ -93,7 +94,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       duration: const Duration(milliseconds: 250),
     );
     _menuScaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(parent: _menuAnimationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+          parent: _menuAnimationController, curve: Curves.easeOutCubic),
     );
     _menuOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _menuAnimationController, curve: Curves.easeOut),
@@ -133,7 +135,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     _timer.addListener(_onGlobalTimerChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _timer.bindRepository(TaskTimerRepository(context.read<GraphQLRepository>()));
+      _timer.bindRepository(
+          TaskTimerRepository(context.read<GraphQLRepository>()));
       _loadTasksForSelectedDate();
     });
   }
@@ -223,7 +226,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   String _timeFromIso(String value) {
     final parsed = DateTime.tryParse(value)?.toLocal();
     if (parsed == null) return '';
-    final formatted = '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+    final formatted =
+        '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
     return convertToPersianNumbers(formatted);
   }
 
@@ -262,6 +266,10 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       'goalTitle': task.goal?.title,
       'reminder': task.hasReminder,
       'note': task.note,
+      'shortDescription': task.shortDescription,
+      'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
+      'recurringDays': task.recurringDays,
+      'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
     };
   }
 
@@ -284,7 +292,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       'goalTitle': task.goal?.title,
       'reminder': task.hasReminder,
       'note': task.note,
-      'elapsedSeconds': task.elapsedSeconds
+      'elapsedSeconds': task.elapsedSeconds,
+      'shortDescription': task.shortDescription,
+      'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
+      'recurringDays': task.recurringDays,
+      'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
     };
   }
 
@@ -293,14 +305,14 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final selectedDate = _selectedDate;
       final response = await context.read<GraphQLRepository>().requestOnce(
-        GGetTasksReq(
+            GGetTasksReq(
               (request) => request.vars
-            ..limit = 100
-            ..offset = 0,
-        ).rebuild(
+                ..limit = 100
+                ..offset = 0,
+            ).rebuild(
               (request) => request.fetchPolicy = FetchPolicy.NetworkOnly,
-        ),
-      );
+            ),
+          );
 
       if (!mounted || !_isSameDay(selectedDate, _selectedDate)) return;
       if (response.hasErrors || response.data == null) {
@@ -317,7 +329,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       final timedTasks = <Map<String, dynamic>>[];
       for (final task in response.data!.getTasks) {
         // Safety net: a finished task must never keep a pending reminder.
-        if (task.status == GTaskStatus.COMPLETED || task.status == GTaskStatus.CANCELED) {
+        if (task.status == GTaskStatus.COMPLETED ||
+            task.status == GTaskStatus.CANCELED) {
           unawaited(TaskReminderService.instance.cancel(task.id));
         }
 
@@ -363,7 +376,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GUpdateTaskReq(
-              (request) {
+          (request) {
             request.vars.id = taskId;
             request.vars.input.status = GTaskStatus.COMPLETED;
           },
@@ -373,7 +386,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        showReToast(
+            context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
 
@@ -390,45 +404,52 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     }
   }
 
-  Future<void> _deleteTask(int index) async {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    final task = _checklistTasks[index];
-    final taskId = task['id'] as String?;
-
+  /// Deletes the task on the server. Returns whether it was deleted.
+  Future<bool> _deleteTaskById(String? taskId) async {
     if (taskId == null || taskId.isEmpty) {
       showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
-      return;
+      return false;
     }
 
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GDeleteTaskReq(
-              (request) {
+          (request) {
             request.vars.id = taskId;
           },
         ),
       );
 
-      if (!mounted) return;
+      if (!mounted) return false;
 
       if (response.hasErrors) {
-        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
-        return;
+        showReToast(
+            context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        return false;
       }
 
       await TaskReminderService.instance.cancel(taskId);
-      if (!mounted) return;
-
-      setState(() {
-        _checklistTasks.removeAt(index);
-      });
+      if (!mounted) return false;
 
       showReToast(context, 'تسک حذف شد', ReToastType.success);
+      return true;
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted) return false;
       showReToast(context, error.toString(), ReToastType.failed);
+      return false;
     }
+  }
+
+  Future<void> _deleteTask(int index) async {
+    if (index < 0 || index >= _checklistTasks.length) return;
+
+    final deleted =
+        await _deleteTaskById(_checklistTasks[index]['id'] as String?);
+    if (!deleted || !mounted) return;
+
+    setState(() {
+      _checklistTasks.removeAt(index);
+    });
   }
 
   Future<void> _addTaskToToday(int index) async {
@@ -449,7 +470,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     if (currentDateValue != null) {
       final currentDate = DateTime.tryParse(currentDateValue.toString());
       if (currentDate != null) {
-        final taskDay = DateTime(currentDate.toLocal().year, currentDate.toLocal().month, currentDate.toLocal().day);
+        final taskDay = DateTime(currentDate.toLocal().year,
+            currentDate.toLocal().month, currentDate.toLocal().day);
         if (taskDay == today) {
           showReToast(context, 'این تسک برای امروز است', ReToastType.info);
           return;
@@ -460,7 +482,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     try {
       final response = await context.read<GraphQLRepository>().requestOnce(
         GUpdateTaskReq(
-              (request) {
+          (request) {
             request.vars.id = taskId;
             final todayRfc3339 = today.toUtc().toIso8601String();
             request.vars.input.date.value = todayRfc3339;
@@ -471,7 +493,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        showReToast(
+            context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
 
@@ -487,7 +510,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   double _checklistRowHeightAt(int index) {
-    return _expandedChecklistTaskIndex == index ? _checklistItemExpandedHeight : _checklistItemCollapsedHeight;
+    return _expandedChecklistTaskIndex == index
+        ? _checklistItemExpandedHeight
+        : _checklistItemCollapsedHeight;
   }
 
   void _onGlobalTimerChanged() {
@@ -532,7 +557,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   void _toggleChecklistTaskActions(int index) {
     setState(() {
-      _expandedChecklistTaskIndex = _expandedChecklistTaskIndex == index ? null : index;
+      _expandedChecklistTaskIndex =
+          _expandedChecklistTaskIndex == index ? null : index;
     });
   }
 
@@ -542,7 +568,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     });
   }
 
-  Future<bool> _confirmDeleteTask(index) async {
+  Future<bool> _confirmDeleteTask(Future<void> Function() onDelete) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -602,9 +628,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         background: AppColors.errorColor,
                         textColor: AppColors.white,
                         onTap: () async {
-                          await _deleteTask(index);
+                          await onDelete();
+                          if (!context.mounted) return;
                           Navigator.of(context).pop(false);
-                          unawaited(_loadTasksForSelectedDate(showLoading: false));
+                          unawaited(
+                              _loadTasksForSelectedDate(showLoading: false));
                         },
                       ),
                     ),
@@ -631,7 +659,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   Future<void> _requestDeleteChecklistTask(int index) async {
     if (index < 0 || index >= _checklistTasks.length) return;
-    final confirmed = await _confirmDeleteTask(index);
+    final confirmed = await _confirmDeleteTask(() => _deleteTask(index));
     if (!confirmed || !mounted) return;
     _deleteChecklistTask(index);
   }
@@ -643,7 +671,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       _timedTasks.removeAt(index);
       if (_expandedTimedTaskIndex == index) {
         _expandedTimedTaskIndex = null;
-      } else if (_expandedTimedTaskIndex != null && _expandedTimedTaskIndex! > index) {
+      } else if (_expandedTimedTaskIndex != null &&
+          _expandedTimedTaskIndex! > index) {
         _expandedTimedTaskIndex = _expandedTimedTaskIndex! - 1;
       }
     });
@@ -651,7 +680,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   Future<void> _requestDeleteTimedTask(int index) async {
     if (index < 0 || index >= _timedTasks.length) return;
-    final confirmed = await _confirmDeleteTask(index);
+    final confirmed =
+        await _confirmDeleteTask(() async => _deleteTimedTask(index));
     if (!confirmed || !mounted) return;
     _deleteTimedTask(index);
   }
@@ -664,7 +694,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
       if (_expandedChecklistTaskIndex == index) {
         _expandedChecklistTaskIndex = null;
-      } else if (_expandedChecklistTaskIndex != null && _expandedChecklistTaskIndex! > index) {
+      } else if (_expandedChecklistTaskIndex != null &&
+          _expandedChecklistTaskIndex! > index) {
         _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! - 1;
       }
     });
@@ -679,7 +710,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
       task['status'] = 'pending';
       task['date'] = Jalali.now();
-      task['time'] = '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
+      task['time'] =
+          '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
 
       _checklistTasks.insert(0, task);
       _expandedChecklistTaskIndex = 0;
@@ -701,7 +733,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     }
   }
 
-  Widget _buildTaskTile(BuildContext context, Map<String, dynamic> task, int index) {
+  Widget _buildTaskTile(
+      BuildContext context, Map<String, dynamic> task, int index) {
     const padding = 16.0;
     const titleSize = 14.0;
     const subtitleSize = 10.0;
@@ -730,21 +763,29 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => _toggleChecklistTaskActions(index),
+                        onTap: () => _showTaskDetails(task, timed: false),
                         behavior: HitTestBehavior.opaque,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            AnimatedRotation(
-                              duration: _taskExpansionDuration,
-                              curve: Curves.easeOutCubic,
-                              turns: isExpanded ? -0.25 : 0,
-                              child: const Icon(
-                                Icons.arrow_back_ios,
-                                size: 12,
-                                color: AppColors.black1,
+                            GestureDetector(
+                              onTap: () => _toggleChecklistTaskActions(index),
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 12),
+                                child: AnimatedRotation(
+                                  duration: _taskExpansionDuration,
+                                  curve: Curves.easeOutCubic,
+                                  turns: isExpanded ? -0.25 : 0,
+                                  child: const Icon(
+                                    Icons.arrow_back_ios,
+                                    size: 12,
+                                    color: AppColors.black1,
+                                  ),
+                                ),
                               ),
-                            ).lMargin(5),
+                            ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -790,14 +831,20 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                             Expanded(
                               child: _TaskItemActionButton(
                                 text: 'افزودن به امروز',
-                                disable: DateTime.now().year == task['date'].toDateTime().year && DateTime.now().month == task['date'].toDateTime().month && DateTime.now().day == task['date'].toDateTime().day,
+                                disable: DateTime.now().year ==
+                                        task['date'].toDateTime().year &&
+                                    DateTime.now().month ==
+                                        task['date'].toDateTime().month &&
+                                    DateTime.now().day ==
+                                        task['date'].toDateTime().day,
                                 textColor: AppColors.primary,
                                 background: const Color(0xFFFBEAE5),
                                 icon: Icons.add,
                                 iconColor: AppColors.primary,
                                 onTap: () async {
                                   await _addTaskToToday(index);
-                                  unawaited(_loadTasksForSelectedDate(showLoading: false));
+                                  unawaited(_loadTasksForSelectedDate(
+                                      showLoading: false));
                                 },
                               ),
                             ),
@@ -827,7 +874,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildTaskList(BuildContext context, List<Map<String, dynamic>> tasks, bool isTimeTask) {
+  Widget _buildTaskList(
+      BuildContext context, List<Map<String, dynamic>> tasks, bool isTimeTask) {
     if (_isLoadingTasks) return const _TasksShimmer();
 
     if (tasks.isEmpty) {
@@ -963,7 +1011,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     final safeSeconds = math.max(0, seconds);
     final minutes = safeSeconds ~/ 60;
     final remainingSeconds = safeSeconds % 60;
-    final formatted = '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    final formatted =
+        '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
     return convertToPersianNumbers(formatted);
   }
 
@@ -1015,7 +1064,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(
           count,
-              (_) => Container(
+          (_) => Container(
             width: 2,
             height: segmentHeight,
             decoration: BoxDecoration(
@@ -1151,6 +1200,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                 children: [
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
+                    onTap: () => _showTaskDetails(task, timed: true),
                     child: AnimatedRotation(
                       duration: _taskExpansionDuration,
                       curve: Curves.easeOutCubic,
@@ -1167,6 +1217,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                     flex: 6,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
+                      onTap: () => _showTaskDetails(task, timed: true),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -1193,40 +1244,43 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                     ),
                   ),
                   const SizedBox(width: 12),
-                  status == 'done' ? const SizedBox() : GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (final _) => TaskTimerScreen(
-                            task: task,
-                            onPop: (){
-                              _loadTasksForSelectedDate(showLoading: false);
-                            }
+                  status == 'done'
+                      ? const SizedBox()
+                      : GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (final _) => TaskTimerScreen(
+                                  task: task,
+                                  onPop: () {
+                                    _loadTasksForSelectedDate(
+                                        showLoading: false);
+                                  }),
+                            ),
+                          ),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _timedTaskIcon(status),
+                              color: AppColors.white,
+                              size: status == 'done' ? 17 : 21,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _timedTaskIcon(status),
-                        color: AppColors.white,
-                        size: status == 'done' ? 17 : 21,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
             if (hasProgress) ...[
               const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
                     ReText(
@@ -1249,7 +1303,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: LinearProgressIndicator(
-                          value: (task['durationSeconds'] - task['remainingSeconds']) / task['durationSeconds'],
+                          value: (task['durationSeconds'] -
+                                  task['remainingSeconds']) /
+                              task['durationSeconds'],
                           minHeight: 2,
                           backgroundColor: AppColors.gray2,
                           valueColor: AlwaysStoppedAnimation<Color>(color),
@@ -1343,11 +1399,15 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         ),
                       ),
                       secondIcon: GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (final _) => const ChatScreen())),
                         child: const SizedBox(
                           width: 48,
                           height: 48,
-                          child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
+                          child:
+                              Icon(SolarIconsOutline.chatRoundLine, size: 24),
                         ),
                       ),
                     ),
@@ -1375,9 +1435,13 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                 horizontal: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: _isAddMenuOpen ? AppColors.primary : Colors.transparent,
+                                color: _isAddMenuOpen
+                                    ? AppColors.primary
+                                    : Colors.transparent,
                                 border: Border.all(
-                                  color: _isAddMenuOpen ? AppColors.primary : AppColors.gray2,
+                                  color: _isAddMenuOpen
+                                      ? AppColors.primary
+                                      : AppColors.gray2,
                                 ),
                                 borderRadius: BorderRadius.circular(100),
                               ),
@@ -1386,13 +1450,17 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                   Icon(
                                     Icons.add,
                                     size: 18,
-                                    color: _isAddMenuOpen ? AppColors.white : AppColors.primary,
+                                    color: _isAddMenuOpen
+                                        ? AppColors.white
+                                        : AppColors.primary,
                                   ).rMargin(6),
                                   ReText(
                                     'افزودن تسک',
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
-                                    color: _isAddMenuOpen ? AppColors.white : AppColors.black1,
+                                    color: _isAddMenuOpen
+                                        ? AppColors.white
+                                        : AppColors.black1,
                                   ),
                                 ],
                               ),
@@ -1425,12 +1493,14 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                           unselectedLabelColor: AppColors.gray,
                           labelStyle: TextStyle(
                             fontFamily: AppFonts.iranSansVar,
-                            fontVariations: AppFonts.fontVariations(FontWeight.w900),
+                            fontVariations:
+                                AppFonts.fontVariations(FontWeight.w900),
                             fontSize: 14,
                           ),
                           unselectedLabelStyle: TextStyle(
                             fontFamily: AppFonts.iranSansVar,
-                            fontVariations: AppFonts.fontVariations(FontWeight.w500),
+                            fontVariations:
+                                AppFonts.fontVariations(FontWeight.w500),
                             fontSize: 14,
                           ),
                           tabs: const [
@@ -1479,7 +1549,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                 title: 'تسک زمان دار',
                                 icon: IconsaxPlusLinear.timer_1,
                                 onTap: () {
-                                  if(_isAddMenuOpen){
+                                  if (_isAddMenuOpen) {
                                     _toggleAddMenu();
                                     _openAddTimedTaskScreen();
                                   }
@@ -1505,6 +1575,86 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         ),
       ),
     );
+  }
+
+  /// Snapshot of what the details sheet shows; recomputed on every timer tick
+  /// so the countdown stays live while the sheet is open.
+  _SheetTaskState _sheetTaskState(Map<String, dynamic> task,
+      {required bool timed}) {
+    if (!timed) {
+      return _SheetTaskState(
+        isDone: task['status'] == 'done',
+        primaryText: 'انجام شد',
+        progressColor: AppColors.black1,
+      );
+    }
+
+    final status = _timedTaskStatus(task);
+    final showsProgress = _timedTaskShowsProgress(task);
+    return _SheetTaskState(
+      isDone: status == 'done',
+      primaryText: status == 'pending' ? 'شروع' : 'ادامه',
+      progress: showsProgress ? 1 - _timedTaskRemainingProgress(task) : null,
+      remainingLabel: showsProgress ? _timedTaskRemainingLabel(task) : null,
+      durationLabel: showsProgress ? _timedTaskDurationLabel(task) : null,
+      progressColor: _timedTaskColor(status),
+    );
+  }
+
+  Future<void> _showTaskDetails(Map<String, dynamic> task,
+      {required bool timed}) async {
+    _timer.suppressBanner();
+    final _TaskSheetAction? action;
+    try {
+      action = await showModalBottomSheet<_TaskSheetAction>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => _TaskDetailsSheet(
+          task: task,
+          timed: timed,
+          listenable: _timer,
+          resolveState: () => _sheetTaskState(task, timed: timed),
+        ),
+      );
+    } finally {
+      _timer.unsuppressBanner();
+    }
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _TaskSheetAction.primary:
+        if (timed) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TaskTimerScreen(
+                task: task,
+                onPop: () => _loadTasksForSelectedDate(showLoading: false),
+              ),
+            ),
+          );
+        } else {
+          final index =
+              _checklistTasks.indexWhere((item) => item['id'] == task['id']);
+          await _completeChecklistTask(index);
+        }
+      case _TaskSheetAction.edit:
+        final edited = await context.to<Map<String, dynamic>>(
+          timed ? AddTimedTaskScreen(task: task) : AddTaskScreen(task: task),
+        );
+        if (edited == null || !mounted) return;
+        showReToast(context, 'تسک با موفقیت ویرایش شد', ReToastType.success);
+        await _loadTasksForSelectedDate();
+      case _TaskSheetAction.delete:
+        var deleted = false;
+        // The confirm sheet runs the delete itself and always pops false.
+        await _confirmDeleteTask(() async {
+          deleted = await _deleteTaskById(task['id'] as String?);
+        });
+        if (deleted && mounted) await _loadTasksForSelectedDate();
+    }
   }
 
   Future<void> _openAddTaskScreen() async {
@@ -1648,7 +1798,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         curve: Curves.easeInOutCubic,
                         height: 46,
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.black1 : Colors.transparent,
+                          color: isSelected
+                              ? AppColors.black1
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(100),
                         ),
                         padding: EdgeInsets.symmetric(
@@ -1658,62 +1810,62 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         child: Center(
                           child: isSelected
                               ? SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(-0.2, 0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _slideAnimationController,
-                                curve: Curves.easeOutCubic,
-                              ),
-                            ),
-                            child: FadeTransition(
-                              opacity: Tween<double>(
-                                begin: 0,
-                                end: 1,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _slideAnimationController,
-                                  curve: Curves.easeInCubic,
-                                ),
-                              ),
-                              child: ScaleTransition(
-                                scale: Tween<double>(
-                                  begin: 0.8,
-                                  end: 1.0,
-                                ).animate(
-                                  CurvedAnimation(
-                                    parent: _animationController,
-                                    curve: Curves.elasticOut,
+                                  position: Tween<Offset>(
+                                    begin: const Offset(-0.2, 0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: _slideAnimationController,
+                                      curve: Curves.easeOutCubic,
+                                    ),
                                   ),
-                                ),
-                                child: ReText(
-                                  '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  isBold: true,
-                                  color: AppColors.white,
-                                ),
-                              ),
-                            ),
-                          )
+                                  child: FadeTransition(
+                                    opacity: Tween<double>(
+                                      begin: 0,
+                                      end: 1,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: _slideAnimationController,
+                                        curve: Curves.easeInCubic,
+                                      ),
+                                    ),
+                                    child: ScaleTransition(
+                                      scale: Tween<double>(
+                                        begin: 0.8,
+                                        end: 1.0,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: _animationController,
+                                          curve: Curves.elasticOut,
+                                        ),
+                                      ),
+                                      child: ReText(
+                                        '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        isBold: true,
+                                        color: AppColors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
                               : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 6),
-                              ReText(
-                                convertToPersianNumbers(
-                                  date.day.toString(),
-                                ),
-                                fontWeight: FontWeight.w400,
-                                fontSize: 13,
-                                isBold: true,
-                                color: AppColors.black1.withOpacity(
-                                  0.5,
-                                ),
-                              ),
-                            ],
-                          ).hMargin(12),
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(height: 6),
+                                    ReText(
+                                      convertToPersianNumbers(
+                                        date.day.toString(),
+                                      ),
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 13,
+                                      isBold: true,
+                                      color: AppColors.black1.withOpacity(
+                                        0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ).hMargin(12),
                         ),
                       ),
                     );
@@ -1762,7 +1914,8 @@ class _TaskItemActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(100),
-            border: borderColor == null ? null : Border.all(color: borderColor!),
+            border:
+                borderColor == null ? null : Border.all(color: borderColor!),
           ),
           child: Row(
             children: [
@@ -1825,6 +1978,7 @@ class _ActionSheetButton extends StatelessWidget {
     );
   }
 }
+
 class _TasksShimmer extends StatefulWidget {
   const _TasksShimmer();
 
@@ -1832,7 +1986,8 @@ class _TasksShimmer extends StatefulWidget {
   State<_TasksShimmer> createState() => _TasksShimmerState();
 }
 
-class _TasksShimmerState extends State<_TasksShimmer> with SingleTickerProviderStateMixin {
+class _TasksShimmerState extends State<_TasksShimmer>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1400),
@@ -1900,6 +2055,309 @@ class _TasksShimmerState extends State<_TasksShimmer> with SingleTickerProviderS
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _TaskSheetAction { primary, edit, delete }
+
+class _SheetTaskState {
+  const _SheetTaskState({
+    required this.isDone,
+    required this.primaryText,
+    required this.progressColor,
+    this.progress,
+    this.remainingLabel,
+    this.durationLabel,
+  });
+
+  final bool isDone;
+  final String primaryText;
+  final Color progressColor;
+  final double? progress;
+  final String? remainingLabel;
+  final String? durationLabel;
+}
+
+class _TaskDetailsSheet extends StatelessWidget {
+  const _TaskDetailsSheet({
+    required this.task,
+    required this.timed,
+    required this.listenable,
+    required this.resolveState,
+  });
+
+  final Map<String, dynamic> task;
+  final bool timed;
+  final Listenable listenable;
+  final _SheetTaskState Function() resolveState;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: listenable,
+      builder: (context, _) => _buildContent(context, resolveState()),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, _SheetTaskState state) {
+    final note = (task['note'] as String?)?.trim() ?? '';
+    final tags = (task['tags'] as List?)?.cast<String>() ?? const <String>[];
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 48,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 22),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              Row(
+                children: [
+                  if (timed)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: ReText(
+                        task['label'] ?? '',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        ReText(
+                          task['title'] ?? '',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.black1,
+                          textAlign: TextAlign.right,
+                        ),
+                        const SizedBox(height: 4),
+                        ReText(
+                          task['subtitle'] ?? '',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray,
+                          textAlign: TextAlign.right,
+                        ),
+                      ],
+                    ).hMargin(12),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.gray2),
+                      ),
+                      child: const Icon(Icons.close,
+                          size: 18, color: AppColors.black1),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(height: 1, color: AppColors.gray2),
+              if (note.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ReText(
+                    note,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray,
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final tag in tags)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.black1,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: ReText(
+                            '#$tag',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.white,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              if (state.progress != null) ...[
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    ReText(
+                      '${state.remainingLabel}   / ',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.black1,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    const SizedBox(width: 6),
+                    ReText(
+                      state.durationLabel ?? '',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: LinearProgressIndicator(
+                          value: state.progress!.clamp(0.0, 1.0),
+                          minHeight: 3,
+                          backgroundColor: AppColors.gray2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(state.progressColor),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 26),
+              Row(
+                children: [
+                  if (!state.isDone) ...[
+                    Expanded(
+                      flex: 5,
+                      child: _SheetButton(
+                        text: state.primaryText,
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        background: AppColors.secondary,
+                        textColor: AppColors.white,
+                        onTap: () =>
+                            Navigator.of(context).pop(_TaskSheetAction.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    flex: 4,
+                    child: _SheetButton(
+                      text: 'ویرایش',
+                      icon: SolarIconsOutline.pen,
+                      background: AppColors.white,
+                      textColor: AppColors.black1,
+                      borderColor: AppColors.gray2,
+                      onTap: () =>
+                          Navigator.of(context).pop(_TaskSheetAction.edit),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () =>
+                        Navigator.of(context).pop(_TaskSheetAction.delete),
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.gray2),
+                      ),
+                      child: const Icon(
+                        SolarIconsOutline.trashBinMinimalistic,
+                        size: 22,
+                        color: AppColors.black1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetButton extends StatelessWidget {
+  const _SheetButton({
+    required this.text,
+    required this.icon,
+    required this.background,
+    required this.textColor,
+    required this.onTap,
+    this.borderColor,
+  });
+
+  final String text;
+  final IconData icon;
+  final Color background;
+  final Color textColor;
+  final Color? borderColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(100),
+          border: borderColor == null ? null : Border.all(color: borderColor!),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: textColor),
+            const Spacer(),
+            ReText(
+              text,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: textColor,
+            ),
+          ],
         ),
       ),
     );

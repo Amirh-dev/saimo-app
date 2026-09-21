@@ -47,6 +47,9 @@ class TaskTimerService extends ChangeNotifier {
   /// in that case, because the full timer UI is already visible.
   bool _isTimerScreenOpen = false;
 
+  /// Number of bottom sheets currently covering the banner's area.
+  int _bannerSuppressions = 0;
+
   /// Set when the user taps the X on the floating banner. Reset whenever a
   /// new task is loaded or started.
   bool _bannerDismissed = false;
@@ -97,7 +100,7 @@ class TaskTimerService extends ChangeNotifier {
 
   /// Whether the floating timer banner should be on screen right now.
   bool get shouldShowBanner =>
-      hasActiveTask && !_isCompleted && !_isTimerScreenOpen && !_bannerDismissed;
+      hasActiveTask && !_isCompleted && !_isTimerScreenOpen && !_bannerDismissed && _bannerSuppressions == 0;
 
   double get progress {
     if (_totalSeconds <= 0) return 0;
@@ -159,6 +162,19 @@ class TaskTimerService extends ChangeNotifier {
   void timerScreenOpened() {
     if (_isTimerScreenOpen) return;
     _isTimerScreenOpen = true;
+    _notifySafely();
+  }
+
+  /// Hides the banner while a bottom sheet is open. Pair every call with
+  /// [unsuppressBanner].
+  void suppressBanner() {
+    _bannerSuppressions++;
+    _notifySafely();
+  }
+
+  void unsuppressBanner() {
+    if (_bannerSuppressions == 0) return;
+    _bannerSuppressions--;
     _notifySafely();
   }
 
