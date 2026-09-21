@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ferry/ferry.dart' show FetchPolicy;
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
@@ -45,6 +46,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
   List<Map<String, dynamic>> _checklistTasks = [];
   List<Map<String, dynamic>> _timedTasks = [];
+  bool _isLoadingTasks = false;
   final TaskTimerService _timer = TaskTimerService.instance;
   late ScrollController _checklistDotsScrollController;
   late ScrollController _checklistCardsScrollController;
@@ -286,7 +288,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     };
   }
 
-  Future<void> _loadTasksForSelectedDate() async {
+  Future<void> _loadTasksForSelectedDate({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() => _isLoadingTasks = true);
     try {
       final selectedDate = _selectedDate;
       final response = await context.read<GraphQLRepository>().requestOnce(
@@ -301,6 +304,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
 
       if (!mounted || !_isSameDay(selectedDate, _selectedDate)) return;
       if (response.hasErrors || response.data == null) {
+        setState(() => _isLoadingTasks = false);
         showReToast(
           context,
           graphQLResponseErrorMessage(response),
@@ -312,6 +316,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
       final checklistTasks = <Map<String, dynamic>>[];
       final timedTasks = <Map<String, dynamic>>[];
       for (final task in response.data!.getTasks) {
+        // Safety net: a finished task must never keep a pending reminder.
+        if (task.status == GTaskStatus.COMPLETED || task.status == GTaskStatus.CANCELED) {
+          unawaited(TaskReminderService.instance.cancel(task.id));
+        }
+
         final taskDate = _jalaliFromIso(task.date.value);
         if (taskDate == null || !_isSameDay(taskDate, selectedDate)) {
           continue;
@@ -329,9 +338,11 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         _timedTasks = timedTasks;
         _expandedChecklistTaskIndex = null;
         _expandedTimedTaskIndex = null;
+        _isLoadingTasks = false;
       });
     } catch (error) {
       if (!mounted) return;
+      setState(() => _isLoadingTasks = false);
       showReToast(context, error.toString(), ReToastType.failed);
     }
   }
@@ -365,6 +376,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
+
+      await TaskReminderService.instance.cancel(taskId);
+      if (!mounted) return;
 
       setState(() {
         task['previousStatus'] = task['status'] ?? 'pending';
@@ -402,6 +416,9 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
         showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
         return;
       }
+
+      await TaskReminderService.instance.cancel(taskId);
+      if (!mounted) return;
 
       setState(() {
         _checklistTasks.removeAt(index);
@@ -587,7 +604,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         onTap: () async {
                           await _deleteTask(index);
                           Navigator.of(context).pop(false);
-                          unawaited(_loadTasksForSelectedDate());
+                          unawaited(_loadTasksForSelectedDate(showLoading: false));
                         },
                       ),
                     ),
@@ -780,7 +797,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                                 iconColor: AppColors.primary,
                                 onTap: () async {
                                   await _addTaskToToday(index);
-                                  unawaited(_loadTasksForSelectedDate());
+                                  unawaited(_loadTasksForSelectedDate(showLoading: false));
                                 },
                               ),
                             ),
@@ -811,6 +828,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTaskList(BuildContext context, List<Map<String, dynamic>> tasks, bool isTimeTask) {
+    if (_isLoadingTasks) return const _TasksShimmer();
+
     if (tasks.isEmpty) {
       return ReEmptyList(
         title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
@@ -1181,7 +1200,7 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
                         builder: (final _) => TaskTimerScreen(
                             task: task,
                             onPop: (){
-                              _loadTasksForSelectedDate();
+                              _loadTasksForSelectedDate(showLoading: false);
                             }
                         ),
                       ),
@@ -1248,6 +1267,8 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTimedTaskList(BuildContext context) {
+    if (_isLoadingTasks) return const _TasksShimmer();
+
     if (_timedTasks.isEmpty) {
       return _buildTaskList(context, const [], true);
     }
@@ -1494,15 +1515,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     if (newTask == null) return;
     if (!mounted) return;
 
-    final taskDate = newTask['date'] as Jalali?;
-    if (taskDate == null || _isSameDay(taskDate, _selectedDate)) {
-      setState(() {
-        _checklistTasks.insert(0, newTask);
-        if (_expandedChecklistTaskIndex != null) {
-          _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! + 1;
-        }
-      });
-    }
     showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
     await _loadTasksForSelectedDate();
     if (!mounted) return;
@@ -1531,12 +1543,6 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
     if (newTask == null) return;
     if (!mounted) return;
 
-    final taskDate = newTask['date'] as Jalali?;
-    if (taskDate == null || _isSameDay(taskDate, _selectedDate)) {
-      setState(() {
-        _timedTasks.insert(0, newTask);
-      });
-    }
     showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
     await _loadTasksForSelectedDate();
   }
@@ -1814,6 +1820,86 @@ class _ActionSheetButton extends StatelessWidget {
           fontWeight: FontWeight.w900,
           color: textColor,
           textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+class _TasksShimmer extends StatefulWidget {
+  const _TasksShimmer();
+
+  @override
+  State<_TasksShimmer> createState() => _TasksShimmerState();
+}
+
+class _TasksShimmerState extends State<_TasksShimmer> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final travel = _controller.value * 3;
+            return ShaderMask(
+              blendMode: BlendMode.srcATop,
+              shaderCallback: (bounds) => LinearGradient(
+                begin: Alignment(-1.5 + travel, 0),
+                end: Alignment(-0.5 + travel, 0),
+                colors: const [
+                  Color(0xFFE3E5EA),
+                  Color(0xFFF8F9FB),
+                  Color(0xFFE3E5EA),
+                ],
+                stops: const [0.18, 0.5, 0.82],
+              ).createShader(bounds),
+              child: child,
+            );
+          },
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            itemCount: 5,
+            itemBuilder: (_, __) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 78,
+                      decoration: BoxDecoration(
+                        color: AppColors.gray2,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: AppColors.gray2,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

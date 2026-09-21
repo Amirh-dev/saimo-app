@@ -1,4 +1,5 @@
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 
 import 'package:simo_learn/graphql/mutations/__generated__/start_timed_task.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/pause_timed_task.req.gql.dart';
@@ -53,6 +54,8 @@ class TaskTimerRepository {
         response.graphqlErrors?.first.message ?? "Complete timer failed",
       );
     }
+
+    await TaskReminderService.instance.cancel(id);
 
     return response.data?.completeTimedTask;
   }

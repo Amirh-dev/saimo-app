@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
@@ -53,6 +54,29 @@ const List<WeekDayOption> _weekDayOptions = [
 
 List<String> _recurrenceWeekdays(Set<String> selectedDays) {
   return _weekDayOptions.map((day) => day.code).where(selectedDays.contains).toList();
+}
+
+/// Schedules the local reminder for a freshly created task: weekly on the
+/// selected weekdays for recurring tasks, otherwise once at [date].
+Future<void> _scheduleReminder(
+  String taskId,
+  String title,
+  DateTime date, {
+  bool isWeekly = false,
+  Set<String> weekdays = const {},
+  TimeOfDay time = kDefaultReminderTime,
+}) async {
+  final service = TaskReminderService.instance;
+  final days = isWeekly ? _recurrenceWeekdays(weekdays) : const <String>[];
+  if (days.isNotEmpty) {
+    await service.scheduleWeekly(taskId: taskId, title: title, weekdays: days, time: time);
+  } else {
+    await service.scheduleOnce(
+      taskId: taskId,
+      title: title,
+      when: DateTime(date.year, date.month, date.day, time.hour, time.minute),
+    );
+  }
 }
 
 class AddTimedTaskScreen extends StatefulWidget {
@@ -417,6 +441,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       }
 
       final task = response.data!.createTask;
+      if (_isReminderEnabled) {
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays));
+      }
       final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
       final subtitle = task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (task.note?.trim().isNotEmpty == true ? task.note!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
       final durationSeconds = (task.durationM ?? _selectedMinutes) * 60;
@@ -1509,6 +1536,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       }
 
       final task = response.data!.createTask;
+      if (_isReminderEnabled) {
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _selectedTime));
+      }
       Navigator.of(context).pop(
         <String, dynamic>{
           'id': task.id,
