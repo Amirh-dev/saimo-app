@@ -7,7 +7,6 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/create_task.ast.gql.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
@@ -216,7 +215,9 @@ class _DashboardContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         goals.isEmpty
-            ? const _EmptyGoals()
+            ? _EmptyGoals(
+                onTap: () => navigateToIndex(context, 2, 0),
+              )
             : GoalsCarouselWidget(
                 goals: goals,
               ),
@@ -356,6 +357,22 @@ class _DashboardContent extends StatelessWidget {
                         icon: SvgPicture.asset(
                           'assets/icons/flame.svg',
                         ),
+                        onInfoTap: () => openInfoModal(
+                          context,
+                          title: 'ضریب امتیاز',
+                          iconAsset: 'assets/icons/flame.svg',
+                          iconColor: const Color(0xFFFF3040),
+                          sections: const [
+                            InfoSection(
+                              'ضریب امتیاز چیه؟',
+                              'ضریب امتیاز نشون می‌ده چقدر منظم درس می‌خونی. هرچه بالاتر باشه، از هر فعالیت امتیاز بیشتری می‌گیری.',
+                            ),
+                            InfoSection(
+                              'چطوری بیشتر می‌شه؟',
+                              'هر روزی که بیشتر از ۷۰٪ میانگین ساعت مطالعه‌ی روزانه‌ات درس بخونی، ضریب امتیازت یکی بیشتر می‌شه.',
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -372,6 +389,22 @@ class _DashboardContent extends StatelessWidget {
                             0xffe56929,
                           ),
                         ),
+                        onInfoTap: () => openInfoModal(
+                          context,
+                          title: 'سایمو کوین',
+                          iconAsset: 'assets/icons/simo_coin.svg',
+                          iconColor: const Color(0xFFFFC94C),
+                          sections: const [
+                            InfoSection(
+                              'سایمو کوین چیه؟',
+                              'سایمو کوین امتیاز درون‌برنامه‌ای سایموئه که با مطالعه و فعالیت‌هات جمع می‌شه.',
+                            ),
+                            InfoSection(
+                              'کِی فعال می‌شه؟',
+                              'این بخش هنوز فعال نشده و در نسخه‌های بعدی اضافه می‌شه. به‌زودی می‌تونی ازش استفاده کنی.',
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -387,25 +420,74 @@ class _DashboardContent extends StatelessWidget {
 }
 
 class _EmptyGoals extends StatelessWidget {
-  const _EmptyGoals();
+  const _EmptyGoals({required this.onTap});
+
+  /// Opens the goals section so the user can create their first goal.
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 75,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(100),
-      ),
-      alignment: Alignment.center,
-      child: const ReText(
-        'هنوز هدف فعالی ندارید',
-        color: AppColors.gray,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 75,
+        margin: const EdgeInsets.symmetric(
+          horizontal: 16,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.primary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ReText(
+                    'هنوز هدف فعالی ندارید',
+                    textAlign: TextAlign.right,
+                    color: AppColors.black1,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  SizedBox(height: 3),
+                  ReText(
+                    'برای ساختن اولین هدف ضربه بزنید',
+                    textAlign: TextAlign.right,
+                    color: AppColors.gray,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_back_ios_new,
+              size: 14,
+              color: AppColors.gray,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -665,12 +747,14 @@ class _MetricCard extends StatelessWidget {
     required this.label,
     required this.color,
     required this.icon,
+    required this.onInfoTap,
   });
 
   final String value;
   final String label;
   final Color color;
   final Widget icon;
+  final VoidCallback onInfoTap;
 
   @override
   Widget build(BuildContext context) {
@@ -693,7 +777,7 @@ class _MetricCard extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => openInfoModal(context),
+            onTap: onInfoTap,
             child: Container(
               width: 32,
               height: 32,
@@ -981,36 +1065,38 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
           ),
         ),
         const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildNavButton(
-              icon: Icons.keyboard_arrow_left_rounded,
-              onTap: _goToNextPage,
-            ),
-            const SizedBox(width: 4),
-            SizedBox(
-              width: 12,
-              child: CustomPaint(
-                painter: DashedLinePainter(),
+        // Slide controls only make sense with more than one goal.
+        if (widget.goals.length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildNavButton(
+                icon: Icons.keyboard_arrow_left_rounded,
+                onTap: _goToNextPage,
               ),
-            ),
-            const SizedBox(width: 4),
-            _buildCenterIndicator(),
-            const SizedBox(width: 4),
-            SizedBox(
-              width: 12,
-              child: CustomPaint(
-                painter: DashedLinePainter(),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 12,
+                child: CustomPaint(
+                  painter: DashedLinePainter(),
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            _buildNavButton(
-              icon: Icons.keyboard_arrow_right_rounded,
-              onTap: _goToPreviousPage,
-            ),
-          ],
-        ),
+              const SizedBox(width: 4),
+              _buildCenterIndicator(),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 12,
+                child: CustomPaint(
+                  painter: DashedLinePainter(),
+                ),
+              ),
+              const SizedBox(width: 4),
+              _buildNavButton(
+                icon: Icons.keyboard_arrow_right_rounded,
+                onTap: _goToPreviousPage,
+              ),
+            ],
+          ),
       ],
     );
   }

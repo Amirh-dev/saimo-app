@@ -68,6 +68,11 @@ dependencies:
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
   package_info_plus: ^9.0.1
+  # In-app browser for the counseling online-payment (bank IPG) flow: opens the
+  # gateway redirect URL and detects the backend payment callback to trigger
+  # verification. Pinned to the newest release compatible with the project's
+  # Dart 3.3.3 SDK (keeps the transitive `web` package at 0.5.x).
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

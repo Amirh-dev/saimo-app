@@ -29,6 +29,19 @@ class ConsultationPlan {
 
   /// Extra benefits shown when the plan is selected (empty = no expansion).
   final List<String> benefits;
+
+  /// Returns a copy with the display prices replaced by real offer prices.
+  ConsultationPlan copyWith({String? price, String? oldPrice}) {
+    return ConsultationPlan(
+      title: title,
+      subtitle: subtitle,
+      price: price ?? this.price,
+      oldPrice: oldPrice ?? this.oldPrice,
+      color: color,
+      planType: planType,
+      benefits: benefits,
+    );
+  }
 }
 
 const List<String> _kBenefits = [
@@ -67,31 +80,34 @@ const List<ConsultationPlan> kPlans = [
 ];
 
 /// Opens the plans sheet. Returns the selected plan, or null on
-/// cancel/dismiss.
+/// cancel/dismiss. [plans] defaults to the static [kPlans] but callers should
+/// pass real offer-priced plans when available.
 Future<ConsultationPlan?> showPlansSheet(
   BuildContext context, {
   required String title,
+  List<ConsultationPlan>? plans,
 }) {
   return showModalBottomSheet<ConsultationPlan>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _PlansSheet(title: title),
+    builder: (_) => _PlansSheet(title: title, plans: plans ?? kPlans),
   );
 }
 
 class _PlansSheet extends StatefulWidget {
-  const _PlansSheet({required this.title});
+  const _PlansSheet({required this.title, required this.plans});
 
   final String title;
+  final List<ConsultationPlan> plans;
 
   @override
   State<_PlansSheet> createState() => _PlansSheetState();
 }
 
 class _PlansSheetState extends State<_PlansSheet> {
-  // Default to "حرفه ای" (middle), matching the design.
-  int _selected = 1;
+  // Default to "حرفه ای" (middle), matching the design; clamp for shorter lists.
+  late int _selected = widget.plans.length > 1 ? 1 : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -116,11 +132,11 @@ class _PlansSheetState extends State<_PlansSheet> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    for (var i = 0; i < kPlans.length; i++)
+                    for (var i = 0; i < widget.plans.length; i++)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _PlanCard(
-                          plan: kPlans[i],
+                          plan: widget.plans[i],
                           selected: i == _selected,
                           onTap: () => setState(() => _selected = i),
                         ),
@@ -207,7 +223,7 @@ class _PlansSheetState extends State<_PlansSheet> {
             borderRadius: 40,
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            onPressed: () => Navigator.of(context).pop(kPlans[_selected]),
+            onPressed: () => Navigator.of(context).pop(widget.plans[_selected]),
           ),
         ),
         const SizedBox(width: 12),

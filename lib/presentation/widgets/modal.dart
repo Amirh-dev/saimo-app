@@ -1,12 +1,31 @@
 import 'package:ferry/typed_links.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/utils/colors.dart';
 
-Future<void> openInfoModal(context) async {
+/// One question/answer block inside an [openInfoModal].
+class InfoSection {
+  const InfoSection(this.heading, this.body);
+
+  final String heading;
+  final String body;
+}
+
+/// A themed info bottom sheet: a title with a colored icon badge, a divider,
+/// then either a single [description] paragraph or a list of [sections]
+/// (bold heading + paragraph), and a confirm button.
+Future<void> openInfoModal(
+  context, {
+  required String title,
+  String? iconAsset,
+  Color iconColor = AppColors.done,
+  String? description,
+  List<InfoSection> sections = const [],
+}) async {
   await showReModalBottomSheet<void>(
     context: context,
     builder: (sheetContext) {
@@ -24,63 +43,61 @@ Future<void> openInfoModal(context) async {
             padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
-                Container(
-                  margin: const EdgeInsets.fromLTRB(0, 8, 0, 32),
-                  width: 65,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(100),
-                    color: AppColors.primary,
+                // Drag handle. Wrapped in Center because the column is stretched,
+                // which would otherwise force the handle to full width.
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(0, 8, 0, 32),
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(100),
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
+
+                // Header: title + colored icon badge
                 Row(
                   children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          ReText(
-                            'سایمو آپدیت شد!',
-                            textAlign: TextAlign.center,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
-                          ),
-                          SizedBox(height: 2),
-                          ReText(
-                            '۳ اسفند ۱۴۰۴',
-                            textAlign: TextAlign.center,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.gray,
-                          ),
-                        ],
+                    Expanded(
+                      child: ReText(
+                        title,
+                        textAlign: TextAlign.right,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
+                    if (iconAsset != null) ...[
+                      const SizedBox(width: 16),
+                      Container(
                         width: 58,
                         height: 58,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.gray.withOpacity(0.18),
-                            width: 1.5,
+                          color: iconColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: iconColor.withOpacity(0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: SvgPicture.asset(
+                          iconAsset,
+                          width: 26,
+                          height: 26,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.white,
+                            BlendMode.srcIn,
                           ),
                         ),
-                        child: Icon(
-                          Icons.close,
-                          size: 17,
-                          color: AppColors.gray.withOpacity(0.65),
-                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
 
@@ -95,47 +112,40 @@ Future<void> openInfoModal(context) async {
 
                 const SizedBox(height: 24),
 
-                // Intro
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ReText(
-                    'توی آپدیت جدید سایمو می تونی از قابلیت های جدیدی مثل:',
+                // The column is stretched, so these ReTexts get the full width
+                // and wrap over as many lines as needed (no ellipsis).
+                if (description != null)
+                  ReText(
+                    description,
                     textAlign: TextAlign.right,
                     color: AppColors.black.withAlpha(140),
-                    fontSize: 13,
+                    fontSize: 14,
+                    lineHeight: 1.9,
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
                   ),
-                ),
 
-                const SizedBox(height: 16),
-
-                // Features
-                _buildInfoFeature(
-                  'انتخاب تاریخ',
-                ),
-                _buildInfoFeature(
-                  'تکرار هفتگی یا روزانه تسک ها',
-                ),
-                _buildInfoFeature(
-                  'مدیریت تسک های انجام شده',
-                ),
-                _buildInfoFeature(
-                  'بررسی وضعیت تسک های زمان دار و چک لیست',
-                ),
-                _buildInfoFeature(
-                  'تاریخچه تسک ها',
-                ),
-
-                const SizedBox(height: 16),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ReText(
-                    'استفاده کنی!',
+                for (var i = 0; i < sections.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 28),
+                  ReText(
+                    sections[i].heading,
+                    textAlign: TextAlign.right,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
+                  ),
+                  const SizedBox(height: 10),
+                  ReText(
+                    sections[i].body,
                     textAlign: TextAlign.right,
                     color: AppColors.black.withAlpha(140),
-                    fontSize: 13,
+                    fontSize: 14,
+                    lineHeight: 1.9,
+                    maxLines: null,
+                    overflow: TextOverflow.visible,
                   ),
-                ),
+                ],
 
                 const SizedBox(height: 42),
 
@@ -172,31 +182,6 @@ Future<void> openInfoModal(context) async {
         ),
       );
     },
-  );
-}
-
-Widget _buildInfoFeature(String text) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: ReText(
-            text,
-            textAlign: TextAlign.right,
-            fontSize: 13,
-            color: AppColors.black.withAlpha(140),
-          ),
-        ),
-        const SizedBox(width: 10),
-        ReText(
-          '•',
-          fontSize: 13,
-          color: AppColors.black.withAlpha(140),
-        ),
-      ],
-    ),
   );
 }
 

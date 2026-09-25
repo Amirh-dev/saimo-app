@@ -91,20 +91,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                         fontSize: 13,
                                         maxLength: 11,
                                         keyboardType: TextInputType.number,
-                                        suffixIcon: phoneController.text.isEmpty ? const Padding(
-                                          padding: EdgeInsets.only(left: 15),
+                                        // Keep the suffix a constant size so the
+                                        // field height never changes; only fade
+                                        // the sample hint out once typing starts.
+                                        suffixIcon: Padding(
+                                          padding: const EdgeInsets.only(left: 15),
                                           child: Align(
                                             alignment: Alignment.centerLeft,
                                             widthFactor: 1,
-                                            child: ReText(
-                                              '******* 0912',
-                                              isPersian: true,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.gray,
+                                            child: Opacity(
+                                              opacity:
+                                                  phoneController.text.isEmpty
+                                                      ? 1
+                                                      : 0,
+                                              child: const ReText(
+                                                '******* 0912',
+                                                isPersian: true,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.gray,
+                                              ),
                                             ),
                                           ),
-                                        ) : const SizedBox(),
+                                        ),
                                       ),
                                       ReButton(
                                         isEnabled:

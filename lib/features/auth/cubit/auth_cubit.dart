@@ -34,6 +34,16 @@ class AuthCubit extends Cubit<AuthState> {
   int _lastOtpExpiresInSeconds = 0;
   String _lastOtpMessage = '';
 
+  // Persian, user-facing fallback messages for auth toasts.
+  static final RegExp _persianChars = RegExp(r'[؀-ۿ]');
+  static const _kSendOtpFailed =
+      'ارسال کد تایید ناموفق بود. لطفاً دوباره تلاش کنید.';
+  static const _kInvalidCode =
+      'کد تایید نادرست است. لطفاً دوباره بررسی کنید.';
+  static const _kUpdateProfileFailed = 'به‌روزرسانی پروفایل ناموفق بود.';
+  static const _kRefreshFailed =
+      'تمدید نشست ناموفق بود. لطفاً دوباره وارد شوید.';
+
   void prepareRegistrationForOtp({
     required String phoneNumber,
     required String fullName,
@@ -89,7 +99,7 @@ class AuthCubit extends Cubit<AuthState> {
           AuthFailure(
             _extractGraphQLErrorMessage(
               response,
-              fallbackMessage: 'Sending OTP failed',
+              fallbackMessage: _kSendOtpFailed,
             ),
             action: AuthAction.sendOtp,
           ),
@@ -102,7 +112,7 @@ class AuthCubit extends Cubit<AuthState> {
       if (payload == null || !payload.success) {
         emit(
           AuthFailure(
-            payload?.message ?? 'Sending OTP failed',
+            _localizeAuthError(payload?.message ?? '', fallback: _kSendOtpFailed),
             action: AuthAction.sendOtp,
           ),
         );
@@ -152,7 +162,7 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Sending OTP failed'),
+          _friendlyError(error, fallbackMessage: _kSendOtpFailed),
           action: AuthAction.sendOtp,
         ),
       );
@@ -174,7 +184,7 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          _friendlyError(error, fallbackMessage: _kInvalidCode),
           action: AuthAction.login,
         ),
       );
@@ -239,7 +249,7 @@ class AuthCubit extends Cubit<AuthState> {
       //     AuthFailure(
       //       _extractGraphQLErrorMessage(
       //         response,
-      //         fallbackMessage: 'Invalid verification code',
+      //         fallbackMessage: _kInvalidCode,
       //       ),
       //       action: AuthAction.verifyOtp,
       //     ),
@@ -253,7 +263,7 @@ class AuthCubit extends Cubit<AuthState> {
       //     payload.refreshToken.isEmpty) {
       //   emit(
       //     const AuthFailure(
-      //       'Invalid verification code',
+      //       _kInvalidCode,
       //       action: AuthAction.verifyOtp,
       //     ),
       //   );
@@ -274,7 +284,7 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          _friendlyError(error, fallbackMessage: _kInvalidCode),
           action: AuthAction.verifyOtp,
         ),
       );
@@ -332,7 +342,7 @@ class AuthCubit extends Cubit<AuthState> {
           AuthFailure(
             _extractGraphQLErrorMessage(
               response,
-              fallbackMessage: 'Invalid verification code',
+              fallbackMessage: _kInvalidCode,
             ),
             action: failureAction,
           ),
@@ -346,7 +356,7 @@ class AuthCubit extends Cubit<AuthState> {
           payload.refreshToken.isEmpty) {
         emit(
           AuthFailure(
-            'Invalid verification code',
+            _kInvalidCode,
             action: failureAction,
           ),
         );
@@ -369,7 +379,7 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Invalid verification code'),
+          _friendlyError(error, fallbackMessage: _kInvalidCode),
           action: failureAction,
         ),
       );
@@ -412,7 +422,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       if (userId == null || userId.isEmpty) {
         emit(
           const AuthFailure(
-            'Updating profile failed',
+            _kUpdateProfileFailed,
             action: AuthAction.register,
           ),
         );
@@ -428,7 +438,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Updating profile failed'),
+          _friendlyError(error, fallbackMessage: _kUpdateProfileFailed),
           action: AuthAction.register,
         ),
       );
@@ -456,7 +466,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: 'Refreshing session failed'),
+          _friendlyError(error, fallbackMessage: _kRefreshFailed),
           action: AuthAction.refresh,
         ),
       );
@@ -599,7 +609,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
           AuthFailure(
             _extractGraphQLErrorMessage(
               response,
-              fallbackMessage: 'Invalid verification code',
+              fallbackMessage: _kInvalidCode,
             ),
             action: AuthAction.login,
           ),
@@ -614,7 +624,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       if (emitFailure) {
         emit(
           const AuthFailure(
-            'Invalid verification code',
+            _kInvalidCode,
             action: AuthAction.login,
           ),
         );
@@ -706,27 +716,74 @@ query GetMeForAuthCompletion {
     dynamic response, {
     required String fallbackMessage,
   }) {
-    final message = graphQLResponseErrorMessage(response);
-    if (message == 'Unknown GraphQL error' || message.trim().isEmpty) {
-      return fallbackMessage;
-    }
-    return message;
+    return _localizeAuthError(
+      graphQLResponseErrorMessage(response),
+      fallback: fallbackMessage,
+    );
   }
 
   String _friendlyError(
     Object error, {
     required String fallbackMessage,
   }) {
-    final message = error.toString();
-    if (message.contains('Failed host lookup')) {
-      return 'Network connection failed';
+    return _localizeAuthError(error.toString(), fallback: fallbackMessage);
+  }
+
+  /// Maps a raw (usually English) backend/exception message to a fluent Persian
+  /// one for user-facing toasts. A message that already contains Persian is
+  /// kept as-is; anything unrecognized falls back to [fallback] (also Persian).
+  String _localizeAuthError(String raw, {required String fallback}) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return fallback;
+    // The backend may already return a Persian message; trust it.
+    if (_persianChars.hasMatch(trimmed)) return trimmed;
+
+    final m = trimmed.toLowerCase();
+    if (m == 'unknown graphql error') return fallback;
+
+    if (m.contains('failed host lookup') ||
+        m.contains('socketexception') ||
+        m.contains('network') ||
+        m.contains('connection')) {
+      return 'اتصال به اینترنت برقرار نیست. لطفاً شبکه‌ی خود را بررسی کنید.';
     }
-    if (message.contains('401') ||
-        message.toLowerCase().contains('unauthorized')) {
-      return 'Authentication expired';
+    if ((m.contains('expire') || m.contains('expired')) &&
+        (m.contains('code') || m.contains('otp'))) {
+      return 'کد تایید منقضی شده است. لطفاً کد جدید دریافت کنید.';
     }
-    if (message.trim().isEmpty) return fallbackMessage;
-    return message;
+    if (m.contains('too many') ||
+        m.contains('rate limit') ||
+        m.contains('attempt')) {
+      return 'تعداد تلاش‌ها بیش از حد مجاز است. کمی بعد دوباره تلاش کنید.';
+    }
+    if ((m.contains('invalid') ||
+            m.contains('incorrect') ||
+            m.contains('wrong') ||
+            m.contains('mismatch')) &&
+        (m.contains('code') || m.contains('otp') || m.contains('verif'))) {
+      return _kInvalidCode;
+    }
+    if (m.contains('not registered') || m.contains('not found')) {
+      return 'این شماره ثبت نام نشده است.';
+    }
+    if (m.contains('already') &&
+        (m.contains('register') || m.contains('exist'))) {
+      return 'این شماره قبلاً ثبت نام شده است.';
+    }
+    if (m.contains('username') &&
+        (m.contains('taken') || m.contains('exist') || m.contains('use'))) {
+      return 'این نام کاربری قبلاً استفاده شده است.';
+    }
+    if (m.contains('phone') && (m.contains('invalid') || m.contains('format'))) {
+      return 'شماره تماس نامعتبر است.';
+    }
+    if (m.contains('unauthorized') ||
+        m.contains('unauthenticated') ||
+        m.contains('401') ||
+        m.contains('token')) {
+      return 'نشست شما منقضی شده است. لطفاً دوباره وارد شوید.';
+    }
+    return fallback;
   }
 }
 

@@ -7,10 +7,10 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_models.da
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
+import 'package:simo_learn/presentation/screens/consultants/payment_webview_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/success_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -80,17 +80,25 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     });
   }
 
-  // Screen 3 (duration) → 4 (plans) → 5 (invoice) → API request.
+  // Screen 3 (duration) → 4 (plans) → 5 (invoice) → request + online payment.
   Future<void> _startConsultationFlow(
     BuildContext context,
     Consultant consultant,
   ) async {
+    // Best-effort: fetch real offer prices up-front so the plans/invoice sheets
+    // show the amounts the backend will actually charge. Falls back silently to
+    // the static prices when unavailable.
+    final offers = await _loadOffers(consultant);
+    if (!context.mounted) return;
+
     final duration = await showConsultationDetailsSheet(context);
     if (duration == null || !context.mounted) return;
 
+    final plans = _plansForDuration(offers, duration.months);
     final plan = await showPlansSheet(
       context,
       title: duration.planTitle,
+      plans: plans,
     );
     if (plan == null || !context.mounted) return;
 
@@ -98,10 +106,52 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         await showInvoiceSheet(context, duration: duration, plan: plan);
     if (paid != true || !context.mounted) return;
 
-    await _submitRequest(consultant, duration, plan);
+    await _submitAndPay(consultant, duration, plan);
   }
 
-  Future<void> _submitRequest(
+  Future<List<CounselingOffer>> _loadOffers(Consultant consultant) async {
+    final repo = _repository;
+    if (repo == null || !_fromApi || consultant.id.isEmpty) return const [];
+    try {
+      return await repo.fetchOffers(consultant.id);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Overlays real offer prices onto the static plan cards for [months].
+  /// Any plan without a matching offer keeps its static price.
+  List<ConsultationPlan> _plansForDuration(
+    List<CounselingOffer> offers,
+    int months,
+  ) {
+    if (offers.isEmpty) return kPlans;
+    return kPlans.map((plan) {
+      CounselingOffer? match;
+      for (final offer in offers) {
+        if (offer.planType == plan.planType && offer.durationMonths == months) {
+          match = offer;
+          break;
+        }
+      }
+      if (match == null) return plan;
+      return plan.copyWith(
+        price: convertToPersianNumbers(
+          match.totalPrice.toString(),
+          addSeparator: true,
+        ),
+        oldPrice: convertToPersianNumbers(
+          match.baseTotalPrice.toString(),
+          addSeparator: true,
+        ),
+      );
+    }).toList();
+  }
+
+  /// Creates the pending subscription, opens the bank gateway in-app, then
+  /// verifies the payment before showing success. The charged amount is always
+  /// the server-side cost, independent of the displayed price.
+  Future<void> _submitAndPay(
     Consultant consultant,
     ConsultationDurationOption duration,
     ConsultationPlan plan,
@@ -110,7 +160,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     // With sample data (no repo / not from API) there is nothing real to
-    // submit; treat it as a successful mock so the preview flow still completes.
+    // charge; treat it as a successful mock so the preview flow still completes.
     if (repo == null || !_fromApi || consultant.id.isEmpty) {
       if (!mounted) return;
       await showConsultationSuccessSheet(context, duration: duration, plan: plan);
@@ -118,15 +168,54 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     }
 
     try {
-      await repo.requestCounseling(
+      final request = await repo.requestCounseling(
         counselorProfileID: consultant.id,
         durationMonths: duration.months,
         planType: plan.planType,
       );
+
+      final initiation = await repo.beginPayment(
+        subscriptionID: request.subscriptionID,
+        // Stable per subscription so a repeated begin resumes the same attempt.
+        idempotencyKey: 'sub_${request.subscriptionID}',
+      );
       if (!mounted) return;
-      await showConsultationSuccessSheet(context, duration: duration, plan: plan);
+
+      final result = await context.to<PaymentWebViewResult>(
+        PaymentWebViewScreen(redirectURL: initiation.redirectURL),
+      );
+      if (!mounted) return;
+
+      // Verify regardless of how the WebView closed: the bank may have
+      // completed the transaction even if the user tapped back.
+      final verification = await repo.verifyPayment(initiation.attemptID);
+      if (!mounted) return;
+
+      if (verification.succeeded) {
+        await showConsultationSuccessSheet(
+          context,
+          duration: duration,
+          plan: plan,
+        );
+        return;
+      }
+
+      if (result == PaymentWebViewResult.cancelled && verification.pending) {
+        messenger.showSnackBar(
+          _snack('پرداخت انجام نشد. می‌توانید دوباره تلاش کنید.', error: true),
+        );
+        return;
+      }
+
+      final message = verification.failureMessage;
+      messenger.showSnackBar(
+        _snack(
+          (message != null && message.isNotEmpty) ? message : 'پرداخت ناموفق بود',
+          error: true,
+        ),
+      );
     } catch (e) {
-      messenger.showSnackBar(_snack('ثبت درخواست ناموفق بود: $e', error: true));
+      messenger.showSnackBar(_snack('پرداخت ناموفق بود: $e', error: true));
     }
   }
 
@@ -226,11 +315,19 @@ class _ConsultantCard extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onSelect;
 
+  // A single shared curve/duration keeps the radius, size and fade in sync so
+  // the card feels like one smooth morph rather than three separate tweens.
+  static const Duration _animDuration = Duration(milliseconds: 280);
+  static const Curve _animCurve = Curves.easeInOutCubic;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeInOut,
+      duration: _animDuration,
+      curve: _animCurve,
+      // Clip to the animated rounded corners so the expanding body (buttons and
+      // bordered résumé rows) never bleeds past the corners mid-animation.
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(expanded ? 32 : 56),
@@ -248,11 +345,17 @@ class _ConsultantCard extends StatelessWidget {
         children: [
           _buildTopRow(),
           AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            child: expanded
-                ? _buildExpandedBody()
-                : const SizedBox(width: double.infinity),
+            duration: _animDuration,
+            curve: _animCurve,
+            alignment: Alignment.topCenter,
+            child: AnimatedOpacity(
+              duration: _animDuration,
+              curve: _animCurve,
+              opacity: expanded ? 1 : 0,
+              child: expanded
+                  ? _buildExpandedBody()
+                  : const SizedBox(width: double.infinity),
+            ),
           ),
         ],
       ),
