@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -33,6 +35,10 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   List<Consultant> _consultants = kSampleConsultants;
   bool _loading = true;
   bool _fromApi = false;
+
+  /// True from submitting the request until the payment is verified; blocks
+  /// the screen so a second purchase can't start mid-flow.
+  bool _paying = false;
 
   // Second card expanded by default, matching the design.
   int _expandedIndex = 1;
@@ -149,8 +155,10 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   }
 
   /// Creates the pending subscription, opens the bank gateway in-app, then
-  /// verifies the payment before showing success. The charged amount is always
-  /// the server-side cost, independent of the displayed price.
+  /// verifies the payment. The success dialog is shown ONLY when the server
+  /// confirms the attempt SUCCEEDED and the subscription is ACTIVE; every
+  /// other outcome leaves the user without a counselor. The charged amount is
+  /// always the server-side cost, independent of the displayed price.
   Future<void> _submitAndPay(
     Consultant consultant,
     ConsultationDurationOption duration,
@@ -159,26 +167,37 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     final repo = _repository;
     final messenger = ScaffoldMessenger.of(context);
 
-    // With sample data (no repo / not from API) there is nothing real to
-    // charge; treat it as a successful mock so the preview flow still completes.
+    // Sample consultants (API unavailable) can't be purchased, and nothing may
+    // be granted without a verified payment.
     if (repo == null || !_fromApi || consultant.id.isEmpty) {
-      if (!mounted) return;
-      await showConsultationSuccessSheet(context, duration: duration, plan: plan);
+      messenger.showSnackBar(
+        _snack('در حال حاضر امکان پرداخت وجود ندارد. لطفاً دوباره تلاش کنید.',
+            error: true),
+      );
       return;
     }
+    if (_paying) return;
+    setState(() => _paying = true);
 
     try {
-      final request = await repo.requestCounseling(
-        counselorProfileID: consultant.id,
-        durationMonths: duration.months,
-        planType: plan.planType,
-      );
-
-      final initiation = await repo.beginPayment(
-        subscriptionID: request.subscriptionID,
-        // Stable per subscription so a repeated begin resumes the same attempt.
-        idempotencyKey: 'sub_${request.subscriptionID}',
-      );
+      final CounselingRequest request;
+      final PaymentInitiation initiation;
+      try {
+        request = await repo.requestCounseling(
+          counselorProfileID: consultant.id,
+          durationMonths: duration.months,
+          planType: plan.planType,
+        );
+        initiation = await repo.beginPayment(
+          subscriptionID: request.subscriptionID,
+          // Stable per subscription so a repeated begin resumes the same attempt.
+          idempotencyKey: 'sub_${request.subscriptionID}',
+        );
+      } catch (e) {
+        messenger
+            .showSnackBar(_snack('شروع پرداخت ناموفق بود: $e', error: true));
+        return;
+      }
       if (!mounted) return;
 
       final result = await context.to<PaymentWebViewResult>(
@@ -188,10 +207,25 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
 
       // Verify regardless of how the WebView closed: the bank may have
       // completed the transaction even if the user tapped back.
-      final verification = await repo.verifyPayment(initiation.attemptID);
+      final verification = await _verifyPayment(
+        repo,
+        initiation.attemptID,
+        waitWhilePending: result == PaymentWebViewResult.completed,
+      );
       if (!mounted) return;
 
+      if (verification == null) {
+        // Server unreachable: the outcome is unknown, so grant nothing. The
+        // backend activates the subscription itself if the bank settles it.
+        messenger.showSnackBar(_snack(
+          'وضعیت پرداخت مشخص نشد. در صورت کسر وجه، مشاور پس از تایید پرداخت برای شما فعال می‌شود.',
+          error: true,
+        ));
+        return;
+      }
+
       if (verification.succeeded) {
+        setState(() => _paying = false);
         await showConsultationSuccessSheet(
           context,
           duration: duration,
@@ -200,22 +234,59 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         return;
       }
 
-      if (result == PaymentWebViewResult.cancelled && verification.pending) {
-        messenger.showSnackBar(
-          _snack('پرداخت انجام نشد. می‌توانید دوباره تلاش کنید.', error: true),
-        );
+      if (verification.failed) {
+        unawaited(_cancelPendingQuietly(repo, request.subscriptionID));
+        final message = verification.failureMessage;
+        messenger.showSnackBar(_snack(
+          (message != null && message.isNotEmpty)
+              ? message
+              : 'پرداخت ناموفق بود',
+          error: true,
+        ));
         return;
       }
 
-      final message = verification.failureMessage;
-      messenger.showSnackBar(
-        _snack(
-          (message != null && message.isNotEmpty) ? message : 'پرداخت ناموفق بود',
-          error: true,
-        ),
-      );
-    } catch (e) {
-      messenger.showSnackBar(_snack('پرداخت ناموفق بود: $e', error: true));
+      messenger.showSnackBar(_snack(
+        result == PaymentWebViewResult.cancelled
+            ? 'پرداخت انجام نشد. می‌توانید دوباره تلاش کنید.'
+            : 'پرداخت شما در حال تایید است. پس از تایید، مشاور برای شما فعال می‌شود.',
+        error: true,
+      ));
+    } finally {
+      if (mounted && _paying) setState(() => _paying = false);
+    }
+  }
+
+  /// Verifies [attemptID], retrying transient errors. When [waitWhilePending]
+  /// (the gateway returned to the callback) it also polls briefly while the
+  /// bank is still confirming. Returns null if the server never answered.
+  Future<PaymentVerification?> _verifyPayment(
+    ConsultantRepository repo,
+    String attemptID, {
+    required bool waitWhilePending,
+  }) async {
+    const maxTries = 4;
+    PaymentVerification? last;
+    for (var i = 0; i < maxTries; i++) {
+      if (i > 0) await Future<void>.delayed(const Duration(seconds: 2));
+      try {
+        last = await repo.verifyPayment(attemptID);
+        if (!last.pending || !waitWhilePending) return last;
+      } catch (_) {
+        // Network/server hiccup: try again.
+      }
+    }
+    return last;
+  }
+
+  Future<void> _cancelPendingQuietly(
+    ConsultantRepository repo,
+    String subscriptionID,
+  ) async {
+    try {
+      await repo.cancelPendingSubscription(subscriptionID);
+    } catch (_) {
+      // Best effort: the server also expires unpaid subscriptions.
     }
   }
 
@@ -239,65 +310,77 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray1,
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(48),
-                bottomRight: Radius.circular(48),
-              ),
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  const Spacer(),
-                  const ReText(
-                    'مشاوران',
-                    textAlign: TextAlign.start,
-                    color: AppColors.black1,
-                    fontSize: 16,
-                    fontWeight: 1000,
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      SolarIconsOutline.altArrowRight,
-                      size: 22,
-                      color: AppColors.black1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
-                    itemCount: _consultants.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final consultant = _consultants[index];
-                      return _ConsultantCard(
-                        consultant: consultant,
-                        expanded: index == _expandedIndex,
-                        onToggle: () => _toggle(index),
-                        onSelect: () {
-                          if (widget.onSelect != null) {
-                            widget.onSelect!(consultant);
-                          } else {
-                            _startConsultationFlow(context, consultant);
-                          }
-                        },
-                      );
-                    },
-                  ),
-          ),
+          _buildContent(context),
+          if (_paying) ...[
+            const ModalBarrier(dismissible: false, color: Colors.black26),
+            const Center(child: CircularProgressIndicator.adaptive()),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(48),
+              bottomRight: Radius.circular(48),
+            ),
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                const Spacer(),
+                const ReText(
+                  'مشاوران',
+                  textAlign: TextAlign.start,
+                  color: AppColors.black1,
+                  fontSize: 16,
+                  fontWeight: 1000,
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    SolarIconsOutline.altArrowRight,
+                    size: 22,
+                    color: AppColors.black1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator.adaptive())
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+                  itemCount: _consultants.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final consultant = _consultants[index];
+                    return _ConsultantCard(
+                      consultant: consultant,
+                      expanded: index == _expandedIndex,
+                      onToggle: () => _toggle(index),
+                      onSelect: () {
+                        if (widget.onSelect != null) {
+                          widget.onSelect!(consultant);
+                        } else {
+                          _startConsultationFlow(context, consultant);
+                        }
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -330,7 +413,7 @@ class _ConsultantCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(expanded ? 32 : 56),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),

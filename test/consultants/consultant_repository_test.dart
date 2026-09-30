@@ -239,5 +239,86 @@ void main() {
 
       expect(verification.pending, isTrue);
     });
+
+    test('is not a success until the subscription is ACTIVE', () async {
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async =>
+          const {
+            'verifyCounselingPayment': {
+              'attempt': {'id': 'attempt-1', 'status': 'SUCCEEDED'},
+              'subscription': {'id': 'sub-1', 'status': 'PENDING'},
+            },
+          });
+
+      final verification = await repository.verifyPayment('attempt-1');
+
+      expect(verification.succeeded, isFalse);
+      expect(verification.pending, isTrue);
+    });
+  });
+
+  group('fetchMyActiveCounselor', () {
+    ConsultantRepository repositoryReturning(Map<String, dynamic> subscription) {
+      return ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async =>
+          {'myActiveCounselor': subscription});
+    }
+
+    Map<String, dynamic> subscription(String status, {String? endDate}) => {
+          'status': status,
+          'endDate': endDate,
+          'counselor': {
+            'id': 'profile-1',
+            'userID': 'user-1',
+            'user': {'fullName': 'مشاور', 'username': 'c1'},
+          },
+        };
+
+    test('returns the counselor of an ACTIVE subscription', () async {
+      final counselor = await repositoryReturning(subscription('ACTIVE'))
+          .fetchMyActiveCounselor();
+
+      expect(counselor?.userID, 'user-1');
+    });
+
+    test('ignores an unpaid PENDING subscription', () async {
+      final counselor = await repositoryReturning(subscription('PENDING'))
+          .fetchMyActiveCounselor();
+
+      expect(counselor, isNull);
+    });
+
+    test('ignores a subscription whose end date has passed', () async {
+      final counselor = await repositoryReturning(
+        subscription('ACTIVE', endDate: '2000-01-01T00:00:00Z'),
+      ).fetchMyActiveCounselor();
+
+      expect(counselor, isNull);
+    });
+  });
+
+  group('cancelPendingSubscription', () {
+    test('sends the subscription id', () async {
+      Map<String, dynamic>? sentVariables;
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        expect(query, contains('cancelPendingCounselingSubscription'));
+        sentVariables = variables;
+        return const {};
+      });
+
+      await repository.cancelPendingSubscription('sub-1');
+
+      expect(sentVariables, {'subscriptionID': 'sub-1'});
+    });
   });
 }

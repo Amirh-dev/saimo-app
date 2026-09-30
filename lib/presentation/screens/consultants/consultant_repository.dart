@@ -40,6 +40,8 @@ class ConsultantRepository {
   static const String _myActiveCounselorQuery = r'''
     query MyActiveCounselor {
       myActiveCounselor {
+        status
+        endDate
         counselor {
           id
           userID
@@ -93,6 +95,15 @@ class ConsultantRepository {
     }
   ''';
 
+  static const String _cancelPendingSubscriptionMutation = r'''
+    mutation CancelPendingCounselingSubscription($subscriptionID: ID!) {
+      cancelPendingCounselingSubscription(subscriptionID: $subscriptionID) {
+        id
+        status
+      }
+    }
+  ''';
+
   static const String _verifyCounselingPaymentMutation = r'''
     mutation VerifyCounselingPayment($attemptID: ID!) {
       verifyCounselingPayment(attemptID: $attemptID) {
@@ -124,6 +135,9 @@ class ConsultantRepository {
   }
 
   /// Returns the student's current counselor, or null when there is none.
+  ///
+  /// Only a paid (ACTIVE, not yet ended) subscription counts: a PENDING one is
+  /// created before payment and must never grant a counselor.
   Future<ActiveCounselor?> fetchMyActiveCounselor() async {
     final data = await _rawRequest(
       query: _myActiveCounselorQuery,
@@ -132,6 +146,9 @@ class ConsultantRepository {
 
     final subscription = data['myActiveCounselor'];
     if (subscription is! Map<String, dynamic>) return null;
+    if (subscription['status'] != 'ACTIVE') return null;
+    final endDate = DateTime.tryParse(subscription['endDate'] as String? ?? '');
+    if (endDate != null && endDate.isBefore(DateTime.now())) return null;
     final counselor = subscription['counselor'];
     if (counselor is! Map<String, dynamic>) return null;
 
@@ -237,8 +254,8 @@ class ConsultantRepository {
     return PaymentInitiation(
       attemptID: attemptID,
       redirectURL: redirectURL,
-      status: (attempt as Map<String, dynamic>)['status'] as String? ??
-          'PENDING',
+      status:
+          (attempt as Map<String, dynamic>)['status'] as String? ?? 'PENDING',
     );
   }
 
@@ -264,6 +281,15 @@ class ConsultantRepository {
       attemptStatus: (attemptMap['status'] as String?) ?? 'PENDING',
       subscriptionStatus: (subscriptionMap['status'] as String?) ?? '',
       failureMessage: (attemptMap['failureMessage'] as String?)?.trim(),
+    );
+  }
+
+  /// Cancels a subscription whose payment definitively failed, so an unpaid
+  /// request never lingers on the account.
+  Future<void> cancelPendingSubscription(String subscriptionID) async {
+    await _rawRequest(
+      query: _cancelPendingSubscriptionMutation,
+      variables: {'subscriptionID': subscriptionID},
     );
   }
 
@@ -400,10 +426,13 @@ class PaymentVerification {
   final String subscriptionStatus;
   final String? failureMessage;
 
-  bool get succeeded => attemptStatus == 'SUCCEEDED';
+  /// Paid AND the subscription was activated. Only this grants a counselor.
+  bool get succeeded =>
+      attemptStatus == 'SUCCEEDED' && subscriptionStatus == 'ACTIVE';
   bool get failed => attemptStatus == 'FAILED' || attemptStatus == 'EXPIRED';
 
-  /// Still pending (e.g. user closed the gateway before completing) — the
-  /// caller may let the user retry.
+  /// Not settled yet: the user closed the gateway before completing, the bank
+  /// is still confirming, or the payment went through but the subscription is
+  /// not active yet. Never treat as success.
   bool get pending => !succeeded && !failed;
 }

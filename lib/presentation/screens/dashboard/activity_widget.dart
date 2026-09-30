@@ -239,7 +239,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                   children: [
                     // Tasks Row layout
                     SizedBox(
-                      height: 172,
+                      height: widget.tasks.isEmpty ? 135 : 172,
                       child: Stack(
                         children: [
                           // Fix 1: Mathematically centered Dashed Line
@@ -263,7 +263,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                               return Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                                  child: _buildTaskItem(task),
+                                  child: Container(child: _buildTaskItem(task)),
                                 ),
                               );
                             }),
@@ -272,12 +272,12 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Divider(
                       color: Colors.grey.shade200,
                       height: 1,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Legend
                     Row(

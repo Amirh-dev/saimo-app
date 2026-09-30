@@ -228,10 +228,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             reAppHeader(
               'آمــــار',
               firstIcon: GestureDetector(
-                child: const SizedBox(
+                child: SizedBox(
                   width: 48,
                   height: 48,
-                  child: Icon(SolarIconsOutline.bell, size: 24),
+                  child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                 ),
               ),
               secondIcon: GestureDetector(

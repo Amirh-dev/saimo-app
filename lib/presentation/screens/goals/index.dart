@@ -3,6 +3,7 @@
 import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
@@ -1395,10 +1396,10 @@ class _GoalScreenState extends State<GoalScreen> {
                 child: reAppHeader(
                   'اهداف',
                   firstIcon: GestureDetector(
-                    child: const SizedBox(
+                    child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: Icon(SolarIconsOutline.bell, size: 24),
+                      child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                     ),
                   ),
                   secondIcon: GestureDetector(

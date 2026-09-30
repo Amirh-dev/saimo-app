@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ferry/ferry.dart' show FetchPolicy;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
@@ -270,6 +271,7 @@ class _TasksScreenState extends State<TasksScreen>
       'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
       'recurringDays': task.recurringDays,
       'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
+      'reminderTime': DateTime.tryParse(task.reminderTime?.value ?? '')?.toLocal(),
     };
   }
 
@@ -297,6 +299,7 @@ class _TasksScreenState extends State<TasksScreen>
       'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
       'recurringDays': task.recurringDays,
       'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
+      'reminderTime': DateTime.tryParse(task.reminderTime?.value ?? '')?.toLocal(),
     };
   }
 
@@ -880,6 +883,7 @@ class _TasksScreenState extends State<TasksScreen>
 
     if (tasks.isEmpty) {
       return ReEmptyList(
+        imageWidth: MediaQuery.of(context).size.width / 2.5,
         title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
         subtitle: 'برای امروز تسکی اضافه نکردید.',
         onTap: () {
@@ -1392,10 +1396,10 @@ class _TasksScreenState extends State<TasksScreen>
                     reAppHeader(
                       'تسک ها',
                       firstIcon: GestureDetector(
-                        child: const SizedBox(
+                        child: SizedBox(
                           width: 48,
                           height: 48,
-                          child: Icon(SolarIconsOutline.bell, size: 24),
+                          child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                         ),
                       ),
                       secondIcon: GestureDetector(

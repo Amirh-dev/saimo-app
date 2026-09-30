@@ -110,6 +110,36 @@ Future<void> _scheduleReminder(
   }
 }
 
+/// Default reminder hour for a new task: the start of the next hour.
+TimeOfDay _initialReminderTime(Map<String, dynamic>? editing) {
+  final saved = editing?['reminderTime'] as DateTime?;
+  if (saved != null) return TimeOfDay.fromDateTime(saved);
+  return TimeOfDay(hour: (TimeOfDay.now().hour + 1) % 24, minute: 0);
+}
+
+String _formatReminderTime(TimeOfDay time) {
+  final hour = time.hour.toString().padLeft(2, '0');
+  final minute = time.minute.toString().padLeft(2, '0');
+  return convertToPersianNumbers('$hour:$minute');
+}
+
+/// One-off reminders must be in the future; weekly ones always have a next
+/// occurrence.
+bool _isReminderInPast(Jalali date, TimeOfDay time, {required bool isWeekly}) {
+  if (isWeekly) return false;
+  return !_toDateTime(date, time: time).isAfter(DateTime.now());
+}
+
+Future<TimeOfDay?> _showReminderTimePicker(BuildContext context, TimeOfDay initial) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  return showModalBottomSheet<TimeOfDay>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _ReminderTimePickerSheet(initialTime: initial),
+  );
+}
+
 class AddTimedTaskScreen extends StatefulWidget {
   const AddTimedTaskScreen({super.key, this.goalId, this.onBack, this.task});
 
@@ -146,6 +176,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
+  late TimeOfDay _reminderTime;
   bool _isSubmitting = false;
 
   final Set<String> _selectedWeekDays = {};
@@ -177,6 +208,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     );
 
     _selectedDate = Jalali.now();
+    _reminderTime = _initialReminderTime(widget.task);
     _selectedMinutes = 45;
     final editing = widget.task;
     if (editing != null) {
@@ -384,7 +416,6 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
   void _selectWeeklyRepeatTimed() {
     setState(() {
       _isWeeklyRepeat = true;
-      // _isReminderEnabled = true;
     });
   }
 
@@ -402,6 +433,25 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
         _selectedWeekDays.add(code);
       }
     });
+  }
+
+  Future<void> _onReminderChanged(bool value) async {
+    if (!value) {
+      setState(() => _isReminderEnabled = false);
+      return;
+    }
+    final picked = await _showReminderTimePicker(context, _reminderTime);
+    if (picked == null || !mounted) return;
+    setState(() {
+      _reminderTime = picked;
+      _isReminderEnabled = true;
+    });
+  }
+
+  Future<void> _changeReminderTime() async {
+    final picked = await _showReminderTimePicker(context, _reminderTime);
+    if (picked == null || !mounted) return;
+    setState(() => _reminderTime = picked);
   }
 
   Future<void> _openCalendarModal() async {
@@ -451,7 +501,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
             }
           },
         ),
@@ -467,7 +517,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       final task = response.data!.updateTask;
       await TaskReminderService.instance.cancel(taskId);
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
       }
       if (!mounted) return;
 
@@ -488,6 +538,11 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
       showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      return;
+    }
+
+    if (_isReminderEnabled && _isReminderInPast(_selectedDate, _reminderTime, isWeekly: _isWeeklyRepeat)) {
+      showReToast(context, 'زمان یادآوری گذشته است', ReToastType.warning);
       return;
     }
 
@@ -533,7 +588,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
             }
           },
         ),
@@ -552,7 +607,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
       final task = response.data!.createTask;
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
       }
       final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
       final subtitle = task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (task.note?.trim().isNotEmpty == true ? task.note!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
@@ -682,6 +737,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     final isFocused = _tagFocusNode.hasFocus;
 
     return RawAutocomplete<ParentTagModel>(
+      textEditingController: _tagController,
+      focusNode: _tagFocusNode,
       key: ValueKey(
         _specificSuggestedTags
             .map((e) => '${e.id}_${e.name}')
@@ -784,6 +841,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
                           child: TextField(
                             controller: controller,
                             focusNode: focusNode,
+                            onTapOutside: (_) => focusNode.unfocus(),
                             textAlign: TextAlign.right,
                             textDirection: TextDirection.rtl,
                             cursorColor: AppColors.primary,
@@ -1267,34 +1325,12 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
   }
 
   Widget _buildReminderCardCompact() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          _ReminderSwitch(
-            value: _isReminderEnabled,
-            onChanged: (value) {
-              setState(() {
-                _isReminderEnabled = value;
-                if (!_isReminderEnabled) _isWeeklyRepeat = false;
-              });
-            },
-          ),
-          const Spacer(),
-          const ReText(
-            'یادآوری',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black1,
-          ),
-        ],
-      ),
+    return _ReminderCard(
+      isEnabled: _isReminderEnabled,
+      time: _reminderTime,
+      onChanged: _onReminderChanged,
+      onTapTime: _changeReminderTime,
+      borderRadius: 32,
     );
   }
 }
@@ -1314,6 +1350,7 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
+  late TimeOfDay _reminderTime;
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.task != null;
@@ -1358,6 +1395,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     );
 
     _selectedDate = Jalali.now();
+    _reminderTime = _initialReminderTime(widget.task);
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
     _selectedTime = TimeOfDay.fromDateTime(DateTime.now());
     final editing = widget.task;
@@ -1555,7 +1593,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void _selectWeeklyRepeatDirectly() {
     setState(() {
       _isWeeklyRepeat = true;
-      // _isReminderEnabled = true;
     });
   }
 
@@ -1573,6 +1610,25 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         _selectedWeekDays.add(code);
       }
     });
+  }
+
+  Future<void> _onReminderChanged(bool value) async {
+    if (!value) {
+      setState(() => _isReminderEnabled = false);
+      return;
+    }
+    final picked = await _showReminderTimePicker(context, _reminderTime);
+    if (picked == null || !mounted) return;
+    setState(() {
+      _reminderTime = picked;
+      _isReminderEnabled = true;
+    });
+  }
+
+  Future<void> _changeReminderTime() async {
+    final picked = await _showReminderTimePicker(context, _reminderTime);
+    if (picked == null || !mounted) return;
+    setState(() => _reminderTime = picked);
   }
 
   Future<void> _openCalendarModal() async {
@@ -1620,7 +1676,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
             }
           },
         ),
@@ -1636,7 +1692,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       final task = response.data!.updateTask;
       await TaskReminderService.instance.cancel(taskId);
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _selectedTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
       }
       if (!mounted) return;
 
@@ -1657,6 +1713,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
       showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      return;
+    }
+
+    if (_isReminderEnabled && _isReminderInPast(_selectedDate, _reminderTime, isWeekly: _isWeeklyRepeat)) {
+      showReToast(context, 'زمان یادآوری گذشته است', ReToastType.warning);
       return;
     }
 
@@ -1700,7 +1761,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             }
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
             }
           },
         ),
@@ -1721,7 +1782,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
       final task = response.data!.createTask;
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _selectedTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
       }
       Navigator.of(context).pop(
         <String, dynamic>{
@@ -1839,6 +1900,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final isFocused = _tagFocusNode.hasFocus;
 
     return RawAutocomplete<ParentTagModel>(
+      textEditingController: _tagController,
+      focusNode: _tagFocusNode,
       key: ValueKey(
         _specificSuggestedTags
             .map((e) => '${e.id}_${e.name}')
@@ -1941,6 +2004,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                           child: TextField(
                             controller: controller,
                             focusNode: focusNode,
+                            onTapOutside: (_) => focusNode.unfocus(),
                             textAlign: TextAlign.right,
                             textDirection: TextDirection.rtl,
                             cursorColor: AppColors.primary,
@@ -2251,63 +2315,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Widget _buildReminderCard() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          switchWidget(),
-          const Spacer(),
-          const ReText(
-            'یادآوری',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  GestureDetector switchWidget() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isReminderEnabled = !_isReminderEnabled;
-        });
-      },
-      child: Transform.flip(
-        flipX: true,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          width: 44,
-          height: 28,
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: _isReminderEnabled ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            alignment: _isReminderEnabled ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isReminderEnabled ? AppColors.primary : AppColors.dark4Color,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return _ReminderCard(
+      isEnabled: _isReminderEnabled,
+      time: _reminderTime,
+      onChanged: _onReminderChanged,
+      onTapTime: _changeReminderTime,
+      borderRadius: 26,
     );
   }
 }
@@ -3204,6 +3217,305 @@ class _ThreeColumnJalaliDatePickerSheetState extends State<_ThreeColumnJalaliDat
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ReminderTimePickerSheet extends StatefulWidget {
+  const _ReminderTimePickerSheet({required this.initialTime});
+
+  final TimeOfDay initialTime;
+
+  @override
+  State<_ReminderTimePickerSheet> createState() => _ReminderTimePickerSheetState();
+}
+
+class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
+  static const double _wheelItemExtent = 56.0;
+  static const int _minuteStep = 5;
+
+  late int _selectedHour;
+  late int _selectedMinute;
+  late FixedExtentScrollController _hourController;
+  late FixedExtentScrollController _minuteController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedHour = widget.initialTime.hour;
+    _selectedMinute = widget.initialTime.minute ~/ _minuteStep * _minuteStep;
+    _hourController = FixedExtentScrollController(initialItem: _selectedHour);
+    _minuteController = FixedExtentScrollController(initialItem: _selectedMinute ~/ _minuteStep);
+  }
+
+  @override
+  void dispose() {
+    _hourController.dispose();
+    _minuteController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildColumn({
+    required FixedExtentScrollController controller,
+    required int itemCount,
+    required int Function(int index) valueAt,
+    required int selectedValue,
+    required ValueChanged<int> onSelected,
+  }) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        _PickerWheel(
+          controller: controller,
+          itemCount: itemCount,
+          itemExtent: _wheelItemExtent,
+          onSelected: (index) => setState(() => onSelected(valueAt(index))),
+          itemBuilder: (context, index) {
+            return SizedBox(
+              height: _wheelItemExtent,
+              child: Center(
+                child: ReText(
+                  convertToPersianNumbers(valueAt(index).toString().padLeft(2, '0')),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.gray,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          },
+        ),
+        IgnorePointer(
+          child: Container(
+            width: 64,
+            height: 48,
+            decoration: BoxDecoration(color: AppColors.black1, borderRadius: BorderRadius.circular(100)),
+            alignment: Alignment.center,
+            child: ReText(
+              convertToPersianNumbers(selectedValue.toString().padLeft(2, '0')),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: AppColors.white,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final safeHeight = MediaQuery.of(context).size.height;
+    final sheetHeight = (safeHeight * 0.58).clamp(300.0, 400.0);
+
+    return Container(
+      height: sheetHeight,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const ReText(
+                      'یادآوری',
+                      fontSize: 16,
+                      fontWeight: 1000,
+                      color: AppColors.black1,
+                    ),
+                    const SizedBox(height: 2),
+                    ReText(
+                      'انتخاب ساعت یادآوری',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 32, left: 16),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFEBECF0)),
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      'دقیقه',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ReText(
+                      'ساعت',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Row(
+                textDirection: TextDirection.rtl,
+                children: [
+                  Expanded(
+                    child: _buildColumn(
+                      controller: _minuteController,
+                      itemCount: 60 ~/ _minuteStep,
+                      valueAt: (index) => index * _minuteStep,
+                      selectedValue: _selectedMinute,
+                      onSelected: (value) => _selectedMinute = value,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildColumn(
+                      controller: _hourController,
+                      itemCount: 24,
+                      valueAt: (index) => index,
+                      selectedValue: _selectedHour,
+                      onSelected: (value) => _selectedHour = value,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                Expanded(
+                  child: _ActionButton(
+                    text: 'لغو',
+                    icon: Icons.close,
+                    background: AppColors.white,
+                    textColor: AppColors.black1,
+                    borderColor: AppColors.gray2,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: _ActionButton(
+                    text: 'تنظیم یادآوری',
+                    icon: Icons.check,
+                    background: AppColors.primary,
+                    textColor: AppColors.white,
+                    onTap: () => Navigator.of(context).pop(
+                      TimeOfDay(hour: _selectedHour, minute: _selectedMinute),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Reminder toggle row; shows the chosen time (tap to change) while enabled.
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard({
+    required this.isEnabled,
+    required this.time,
+    required this.onChanged,
+    required this.onTapTime,
+    required this.borderRadius,
+  });
+
+  final bool isEnabled;
+  final TimeOfDay time;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onTapTime;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: AppColors.gray2),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Row(
+        children: [
+          _ReminderSwitch(value: isEnabled, onChanged: onChanged),
+          if (isEnabled) ...[
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: onTapTime,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.gray1,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    ReText(
+                      _formatReminderTime(time),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          const ReText(
+            'یادآوری',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.black1,
+          ),
+        ],
       ),
     );
   }

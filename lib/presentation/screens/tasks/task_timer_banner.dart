@@ -13,8 +13,9 @@ import 'package:simo_learn/utils/colors.dart';
 /// hides itself automatically while [TaskTimerScreen] is open. Mount it once,
 /// app-wide, through `MaterialApp.builder` (see the notes in chat).
 class TaskTimerBanner extends StatelessWidget {
-  /// Distance from the bottom of the screen. Raise it so the banner floats
-  /// above your bottom navigation bar.
+  /// Distance from the bottom of the screen while an [AppBottomNavigationBar]
+  /// is visible, so the banner floats above it. Other screens only keep the
+  /// bottom safe-area inset.
   final double bottomOffset;
 
   /// Needed to push the timer screen from outside the Navigator's subtree.
@@ -66,7 +67,7 @@ class TaskTimerBanner extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: ListenableBuilder(
-        listenable: timer,
+        listenable: Listenable.merge([timer, AppBottomNavigationBar.isVisible]),
         builder: (context, _) {
           final visible = timer.shouldShowBanner;
 
@@ -84,12 +85,16 @@ class TaskTimerBanner extends StatelessWidget {
             ),
             child: !visible
                 ? const SizedBox.shrink(key: ValueKey('timer-banner-hidden'))
-                : Padding(
+                : AnimatedPadding(
               key: const ValueKey('timer-banner'),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
-                bottom: bottomOffset,
+                bottom: AppBottomNavigationBar.isVisible.value
+                    ? bottomOffset
+                    : MediaQuery.viewPaddingOf(context).bottom,
               ),
               child: _buildPill(context, timer),
             ),

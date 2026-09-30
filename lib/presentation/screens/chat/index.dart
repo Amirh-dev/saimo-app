@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
@@ -422,10 +423,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         ),
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
         children: [
-          const _ChatSectionTitle(
+          _ChatSectionTitle(
             title: 'مشاور',
             icon: SolarIconsOutline.userSpeak,
             color: AppColors.primary,
+            // Lets a student with a counselor browse the list and pick another.
+            actionText: _contacts.isEmpty ? null : 'لیست مشاوران',
+            onAction: _selectConsultant,
           ),
           const SizedBox(height: 16),
           if (_contacts.isEmpty)
@@ -1260,16 +1264,17 @@ class _ChatListHeader extends StatelessWidget {
             'پیام‌ها',
             color: AppColors.black1,
             fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontWeight: 10000,
           ),
           const Spacer(),
           _HeaderIcon(
             icon: SolarIconsBold.chatRound,
+            svgIcon: 'assets/icons/chat_dots.svg',
             showDot: hasUnread,
             isActive: true,
           ),
           const SizedBox(width: 8),
-          const _HeaderIcon(icon: SolarIconsOutline.bell, showDot: false),
+          const _HeaderIcon(icon: SolarIconsOutline.bell, showDot: false, svgIcon: 'assets/icons/bell.svg',),
         ],
       ),
     );
@@ -1280,10 +1285,12 @@ class _HeaderIcon extends StatelessWidget {
   const _HeaderIcon({
     required this.icon,
     required this.showDot,
+    this.svgIcon,
     this.isActive = false,
   });
 
   final IconData icon;
+  final String? svgIcon;
   final bool showDot;
   final bool isActive;
 
@@ -1302,7 +1309,7 @@ class _HeaderIcon extends StatelessWidget {
               color: isActive ? AppColors.black1 : Colors.transparent,
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: svgIcon != null ? SvgPicture.asset(svgIcon!).hMargin(12) : Icon(
               icon,
               size: 24,
               color: isActive ? AppColors.white : AppColors.black1,
@@ -1332,11 +1339,17 @@ class _ChatSectionTitle extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.color,
+    this.actionText,
+    this.onAction,
   });
 
   final String title;
   final IconData icon;
   final Color color;
+
+  /// Optional trailing pill button; hidden when null.
+  final String? actionText;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1358,6 +1371,44 @@ class _ChatSectionTitle extends StatelessWidget {
           fontSize: 16,
           fontWeight: FontWeight.w600,
         ),
+        if (actionText != null) ...[
+          const Spacer(),
+          GestureDetector(
+            onTap: onAction,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ReText(
+                    actionText!,
+                    color: AppColors.black1,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(
+                    SolarIconsOutline.altArrowLeft,
+                    size: 12,
+                    color: AppColors.black1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

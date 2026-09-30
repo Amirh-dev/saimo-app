@@ -98,131 +98,131 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
           },
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F6F9),
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      widget.task['note'] == null || widget.task['note'] == ''
-                          ? const SizedBox()
-                          : Positioned(
-                              bottom: -150,
-                              child: Container(
-                                height: 100,
-                                padding: const EdgeInsets.only(bottom: 16, right: 16, left: 16),
-                                alignment: Alignment.bottomCenter,
-                                width: MediaQuery.of(context).size.width - 64,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xfffafafa).withAlpha(200),
-                                  borderRadius: BorderRadius.circular(32),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.03),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 5),
-                                    )
-                                  ],
-                                ),
-                                child: ReText(
-                                  widget.task['note'],
-                                  maxLines: 2,
-                                  textAlign: TextAlign.start,
-                                ),
-                              ),
-                            ),
-                      Positioned(
-                        bottom: -85,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          alignment: Alignment.bottomCenter,
-                          height: 200,
-                          width: MediaQuery.of(context).size.width - 64,
-                          decoration: BoxDecoration(
-                            color: const Color(0xfffafafa),
-                            borderRadius: BorderRadius.circular(32),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              )
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey.shade200),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.chevron_left, size: 16, color: Colors.grey.shade700),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'جزئیات تسک',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey.shade800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        widget.task['title'] ?? '',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF111827),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        widget.task['subtitle'] ?? '',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey.shade500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+            body: Column(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    widget.task['note'] == null || widget.task['note'] == ''
+                        ? const SizedBox()
+                        : Positioned(
+                            bottom: -150,
+                            child: Container(
+                              height: 100,
+                              padding: const EdgeInsets.only(bottom: 16, right: 16, left: 16),
+                              alignment: Alignment.bottomCenter,
+                              width: MediaQuery.of(context).size.width - 64,
+                              decoration: BoxDecoration(
+                                color: const Color(0xfffafafa).withAlpha(200),
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  )
                                 ],
                               ),
-                            ],
+                              child: ReText(
+                                widget.task['note'],
+                                maxLines: 2,
+                                textAlign: TextAlign.start,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      // Top White Container with Timer
-                      Container(
-                        padding: const EdgeInsets.only(top: 60, bottom: 20, left: 20, right: 20),
+                    Positioned(
+                      bottom: -85,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        alignment: Alignment.bottomCenter,
+                        height: 200,
+                        width: MediaQuery.of(context).size.width - 64,
                         decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(40),
-                            bottomRight: Radius.circular(40),
-                          ),
+                          color: const Color(0xfffafafa),
+                          borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withAlpha(30),
-                              blurRadius: 100,
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 15,
                               offset: const Offset(0, 5),
                             )
                           ],
                         ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey.shade200),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.chevron_left, size: 16, color: Colors.grey.shade700),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'جزئیات تسک',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.task['title'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.task['subtitle'] ?? '',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Top White Container with Timer
+                    Container(
+                      padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(40),
+                          bottomRight: Radius.circular(40),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(30),
+                            blurRadius: 100,
+                            offset: const Offset(0, 5),
+                          )
+                        ],
+                      ),
+                      child: SafeArea(
                         child: Column(
                           children: [
                             // App Bar
@@ -267,88 +267,88 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                           ],
                         ),
                       ),
-                      Positioned(
-                        bottom: -85,
-                        child: SvgPicture.asset(
-                          'assets/images/union.svg',
-                          color: AppColors.white,
-                        ),
+                    ),
+                    Positioned(
+                      bottom: -85,
+                      child: SvgPicture.asset(
+                        'assets/images/union.svg',
+                        color: AppColors.white,
                       ),
-                      // Floating Controls
-                      Positioned(
-                        bottom: -28,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Check Button (Manual Complete)
-                            GestureDetector(
-                              onTap: () async {
-                                showShieldBottomSheet(context);
-                              },
-                              child: Center(
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: AppColors.success),
-                                    color: AppColors.success.withAlpha(10),
-                                  ),
-                                  child: const Icon(
-                                    IconsaxPlusBold.shield_tick,
-                                    color: AppColors.success,
-                                    size: 20,
-                                  ),
+                    ),
+                    // Floating Controls
+                    Positioned(
+                      bottom: -28,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Check Button (Manual Complete)
+                          GestureDetector(
+                            onTap: () async {
+                              showShieldBottomSheet(context);
+                            },
+                            child: Center(
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.success),
+                                  color: AppColors.success.withAlpha(10),
+                                ),
+                                child: const Icon(
+                                  IconsaxPlusBold.shield_tick,
+                                  color: AppColors.success,
+                                  size: 20,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                          ),
+                          const SizedBox(width: 8),
 
-                            // Play/Pause Button
-                            Opacity(
-                              opacity: isCompleted ? 0.5 : 1,
-                              child: GestureDetector(
-                                onTap: isCompleted ? () {} : _toggleTimer,
-                                child: Container(
-                                  width: 56,
-                                  height: 56,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isRunning ? Icons.pause : Icons.play_arrow,
-                                    color: AppColors.white,
-                                    size: 32,
-                                  ),
+                          // Play/Pause Button
+                          Opacity(
+                            opacity: isCompleted ? 0.5 : 1,
+                            child: GestureDetector(
+                              onTap: isCompleted ? () {} : _toggleTimer,
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isRunning ? Icons.pause : Icons.play_arrow,
+                                  color: AppColors.white,
+                                  size: 32,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                          ),
+                          const SizedBox(width: 8),
 
-                            // Close Button
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: Center(
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gray)),
-                                  child: const Icon(Icons.close, color: AppColors.black1, size: 15),
-                                ),
+                          // Close Button
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: Center(
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.gray)),
+                                child: const Icon(Icons.close, color: AppColors.black1, size: 15),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 60),
-                  const SizedBox(height: 30),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 60),
+                const SizedBox(height: 30),
+              ],
             ),
           ),
         );

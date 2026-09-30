@@ -17,6 +17,7 @@ import 'package:simo_learn/presentation/widgets/modal.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/assets.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/helpers.dart';
@@ -98,10 +99,10 @@ class _DashboardContent extends StatelessWidget {
                 reAppHeader(
                   'خوش آمدید',
                   firstIcon: GestureDetector(
-                    child: const SizedBox(
+                    child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: Icon(SolarIconsOutline.bell, size: 24),
+                      child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                     ),
                   ),
                   secondIcon: GestureDetector(
@@ -481,8 +482,9 @@ class _EmptyGoals extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 16),
             const Icon(
-              Icons.arrow_back_ios_new,
+              Icons.arrow_forward_ios,
               size: 14,
               color: AppColors.gray,
             ),

@@ -13,6 +13,10 @@ class AppBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
+  /// True while a bottom navigation bar is on the top-most route. Floating
+  /// overlays (e.g. the task timer banner) use it to clear the bar.
+  static final ValueNotifier<bool> isVisible = ValueNotifier<bool>(false);
+
   static const double _barHeight = 70;
   static const double _circleDiameter = 30;
 
@@ -44,9 +48,9 @@ class AppBottomNavigationBar extends StatelessWidget {
           ),
           child: useSvg
               ? Padding(
-                padding: EdgeInsets.all(isActive ? 15.0 : 16.0),
-                child: SvgPicture.asset(isActive ? activeIconSvg! : inactiveIconSvg!),
-              )
+                  padding: EdgeInsets.all(isActive ? 15.0 : 16.0),
+                  child: SvgPicture.asset(isActive ? activeIconSvg! : inactiveIconSvg!),
+                )
               : Icon(
                   isActive ? activeIcon : inactiveIcon,
                   size: isActive ? activeIconSize : inactiveIconSize,
@@ -56,74 +60,120 @@ class AppBottomNavigationBar extends StatelessWidget {
       );
     }
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-        ),
-        child: SizedBox(
-          height: _barHeight + _circleDiameter / 2,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              Container(
-                height: _barHeight,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.user,
-                        inactiveIcon: SolarIconsOutline.user,
-                        index: 4,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.chart_2,
-                        inactiveIcon: SolarIconsOutline.chart_2,
-                        index: 3,
-                      ),
-                      buildNavIcon(
-                        useSvg: true,
-                        activeIconSvg: 'assets/icons/target.svg',
-                        inactiveIconSvg: 'assets/icons/target_out.svg',
-                        index: 2,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.checklistMinimalistic,
-                        inactiveIcon: SolarIconsOutline.checklistMinimalistic,
-                        index: 1,
-                      ),
-                      buildNavIcon(
-                        activeIcon: SolarIconsBold.home,
-                        inactiveIcon: SolarIconsOutline.home,
-                        index: 0,
+    return _BottomNavPresence(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+          ),
+          child: SizedBox(
+            height: _barHeight + _circleDiameter / 2,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  height: _barHeight,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        buildNavIcon(
+                          activeIcon: SolarIconsBold.user,
+                          inactiveIcon: SolarIconsOutline.user,
+                          index: 4,
+                        ),
+                        buildNavIcon(
+                          activeIcon: SolarIconsBold.chart_2,
+                          inactiveIcon: SolarIconsOutline.chart_2,
+                          index: 3,
+                        ),
+                        buildNavIcon(
+                          useSvg: true,
+                          activeIconSvg: 'assets/icons/target.svg',
+                          inactiveIconSvg: 'assets/icons/target_out.svg',
+                          index: 2,
+                        ),
+                        buildNavIcon(
+                          activeIcon: SolarIconsBold.checklistMinimalistic,
+                          inactiveIcon: SolarIconsOutline.checklistMinimalistic,
+                          index: 1,
+                        ),
+                        buildNavIcon(
+                          activeIcon: SolarIconsBold.home,
+                          inactiveIcon: SolarIconsOutline.home,
+                          index: 0,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Reports to [AppBottomNavigationBar.isVisible] whether this bar's route is
+/// the current one.
+class _BottomNavPresence extends StatefulWidget {
+  const _BottomNavPresence({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_BottomNavPresence> createState() => _BottomNavPresenceState();
+}
+
+class _BottomNavPresenceState extends State<_BottomNavPresence> {
+  static final Set<_BottomNavPresenceState> _visible = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (ModalRoute.isCurrentOf(context) ?? true) {
+      _visible.add(this);
+    } else {
+      _visible.remove(this);
+    }
+    _sync();
+  }
+
+  @override
+  void dispose() {
+    _visible.remove(this);
+    _sync();
+    super.dispose();
+  }
+
+  // Deferred: listeners rebuild outside this subtree, which isn't allowed
+  // mid-build.
+  static void _sync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppBottomNavigationBar.isVisible.value = _visible.isNotEmpty;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class AppBottomNavigationScaffold extends StatelessWidget {

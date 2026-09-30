@@ -9,7 +9,7 @@ class ReEmptyList extends StatelessWidget {
   final String subtitle;
   final String imagePath;
   final IconData icon;
-  final double imageWidth;
+  final double? imageWidth;
   final VoidCallback? onTap;
 
   const ReEmptyList({
@@ -18,7 +18,7 @@ class ReEmptyList extends StatelessWidget {
     required this.subtitle,
     this.imagePath = 'assets/images/empty_list_tasks.png',
     this.icon = Icons.add,
-    this.imageWidth = 180,
+    this.imageWidth,
     this.onTap,
   });
 
@@ -32,6 +32,7 @@ class ReEmptyList extends StatelessWidget {
           ReImage(
             imagePath,
             width: imageWidth,
+            height: imageWidth,
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
