@@ -24,20 +24,26 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// A machine without the Android NDK sets saimo.noNdk=true in its own
+// ~/.gradle/gradle.properties (never in this repo). Release builds in CI need
+// the NDK: it strips debug symbols from the native libraries.
+def noNdk = (project.findProperty('saimo.noNdk') ?: 'false').toBoolean()
+
 android {
     namespace "app.ravi.saimo"
     compileSdk flutter.compileSdkVersion
-    // No ndkVersion: no dependency builds native C/C++ code, so the NDK isn't
-    // required. AGP would still download its default NDK just to strip debug
-    // symbols from .so files; keeping the symbols skips that step entirely.
-    // Cost: a few MB larger APK. Remove this once the NDK is installed.
-    // Unstripped libs are huge (~370 MB per ABI), so debug builds are limited
-    // to arm64 and drop the debug-only Vulkan validation layer (237 MB).
-    packaging {
-        jniLibs {
-            keepDebugSymbols += ['**/*.so']
-            excludes += ['**/libVkLayer_khronos_validation.so']
+    if (noNdk) {
+        // Without the NDK, AGP cannot strip debug symbols from .so files, so
+        // they are kept. Unstripped libs are huge (~370 MB per ABI), so these
+        // builds also drop the debug-only Vulkan validation layer (237 MB).
+        packaging {
+            jniLibs {
+                keepDebugSymbols += ['**/*.so']
+                excludes += ['**/libVkLayer_khronos_validation.so']
+            }
         }
+    } else {
+        ndkVersion flutter.ndkVersion
     }
 
     compileOptions {
@@ -64,10 +70,13 @@ android {
 
     buildTypes {
         debug {
-            ndk {
-                // Real devices (this phone included) are arm64. Remove this
-                // filter once the NDK is installed and stripping works again.
-                abiFilters 'arm64-v8a'
+            if (noNdk) {
+                // Keeps unstripped debug builds to one ABI; real devices are
+                // arm64. An ABI filter clashes with --split-per-abi, so it must
+                // never reach release builds.
+                ndk {
+                    abiFilters 'arm64-v8a'
+                }
             }
         }
         release {
