@@ -32,7 +32,11 @@ class DashboardCubit extends Cubit<DashboardState> {
       final dashboardTasks = payload.tasks
           .where(
             (task) {
-              return (task.date?.difference(DateTime.now()).inHours.abs() ?? 24) < 24 && task.type == 'TIMED';
+              final date = task.date?.toLocal();
+              return date != null &&
+                  _isSameDate(date, today) &&
+                  task.type == 'TIMED' &&
+                  task.status != 'CANCELED';
             }
       )
           .toList()
@@ -142,12 +146,17 @@ class DashboardCubit extends Cubit<DashboardState> {
       elapsedSeconds = maxSeconds;
     }
 
-    final percentage = (task.elapsedSeconds / (task.durationM * 60)) * 100;
+    // From the live value above: includes a running interval, and a finished
+    // task is 100% even if it was completed early.
+    final percentage =
+        maxSeconds > 0 ? (elapsedSeconds / maxSeconds) * 100 : 0.0;
 
     return DashboardTaskItem(
       title: task.title,
       id: task.id,
       percentage: percentage,
+      elapsedSeconds: task.elapsedSeconds.clamp(0, maxSeconds),
+      isDone: isDone,
       doneDuration:
       (elapsedSeconds / 60).floor(),
       maxDuration: maxDuration,

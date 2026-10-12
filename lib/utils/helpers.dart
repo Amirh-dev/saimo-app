@@ -316,19 +316,19 @@ String formatTime(int seconds) {
     if(index == currentIndex) return;
     switch (index) {
       case 0:
-        context.toOff(const DashboardScreen());
+        context.toTab(const DashboardScreen());
         break;
       case 1:
-        context.toOff(const TasksScreen());
+        context.toTab(const TasksScreen());
         break;
       case 2:
-        context.toOff(const GoalScreen());
+        context.toTab(const GoalScreen());
         break;
       case 3:
-        context.toOff(const StatisticsScreen());
+        context.toTab(const StatisticsScreen());
         break;
       case 4:
-        context.toOff(const ProfileScreen());
+        context.toTab(const ProfileScreen());
         break;
     }
   }

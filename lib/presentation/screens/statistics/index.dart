@@ -239,7 +239,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 child: const SizedBox(
                   width: 48,
                   height: 48,
-                  child: Icon(SolarIconsOutline.chatRoundLine, size: 24),
+                  child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
                 ),
               ),
             ),

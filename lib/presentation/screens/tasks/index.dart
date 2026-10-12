@@ -4,27 +4,31 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ferry/ferry.dart' show FetchPolicy;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
-import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/delete_task.req.gql.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
-import 'package:simo_learn/graphql/queries/__generated__/get_tasks.data.gql.dart';
-import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
+import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/checklists_popup.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/plan_date_picker.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/plan_sheets.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/undo_bar.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/week_header.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_controller.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_view.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
-import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -35,103 +39,46 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen>
     with TickerProviderStateMixin {
-  late final Jalali _today;
   late Jalali _selectedDate;
-  late AnimationController _animationController;
-  late AnimationController _slideAnimationController;
+
+  /// Read on demand so "today" stays correct if the app is left open past
+  /// midnight.
+  Jalali get _today => Jalali.now();
 
   // Add Menu Animation Controllers
-  bool _isAddMenuOpen = false;
-  late AnimationController _menuAnimationController;
-  late Animation<double> _menuScaleAnimation;
-  late Animation<double> _menuOpacityAnimation;
 
   List<Map<String, dynamic>> _checklistTasks = [];
   List<Map<String, dynamic>> _timedTasks = [];
   bool _isLoadingTasks = false;
   final TaskTimerService _timer = TaskTimerService.instance;
-  late ScrollController _checklistDotsScrollController;
-  late ScrollController _checklistCardsScrollController;
-  int? _expandedChecklistTaskIndex;
-  int? _expandedTimedTaskIndex;
-  bool _isSyncingChecklistScroll = false;
-  static const double _checklistItemCollapsedHeight = 90.0;
-  static const double _checklistItemExpandedHeight = 140.0;
-  static const Duration _taskExpansionDuration = Duration(milliseconds: 260);
 
-  final List<String> _persianMonths = [
-    'فروردین',
-    'اردیبهشت',
-    'خرداد',
-    'تیر',
-    'مرداد',
-    'شهریور',
-    'مهر',
-    'آبان',
-    'آذر',
-    'دی',
-    'بهمن',
-    'اسفند',
-  ];
+  /// Ticks whenever the day's checklists change, so their popup follows.
+  final ValueNotifier<int> _dayChecklistsChanged = ValueNotifier(0);
+
+  // Tasks with a status change in flight, so repeated taps don't stack
+  // conflicting requests.
+  final Set<String> _pendingStatusTaskIds = <String>{};
+  static const Duration _modeSwitchDuration = Duration(milliseconds: 320);
+  static const Duration _undoDuration = Duration(seconds: 5);
+
+  /// Daily mode is for doing the day's tasks; weekly mode for planning the
+  /// whole week. Both share [_selectedDate], so switching zooms in or out
+  /// around the same day.
+  TasksViewMode _mode = TasksViewMode.day;
+  late final TasksApi _tasksApi;
+  late final WeeklyPlanController _week;
+  final GlobalKey<WeeklyPlanViewState> _weekViewKey = GlobalKey();
+  ({String message, VoidCallback onUndo})? _undo;
+  Timer? _undoTimer;
+
+  bool get _isWeekMode => _mode == TasksViewMode.week;
 
   @override
   void initState() {
     super.initState();
-    _today = Jalali.now();
     _selectedDate = _today;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _animationController.value = 1.0;
-    _slideAnimationController.value = 1.0;
-
-    _menuAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    _menuScaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _menuAnimationController, curve: Curves.easeOutCubic),
-    );
-    _menuOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _menuAnimationController, curve: Curves.easeOut),
-    );
-
-    _checklistDotsScrollController = ScrollController();
-    _checklistCardsScrollController = ScrollController();
-
-    _checklistDotsScrollController.addListener(() {
-      if (_isSyncingChecklistScroll) return;
-      if (!_checklistCardsScrollController.hasClients) return;
-      _isSyncingChecklistScroll = true;
-      final offset = _checklistDotsScrollController.offset;
-      _checklistCardsScrollController.jumpTo(
-        offset.clamp(
-          _checklistCardsScrollController.position.minScrollExtent,
-          _checklistCardsScrollController.position.maxScrollExtent,
-        ),
-      );
-      _isSyncingChecklistScroll = false;
-    });
-
-    _checklistCardsScrollController.addListener(() {
-      if (_isSyncingChecklistScroll) return;
-      if (!_checklistDotsScrollController.hasClients) return;
-      _isSyncingChecklistScroll = true;
-      final offset = _checklistCardsScrollController.offset;
-      _checklistDotsScrollController.jumpTo(
-        offset.clamp(
-          _checklistDotsScrollController.position.minScrollExtent,
-          _checklistDotsScrollController.position.maxScrollExtent,
-        ),
-      );
-      _isSyncingChecklistScroll = false;
-    });
+    _tasksApi = GraphQLTasksApi(context.read<GraphQLRepository>());
+    _week = WeeklyPlanController(_tasksApi)..addListener(_onWeekChanged);
 
     _timer.addListener(_onGlobalTimerChanged);
 
@@ -144,378 +91,445 @@ class _TasksScreenState extends State<TasksScreen>
 
   @override
   void dispose() {
+    _undoTimer?.cancel();
+    _week
+      ..removeListener(_onWeekChanged)
+      ..dispose();
     _timer.removeListener(_onGlobalTimerChanged);
-    _checklistDotsScrollController.dispose();
-    _checklistCardsScrollController.dispose();
-    _animationController.dispose();
-    _slideAnimationController.dispose();
-    _menuAnimationController.dispose();
+    _dayChecklistsChanged.dispose();
     super.dispose();
   }
 
-  void _toggleAddMenu() {
-    setState(() {
-      _isAddMenuOpen = !_isAddMenuOpen;
-      if (_isAddMenuOpen) {
-        _menuAnimationController.forward();
-      } else {
-        _menuAnimationController.reverse();
-      }
-    });
+  /// "امروز" / "فردا" / "دیروز", or the date itself, for headings and copy.
+  String _selectedDayPhrase() {
+    final today = _today;
+    if (isSameJalaliDay(_selectedDate, today)) return 'امروز';
+    if (isSameJalaliDay(_selectedDate, today.addDays(1))) return 'فردا';
+    if (isSameJalaliDay(_selectedDate, today.addDays(-1))) return 'دیروز';
+    return '${convertToPersianNumbers(_selectedDate.day.toString())} ${kPersianMonths[_selectedDate.month - 1]}';
   }
 
-  Widget _buildMenuItem({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 204,
-        height: 56,
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black1.withOpacity(0.08),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Icon(Icons.add, size: 16, color: AppColors.gray),
-            Row(
-              children: [
-                ReText(
-                  title,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.black1,
-                ),
-                const SizedBox(width: 10),
-                Icon(icon, size: 16, color: AppColors.black1),
-              ],
-            ),
-          ],
-        ),
-      ),
+  /// Logs the technical error and returns a message fit for the user.
+  String _userErrorMessage(Object error, String fallback) {
+    debugPrint('TasksScreen error: $error');
+    return fallback;
+  }
+
+  String _actionErrorMessage(Object error, String fallback) =>
+      error is TaskActionException
+          ? error.message
+          : _userErrorMessage(error, fallback);
+
+  // ------------------------------------------------------------ view modes
+
+  void _setMode(TasksViewMode mode) {
+    if (mode == _mode) return;
+    _hideUndo();
+    setState(() {
+      _mode = mode;
+      // The server only returns weeks up to the planning horizon.
+      if (mode == TasksViewMode.week &&
+          !isWeekWithinHorizon(weekStartOf(_selectedDate), _today)) {
+        _selectedDate = lastPlannableDay(_today);
+      }
+    });
+    if (mode == TasksViewMode.week) {
+      unawaited(_week.showWeekOf(_selectedDate));
+    } else {
+      unawaited(_loadTasksForSelectedDate());
+    }
+  }
+
+  /// Reloads what the current mode shows, keeping it on screen meanwhile.
+  Future<void> _reloadActiveView() {
+    return _isWeekMode
+        ? _week.reload(silent: true)
+        : _loadTasksForSelectedDate(showLoading: false);
+  }
+
+  void _onWeekChanged() {
+    if (!_isWeekMode || !_week.hasData || _week.isLoading) return;
+    _resumeServerTimer(_week.tasks.where(isTimedTask).toList());
+  }
+
+  /// A day of the week strip was tapped.
+  void _selectWeekDay(Jalali day) {
+    setState(() => _selectedDate = day);
+    _weekViewKey.currentState?.scrollToDay(day);
+  }
+
+  void _changeWeek(int weeks) {
+    final date = _selectedDate.addDays(7 * weeks);
+    setState(() => _selectedDate = date);
+    unawaited(_week.showWeekOf(date));
+  }
+
+  // ------------------------------------------------- daily mode date picker
+
+  /// A day was picked from the week strip in daily mode.
+  void _selectDay(Jalali day) {
+    if (isSameJalaliDay(day, _selectedDate)) return;
+    setState(() => _selectedDate = day);
+    unawaited(_loadTasksForSelectedDate());
+  }
+
+  /// The strip was swiped to another week in daily mode: the same weekday
+  /// there is selected, so the selection keeps its place in the strip.
+  void _changeDayWeek(int weeks) {
+    setState(() => _selectedDate = _selectedDate.addDays(7 * weeks));
+    unawaited(_loadTasksForSelectedDate());
+  }
+
+  Future<void> _pickDay() async {
+    final picked = await _pickDate();
+    if (picked == null || !mounted) return;
+    setState(() => _selectedDate = picked);
+    await _loadTasksForSelectedDate();
+  }
+
+  /// Keeps the strip's progress rings current in daily mode, for the weeks
+  /// the server can return.
+  void _syncWeekStrip() {
+    if (isWeekWithinHorizon(weekStartOf(_selectedDate), _today)) {
+      unawaited(_week.showWeekOf(_selectedDate));
+    }
+  }
+
+  Future<void> _pickWeekDate() async {
+    final picked = await _pickDate(lastDate: lastPlannableDay(_today));
+    if (picked == null || !mounted) return;
+    setState(() => _selectedDate = picked);
+    await _week.showWeekOf(picked);
+    if (mounted) await _weekViewKey.currentState?.scrollToDay(picked);
+  }
+
+  void _explainPlanningHorizon() {
+    showReToast(
+      context,
+      'برنامه‌ریزی تا ۱۲ هفته آینده امکان‌پذیر است.',
+      ReToastType.info,
     );
   }
 
-  List<Jalali> get _weekDaysList {
-    return List.generate(17, (index) => _today.addDays(index - 3));
+  /// "امروز", "فردا", a weekday of this week, or the date.
+  String _dayPhrase(Jalali day) {
+    final today = _today;
+    switch (daysBetween(today, day)) {
+      case 0:
+        return 'امروز';
+      case 1:
+        return 'فردا';
+      case -1:
+        return 'دیروز';
+    }
+    return isSameJalaliDay(weekStartOf(day), weekStartOf(today))
+        ? weekdayName(day)
+        : dayLabel(day);
   }
 
-  bool _isSameDay(Jalali a, Jalali b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  // -------------------------------------------------------------- planning
+
+  void _showUndo(String message, VoidCallback onUndo) {
+    _undoTimer?.cancel();
+    setState(() => _undo = (message: message, onUndo: onUndo));
+    _undoTimer = Timer(_undoDuration, _hideUndo);
   }
 
-  Jalali? _jalaliFromIso(String value) {
-    final parsed = DateTime.tryParse(value);
-    if (parsed == null) return null;
-    return Jalali.fromDateTime(parsed.toLocal());
+  void _hideUndo() {
+    _undoTimer?.cancel();
+    _undoTimer = null;
+    if (mounted && _undo != null) setState(() => _undo = null);
   }
 
-  String _timeFromIso(String value) {
-    final parsed = DateTime.tryParse(value)?.toLocal();
-    if (parsed == null) return '';
-    final formatted =
-        '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
-    return convertToPersianNumbers(formatted);
+  /// Moves [task] to [day] and offers to take it back.
+  Future<void> _moveTask(Map<String, dynamic> task, Jalali day) =>
+      _moveTasks([task], day);
+
+  /// Moves [tasks] to [day], then offers to take them all back. Stops at the
+  /// first one that fails; the reload shows where each really is.
+  Future<void> _moveTasks(
+    List<Map<String, dynamic>> tasks,
+    Jalali day, {
+    bool offerUndo = true,
+  }) async {
+    final moved = <(Map<String, dynamic>, Jalali)>[];
+    for (final task in tasks) {
+      final from = task['date'];
+      try {
+        await _tasksApi.moveTask(task, day);
+      } catch (error) {
+        if (mounted) {
+          showReToast(
+            context,
+            _actionErrorMessage(
+                error, 'جابه‌جایی تسک ناموفق بود. دوباره تلاش کنید.'),
+            ReToastType.failed,
+          );
+        }
+        break;
+      }
+      if (from is Jalali) moved.add((task, from));
+    }
+    if (!mounted) return;
+
+    await _reloadActiveView();
+    if (!mounted || !offerUndo || moved.isEmpty) return;
+    final message = moved.length == 1
+        ? 'به ${_dayPhrase(day)} منتقل شد'
+        : convertToPersianNumbers(
+            '${moved.length} کار به ${_dayPhrase(day)} منتقل شد');
+    _showUndo(message, () async {
+      _hideUndo();
+      for (final (task, from) in moved) {
+        try {
+          await _tasksApi.moveTask(task, from);
+        } catch (_) {
+          // The reload below shows what could not go back.
+        }
+      }
+      if (mounted) await _reloadActiveView();
+    });
   }
 
-  String _taskStatus(GTaskStatus status) {
-    return switch (status) {
-      GTaskStatus.COMPLETED => 'done',
-      GTaskStatus.IN_PROGRESS => 'running',
-      GTaskStatus.CANCELED => 'done',
-      GTaskStatus.PAUSED => 'paused',
-      _ => 'pending',
-    };
+  /// Checks [task] off, or back on. The change shows at once and springs
+  /// back if it cannot be saved.
+  Future<void> _setTaskDone(
+    Map<String, dynamic> task, {
+    required bool done,
+  }) async {
+    if (_isWeekMode) {
+      try {
+        await _week.setTaskDone(task, done: done);
+      } catch (error) {
+        if (!mounted) return;
+        showReToast(
+          context,
+          _actionErrorMessage(
+              error, 'تغییر وضعیت تسک ناموفق بود. دوباره تلاش کنید.'),
+          ReToastType.failed,
+        );
+      }
+      return;
+    }
+
+    final id = task['id'] as String?;
+    if (id == null || isTaskDone(task) == done) return;
+    if (!_pendingStatusTaskIds.add(id)) return;
+    final previous = task['status'];
+    void show(Object? status) {
+      if (!mounted) return;
+      setState(() => task['status'] = status);
+      _dayChecklistsChanged.value++;
+    }
+
+    show(done ? 'done' : 'pending');
+    try {
+      await _tasksApi.setTaskDone(task, done: done);
+      // The strip's ring for this day.
+      unawaited(_week.reload(silent: true));
+    } catch (error) {
+      show(previous);
+      if (mounted) {
+        showReToast(
+          context,
+          _actionErrorMessage(
+              error, 'تغییر وضعیت تسک ناموفق بود. دوباره تلاش کنید.'),
+          ReToastType.failed,
+        );
+      }
+    } finally {
+      _pendingStatusTaskIds.remove(id);
+    }
   }
 
-  String _taskSubtitle(GGetTasksData_getTasks task) {
-    final description = task.shortDescription?.trim();
-    if (description != null && description.isNotEmpty) return description;
-
-    final note = task.note?.trim();
-    if (note != null && note.isNotEmpty) return note;
-
-    final tags = task.tags?.map((tag) => tag.name).join('، ').trim();
-    if (tags != null && tags.isNotEmpty) return tags;
-
-    return 'توضیحی ثبت نشده';
+  /// The day's checklists in the popup the week uses too.
+  void _openDayChecklists() {
+    showChecklistsPopup(
+      context,
+      listenable: _dayChecklistsChanged,
+      date: _selectedDate,
+      tasks: () => _checklistTasks,
+      onToggle: (task) => _setTaskDone(task, done: !isTaskDone(task)),
+      onOpenTask: (task) => _showTaskDetails(task, timed: false),
+      onAdd: () => _openQuickAdd(_selectedDate, timed: false),
+    );
   }
 
-  Map<String, dynamic> _checklistTaskFromApi(GGetTasksData_getTasks task) {
-    return {
-      'id': task.id,
-      'title': task.title,
-      'subtitle': _taskSubtitle(task),
-      'time': _timeFromIso(task.date.value),
-      'status': _taskStatus(task.status),
-      'date': _jalaliFromIso(task.date.value),
-      'goalId': task.goal?.id,
-      'goalTitle': task.goal?.title,
-      'reminder': task.hasReminder,
-      'note': task.note,
-      'shortDescription': task.shortDescription,
-      'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
-      'recurringDays': task.recurringDays,
-      'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
-      'reminderTime': DateTime.tryParse(task.reminderTime?.value ?? '')?.toLocal(),
-    };
+  Future<void> _openQuickAdd(Jalali day, {bool timed = true}) async {
+    await showQuickAddSheet(
+      context,
+      initialDay: day,
+      today: _today,
+      initialTimed: timed,
+      subjects: [for (final tag in GlobalData.instance.parentTags) tag.name],
+      onSubmit: (draft) async {
+        try {
+          await _tasksApi.createQuickTask(draft);
+          return null;
+        } catch (error) {
+          return _actionErrorMessage(
+              error, 'افزودن تسک ناموفق بود. دوباره تلاش کنید.');
+        }
+      },
+      onMoreOptions: _openFullAddForm,
+    );
+    // Shows the new tasks, with what the server filled in (the subject).
+    if (mounted) unawaited(_reloadActiveView());
   }
 
-  Map<String, dynamic> _timedTaskFromApi(GGetTasksData_getTasks task) {
-    final minutes = task.durationM ?? 45;
-    final durationSeconds = minutes * 60;
-    final status = _taskStatus(task.status);
-
-    return {
-      'id': task.id,
-      'title': task.title,
-      'subtitle': _taskSubtitle(task),
-      'duration': _formatTimedTaskSeconds(durationSeconds),
-      'durationSeconds': durationSeconds,
-      'remainingSeconds': durationSeconds - task.elapsedSeconds,
-      'status': status,
-      'label': '${convertToPersianNumbers(minutes.toString())} دقیقه',
-      'date': _jalaliFromIso(task.date.value),
-      'goalId': task.goal?.id,
-      'goalTitle': task.goal?.title,
-      'reminder': task.hasReminder,
-      'note': task.note,
-      'elapsedSeconds': task.elapsedSeconds,
-      'shortDescription': task.shortDescription,
-      'tags': task.tags?.map((tag) => tag.name).toList() ?? <String>[],
-      'recurringDays': task.recurringDays,
-      'dateTime': DateTime.tryParse(task.date.value)?.toLocal(),
-      'reminderTime': DateTime.tryParse(task.reminderTime?.value ?? '')?.toLocal(),
-    };
+  /// "Advanced settings": the full form, filled with what quick add had.
+  Future<void> _openFullAddForm(QuickTaskDraft draft) async {
+    final tags = [if (draft.subject != null) draft.subject!];
+    final created = await context.to<Map<String, dynamic>>(
+      draft.isTimed
+          ? AddTimedTaskScreen(
+              initialDate: draft.day,
+              initialTitle: draft.title,
+              initialMinutes: draft.timedMinutes,
+              initialTags: tags,
+            )
+          : AddTaskScreen(
+              initialDate: draft.day,
+              initialTitle: draft.title,
+              initialTags: tags,
+            ),
+    );
+    if (created == null || !mounted) return;
+    showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
+    await _reloadActiveView();
   }
+
+  static const String _tasksQuery = '''
+query TasksForDay(\$date: Time!) {
+  getTasks(date: \$date, limit: 100, offset: 0) {
+$kTaskFields
+  }
+}
+''';
+
+  static const String _deleteTaskMutation = r'''
+mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
+  deleteTask(id: $id, recurrenceScope: $scope)
+}
+''';
 
   Future<void> _loadTasksForSelectedDate({bool showLoading = true}) async {
     if (showLoading && mounted) setState(() => _isLoadingTasks = true);
     try {
       final selectedDate = _selectedDate;
-      final response = await context.read<GraphQLRepository>().requestOnce(
-            GGetTasksReq(
-              (request) => request.vars
-                ..limit = 100
-                ..offset = 0,
-            ).rebuild(
-              (request) => request.fetchPolicy = FetchPolicy.NetworkOnly,
-            ),
-          );
+      // Ask the server for this day only. Fetching an unfiltered page and
+      // filtering locally drops the day's tasks once the user has more than
+      // one page of tasks (recurring tasks are materialized weeks ahead).
+      final data = await context.read<GraphQLRepository>().rawRequest(
+        query: _tasksQuery,
+        variables: {'date': rfc3339Local(selectedDate.toDateTime())},
+      );
 
-      if (!mounted || !_isSameDay(selectedDate, _selectedDate)) return;
-      if (response.hasErrors || response.data == null) {
-        setState(() => _isLoadingTasks = false);
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
-        return;
-      }
+      if (!mounted || !isSameJalaliDay(selectedDate, _selectedDate)) return;
 
       final checklistTasks = <Map<String, dynamic>>[];
       final timedTasks = <Map<String, dynamic>>[];
-      for (final task in response.data!.getTasks) {
+      final tasks = (data['getTasks'] as List?) ?? const [];
+      for (final task in tasks.whereType<Map<String, dynamic>>()) {
+        final id = task['id'] as String?;
+        final status = task['status'] as String?;
         // Safety net: a finished task must never keep a pending reminder.
-        if (task.status == GTaskStatus.COMPLETED ||
-            task.status == GTaskStatus.CANCELED) {
-          unawaited(TaskReminderService.instance.cancel(task.id));
+        if (id != null && (status == 'COMPLETED' || status == 'CANCELED')) {
+          unawaited(TaskReminderService.instance.cancel(id));
         }
+        // Canceled occurrences belong to a stopped recurrence; they are
+        // deleted from the user's point of view.
+        if (status == 'CANCELED') continue;
 
-        final taskDate = _jalaliFromIso(task.date.value);
-        if (taskDate == null || !_isSameDay(taskDate, selectedDate)) {
+        final taskDate = jalaliFromIso(task['date'] as String? ?? '');
+        if (taskDate == null || !isSameJalaliDay(taskDate, selectedDate)) {
           continue;
         }
 
-        if (task.type == GTaskType.TIMED) {
-          timedTasks.add(_timedTaskFromApi(task));
+        if (task['type'] == 'TIMED') {
+          timedTasks.add(timedTaskFromApi(task));
         } else {
-          checklistTasks.add(_checklistTaskFromApi(task));
+          checklistTasks.add(taskFromApi(task));
         }
       }
 
       setState(() {
         _checklistTasks = checklistTasks;
         _timedTasks = timedTasks;
-        _expandedChecklistTaskIndex = null;
-        _expandedTimedTaskIndex = null;
         _isLoadingTasks = false;
       });
+      _dayChecklistsChanged.value++;
+      _resumeServerTimer(timedTasks);
+      if (!_isWeekMode) _syncWeekStrip();
     } catch (error) {
       if (!mounted) return;
       setState(() => _isLoadingTasks = false);
-      showReToast(context, error.toString(), ReToastType.failed);
-    }
-  }
-
-  Future<void> _completeChecklistTask(int index) async {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    final task = _checklistTasks[index];
-    final taskId = task['id'] as String?;
-
-    if (taskId == null || taskId.isEmpty) {
-      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
-      return;
-    }
-
-    if (task['status'] == 'done') return;
-
-    try {
-      final response = await context.read<GraphQLRepository>().requestOnce(
-        GUpdateTaskReq(
-          (request) {
-            request.vars.id = taskId;
-            request.vars.input.status = GTaskStatus.COMPLETED;
-          },
-        ),
+      showReToast(
+        context,
+        _userErrorMessage(error, 'دریافت تسک‌ها ناموفق بود. دوباره تلاش کنید.'),
+        ReToastType.failed,
       );
-
-      if (!mounted) return;
-
-      if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(
-            context, graphQLResponseErrorMessage(response), ReToastType.failed);
-        return;
-      }
-
-      await TaskReminderService.instance.cancel(taskId);
-      if (!mounted) return;
-
-      setState(() {
-        task['previousStatus'] = task['status'] ?? 'pending';
-        task['status'] = 'done';
-      });
-    } catch (error) {
-      if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
     }
   }
 
-  /// Deletes the task on the server. Returns whether it was deleted.
-  Future<bool> _deleteTaskById(String? taskId) async {
+  /// Deletes the task on the server. For an occurrence of a recurring task,
+  /// [scope] decides whether only this occurrence or the whole series goes.
+  /// Returns whether it was deleted.
+  Future<bool> _deleteTaskById(
+    String? taskId, {
+    _RecurringDeleteScope? scope,
+    String? recurrenceId,
+  }) async {
     if (taskId == null || taskId.isEmpty) {
       showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
       return false;
     }
 
     try {
-      final response = await context.read<GraphQLRepository>().requestOnce(
-        GDeleteTaskReq(
-          (request) {
-            request.vars.id = taskId;
+      await context.read<GraphQLRepository>().rawRequest(
+        query: _deleteTaskMutation,
+        variables: {
+          'id': taskId,
+          // A non-recurring task ignores the scope; send the safe one anyway.
+          'scope': switch (scope) {
+            _RecurringDeleteScope.series => 'STOP_RECURRENCE',
+            _ => 'OCCURRENCE_ONLY',
           },
-        ),
+        },
       );
 
-      if (!mounted) return false;
-
-      if (response.hasErrors) {
-        showReToast(
-            context, graphQLResponseErrorMessage(response), ReToastType.failed);
-        return false;
-      }
-
       await TaskReminderService.instance.cancel(taskId);
+      if (scope == _RecurringDeleteScope.series && recurrenceId != null) {
+        await TaskReminderService.instance
+            .cancel(TaskReminderService.recurrenceKey(recurrenceId));
+      }
       if (!mounted) return false;
 
       showReToast(context, 'تسک حذف شد', ReToastType.success);
       return true;
     } catch (error) {
       if (!mounted) return false;
-      showReToast(context, error.toString(), ReToastType.failed);
+      showReToast(
+        context,
+        _userErrorMessage(error, 'حذف تسک ناموفق بود. دوباره تلاش کنید.'),
+        ReToastType.failed,
+      );
       return false;
     }
   }
 
-  Future<void> _deleteTask(int index) async {
-    if (index < 0 || index >= _checklistTasks.length) return;
+  /// Asks for confirmation (and a scope for recurring tasks), then deletes.
+  Future<void> _requestDeleteTask(Map<String, dynamic> task) async {
+    final isRecurring = task['recurrenceId'] != null;
+    final choice = await _confirmDeleteTask(isRecurring: isRecurring);
+    if (choice == null || !mounted) return;
 
-    final deleted =
-        await _deleteTaskById(_checklistTasks[index]['id'] as String?);
-    if (!deleted || !mounted) return;
-
-    setState(() {
-      _checklistTasks.removeAt(index);
-    });
-  }
-
-  Future<void> _addTaskToToday(int index) async {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    final task = _checklistTasks[index];
-    final taskId = task['id'] as String?;
-
-    if (taskId == null || taskId.isEmpty) {
-      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
-      return;
-    }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final currentDateValue = task['date'];
-
-    if (currentDateValue != null) {
-      final currentDate = DateTime.tryParse(currentDateValue.toString());
-      if (currentDate != null) {
-        final taskDay = DateTime(currentDate.toLocal().year,
-            currentDate.toLocal().month, currentDate.toLocal().day);
-        if (taskDay == today) {
-          showReToast(context, 'این تسک برای امروز است', ReToastType.info);
-          return;
-        }
-      }
-    }
-
-    try {
-      final response = await context.read<GraphQLRepository>().requestOnce(
-        GUpdateTaskReq(
-          (request) {
-            request.vars.id = taskId;
-            final todayRfc3339 = today.toUtc().toIso8601String();
-            request.vars.input.date.value = todayRfc3339;
-          },
-        ),
-      );
-
-      if (!mounted) return;
-
-      if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(
-            context, graphQLResponseErrorMessage(response), ReToastType.failed);
-        return;
-      }
-
-      setState(() {
-        task['date'] = today.toIso8601String();
-      });
-
-      showReToast(context, 'تسک به امروز اضافه شد', ReToastType.success);
-    } catch (error) {
-      if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
-    }
-  }
-
-  double _checklistRowHeightAt(int index) {
-    return _expandedChecklistTaskIndex == index
-        ? _checklistItemExpandedHeight
-        : _checklistItemCollapsedHeight;
+    final deleted = await _deleteTaskById(
+      task['id'] as String?,
+      scope: choice,
+      recurrenceId: task['recurrenceId'] as String?,
+    );
+    if (deleted && mounted) await _reloadActiveView();
   }
 
   void _onGlobalTimerChanged() {
@@ -542,37 +556,13 @@ class _TasksScreenState extends State<TasksScreen>
     return task['remainingSeconds'] as int? ?? 0;
   }
 
-  void _toggleChecklistTaskStatus(int index) {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    setState(() {
-      final task = _checklistTasks[index];
-      final status = task['status'] as String?;
-      if (status == 'done') {
-        task['status'] = task['previousStatus'] ?? 'pending';
-        return;
-      }
-
-      task['previousStatus'] = status ?? 'pending';
-      task['status'] = 'done';
-    });
-  }
-
-  void _toggleChecklistTaskActions(int index) {
-    setState(() {
-      _expandedChecklistTaskIndex =
-          _expandedChecklistTaskIndex == index ? null : index;
-    });
-  }
-
-  void _toggleTimedTaskActions(int index) {
-    setState(() {
-      _expandedTimedTaskIndex = _expandedTimedTaskIndex == index ? null : index;
-    });
-  }
-
-  Future<bool> _confirmDeleteTask(Future<void> Function() onDelete) async {
-    final result = await showModalBottomSheet<bool>(
+  /// Returns the chosen scope, or null when the user cancels. Recurring tasks
+  /// get a choice between this occurrence and the whole series; the server
+  /// otherwise stops the entire recurrence.
+  Future<_RecurringDeleteScope?> _confirmDeleteTask({
+    required bool isRecurring,
+  }) {
+    return showModalBottomSheet<_RecurringDeleteScope>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -606,350 +596,90 @@ class _TasksScreenState extends State<TasksScreen>
                   ),
                 ),
                 const SizedBox(height: 10),
-                const ReText(
-                  'تسک موردنظر حذف شود؟',
+                ReText(
+                  isRecurring
+                      ? 'این تسک تکرارشونده است'
+                      : 'تسک موردنظر حذف شود؟',
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: AppColors.black1,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
-                const ReText(
-                  'درصورت تایید، روی دکمه حذف کلیک کنید.',
+                ReText(
+                  isRecurring
+                      ? 'می‌توانید فقط همین روز را حذف کنید یا تکرار را برای روزهای آینده هم متوقف کنید.'
+                      : 'این کار قابل بازگشت نیست.',
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.gray,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  textDirection: TextDirection.ltr,
-                  children: [
-                    Expanded(
-                      child: _ActionSheetButton(
-                        text: 'حذف',
-                        background: AppColors.errorColor,
-                        textColor: AppColors.white,
-                        onTap: () async {
-                          await onDelete();
-                          if (!context.mounted) return;
-                          Navigator.of(context).pop(false);
-                          unawaited(
-                              _loadTasksForSelectedDate(showLoading: false));
-                        },
+                if (isRecurring) ...[
+                  _ActionSheetButton(
+                    text: 'فقط همین روز',
+                    background: AppColors.errorColor,
+                    textColor: AppColors.white,
+                    onTap: () => Navigator.of(context)
+                        .pop(_RecurringDeleteScope.occurrence),
+                  ),
+                  const SizedBox(height: 10),
+                  _ActionSheetButton(
+                    text: 'همین روز و روزهای آینده',
+                    background: AppColors.white,
+                    textColor: AppColors.errorColor,
+                    borderColor: AppColors.errorColor,
+                    onTap: () =>
+                        Navigator.of(context).pop(_RecurringDeleteScope.series),
+                  ),
+                  const SizedBox(height: 10),
+                  _ActionSheetButton(
+                    text: 'لغو',
+                    background: AppColors.white,
+                    textColor: AppColors.black1,
+                    borderColor: AppColors.gray2,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                ] else
+                  Row(
+                    textDirection: TextDirection.ltr,
+                    children: [
+                      Expanded(
+                        child: _ActionSheetButton(
+                          text: 'حذف',
+                          background: AppColors.errorColor,
+                          textColor: AppColors.white,
+                          onTap: () => Navigator.of(context)
+                              .pop(_RecurringDeleteScope.occurrence),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionSheetButton(
-                        text: 'لغو',
-                        background: AppColors.white,
-                        textColor: AppColors.black1,
-                        borderColor: AppColors.gray2,
-                        onTap: () => Navigator.of(context).pop(false),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionSheetButton(
+                          text: 'لغو',
+                          background: AppColors.white,
+                          textColor: AppColors.black1,
+                          borderColor: AppColors.gray2,
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
         );
       },
     );
-    return result ?? false;
   }
 
-  Future<void> _requestDeleteChecklistTask(int index) async {
-    if (index < 0 || index >= _checklistTasks.length) return;
-    final confirmed = await _confirmDeleteTask(() => _deleteTask(index));
-    if (!confirmed || !mounted) return;
-    _deleteChecklistTask(index);
-  }
-
-  void _deleteTimedTask(int index) {
-    if (index < 0 || index >= _timedTasks.length) return;
-
-    setState(() {
-      _timedTasks.removeAt(index);
-      if (_expandedTimedTaskIndex == index) {
-        _expandedTimedTaskIndex = null;
-      } else if (_expandedTimedTaskIndex != null &&
-          _expandedTimedTaskIndex! > index) {
-        _expandedTimedTaskIndex = _expandedTimedTaskIndex! - 1;
-      }
-    });
-  }
-
-  Future<void> _requestDeleteTimedTask(int index) async {
-    if (index < 0 || index >= _timedTasks.length) return;
-    final confirmed =
-        await _confirmDeleteTask(() async => _deleteTimedTask(index));
-    if (!confirmed || !mounted) return;
-    _deleteTimedTask(index);
-  }
-
-  void _deleteChecklistTask(int index) {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    setState(() {
-      _checklistTasks.removeAt(index);
-
-      if (_expandedChecklistTaskIndex == index) {
-        _expandedChecklistTaskIndex = null;
-      } else if (_expandedChecklistTaskIndex != null &&
-          _expandedChecklistTaskIndex! > index) {
-        _expandedChecklistTaskIndex = _expandedChecklistTaskIndex! - 1;
-      }
-    });
-  }
-
-  void _addChecklistTaskToToday(int index) {
-    if (index < 0 || index >= _checklistTasks.length) return;
-
-    setState(() {
-      final task = Map<String, dynamic>.from(_checklistTasks.removeAt(index));
-      final now = DateTime.now();
-
-      task['status'] = 'pending';
-      task['date'] = Jalali.now();
-      task['time'] =
-          '${convertToPersianNumbers(now.hour.toString().padLeft(2, '0'))}:${convertToPersianNumbers(now.minute.toString().padLeft(2, '0'))}';
-
-      _checklistTasks.insert(0, task);
-      _expandedChecklistTaskIndex = 0;
-    });
-
-    if (_checklistCardsScrollController.hasClients) {
-      _checklistCardsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-      );
-    }
-    if (_checklistDotsScrollController.hasClients) {
-      _checklistDotsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  Widget _buildTaskTile(
-      BuildContext context, Map<String, dynamic> task, int index) {
-    const padding = 16.0;
-    const titleSize = 14.0;
-    const subtitleSize = 10.0;
-
-    final isDone = task['status'] == 'done';
-    final opacity = isDone ? 0.5 : 1.0;
-    final isExpanded = _expandedChecklistTaskIndex == index;
-
-    return Opacity(
-      opacity: opacity,
-      child: AnimatedContainer(
-        duration: _taskExpansionDuration,
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(isExpanded ? 36 : 100),
-          border: Border.all(color: AppColors.gray2),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: Padding(
-            padding: const EdgeInsets.all(padding),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _showTaskDetails(task, timed: false),
-                        behavior: HitTestBehavior.opaque,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            GestureDetector(
-                              onTap: () => _toggleChecklistTaskActions(index),
-                              behavior: HitTestBehavior.opaque,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 12),
-                                child: AnimatedRotation(
-                                  duration: _taskExpansionDuration,
-                                  curve: Curves.easeOutCubic,
-                                  turns: isExpanded ? -0.25 : 0,
-                                  child: const Icon(
-                                    Icons.arrow_back_ios,
-                                    size: 12,
-                                    color: AppColors.black1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                ReText(
-                                  task['title'] ?? '',
-                                  fontSize: titleSize,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.black1,
-                                ),
-                                const SizedBox(height: 2),
-                                ReText(
-                                  task['subtitle'] ?? '',
-                                  fontSize: subtitleSize,
-                                  color: Color.lerp(
-                                    AppColors.gray,
-                                    Colors.transparent,
-                                    0.25,
-                                  ),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                ClipRect(
-                  child: AnimatedAlign(
-                    duration: _taskExpansionDuration,
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.topCenter,
-                    heightFactor: isExpanded ? 1 : 0,
-                    child: AnimatedOpacity(
-                      duration: _taskExpansionDuration,
-                      curve: Curves.easeOutCubic,
-                      opacity: isExpanded ? 1 : 0,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _TaskItemActionButton(
-                                text: 'افزودن به امروز',
-                                disable: DateTime.now().year ==
-                                        task['date'].toDateTime().year &&
-                                    DateTime.now().month ==
-                                        task['date'].toDateTime().month &&
-                                    DateTime.now().day ==
-                                        task['date'].toDateTime().day,
-                                textColor: AppColors.primary,
-                                background: const Color(0xFFFBEAE5),
-                                icon: Icons.add,
-                                iconColor: AppColors.primary,
-                                onTap: () async {
-                                  await _addTaskToToday(index);
-                                  unawaited(_loadTasksForSelectedDate(
-                                      showLoading: false));
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _TaskItemActionButton(
-                                text: 'حذف تسک',
-                                textColor: AppColors.black1,
-                                background: AppColors.white,
-                                borderColor: AppColors.gray2,
-                                icon: SolarIconsOutline.trashBinMinimalistic,
-                                iconColor: AppColors.dark5Color,
-                                onTap: () => _requestDeleteChecklistTask(index),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTaskList(
-      BuildContext context, List<Map<String, dynamic>> tasks, bool isTimeTask) {
-    if (_isLoadingTasks) return const _TasksShimmer();
-
-    if (tasks.isEmpty) {
-      return ReEmptyList(
-        imageWidth: MediaQuery.of(context).size.width / 2.5,
-        title: '${!isTimeTask ? 'چک لیستی' : '‌تسک زمان‌داری'} ندارید!',
-        subtitle: 'برای امروز تسکی اضافه نکردید.',
-        onTap: () {
-          if (isTimeTask) {
-            _openAddTimedTaskScreen();
-            return;
-          }
-          _openAddTaskScreen();
-        },
-      );
-    }
-
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _checklistCardsScrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  itemCount: tasks.length,
-                  itemBuilder: (_, index) => AnimatedContainer(
-                    duration: _taskExpansionDuration,
-                    curve: Curves.easeOutCubic,
-                    height: _checklistRowHeightAt(index),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: _buildTaskTile(
-                      context,
-                      tasks[index],
-                      index,
-                    ).lMargin(12),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 50,
-                child: ListView.builder(
-                  controller: _checklistDotsScrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  itemCount: tasks.length,
-                  itemBuilder: (_, index) {
-                    final task = tasks[index];
-                    return AnimatedContainer(
-                      duration: _taskExpansionDuration,
-                      curve: Curves.easeOutCubic,
-                      height: _checklistRowHeightAt(index),
-                      child: ReTimelineDot(
-                        showTopLine: index != 0,
-                        showBottomLine: index != tasks.length - 1,
-                        isDone: task['status'] == 'done',
-                        height: _checklistRowHeightAt(index),
-                        onTap: () => _completeChecklistTask(index),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  /// Shown while the day has no time boxes; the add row above starts one.
+  Widget _buildEmptyDay(BuildContext context) {
+    return ReEmptyList(
+      imageWidth: MediaQuery.of(context).size.width / 2.5,
+      title: 'تسک زمان‌داری ندارید!',
+      subtitle: 'برای ${_selectedDayPhrase()} تسکی اضافه نکردید.',
     );
   }
 
@@ -979,17 +709,6 @@ class _TasksScreenState extends State<TasksScreen>
     }
   }
 
-  IconData _timedTaskMarkerIcon(String status) {
-    switch (status) {
-      case 'running':
-        return Icons.pause_rounded;
-      case 'done':
-        return CupertinoIcons.checkmark_alt;
-      default:
-        return Icons.timer_outlined;
-    }
-  }
-
   String _timedTaskDurationValue(Map<String, dynamic> task) {
     return (task['label']?.toString() ?? '').replaceAll('دقیقه', '').trim();
   }
@@ -999,33 +718,33 @@ class _TasksScreenState extends State<TasksScreen>
     return status == 'running' || status == 'paused';
   }
 
-  double _timedTaskRowHeight(Map<String, dynamic> task, int index) {
-    final base = _timedTaskShowsProgress(task) ? 98.0 : 74.0;
-    final isExpanded = _expandedTimedTaskIndex == index;
-    return isExpanded ? base + 66.0 : base;
+  // Card heights used by [_buildTimedTaskTile]; the timeline marker must span
+  // the same height or its dashed connector breaks between rows.
+  static const double _timedCardHeight = 70.0;
+  static const double _timedCardWithProgressHeight = 120.0;
+  static const double _timedCardProgressMargin = 8.0;
+  static const double _timedRowSpacing = 4.0;
+
+  double _timedTaskRowHeight(Map<String, dynamic> task) {
+    if (_timedTaskShowsProgress(task)) {
+      return _timedCardWithProgressHeight + _timedCardProgressMargin * 2;
+    }
+    return _timedCardHeight + _timedRowSpacing;
   }
 
   double _timedTaskRemainingProgress(Map<String, dynamic> task) {
-    final duration = task['durationSeconds'] as int? ?? 1;
+    final duration = task['durationSeconds'] as int? ?? 0;
+    if (duration <= 0) return 0;
     final remaining = _timedTaskRemainingSeconds(task);
     return (remaining / duration).clamp(0.0, 1.0);
   }
 
-  String _formatTimedTaskSeconds(int seconds) {
-    final safeSeconds = math.max(0, seconds);
-    final minutes = safeSeconds ~/ 60;
-    final remainingSeconds = safeSeconds % 60;
-    final formatted =
-        '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-    return convertToPersianNumbers(formatted);
-  }
-
   String _timedTaskRemainingLabel(Map<String, dynamic> task) {
-    return _formatTimedTaskSeconds(_timedTaskRemainingSeconds(task));
+    return formatTaskSeconds(_timedTaskRemainingSeconds(task));
   }
 
   String _timedTaskDurationLabel(Map<String, dynamic> task) {
-    return _formatTimedTaskSeconds(task['durationSeconds'] as int? ?? 0);
+    return formatTaskSeconds(task['durationSeconds'] as int? ?? 0);
   }
 
   Future<void> _toggleTimedTaskTimer(int index) async {
@@ -1052,7 +771,35 @@ class _TasksScreenState extends State<TasksScreen>
       isDone: task['status'] == 'done',
       taskData: task,
     );
-    await _timer.start();
+    final started = await _timer.start();
+    if (!started && !_timer.isCompleted && mounted) {
+      showReToast(
+        context,
+        'شروع تایمر ناموفق بود. دوباره تلاش کنید.',
+        ReToastType.failed,
+      );
+    }
+  }
+
+  /// A timer still running on the server (e.g. the app was closed while it
+  /// ran) is picked up again instead of showing a frozen "running" row.
+  void _resumeServerTimer(List<Map<String, dynamic>> timedTasks) {
+    if (_timer.isRunning) return;
+    for (final task in timedTasks) {
+      final id = task['id'] as String?;
+      final startedAt = task['timerStartedAt'] as DateTime?;
+      if (id == null || startedAt == null || task['status'] == 'done') {
+        continue;
+      }
+      _timer.resumeRunning(
+        taskId: id,
+        totalSeconds: task['durationSeconds'] as int? ?? 0,
+        elapsedSeconds: task['elapsedSeconds'] as int? ?? 0,
+        startedAt: startedAt,
+        taskData: task,
+      );
+      return;
+    }
   }
 
   Widget _buildTimedConnector({required bool visible, required double height}) {
@@ -1158,14 +905,15 @@ class _TasksScreenState extends State<TasksScreen>
     final color = _timedTaskColor(status);
     final hasProgress = _timedTaskShowsProgress(task);
     final isDone = status == 'done';
-    final isExpanded = _expandedTimedTaskIndex == index;
-    final cardHeight = (hasProgress ? 120.0 : 70.0) + (isExpanded ? 58 : 0);
+    final cardHeight =
+        hasProgress ? _timedCardWithProgressHeight : _timedCardHeight;
 
     return Opacity(
       opacity: isDone ? 0.55 : 1,
       child: Container(
         alignment: Alignment.center,
-        margin: EdgeInsets.symmetric(vertical: hasProgress ? 8 : 0),
+        margin: EdgeInsets.symmetric(
+            vertical: hasProgress ? _timedCardProgressMargin : 0),
         height: cardHeight,
         decoration: BoxDecoration(
           color: const Color(0xfffafafa),
@@ -1205,15 +953,10 @@ class _TasksScreenState extends State<TasksScreen>
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => _showTaskDetails(task, timed: true),
-                    child: AnimatedRotation(
-                      duration: _taskExpansionDuration,
-                      curve: Curves.easeOutCubic,
-                      turns: isExpanded ? -0.25 : 0,
-                      child: const Icon(
-                        Icons.arrow_back_ios,
-                        size: 11,
-                        color: AppColors.gray,
-                      ),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 11,
+                      color: AppColors.gray,
                     ),
                   ),
                   const Spacer(),
@@ -1231,6 +974,7 @@ class _TasksScreenState extends State<TasksScreen>
                             fontSize: titleSize,
                             fontWeight: FontWeight.w900,
                             color: AppColors.black1,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 2),
                           ReText(
@@ -1242,6 +986,7 @@ class _TasksScreenState extends State<TasksScreen>
                               0.25,
                             ),
                             fontWeight: FontWeight.w600,
+                            maxLines: 1,
                           ),
                         ],
                       ),
@@ -1251,17 +996,9 @@ class _TasksScreenState extends State<TasksScreen>
                   status == 'done'
                       ? const SizedBox()
                       : GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (final _) => TaskTimerScreen(
-                                  task: task,
-                                  onPop: () {
-                                    _loadTasksForSelectedDate(
-                                        showLoading: false);
-                                  }),
-                            ),
-                          ),
+                          // The icon shows play/pause, so the button does
+                          // exactly that; the full timer is in the details.
+                          onTap: () => _toggleTimedTaskTimer(index),
                           behavior: HitTestBehavior.opaque,
                           child: Container(
                             width: 32,
@@ -1307,9 +1044,9 @@ class _TasksScreenState extends State<TasksScreen>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: LinearProgressIndicator(
-                          value: (task['durationSeconds'] -
-                                  task['remainingSeconds']) /
-                              task['durationSeconds'],
+                          // Live value from the timer, not the stale API
+                          // snapshot, so the bar moves with the countdown.
+                          value: 1 - _timedTaskRemainingProgress(task),
                           minHeight: 2,
                           backgroundColor: AppColors.gray2,
                           valueColor: AlwaysStoppedAnimation<Color>(color),
@@ -1330,7 +1067,7 @@ class _TasksScreenState extends State<TasksScreen>
     if (_isLoadingTasks) return const _TasksShimmer();
 
     if (_timedTasks.isEmpty) {
-      return _buildTaskList(context, const [], true);
+      return _buildEmptyDay(context);
     }
 
     return Align(
@@ -1342,8 +1079,9 @@ class _TasksScreenState extends State<TasksScreen>
           itemCount: _timedTasks.length,
           itemBuilder: (context, index) {
             final task = _timedTasks[index];
-            final rowHeight = _timedTaskRowHeight(task, index);
+            final rowHeight = _timedTaskRowHeight(task);
             return SizedBox(
+              height: rowHeight,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -1371,213 +1109,191 @@ class _TasksScreenState extends State<TasksScreen>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      initialIndex: 1,
-      child: Scaffold(
-        backgroundColor: AppColors.gray1,
-        bottomNavigationBar: AppBottomNavigationBar(
-          currentIndex: 1,
-          onTap: (index) => navigateToIndex(context, index, 1),
-        ),
-        body: Column(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(50),
-                  bottomRight: Radius.circular(50),
-                ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    reAppHeader(
-                      'تسک ها',
-                      firstIcon: GestureDetector(
-                        child: SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-                        ),
-                      ),
-                      secondIcon: GestureDetector(
-                        onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (final _) => const ChatScreen())),
-                        child: const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child:
-                              Icon(SolarIconsOutline.chatRoundLine, size: 24),
-                        ),
-                      ),
-                    ),
-                    calenderWidget(),
-                  ],
-                ),
+    return Scaffold(
+      backgroundColor: AppColors.gray1,
+      bottomNavigationBar: AppBottomNavigationBar(
+        currentIndex: 1,
+        onTap: (index) => navigateToIndex(context, index, 1),
+      ),
+      body: Column(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(50),
+                bottomRight: Radius.circular(50),
               ),
             ),
-            Expanded(
-              child: Stack(
-                clipBehavior: Clip.none,
+            child: SafeArea(
+              child: Column(
                 children: [
-                  // Main Scrollable and Tabbable Layout
-                  Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: _toggleAddMenu,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _isAddMenuOpen
-                                    ? AppColors.primary
-                                    : Colors.transparent,
-                                border: Border.all(
-                                  color: _isAddMenuOpen
-                                      ? AppColors.primary
-                                      : AppColors.gray2,
-                                ),
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    size: 18,
-                                    color: _isAddMenuOpen
-                                        ? AppColors.white
-                                        : AppColors.primary,
-                                  ).rMargin(6),
-                                  ReText(
-                                    'افزودن تسک',
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                    color: _isAddMenuOpen
-                                        ? AppColors.white
-                                        : AppColors.black1,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const ReText(
-                            'تسک های امروز',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.black1,
-                          ),
-                        ],
-                      ).hMargin(32).tMargin(16),
-                      const SizedBox(height: 16),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.gray2,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: TabBar(
-                          dividerColor: Colors.transparent,
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          indicator: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          labelColor: AppColors.black1,
-                          unselectedLabelColor: AppColors.gray,
-                          labelStyle: TextStyle(
-                            fontFamily: AppFonts.iranSansVar,
-                            fontVariations:
-                                AppFonts.fontVariations(FontWeight.w900),
-                            fontSize: 14,
-                          ),
-                          unselectedLabelStyle: TextStyle(
-                            fontFamily: AppFonts.iranSansVar,
-                            fontVariations:
-                                AppFonts.fontVariations(FontWeight.w500),
-                            fontSize: 14,
-                          ),
-                          tabs: const [
-                            Tab(text: 'چک لیست'),
-                            Tab(text: 'زمان دار'),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: TabBarView(
-                          children: [
-                            _buildTaskList(context, _checklistTasks, false),
-                            _buildTimedTaskList(context),
-                          ],
-                        ),
-                      ),
-                    ],
+                  _buildTitleRow(),
+                  // One date picker for both modes; it stays put while the
+                  // body below switches.
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14, bottom: 20),
+                    child: WeekHeader(
+                      controller: _week,
+                      selectedDate: _selectedDate,
+                      onSelectDay: _isWeekMode ? _selectWeekDay : _selectDay,
+                      onChangeWeek: _isWeekMode ? _changeWeek : _changeDayWeek,
+                      onPickDate: _isWeekMode ? _pickWeekDate : _pickDay,
+                      canShowWeek: _isWeekMode
+                          ? (start) => isWeekWithinHorizon(start, _today)
+                          : null,
+                      onBlockedForward: _explainPlanningHorizon,
+                    ),
                   ),
-
-                  // Invisible Full Screen Blocker to Dismiss the Dropdown
-                  if (_isAddMenuOpen)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        onTap: _toggleAddMenu,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          color: Colors.transparent,
-                        ),
-                      ),
-                    ),
-
-                  // Floating Expanding Menu Options
-                  if (_isAddMenuOpen)
-                    Positioned(
-                      left: 32,
-                      top: 64, // Positioned slightly below the Add Task button
-                      child: FadeTransition(
-                        opacity: _menuOpacityAnimation,
-                        child: ScaleTransition(
-                          scale: _menuScaleAnimation,
-                          alignment: Alignment.topLeft,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildMenuItem(
-                                title: 'تسک زمان دار',
-                                icon: IconsaxPlusLinear.timer_1,
-                                onTap: () {
-                                  if (_isAddMenuOpen) {
-                                    _toggleAddMenu();
-                                    _openAddTimedTaskScreen();
-                                  }
-                                },
-                              ),
-                              _buildMenuItem(
-                                title: 'چک لیست',
-                                icon: IconsaxPlusLinear.tick_square,
-                                onTap: () {
-                                  _toggleAddMenu();
-                                  _openAddTaskScreen();
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
+            ),
+          ),
+          // The toolbar of the body below: which view it shows, and adding to
+          // it. It stays put while the body changes.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              textDirection: TextDirection.rtl,
+              children: [
+                TasksViewModeToggle(mode: _mode, onChanged: _setMode),
+                const Spacer(),
+                _AddTaskButton(onTap: () => _openQuickAdd(_selectedDate)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedSwitcher(
+                    duration: _modeSwitchDuration,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: _zoomTransition,
+                    child: _isWeekMode
+                        ? KeyedSubtree(
+                            key: const ValueKey('week-body'),
+                            child: _buildWeekBody(),
+                          )
+                        : KeyedSubtree(
+                            key: const ValueKey('day-body'),
+                            child: _buildDayBody(),
+                          ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  // Clear of the floating timer banner when it shows.
+                  bottom: _timer.shouldShowBanner ? 96 : 20,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.4),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                    child: _undo == null
+                        ? const SizedBox.shrink()
+                        : UndoBar(
+                            key: ValueKey(_undo!.message),
+                            message: _undo!.message,
+                            onUndo: _undo!.onUndo,
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Switching modes reads as zooming out of a day into its week, and back.
+  Widget _zoomTransition(Widget child, Animation<double> animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildTitleRow() {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+        child: Row(
+          children: [
+            const ReText(
+              'تسک‌ها',
+              color: AppColors.black1,
+              fontSize: 16,
+              fontWeight: 1000,
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (final _) => const ChatScreen()),
+              ),
+              child: const SizedBox(
+                width: 48,
+                height: 48,
+                child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
+              ),
+            ),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWeekBody() {
+    return WeeklyPlanView(
+      key: _weekViewKey,
+      controller: _week,
+      onOpenTask: (task) => _showTaskDetails(task, timed: isTimedTask(task)),
+      onAddToDay: _openQuickAdd,
+      onMoveTasks: _moveTasks,
+      onRefresh: () => _week.reload(silent: true),
+    );
+  }
+
+  /// The day's time boxes, under a pill that opens its checklists, as in
+  /// the week.
+  Widget _buildDayBody() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: ChecklistsPill(
+              key: const ValueKey('day-checklists'),
+              tasks: _checklistTasks,
+              height: 40,
+              fontSize: 12.5,
+              onTap: _openDayChecklists,
+            ),
+          ),
+        ),
+        Expanded(child: _buildTimedTaskList(context)),
+      ],
     );
   }
 
@@ -1586,8 +1302,10 @@ class _TasksScreenState extends State<TasksScreen>
   _SheetTaskState _sheetTaskState(Map<String, dynamic> task,
       {required bool timed}) {
     if (!timed) {
+      final isDone = task['status'] == 'done';
       return _SheetTaskState(
-        isDone: task['status'] == 'done',
+        isDone: isDone,
+        canMove: !isDone,
         primaryText: 'انجام شد',
         progressColor: AppColors.black1,
       );
@@ -1597,6 +1315,8 @@ class _TasksScreenState extends State<TasksScreen>
     final showsProgress = _timedTaskShowsProgress(task);
     return _SheetTaskState(
       isDone: status == 'done',
+      // A started timer belongs to the day it ran on.
+      canMove: status == 'pending',
       primaryText: status == 'pending' ? 'شروع' : 'ادامه',
       progress: showsProgress ? 1 - _timedTaskRemainingProgress(task) : null,
       remainingLabel: showsProgress ? _timedTaskRemainingLabel(task) : null,
@@ -1635,14 +1355,12 @@ class _TasksScreenState extends State<TasksScreen>
             MaterialPageRoute(
               builder: (_) => TaskTimerScreen(
                 task: task,
-                onPop: () => _loadTasksForSelectedDate(showLoading: false),
+                onPop: _reloadActiveView,
               ),
             ),
           );
         } else {
-          final index =
-              _checklistTasks.indexWhere((item) => item['id'] == task['id']);
-          await _completeChecklistTask(index);
+          await _setTaskDone(task, done: true);
         }
       case _TaskSheetAction.edit:
         final edited = await context.to<Map<String, dynamic>>(
@@ -1650,295 +1368,23 @@ class _TasksScreenState extends State<TasksScreen>
         );
         if (edited == null || !mounted) return;
         showReToast(context, 'تسک با موفقیت ویرایش شد', ReToastType.success);
-        await _loadTasksForSelectedDate();
+        await _reloadActiveView();
+      case _TaskSheetAction.move:
+        final day = await showMoveTaskSheet(context, task: task, today: _today);
+        if (day != null && mounted) await _moveTask(task, day);
       case _TaskSheetAction.delete:
-        var deleted = false;
-        // The confirm sheet runs the delete itself and always pops false.
-        await _confirmDeleteTask(() async {
-          deleted = await _deleteTaskById(task['id'] as String?);
-        });
-        if (deleted && mounted) await _loadTasksForSelectedDate();
+        await _requestDeleteTask(task);
     }
   }
 
-  Future<void> _openAddTaskScreen() async {
-    final newTask = await context.to<Map<String, dynamic>>(
-      const AddTaskScreen(),
-    );
-
-    if (newTask == null) return;
-    if (!mounted) return;
-
-    showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
-    await _loadTasksForSelectedDate();
-    if (!mounted) return;
-
-    if (_checklistCardsScrollController.hasClients) {
-      _checklistCardsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    }
-    if (_checklistDotsScrollController.hasClients) {
-      _checklistDotsScrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  Future<void> _openAddTimedTaskScreen() async {
-    final newTask = await context.to<Map<String, dynamic>>(
-      const AddTimedTaskScreen(),
-    );
-
-    if (newTask == null) return;
-    if (!mounted) return;
-
-    showReToast(context, 'تسک با موفقیت اضافه شد', ReToastType.success);
-    await _loadTasksForSelectedDate();
-  }
-
-  Container calenderWidget() {
-    return Container(
-      height: 78,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 20,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.gray2,
-        borderRadius: BorderRadius.circular(100),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 10,
-      ),
-      child: Stack(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () async {
-                  Jalali? picked = await showPersianDatePicker(
-                    context: context,
-                    initialDate: Jalali.now(),
-                    firstDate: Jalali(1385, 8),
-                    lastDate: Jalali(1450, 9),
-                    holidayConfig: const PersianHolidayConfig(weekendDays: {7}),
-                    initialEntryMode: PersianDatePickerEntryMode.calendarOnly,
-                    initialDatePickerMode: PersianDatePickerMode.day,
-                    locale: const Locale('fa', "IR"),
-                    builder: (context, child) {
-                      return Theme(
-                        data: Theme.of(context).copyWith(
-                          primaryColor: AppColors.black1,
-                          colorScheme: const ColorScheme(
-                            brightness: Brightness.light,
-                            primary: AppColors.black1,
-                            onPrimary: AppColors.white,
-                            secondary: AppColors.gray1,
-                            onSecondary: AppColors.black1,
-                            error: AppColors.white,
-                            onError: AppColors.white,
-                            surface: AppColors.white,
-                            onSurface: AppColors.gray,
-                          ),
-                        ),
-                        child: child!,
-                      );
-                    },
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _selectedDate = picked;
-                      _animationController.forward(from: 0.0);
-                      _slideAnimationController.forward(from: 0.0);
-                      unawaited(_loadTasksForSelectedDate());
-                    });
-                  }
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  width: 44,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: const Icon(
-                    IconsaxPlusLinear.calendar,
-                    color: AppColors.black1,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 0),
-              Expanded(
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _weekDaysList.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 0),
-                  itemBuilder: (context, index) {
-                    final date = _weekDaysList[index];
-                    final isSelected = _isSameDay(
-                      date,
-                      _selectedDate,
-                    );
-                    return GestureDetector(
-                      onTap: () {
-                        if (_isSameDay(date, _selectedDate)) return;
-                        setState(() {
-                          _selectedDate = date;
-                          _animationController.forward(from: 0.0);
-                          _slideAnimationController.forward(from: 0.0);
-                        });
-                        unawaited(_loadTasksForSelectedDate());
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOutCubic,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.black1
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          vertical: isSelected ? 12 : 5,
-                          horizontal: isSelected ? 12 : 0,
-                        ),
-                        child: Center(
-                          child: isSelected
-                              ? SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(-0.2, 0),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: _slideAnimationController,
-                                      curve: Curves.easeOutCubic,
-                                    ),
-                                  ),
-                                  child: FadeTransition(
-                                    opacity: Tween<double>(
-                                      begin: 0,
-                                      end: 1,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: _slideAnimationController,
-                                        curve: Curves.easeInCubic,
-                                      ),
-                                    ),
-                                    child: ScaleTransition(
-                                      scale: Tween<double>(
-                                        begin: 0.8,
-                                        end: 1.0,
-                                      ).animate(
-                                        CurvedAnimation(
-                                          parent: _animationController,
-                                          curve: Curves.elasticOut,
-                                        ),
-                                      ),
-                                      child: ReText(
-                                        '${convertToPersianNumbers(date.day.toString())} ${_persianMonths[date.month - 1]} ${convertToPersianNumbers(date.year.toString())}',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        isBold: true,
-                                        color: AppColors.white,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 6),
-                                    ReText(
-                                      convertToPersianNumbers(
-                                        date.day.toString(),
-                                      ),
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 13,
-                                      isBold: true,
-                                      color: AppColors.black1.withOpacity(
-                                        0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ).hMargin(12),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TaskItemActionButton extends StatelessWidget {
-  const _TaskItemActionButton({
-    required this.text,
-    required this.textColor,
-    required this.background,
-    required this.icon,
-    required this.iconColor,
-    required this.onTap,
-    this.borderColor,
-    this.disable,
-  });
-
-  final String text;
-  final Color textColor;
-  final Color background;
-  final IconData icon;
-  final Color iconColor;
-  final VoidCallback onTap;
-  final Color? borderColor;
-  final bool? disable;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: disable ?? false ? 0.4 : 1,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: disable ?? false ? () {} : onTap,
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(100),
-            border:
-                borderColor == null ? null : Border.all(color: borderColor!),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: iconColor,
-              ),
-              const Spacer(),
-              ReText(
-                text,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: textColor,
-              ),
-            ],
-          ),
-        ),
-      ),
+  /// The app's calendar, starting on the selected day. Week mode passes
+  /// [lastDate] so days beyond the planning horizon cannot be picked.
+  Future<Jalali?> _pickDate({Jalali? lastDate}) {
+    return showPlanDatePicker(
+      context,
+      initialDate: _selectedDate,
+      today: _today,
+      lastDate: lastDate,
     );
   }
 }
@@ -2065,11 +1511,15 @@ class _TasksShimmerState extends State<_TasksShimmer>
   }
 }
 
-enum _TaskSheetAction { primary, edit, delete }
+enum _TaskSheetAction { primary, edit, move, delete }
+
+/// How much of a recurring task a delete removes.
+enum _RecurringDeleteScope { occurrence, series }
 
 class _SheetTaskState {
   const _SheetTaskState({
     required this.isDone,
+    required this.canMove,
     required this.primaryText,
     required this.progressColor,
     this.progress,
@@ -2078,6 +1528,9 @@ class _SheetTaskState {
   });
 
   final bool isDone;
+
+  /// Whether the task can still be moved to another day.
+  final bool canMove;
   final String primaryText;
   final Color progressColor;
   final double? progress;
@@ -2256,12 +1709,50 @@ class _TaskDetailsSheet extends StatelessWidget {
                           value: state.progress!.clamp(0.0, 1.0),
                           minHeight: 3,
                           backgroundColor: AppColors.gray2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(state.progressColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              state.progressColor),
                         ),
                       ),
                     ),
                   ],
+                ),
+              ],
+              if (state.canMove) ...[
+                const SizedBox(height: 20),
+                GestureDetector(
+                  key: const ValueKey('task-sheet-move'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).pop(_TaskSheetAction.move),
+                  child: Container(
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(
+                      color: AppColors.gray1,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 14,
+                          color: AppColors.gray,
+                        ),
+                        Spacer(),
+                        ReText(
+                          'انتقال به روز دیگر',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.black1,
+                        ),
+                        SizedBox(width: 10),
+                        Icon(
+                          IconsaxPlusLinear.calendar,
+                          size: 20,
+                          color: AppColors.black1,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
               const SizedBox(height: 26),
@@ -2362,6 +1853,49 @@ class _SheetButton extends StatelessWidget {
               color: textColor,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "+ افزودن" at the end of the toolbar: adds a time box or a checklist to
+/// whichever view is open; quick add asks which.
+class _AddTaskButton extends StatelessWidget {
+  const _AddTaskButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'افزودن تسک یا چک‌لیست',
+      excludeSemantics: true,
+      child: PressScale(
+        onTap: onTap,
+        child: Container(
+          key: const ValueKey('tasks-add-button'),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: AppColors.black1,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.rtl,
+            children: [
+              Icon(Icons.add_rounded, size: 20, color: AppColors.white),
+              SizedBox(width: 4),
+              ReText(
+                'افزودن',
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.white,
+              ),
+            ],
+          ),
         ),
       ),
     );

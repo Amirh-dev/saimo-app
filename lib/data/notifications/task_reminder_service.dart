@@ -97,6 +97,10 @@ class TaskReminderService {
 
   int _baseId(String taskId) => (taskId.hashCode & 0x0fffffff) * 8;
 
+  /// Key for a recurring task's weekly reminder. It belongs to the recurrence,
+  /// so completing or deleting one occurrence never silences the others.
+  static String recurrenceKey(String recurrenceId) => 'recurrence:$recurrenceId';
+
   NotificationDetails get _details => const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,

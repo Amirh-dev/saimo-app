@@ -160,6 +160,7 @@ class ConsultantRepository {
     final name = (userMap['fullName'] as String?)?.trim();
     final username = (userMap['username'] as String?)?.trim();
     final avatarUrl = (userMap['avatarURL'] as String?)?.trim();
+    final title = (counselor['title'] as String?)?.trim();
 
     return ActiveCounselor(
       userID: userID,
@@ -168,6 +169,8 @@ class ConsultantRepository {
       avatar: (avatarUrl != null && avatarUrl.isNotEmpty)
           ? avatarUrl
           : _sampleAvatar,
+      title: (title != null && title.isNotEmpty) ? title : null,
+      endDate: endDate,
     );
   }
 
@@ -341,12 +344,20 @@ class ActiveCounselor {
     required this.avatar,
     this.name,
     this.username,
+    this.title,
+    this.endDate,
   });
 
   final String userID;
   final String avatar;
   final String? name;
   final String? username;
+
+  /// The counselor's professional title, e.g. "مشاور تحصیلی کنکور".
+  final String? title;
+
+  /// When the student's subscription to this counselor ends.
+  final DateTime? endDate;
 }
 
 /// A published price offer for one (planType, durationMonths) combination.

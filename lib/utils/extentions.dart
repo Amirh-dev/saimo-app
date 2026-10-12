@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/helpers.dart';
@@ -28,17 +29,23 @@ extension OSInfo on BuildContext {
 }
 
 extension ContextRouterExtension on BuildContext {
+  /// Opens a page with the app's page transition (see the theme's
+  /// `pageTransitionsTheme`).
   Future<T?> to<T>(Widget child, {String? routeName}) {
     return Navigator.of(this).push<T>(
-      PageRouteBuilder<T>(
-        pageBuilder: (_, __, ___) => child,
+      MaterialPageRoute<T>(
+        builder: (_) => child,
         settings: RouteSettings(name: routeName),
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-        transitionsBuilder: (_, __, ___, c) => c,
       ),
     );
   }
+
+  /// Switches bottom-navigation tabs: the new tab fades in while the bar
+  /// stays in place.
+  void toTab(Widget child, {String? routeName}) =>
+      Navigator.of(this).pushReplacement(
+        AppTabRoute<void>(page: child, settings: RouteSettings(name: routeName)),
+      );
 
   void toOff(Widget child, {String? routeName}) =>
       Navigator.of(this).pushReplacement(

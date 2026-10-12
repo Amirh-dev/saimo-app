@@ -287,6 +287,16 @@ void main() {
       expect(counselor?.userID, 'user-1');
     });
 
+    test('keeps the counselor title and the subscription end date', () async {
+      final active = subscription('ACTIVE', endDate: '2100-01-01T00:00:00Z');
+      (active['counselor'] as Map<String, dynamic>)['title'] = 'مشاور تحصیلی کنکور';
+
+      final counselor = await repositoryReturning(active).fetchMyActiveCounselor();
+
+      expect(counselor?.title, 'مشاور تحصیلی کنکور');
+      expect(counselor?.endDate, DateTime.utc(2100));
+    });
+
     test('ignores an unpaid PENDING subscription', () async {
       final counselor = await repositoryReturning(subscription('PENDING'))
           .fetchMyActiveCounselor();

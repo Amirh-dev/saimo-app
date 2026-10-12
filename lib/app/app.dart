@@ -23,6 +23,7 @@ import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
+import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -101,6 +102,7 @@ class MyApp extends StatelessWidget {
             colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
             fontFamily: AppFonts.iranSansVar,
             useMaterial3: true,
+            pageTransitionsTheme: kAppPageTransitionsTheme,
           ),
           home: const _AuthGate(),
         ),

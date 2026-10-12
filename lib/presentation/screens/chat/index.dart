@@ -7,14 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
+import 'package:simo_learn/presentation/screens/chat/advisor_widgets.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
-import 'package:simo_learn/presentation/widgets/re_image.dart';
+import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -23,431 +22,194 @@ import 'chat_models.dart';
 import 'chat_repository.dart';
 import 'inbox_subscription_client.dart';
 
+/// The chat is, for now, a direct line to the student's advisor. It opens
+/// straight into that conversation; before an advisor is chosen it explains
+/// what the chat is for and offers to choose one.
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, this.initialChatUserID});
 
-  /// When set (e.g. opened from a message notification tap), the conversation
-  /// with this user is opened automatically once contacts finish loading.
+  /// When set (e.g. opened from a message notification tap) and the student
+  /// has no active advisor any more, the conversation with this user opens
+  /// instead, so the tap still leads to the message.
   final String? initialChatUserID;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
+enum _AdvisorChatPhase { loading, error, noAdvisor, ready }
+
+class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
   late final ConsultantRepository _consultantRepository;
-  late final InboxSubscriptionClient _inboxClient;
-  StreamSubscription<InboxEvent>? _eventSubscription;
-  StreamSubscription<InboxConnectionStatus>? _statusSubscription;
-  var _contacts = <ChatContact>[];
-  final _activityByUserID = <String, UserActivity>{};
-  final _latestMessageByUserID = <String, ChatMessage>{};
-  final _unreadByUserID = <String, int>{};
-  final _chatUserByChatID = <String, String>{};
-  var _connectionStatus = InboxConnectionStatus.idle;
-  var _displayConnectionStatus = InboxConnectionStatus.connected;
-  Timer? _connectionDebounce;
-  Future<void>? _contactsLoadFuture;
-  String? _currentUserID;
-  String? _activeChatUserID;
-  String? _error;
-  bool _isLoading = true;
-  String? _openingUserID;
-  bool _autoOpenAttempted = false;
 
-  static const Duration _connectionGrace = Duration(seconds: 3);
+  var _phase = _AdvisorChatPhase.loading;
+  ActiveCounselor? _advisor;
+  String? _currentUserID;
+  String? _targetUserID;
+  String? _chatID;
+  String? _error;
+  Future<void>? _loading;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     final graphql = context.read<GraphQLRepository>();
     _chatRepository = ChatRepository(graphql);
     _consultantRepository = ConsultantRepository(graphql);
-    _inboxClient = context.read<InboxSubscriptionClient>();
-    _connectionStatus = _inboxClient.currentStatus;
-    _startInboxSubscription();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadContacts());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _eventSubscription?.cancel();
-    _statusSubscription?.cancel();
-    _connectionDebounce?.cancel();
+    if (_phase == _AdvisorChatPhase.ready) {
+      ActiveChatTracker.instance.closeConversation();
+    }
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
-    _inboxClient.connect(source: 'chat_list');
-    _loadContacts(silent: true);
+  /// Finds the advisor and their conversation. [silent] keeps what is shown
+  /// while it loads, and only switches when the answer changed.
+  Future<void> _load({bool silent = false}) {
+    return _loading ??= _loadOnce(silent: silent).whenComplete(() => _loading = null);
   }
 
-  void _startInboxSubscription() {
-    _eventSubscription = _inboxClient.events.listen(_handleInboxEvent);
-    _statusSubscription = _inboxClient.status.listen((status) {
-      if (!mounted) return;
-      _applyConnectionStatus(status);
-    });
-    _applyConnectionStatus(_inboxClient.currentStatus);
-    _inboxClient.connect(source: 'chat_list');
-  }
-
-  /// Surfaces a disconnection only after it persists past a short grace period,
-  /// so transient reconnects never flash "در حال اتصال" in the list.
-  void _applyConnectionStatus(InboxConnectionStatus status) {
-    _connectionStatus = status;
-
-    if (status == InboxConnectionStatus.connected) {
-      _connectionDebounce?.cancel();
-      if (_displayConnectionStatus != status) {
-        setState(() => _displayConnectionStatus = status);
-      }
-      return;
-    }
-
-    if (_displayConnectionStatus == InboxConnectionStatus.connected) {
-      _connectionDebounce?.cancel();
-      _connectionDebounce = Timer(_connectionGrace, () {
-        if (!mounted) return;
-        if (_connectionStatus != InboxConnectionStatus.connected) {
-          setState(() => _displayConnectionStatus = _connectionStatus);
-        }
-      });
-    } else if (_displayConnectionStatus != status) {
-      setState(() => _displayConnectionStatus = status);
-    }
-  }
-
-  Future<void> _loadContacts({bool silent = false}) {
-    final activeLoad = _contactsLoadFuture;
-    if (activeLoad != null) return activeLoad;
-
-    late final Future<void> loadFuture;
-    loadFuture = _loadContactsOnce(silent: silent).whenComplete(() {
-      if (identical(_contactsLoadFuture, loadFuture)) {
-        _contactsLoadFuture = null;
-      }
-    });
-    _contactsLoadFuture = loadFuture;
-    return loadFuture;
-  }
-
-  Future<void> _loadContactsOnce({required bool silent}) async {
+  Future<void> _loadOnce({required bool silent}) async {
     if (!silent) {
       setState(() {
-        _isLoading = true;
+        _phase = _AdvisorChatPhase.loading;
         _error = null;
       });
     }
 
     try {
-      // The current user id never changes during a session, so fetch `getMe`
-      // once instead of on every (including silent/resume) refresh.
       final currentUserID =
           _currentUserID ?? await _chatRepository.getCurrentUserID();
-      final counselor = await _consultantRepository.fetchMyActiveCounselor();
-      final contacts = [
-        if (counselor != null)
-          ChatContact(
-            friendshipID: '',
-            targetUserID: counselor.userID,
-            status: 'ACCEPTED',
-            isPending: false,
-            targetFullName: counselor.name,
-            targetUsername: counselor.username,
-            targetAvatarURL: counselor.avatar,
-          ),
-      ];
+      final advisor = await _consultantRepository.fetchMyActiveCounselor();
+      final fallback = widget.initialChatUserID;
+      final targetUserID = advisor?.userID ??
+          (fallback != null && fallback.isNotEmpty ? fallback : null);
+
+      if (targetUserID == null) {
+        if (!mounted) return;
+        _leaveConversation();
+        setState(() {
+          _currentUserID = currentUserID;
+          _advisor = null;
+          _phase = _AdvisorChatPhase.noAdvisor;
+        });
+        return;
+      }
+
+      _cacheForNotifications(currentUserID, targetUserID, advisor);
+      final chatID = targetUserID == _targetUserID && _chatID != null
+          ? _chatID!
+          : await _chatRepository.createDirectChat(targetUserID);
       if (!mounted) return;
-      _cacheContactsForNotifications(currentUserID, contacts);
+      // Message notifications from the advisor pause while they are on screen.
+      ActiveChatTracker.instance.openConversation(targetUserID);
       setState(() {
         _currentUserID = currentUserID;
-        _contacts = contacts;
-        final contactIDs =
-            contacts.map((contact) => contact.targetUserID).toSet();
-        _latestMessageByUserID.removeWhere(
-          (userID, _) => !contactIDs.contains(userID),
-        );
-        _unreadByUserID.removeWhere(
-          (userID, _) => !contactIDs.contains(userID),
-        );
-        _isLoading = false;
+        _advisor = advisor;
+        _targetUserID = targetUserID;
+        _chatID = chatID;
+        _phase = _AdvisorChatPhase.ready;
       });
-      _maybeAutoOpenInitialChat();
     } catch (error) {
-      if (!mounted) return;
-      if (silent) return;
+      if (!mounted || silent) return;
       setState(() {
         _error = _friendlyError(error);
-        _isLoading = false;
+        _phase = _AdvisorChatPhase.error;
       });
     }
   }
 
-  /// Opens the conversation requested via [ChatScreen.initialChatUserID] (a
-  /// notification tap) once contacts are loaded. If the sender is not on the
-  /// first contacts page, still try opening by user id so the tap routes to the
-  /// message instead of silently stopping at the inbox.
-  void _maybeAutoOpenInitialChat() {
-    if (_autoOpenAttempted) return;
-    _autoOpenAttempted = true;
-
-    final targetUserID = widget.initialChatUserID;
-    if (targetUserID == null || targetUserID.isEmpty) return;
-
-    ChatContact? match;
-    for (final contact in _contacts) {
-      if (contact.targetUserID == targetUserID) {
-        match = contact;
-        break;
-      }
+  void _leaveConversation() {
+    if (_phase == _AdvisorChatPhase.ready) {
+      ActiveChatTracker.instance.closeConversation();
     }
-
-    final contact = match ??
-        ChatContact(
-          friendshipID: '',
-          targetUserID: targetUserID,
-          status: 'ACCEPTED',
-          isPending: false,
-        );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_openChat(contact));
-    });
-  }
-
-  void _handleInboxEvent(InboxEvent event) {
-    if (!mounted) return;
-
-    if (event is UserActivityInboxEvent) {
-      if (event.userID.isEmpty) return;
-      setState(() {
-        _activityByUserID[event.userID] = UserActivity(
-          isOnline: event.isOnline,
-          currentTaskName: event.currentTaskName,
-        );
-      });
-      return;
-    }
-
-    if (event is NewMessageInboxEvent) {
-      final contactUserID = _contactUserIDForMessage(event.message);
-      if (contactUserID == null) return;
-      final currentUserID = _currentUserID;
-      setState(() {
-        _latestMessageByUserID[contactUserID] = event.message;
-        if (event.message.senderID != currentUserID) {
-          if (contactUserID == _activeChatUserID) {
-            _unreadByUserID.remove(contactUserID);
-          } else {
-            _unreadByUserID[contactUserID] =
-                (_unreadByUserID[contactUserID] ?? 0) + 1;
-          }
-        }
-      });
-      return;
-    }
-
-    if (event is MessageSeenInboxEvent) {
-      _handleMessageSeenEvent(event);
-      return;
-    }
-
-    if (event is MessageDeletedInboxEvent) {
-      final contactUserID = _chatUserByChatID[event.chatID];
-      if (contactUserID == null) return;
-      final latestMessage = _latestMessageByUserID[contactUserID];
-      if (latestMessage?.id != event.messageID) return;
-      setState(() {
-        _latestMessageByUserID[contactUserID] = latestMessage!.copyWith(
-          isDeleted: true,
-          content: '',
-        );
-      });
-    }
-  }
-
-  void _handleMessageSeenEvent(MessageSeenInboxEvent event) {
-    final currentUserID = _currentUserID;
-    if (currentUserID == null || event.userID != currentUserID) return;
-    final contactUserID = _contactUserIDForChatID(event.chatID);
-    if (contactUserID == null) return;
-
-    setState(() {
-      _unreadByUserID.remove(contactUserID);
-    });
-  }
-
-  String? _contactUserIDForChatID(String chatID) {
-    final mappedUserID = _chatUserByChatID[chatID];
-    if (mappedUserID != null) return mappedUserID;
-
-    for (final entry in _latestMessageByUserID.entries) {
-      if (entry.value.chatID == chatID) {
-        _chatUserByChatID[chatID] = entry.key;
-        return entry.key;
-      }
-    }
-
-    return null;
-  }
-
-  String? _contactUserIDForMessage(ChatMessage message) {
-    final currentUserID = _currentUserID;
-    final mappedUserID = _chatUserByChatID[message.chatID];
-    if (mappedUserID != null) return mappedUserID;
-
-    if (currentUserID != null && message.senderID != currentUserID) {
-      final hasContact = _contacts.any(
-        (contact) => contact.targetUserID == message.senderID,
-      );
-      if (hasContact) {
-        _chatUserByChatID[message.chatID] = message.senderID;
-        return message.senderID;
-      }
-    }
-
-    return null;
   }
 
   /// Feeds the global notification tracker so message notifications can name
-  /// the sender and be suppressed only for the conversation on screen.
-  void _cacheContactsForNotifications(
+  /// the advisor.
+  void _cacheForNotifications(
     String currentUserID,
-    List<ChatContact> contacts,
+    String targetUserID,
+    ActiveCounselor? advisor,
   ) {
     ActiveChatTracker.instance.currentUserID = currentUserID;
-    ActiveChatTracker.instance.cacheDisplayNames({
-      for (final contact in contacts) contact.targetUserID: contact.displayName,
-    });
-  }
-
-  Future<void> _openChat(ChatContact contact) async {
-    if (contact.isPending || _openingUserID != null) return;
-
-    ActiveChatTracker.instance.openConversation(contact.targetUserID);
-    setState(() {
-      _openingUserID = contact.targetUserID;
-      _activeChatUserID = contact.targetUserID;
-      _unreadByUserID.remove(contact.targetUserID);
-    });
-    try {
-      final chatID = await _chatRepository.createDirectChat(
-        contact.targetUserID,
-      );
-      if (!mounted) {
-        ActiveChatTracker.instance.closeConversation();
-        return;
-      }
-      setState(() {
-        _chatUserByChatID[chatID] = contact.targetUserID;
-      });
-      await context.to(
-        ChatRoomScreen(
-          chatID: chatID,
-          currentUserID: _currentUserID,
-          targetUserID: contact.targetUserID,
-          title: contact.displayName,
-        ),
-      );
-      // Conversation dismissed: message notifications for this user resume.
-      ActiveChatTracker.instance.closeConversation();
-      if (mounted) {
-        setState(() {
-          _openingUserID = null;
-          _activeChatUserID = null;
-          _unreadByUserID.remove(contact.targetUserID);
-        });
-      }
-    } catch (error) {
-      ActiveChatTracker.instance.closeConversation();
-      if (!mounted) return;
-      setState(() {
-        _openingUserID = null;
-        _activeChatUserID = null;
-      });
-      showReToast(context, _friendlyError(error), ReToastType.failed);
+    final name = advisor?.name ?? advisor?.username;
+    if (name != null) {
+      ActiveChatTracker.instance.cacheDisplayNames({targetUserID: name});
     }
   }
 
-  Future<void> _selectConsultant() async {
+  Future<void> _browseAdvisors() async {
+    final wasReady = _phase == _AdvisorChatPhase.ready;
+    if (wasReady) ActiveChatTracker.instance.closeConversation();
     await context.to(const ConsultantListScreen());
-    if (mounted) unawaited(_loadContacts(silent: true));
+    if (!mounted) return;
+    if (wasReady && _targetUserID != null) {
+      ActiveChatTracker.instance.openConversation(_targetUserID!);
+    }
+    unawaited(_load(silent: true));
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasUnread = _unreadByUserID.values.any((count) => count > 0);
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.gray1,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _ChatListHeader(hasUnread: hasUnread),
-              Expanded(child: _buildBody()),
-            ],
+    final Widget child;
+    if (_phase == _AdvisorChatPhase.ready) {
+      child = ChatRoomScreen(
+        key: ValueKey(_chatID),
+        chatID: _chatID!,
+        currentUserID: _currentUserID,
+        targetUserID: _targetUserID,
+        title: _advisor?.name ?? _advisor?.username,
+        advisor: _advisor,
+        onBrowseAdvisors: _browseAdvisors,
+      );
+    } else {
+      child = Directionality(
+        key: ValueKey(_phase),
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: AppColors.gray1,
+          body: SafeArea(
+            child: Column(
+              children: [
+                const _AdvisorTopBar(),
+                Expanded(child: _buildBody()),
+              ],
+            ),
           ),
         ),
-      ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: AppMotion.push,
+      switchInCurve: AppMotion.settle,
+      switchOutCurve: Curves.easeIn,
+      child: child,
     );
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
+    switch (_phase) {
+      case _AdvisorChatPhase.error:
+        return _ChatStateView(
+          icon: SolarIconsOutline.dangerTriangle,
+          title: 'اتصال برقرار نشد',
+          subtitle: _error ?? '',
+          actionText: 'تلاش دوباره',
+          onAction: _load,
+        );
+      case _AdvisorChatPhase.noAdvisor:
+        return AdvisorIntroView(onChoose: _browseAdvisors);
+      case _AdvisorChatPhase.loading:
+      case _AdvisorChatPhase.ready:
+        return const Center(child: CircularProgressIndicator.adaptive());
     }
-
-    if (_error != null) {
-      return _ChatStateView(
-        icon: SolarIconsOutline.dangerTriangle,
-        title: 'اتصال برقرار نشد',
-        subtitle: _error!,
-        actionText: 'تلاش دوباره',
-        onAction: _loadContacts,
-      );
-    }
-
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: _loadContacts,
-      child: ListView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-        children: [
-          _ChatSectionTitle(
-            title: 'مشاور',
-            icon: SolarIconsOutline.userSpeak,
-            color: AppColors.primary,
-            // Lets a student with a counselor browse the list and pick another.
-            actionText: _contacts.isEmpty ? null : 'لیست مشاوران',
-            onAction: _selectConsultant,
-          ),
-          const SizedBox(height: 16),
-          if (_contacts.isEmpty)
-            _NoConsultantCard(onSelect: _selectConsultant)
-          else
-            for (final contact in _contacts)
-              _ContactTile(
-                contact: contact,
-                activity: _activityByUserID[contact.targetUserID],
-                latestMessage: _latestMessageByUserID[contact.targetUserID],
-                unreadCount: _unreadByUserID[contact.targetUserID] ?? 0,
-                connectionStatus: _displayConnectionStatus,
-                isOpening: _openingUserID == contact.targetUserID,
-                onTap: () => _openChat(contact),
-              ),
-        ],
-      ),
-    );
   }
 }
 
@@ -458,12 +220,20 @@ class ChatRoomScreen extends StatefulWidget {
     this.currentUserID,
     this.targetUserID,
     this.title,
+    this.advisor,
+    this.onBrowseAdvisors,
   });
 
   final String chatID;
   final String? currentUserID;
   final String? targetUserID;
   final String? title;
+
+  /// The student's advisor, when this is their conversation.
+  final ActiveCounselor? advisor;
+
+  /// Opens the list of advisors, offered from the advisor's sheet.
+  final VoidCallback? onBrowseAdvisors;
 
   @override
   State<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -1060,44 +830,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     }));
   }
 
-  void _openRoomMenu() {
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: AppColors.black.withOpacity(0.04),
-      transitionDuration: const Duration(milliseconds: 140),
-      pageBuilder: (dialogContext, _, __) => _RoomOverflowDialog(
-        onViewProfile: () {
-          Navigator.of(dialogContext).pop();
-          _showUnsupportedRoomAction();
-        },
-        onClearConversation: () {
-          Navigator.of(dialogContext).pop();
-          _showUnsupportedRoomAction();
-        },
-        onDeleteChat: () {
-          Navigator.of(dialogContext).pop();
-          _showUnsupportedRoomAction();
-        },
-      ),
-    );
-  }
-
-  void _showUnsupportedRoomAction() {
-    showReToast(
+  void _openAdvisorSheet() {
+    final advisor = widget.advisor;
+    if (advisor == null) return;
+    showAdvisorSheet(
       context,
-      'این عملیات هنوز از سمت سرور پشتیبانی نمی‌شود',
-      ReToastType.warning,
+      advisor: advisor,
+      onBrowseAdvisors: widget.onBrowseAdvisors,
     );
   }
 
-  void _sendWelcomeGreeting() {
+  /// Sends one of the empty conversation's ready-made first messages.
+  void _sendStarter(String text) {
     if (_isSending) return;
-    const greeting = 'سلام چطوری؟ 👋';
     _messageController
-      ..text = greeting
-      ..selection = const TextSelection.collapsed(offset: greeting.length);
+      ..text = text
+      ..selection = TextSelection.collapsed(offset: text.length);
     _sendMessage();
   }
 
@@ -1149,8 +897,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                       isTargetViewingChat: _isTargetViewingChat,
                     ),
                     isOnline: _isTargetViewingChat,
+                    avatar: widget.advisor?.avatar,
                     onBack: () => Navigator.of(context).pop(),
-                    onMenu: _openRoomMenu,
+                    onAdvisor: widget.advisor == null ? null : _openAdvisorSheet,
                     connectionStatus: _displayConnectionStatus,
                   ),
                   Expanded(child: _buildMessagesBody()),
@@ -1160,6 +909,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     onCancelReply: () => setState(() => _replyingTo = null),
                     onSend: _sendMessage,
                     onAttachment: _showUnsupportedAttachmentAction,
+                    hintText: widget.advisor == null ? 'پیام...' : 'پیام به مشاور...',
                   ),
                 ],
               ),
@@ -1186,9 +936,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     }
 
     if (_messages.isEmpty) {
-      return _EmptyChatWelcome(
-        onGreetingTap: _sendWelcomeGreeting,
-      );
+      return AdvisorWelcome(advisor: widget.advisor, onStarter: _sendStarter);
     }
 
     return ListView.builder(
@@ -1234,471 +982,38 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     if (taskName != null && taskName.isNotEmpty) {
       return 'درحال انجام $taskName';
     }
-    return 'گفتگوی مستقیم';
+    return widget.advisor?.title ?? 'مشاور شما';
   }
 }
 
-class _ChatListHeader extends StatelessWidget {
-  const _ChatListHeader({required this.hasUnread});
-
-  final bool hasUnread;
+/// Top bar of the chat while no conversation is open.
+class _AdvisorTopBar extends StatelessWidget {
+  const _AdvisorTopBar();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 24, 14),
       child: Row(
         children: [
-          SizedBox(
-            width: 24,
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                SolarIconsOutline.altArrowRight,
-                size: 22,
-                color: AppColors.black1,
-              ),
-            ),
+          _CircleIconButton(
+            icon: SolarIconsOutline.altArrowRight,
+            onTap: () => Navigator.of(context).maybePop(),
+            backgroundColor: Colors.transparent,
+            showShadow: false,
+            size: 40,
           ),
+          const SizedBox(width: 4),
           const ReText(
-            'پیام‌ها',
+            'مشاور',
             color: AppColors.black1,
             fontSize: 18,
-            fontWeight: 10000,
-          ),
-          const Spacer(),
-          _HeaderIcon(
-            icon: SolarIconsBold.chatRound,
-            svgIcon: 'assets/icons/chat_dots.svg',
-            showDot: hasUnread,
-            isActive: true,
-          ),
-          const SizedBox(width: 8),
-          const _HeaderIcon(icon: SolarIconsOutline.bell, showDot: false, svgIcon: 'assets/icons/bell.svg',),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon({
-    required this.icon,
-    required this.showDot,
-    this.svgIcon,
-    this.isActive = false,
-  });
-
-  final IconData icon;
-  final String? svgIcon;
-  final bool showDot;
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.black1 : Colors.transparent,
-              shape: BoxShape.circle,
-            ),
-            child: svgIcon != null ? SvgPicture.asset(svgIcon!).hMargin(12) : Icon(
-              icon,
-              size: 24,
-              color: isActive ? AppColors.white : AppColors.black1,
-            ),
-          ),
-          if (showDot)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChatSectionTitle extends StatelessWidget {
-  const _ChatSectionTitle({
-    required this.title,
-    required this.icon,
-    required this.color,
-    this.actionText,
-    this.onAction,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color color;
-
-  /// Optional trailing pill button; hidden when null.
-  final String? actionText;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 16),
-        ),
-        const SizedBox(width: 12),
-        ReText(
-          title,
-          color: AppColors.black1,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        if (actionText != null) ...[
-          const Spacer(),
-          GestureDetector(
-            onTap: onAction,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(100),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ReText(
-                    actionText!,
-                    color: AppColors.black1,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(
-                    SolarIconsOutline.altArrowLeft,
-                    size: 12,
-                    color: AppColors.black1,
-                  ),
-                ],
-              ),
-            ),
+            fontWeight: FontWeight.w900,
           ),
         ],
-      ],
-    );
-  }
-}
-
-/// Shown while the student has no active counselor.
-class _NoConsultantCard extends StatelessWidget {
-  const _NoConsultantCard({required this.onSelect});
-
-  final VoidCallback onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DashedBorderPainter(
-        color: AppColors.gray.withOpacity(0.45),
-        radius: 40,
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        height: 64,
-        child: Row(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                SolarIconsOutline.userSpeak,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-            const Expanded(
-              child: ReText(
-                'هنوز مشاوری انتخاب نکردی!',
-                color: AppColors.black1,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                textAlign: TextAlign.start,
-              ),
-            ),
-            GestureDetector(
-              onTap: onSelect,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(100),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withOpacity(0.05),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ReText(
-                      'انتخاب',
-                      color: AppColors.black1,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    SizedBox(width: 8),
-                    Icon(
-                      SolarIconsOutline.altArrowLeft,
-                      size: 14,
-                      color: AppColors.black1,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final path = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(
-          Offset.zero & size,
-          Radius.circular(radius),
-        ),
-      );
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        canvas.drawPath(metric.extractPath(distance, distance + 5), paint);
-        distance += 9;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
-}
-
-class _ContactTile extends StatelessWidget {
-  const _ContactTile({
-    required this.contact,
-    required this.activity,
-    required this.latestMessage,
-    required this.unreadCount,
-    required this.connectionStatus,
-    required this.isOpening,
-    required this.onTap,
-  });
-
-  final ChatContact contact;
-  final UserActivity? activity;
-  final ChatMessage? latestMessage;
-  final int unreadCount;
-  final InboxConnectionStatus connectionStatus;
-  final bool isOpening;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtitle = _contactSubtitle(
-      contact,
-      activity,
-      connectionStatus,
-      latestMessage,
-    );
-    final subtitleColor = _contactSubtitleColor(
-      contact,
-      activity,
-      latestMessage,
-      unreadCount,
-    );
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            _ChatAvatar(size: 62, path: contact.targetAvatarURL),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ReText(
-                    contact.displayName,
-                    color: AppColors.black1,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    maxLines: 1,
-                  ),
-                  ReText(
-                    subtitle,
-                    color: subtitleColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    maxLines: 1,
-                  ).tMargin(4),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 42,
-              child: isOpening
-                  ? const CircularProgressIndicator.adaptive()
-                  : Row(
-                      children: [
-                        if (unreadCount > 0) _UnreadBadge(count: unreadCount),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          SolarIconsOutline.altArrowLeft,
-                          size: 16,
-                          color: AppColors.gray,
-                        ),
-                      ],
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = count > 99 ? '99+' : '$count';
-
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 24),
-        height: 24,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 7),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.20),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: ReText(
-          label,
-          color: AppColors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          isPersian: false,
-          textDirection: TextDirection.ltr,
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}
-
-String _contactSubtitle(
-  ChatContact contact,
-  UserActivity? activity,
-  InboxConnectionStatus connectionStatus,
-  ChatMessage? latestMessage,
-) {
-  if (contact.isPending) return contact.subtitle;
-
-  if (latestMessage != null) {
-    if (latestMessage.isDeleted) return 'پیام حذف شد';
-    final content = latestMessage.content.trim();
-    if (content.isNotEmpty) return content;
-    return 'پیام جدید';
-  }
-
-  final taskName = activity?.currentTaskName?.trim();
-  if (taskName != null && taskName.isNotEmpty) {
-    return 'درحال انجام $taskName';
-  }
-
-  if (connectionStatus == InboxConnectionStatus.connecting ||
-      connectionStatus == InboxConnectionStatus.reconnecting) {
-    return 'در حال اتصال زنده...';
-  }
-
-  return contact.subtitle;
-}
-
-Color _contactSubtitleColor(
-  ChatContact contact,
-  UserActivity? activity,
-  ChatMessage? latestMessage,
-  int unreadCount,
-) {
-  if (contact.isPending) return AppColors.simoCoin;
-  if (unreadCount > 0) return AppColors.black1;
-  if (latestMessage != null) return AppColors.gray;
-  if (activity?.currentTaskName?.trim().isNotEmpty == true) {
-    return AppColors.secondary;
-  }
-  return AppColors.gray;
 }
 
 class _ChatRoomHeader extends StatelessWidget {
@@ -1707,16 +1022,20 @@ class _ChatRoomHeader extends StatelessWidget {
     required this.subtitle,
     required this.isOnline,
     required this.onBack,
-    required this.onMenu,
     required this.connectionStatus,
+    this.avatar,
+    this.onAdvisor,
   });
 
   final String title;
   final String subtitle;
   final bool isOnline;
   final VoidCallback onBack;
-  final VoidCallback onMenu;
   final InboxConnectionStatus connectionStatus;
+  final String? avatar;
+
+  /// Opens the advisor's sheet, from the info button and the name.
+  final VoidCallback? onAdvisor;
 
   @override
   Widget build(BuildContext context) {
@@ -1740,17 +1059,24 @@ class _ChatRoomHeader extends StatelessWidget {
           Row(
             textDirection: TextDirection.ltr,
             children: [
-              _CircleIconButton(
-                icon: SolarIconsOutline.menuDots,
-                onTap: onMenu,
-                iconColor: AppColors.black1.withOpacity(0.78),
-                backgroundColor: Colors.transparent,
-                showShadow: false,
-                size: 38,
-              ),
+              if (onAdvisor != null)
+                _CircleIconButton(
+                  key: const ValueKey('chat-advisor-info'),
+                  icon: SolarIconsOutline.infoCircle,
+                  onTap: onAdvisor!,
+                  iconColor: AppColors.black1.withOpacity(0.78),
+                  backgroundColor: Colors.transparent,
+                  showShadow: false,
+                  size: 38,
+                )
+              else
+                const SizedBox(width: 38),
               const SizedBox(width: 8),
               Expanded(
-                child: Row(
+                child: GestureDetector(
+                  onTap: onAdvisor,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
                   textDirection: TextDirection.ltr,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -1795,7 +1121,7 @@ class _ChatRoomHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 9),
-                    const _ChatAvatar(size: 46),
+                    AdvisorAvatar(path: avatar, size: 46),
                     const SizedBox(width: 3),
                     _CircleIconButton(
                       icon: SolarIconsOutline.altArrowRight,
@@ -1806,6 +1132,7 @@ class _ChatRoomHeader extends StatelessWidget {
                       size: 36,
                     ),
                   ],
+                ),
                 ),
               ),
             ],
@@ -1829,91 +1156,6 @@ class _ChatRoomHeader extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _EmptyChatWelcome extends StatelessWidget {
-  const _EmptyChatWelcome({required this.onGreetingTap});
-
-  final VoidCallback onGreetingTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final imageSize = math.min(
-          constraints.maxWidth * 0.68,
-          math.min(290.0, constraints.maxHeight * 0.50),
-        );
-        final verticalShift = math.min(28.0, constraints.maxHeight * 0.04);
-
-        return Center(
-          child: Transform.translate(
-            offset: Offset(0, -verticalShift),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    image: true,
-                    label: 'تصویر خوش‌آمدگویی شروع گفتگو',
-                    child: ReImage(
-                      'assets/images/empty_chat_welcome.png',
-                      width: imageSize,
-                      height: imageSize,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const ReText(
-                    'سلام کنید!',
-                    color: AppColors.black1,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  Semantics(
-                    button: true,
-                    label: 'ارسال پیام سلام چطوری',
-                    child: GestureDetector(
-                      key: const ValueKey('empty-chat-greeting'),
-                      onTap: onGreetingTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 13,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.black.withOpacity(0.035),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const ReText(
-                          '👋 سلام چطوری؟',
-                          color: AppColors.black1,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -2234,6 +1476,7 @@ class _MessageComposer extends StatefulWidget {
     required this.onCancelReply,
     required this.onSend,
     required this.onAttachment,
+    this.hintText = 'پیام...',
   });
 
   final TextEditingController controller;
@@ -2241,6 +1484,7 @@ class _MessageComposer extends StatefulWidget {
   final VoidCallback onCancelReply;
   final VoidCallback onSend;
   final VoidCallback onAttachment;
+  final String hintText;
 
   @override
   State<_MessageComposer> createState() => _MessageComposerState();
@@ -2355,7 +1599,7 @@ class _MessageComposerState extends State<_MessageComposer> {
                         color: AppColors.black1,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'پیام...',
+                        hintText: widget.hintText,
                         hintStyle: TextStyle(
                           fontFamily: AppFonts.iranSansVar,
                           fontSize: 12,
@@ -2675,126 +1919,6 @@ class _DeleteMessageSheet extends StatelessWidget {
   }
 }
 
-class _RoomOverflowDialog extends StatelessWidget {
-  const _RoomOverflowDialog({
-    required this.onViewProfile,
-    required this.onClearConversation,
-    required this.onDeleteChat,
-  });
-
-  final VoidCallback onViewProfile;
-  final VoidCallback onClearConversation;
-  final VoidCallback onDeleteChat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox.expand(),
-              ),
-            ),
-            Positioned(
-              top: 48,
-              left: 18,
-              width: 186,
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.10),
-                        blurRadius: 26,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _RoomMenuRow(
-                          icon: SolarIconsOutline.user,
-                          title: 'نمایش پروفایل',
-                          onTap: onViewProfile,
-                        ),
-                        _RoomMenuRow(
-                          icon: SolarIconsOutline.trashBinTrash,
-                          title: 'پاک کردن گفتگو',
-                          color: AppColors.errorColor,
-                          onTap: onClearConversation,
-                        ),
-                        _RoomMenuRow(
-                          icon: SolarIconsOutline.closeSquare,
-                          title: 'حذف مکالمه',
-                          color: AppColors.errorColor,
-                          onTap: onDeleteChat,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RoomMenuRow extends StatelessWidget {
-  const _RoomMenuRow({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.color = AppColors.black1,
-  });
-
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 42,
-        child: Row(
-          children: [
-            const SizedBox(width: 16),
-            Icon(icon, color: color, size: 15),
-            const SizedBox(width: 9),
-            Expanded(
-              child: ReText(
-                title,
-                color: AppColors.black1,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 14),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _InlineReplyPreview extends StatelessWidget {
   const _InlineReplyPreview({required this.reply, required this.isMine});
 
@@ -2961,6 +2085,7 @@ class _ChatStateView extends StatelessWidget {
 
 class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
+    super.key,
     required this.icon,
     required this.onTap,
     this.iconColor = AppColors.black1,
@@ -2998,34 +2123,6 @@ class _CircleIconButton extends StatelessWidget {
               : null,
         ),
         child: Icon(icon, color: iconColor, size: 18),
-      ),
-    );
-  }
-}
-
-class _ChatAvatar extends StatelessWidget {
-  const _ChatAvatar({this.size = 46, this.path});
-
-  final double size;
-  final String? path;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(2),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        shape: BoxShape.circle,
-      ),
-      child: ClipOval(
-        child: ReImage(
-          path ?? 'Assets.profilePlaceholder',
-          width: size - 4,
-          height: size - 4,
-          fit: BoxFit.cover,
-        ),
       ),
     );
   }

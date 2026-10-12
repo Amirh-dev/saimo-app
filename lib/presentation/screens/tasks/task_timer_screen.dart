@@ -63,7 +63,14 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
     if (_timer.isRunning) {
       await _timer.pause();
     } else {
-      await _timer.start();
+      final started = await _timer.start();
+      if (!started && !_timer.isCompleted && mounted) {
+        showReToast(
+          context,
+          'شروع تایمر ناموفق بود. دوباره تلاش کنید.',
+          ReToastType.failed,
+        );
+      }
     }
   }
 

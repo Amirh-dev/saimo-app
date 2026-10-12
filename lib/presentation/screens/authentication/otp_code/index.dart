@@ -81,61 +81,27 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
                                   borderRadius: BorderRadius.circular(40)),
                               child: Column(
                                 children: [
-                                  Pinput(
+                                  Pinput.builder(
                                     controller: codeController,
                                     length: 5,
                                     autofocus: true,
                                     keyboardType: TextInputType.number,
+                                    // Only filter here: rewriting the typed
+                                    // digit (e.g. to Persian) pushes a changed
+                                    // value back to the IME, which makes some
+                                    // Android keyboards close after the first
+                                    // digit. Persian digits are display-only.
                                     inputFormatters: [
                                       FilteringTextInputFormatter.allow(
                                         RegExp(r'[0-9۰-۹٠-٩]'),
                                       ),
-                                      const PersianDigitsInputFormatter(),
                                     ],
                                     enabled: !isLoading,
                                     focusNode: _focusNode,
                                     onChanged: (_) => setState(() {}),
                                     onCompleted: (_) => _submitCode(),
-                                    cursor: const VerticalDivider(
-                                      color: Colors.black,
-                                    ).vMargin(15),
-                                    defaultPinTheme: PinTheme(
-                                      height: 50,
-                                      width: 50,
-                                      textStyle: TextStyle(
-                                        fontFamily: AppFonts.iranSansVar,
-                                        fontSize: 18,
-                                        fontVariations: AppFonts.fontVariations(
-                                          FontWeight.w600,
-                                        ),
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF6F6F6),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: const Color(0xFFd0d0d0),
-                                        ),
-                                      ),
-                                    ),
-                                    focusedPinTheme: PinTheme(
-                                      height: 55,
-                                      width: 55,
-                                      textStyle: TextStyle(
-                                        fontFamily: AppFonts.iranSansVar,
-                                        fontSize: 18,
-                                        fontVariations: AppFonts.fontVariations(
-                                          FontWeight.w800,
-                                        ),
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF6F6F6),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: AppColors.primary,
-                                          width: 2,
-                                        ),
-                                      ),
-                                    ),
+                                    builder: (context, pin) =>
+                                        _buildPinItem(pin),
                                   ).sizedBox(height: 52),
                                   ReButton(
                                     isLoading: isLoading,
@@ -175,6 +141,39 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPinItem(PinItemState pin) {
+    final isFocused = pin.type == PinItemStateType.focused;
+    final size = isFocused ? 55.0 : 50.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      height: size,
+      width: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(12),
+        border: isFocused
+            ? Border.all(color: AppColors.primary, width: 2)
+            : Border.all(color: const Color(0xFFd0d0d0)),
+      ),
+      child: pin.value.isEmpty
+          ? (isFocused
+              ? const VerticalDivider(color: Colors.black).vMargin(15)
+              : null)
+          : Text(
+              convertToPersianNumbers(pin.value),
+              style: TextStyle(
+                fontFamily: AppFonts.iranSansVar,
+                fontSize: 18,
+                fontVariations: AppFonts.fontVariations(
+                  isFocused ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
     );
   }
 

@@ -192,11 +192,43 @@ class TaskTimerService extends ChangeNotifier {
 
   // ---------------------------------------------------------------- actions
 
-  Future<void> start() async {
-    final id = _taskId;
-    if (id == null || isRunning || _isCompleted || remainingSeconds <= 0) return;
+  /// Adopts a timer the server reports as running, e.g. one started before
+  /// the app was restarted, anchored on the server's start time so both
+  /// sides count the same elapsed time. Ignored while a session is ticking.
+  void resumeRunning({
+    required String taskId,
+    required int totalSeconds,
+    required int elapsedSeconds,
+    required DateTime startedAt,
+    Map<String, dynamic>? taskData,
+  }) {
+    if (isRunning) return;
 
-    _sessionStartedAt = DateTime.now();
+    load(
+      taskId: taskId,
+      totalSeconds: totalSeconds,
+      elapsedSeconds: elapsedSeconds,
+      taskData: taskData,
+    );
+    if (_isCompleted) return;
+
+    _sessionStartedAt = startedAt;
+    _startTicker();
+    _writeBackToTaskData(status: 'running');
+    _notifySafely();
+  }
+
+  /// Starts the loaded task. Returns false when the server refused or could
+  /// not be reached; the local session is rolled back so the UI never shows
+  /// a timer the server is not tracking.
+  Future<bool> start() async {
+    final id = _taskId;
+    if (id == null || isRunning || _isCompleted || remainingSeconds <= 0) {
+      return false;
+    }
+
+    final startedAt = DateTime.now();
+    _sessionStartedAt = startedAt;
     _bannerDismissed = false;
     _startTicker();
     _writeBackToTaskData(status: 'running');
@@ -204,8 +236,18 @@ class TaskTimerService extends ChangeNotifier {
 
     try {
       await _repository?.startTimedTask(id);
+      return true;
     } catch (error) {
       debugPrint('TaskTimerService.start failed: $error');
+      if (_taskId == id && _sessionStartedAt == startedAt) {
+        _sessionStartedAt = null;
+        _stopTicker();
+        _writeBackToTaskData(
+          status: _baseElapsedSeconds > 0 ? 'paused' : 'pending',
+        );
+        _notifySafely();
+      }
+      return false;
     }
   }
 

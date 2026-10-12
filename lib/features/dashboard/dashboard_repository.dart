@@ -41,10 +41,14 @@ class DashboardRepository {
         .toList(growable: false);
   }
 
+  /// Today's tasks only. An unfiltered page is ordered oldest first, so once
+  /// a user has history (or recurring tasks materialized ahead) today's
+  /// tasks would fall outside it.
   Future<List<DashboardTask>> _getTasks() async {
     final data = await _graphql.rawRequest(
       query: _getTasksQuery,
       variables: {
+        'date': _rfc3339Local(DateTime.now()),
         'limit': 100,
         'offset': 0,
       },
@@ -161,6 +165,8 @@ class DashboardTaskItem {
     required this.doneDuration,
     required this.maxDuration,
     required this.durationText,
+    required this.elapsedSeconds,
+    required this.isDone,
   });
 
   final String id;
@@ -170,6 +176,13 @@ class DashboardTaskItem {
   final int maxDuration;
   final String durationText;
 
+  /// Committed elapsed time, excluding a running interval (as the timer
+  /// service expects it).
+  final int elapsedSeconds;
+  final bool isDone;
+
+  /// Also carries the keys [TaskTimerScreen] reads, so opening the timer
+  /// from the dashboard uses the task's real duration and progress.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -178,6 +191,9 @@ class DashboardTaskItem {
       'doneDuration': doneDuration,
       'maxDuration': maxDuration,
       'durationText': durationText,
+      'durationSeconds': maxDuration * 60,
+      'elapsedSeconds': elapsedSeconds,
+      'status': isDone ? 'done' : 'pending',
     };
   }
 }
@@ -202,9 +218,23 @@ query GetDashboardGoals {
 }
 ''';
 
+/// RFC 3339 with the device's UTC offset, so the server resolves the same
+/// calendar day the user sees.
+String _rfc3339Local(DateTime value) {
+  final local = value.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  final offset = local.timeZoneOffset;
+  final sign = offset.isNegative ? '-' : '+';
+  final offsetMinutes = offset.inMinutes.abs();
+  return '${local.year.toString().padLeft(4, '0')}-${two(local.month)}-${two(local.day)}'
+      'T${two(local.hour)}:${two(local.minute)}:${two(local.second)}'
+      '$sign${two(offsetMinutes ~/ 60)}:${two(offsetMinutes % 60)}';
+}
+
 const _getTasksQuery = r'''
-query GetDashboardTasks($limit: Int, $offset: Int) {
+query GetDashboardTasks($date: Time, $limit: Int, $offset: Int) {
   getTasks(
+    date: $date
     limit: $limit
     offset: $offset
   ) {

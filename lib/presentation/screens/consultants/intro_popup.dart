@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_screen.dart';
@@ -10,11 +11,16 @@ import 'package:simo_learn/utils/_utils.dart';
 
 /// Promotes consultants to students who don't have an active one: a while
 /// after the app opens, shows [ConsultantIntroCard] in a popup. Shown at most
-/// once per app launch.
+/// once per app launch, never during the first [gracePeriod] after the app is
+/// first opened, and not again on a day the popup was already dismissed.
 class ConsultantIntroPopup {
   ConsultantIntroPopup._();
 
   static const Duration delay = Duration(seconds: 15);
+  static const Duration gracePeriod = Duration(days: 2);
+
+  static const String _firstSeenKey = 'consultant_popup_first_seen_at';
+  static const String _dismissedDayKey = 'consultant_popup_dismissed_day';
 
   static bool _scheduled = false;
 
@@ -24,13 +30,45 @@ class ConsultantIntroPopup {
     if (_scheduled) return null;
     _scheduled = true;
 
+    unawaited(_recordFirstSeen());
     return Timer(delay, () {
       if (context.mounted) unawaited(_showIfNoConsultant(context));
     });
   }
 
+  static Future<void> _recordFirstSeen() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (preferences.containsKey(_firstSeenKey)) return;
+    await preferences.setString(
+      _firstSeenKey,
+      DateTime.now().toIso8601String(),
+    );
+  }
+
+  static Future<bool> _isAllowedNow() async {
+    final preferences = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+
+    final firstSeen =
+        DateTime.tryParse(preferences.getString(_firstSeenKey) ?? '');
+    if (firstSeen == null || now.difference(firstSeen) < gracePeriod) {
+      return false;
+    }
+
+    return preferences.getString(_dismissedDayKey) != _dayKey(now);
+  }
+
+  static Future<void> _recordDismissedToday() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_dismissedDayKey, _dayKey(DateTime.now()));
+  }
+
+  static String _dayKey(DateTime time) =>
+      '${time.year}-${time.month}-${time.day}';
+
   static Future<void> _showIfNoConsultant(BuildContext context) async {
     try {
+      if (!await _isAllowedNow() || !context.mounted) return;
       final repository =
           ConsultantRepository(context.read<GraphQLRepository>());
       final counselor = await repository.fetchMyActiveCounselor();
@@ -38,6 +76,7 @@ class ConsultantIntroPopup {
       // Don't interrupt another screen or dialog the user has moved on to.
       if (ModalRoute.of(context)?.isCurrent != true) return;
       await _show(context);
+      await _recordDismissedToday();
     } catch (_) {
       // Best effort: a failed lookup just skips the promotion.
     }
