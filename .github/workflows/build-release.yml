@@ -35,6 +35,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The default package set includes the obsolete "tools" package, which
+          # Google removed from the SDK repository; installing it makes
+          # sdkmanager exit 1. Only request the packages we actually need.
+          packages: platform-tools
 
       - name: Install Android API 36
         run: sdkmanager "platforms;android-36"
