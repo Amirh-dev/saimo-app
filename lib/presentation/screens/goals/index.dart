@@ -3,18 +3,15 @@
 import 'package:ferry/typed_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
 import 'package:simo_learn/features/goals/cubit/goals_state.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
-import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_dots_loader.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -1404,17 +1401,7 @@ class _GoalScreenState extends State<GoalScreen> with AppTabRevisit {
                 ),
               ),
               child: SafeArea(
-                child: reAppHeader(
-                  'اهداف',
-                  firstIcon: GestureDetector(
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-                    ),
-                  ),
-                  secondIcon: const ConsultantHeaderButton(),
-                ).bMargin(24),
+                child: AppTabHeader('اهداف').bMargin(24),
               ),
             ),
             BlocBuilder<GoalsCubit, GoalsState>(

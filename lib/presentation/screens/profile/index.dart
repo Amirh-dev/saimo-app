@@ -22,14 +22,12 @@ import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
-import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/premium/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -75,6 +73,22 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
         .read<ProfileCubit>()
         .getMe(forceRefresh: true)
         .then((_) {}, onError: (Object _) {});
+  }
+
+  /// Every section is one step from the profile, so back returns there.
+  @override
+  bool onTabBack() {
+    if (_section == ProfileContentSection.profile) return false;
+    _setSection(ProfileContentSection.profile);
+    return true;
+  }
+
+  /// Coming back to the tab always starts at the profile.
+  @override
+  void onTabLeft() {
+    if (_section != ProfileContentSection.profile) {
+      _setSection(ProfileContentSection.profile);
+    }
   }
 
   @override
@@ -127,6 +141,9 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
   Widget build(BuildContext context) {
     final profileState = context.watch<ProfileCubit>().state;
     return AppExitGuard(
+      // In the shell, the shell asks [onTabBack]; as a page of its own, the
+      // guard does.
+      onBack: AppTabsShell.contains(context) ? null : onTabBack,
       child: AppBottomNavigationScaffold(
         currentIndex: 4,
         onTap: (index) {
@@ -167,6 +184,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
         return _FriendsContent(
           onSectionSelected: _setSection,
         );
+      // Nothing opens this while notifications are not built (its bell in
+      // the header is commented out); it stays for when they are.
       case ProfileContentSection.notifications:
         return _SimpleProfileContent(
           title: 'اعلان‌ها',
@@ -921,11 +940,9 @@ class _ProfileHomeShimmerState extends State<_ProfileHomeShimmer> with SingleTic
             ),
             child: Column(
               children: [
-                _ProfileHeader(
-                  title: 'پروفایل',
-                  selectedSection: ProfileContentSection.profile,
-                  onSectionSelected: widget.onSectionSelected,
-                ).tMargin(20).hMargin(36),
+                // The same header as the loaded profile, so nothing jumps
+                // when the data arrives.
+                const AppTabHeader('پروفایل'),
                 _ProfileSummaryShimmer(animation: _animation),
               ],
             ).bMargin(10),
@@ -1813,15 +1830,17 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
             ),
             child: Column(
               children: [
-                _SettingsRow(
-                  title: 'اعلان ها',
-                  subtitle: 'نمایش یا عدم نمایش اعلان ها',
-                  trailing: _SettingsToggle(
-                    value: _notificationsEnabled,
-                    onChanged: (value) => setState(() => _notificationsEnabled = value),
-                  ),
-                ),
-                const SizedBox(height: 10),
+                // Notifications are not built yet; bring this switch back
+                // with them (it is still saved and reset below).
+                // _SettingsRow(
+                //   title: 'اعلان ها',
+                //   subtitle: 'نمایش یا عدم نمایش اعلان ها',
+                //   trailing: _SettingsToggle(
+                //     value: _notificationsEnabled,
+                //     onChanged: (value) => setState(() => _notificationsEnabled = value),
+                //   ),
+                // ),
+                // const SizedBox(height: 10),
                 _SettingsRow(
                   title: 'اخبار ها',
                   subtitle: 'نمایش یا عدم نمایش اعلان ها',
@@ -2654,17 +2673,7 @@ class _ProfileTopCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          reAppHeader(
-            'پروفایل',
-            firstIcon: GestureDetector(
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-              ),
-            ),
-            secondIcon: const ConsultantHeaderButton(),
-          ),
+          AppTabHeader('پروفایل'),
           _ProfileSummaryCard(profile: profile),
         ],
       ).bMargin(12),
@@ -4710,13 +4719,14 @@ class _ProfileHeader extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            _HeaderActionIcon(
-              icon: SolarIconsOutline.bell,
-              section: ProfileContentSection.notifications,
-              selectedSection: selectedSection,
-              onTap: onSectionSelected,
-              showBadge: false,
-            ),
+            // Notifications are not built yet; bring the bell back with them.
+            // _HeaderActionIcon(
+            //   icon: SolarIconsOutline.bell,
+            //   section: ProfileContentSection.notifications,
+            //   selectedSection: selectedSection,
+            //   onTap: onSectionSelected,
+            //   showBadge: false,
+            // ),
             if (!usesCompactProfileHeader) ...[
               _HeaderActionIcon(
                 icon: SolarIconsOutline.chatRound,

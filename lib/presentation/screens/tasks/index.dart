@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/core/global/global_data.dart';
@@ -12,7 +11,6 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
@@ -1417,31 +1415,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
     );
   }
 
-  Widget _buildTitleRow() {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-        child: Row(
-          children: [
-            const ReText(
-              'تسک‌ها',
-              color: AppColors.black1,
-              fontSize: 16,
-              fontWeight: 1000,
-            ),
-            const Spacer(),
-            const ConsultantHeaderButton(),
-            SizedBox(
-              width: 48,
-              height: 48,
-              child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildTitleRow() => const AppTabHeader('تسک‌ها');
 
   Widget _buildWeekBody() {
     return WeeklyPlanView(

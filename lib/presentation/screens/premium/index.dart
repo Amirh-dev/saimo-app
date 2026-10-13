@@ -136,11 +136,12 @@ class _PremiumHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              _PremiumHeaderIcon(
-                icon: SolarIconsOutline.bell,
-                showBadge: true,
-              ),
-              SizedBox(width: 8),
+              // Notifications are not built yet; bring the bell back with them.
+              // _PremiumHeaderIcon(
+              //   icon: SolarIconsOutline.bell,
+              //   showBadge: true,
+              // ),
+              // SizedBox(width: 8),
               _PremiumHeaderIcon(
                 icon: SolarIconsOutline.chatRound,
                 showBadge: true,

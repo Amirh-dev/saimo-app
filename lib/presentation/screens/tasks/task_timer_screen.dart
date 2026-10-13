@@ -11,7 +11,6 @@ import 'dart:ui' as ui;
 
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/colors.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 // Ensure you import your repository path here
 // import 'package:simo_learn/data/repositories/task_timer_repository.dart';
@@ -235,9 +234,10 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> {
                             // App Bar
                             reAppHeader(
                               'تایمــــر',
-                              firstIcon: GestureDetector(
-                                child: const Icon(SolarIconsOutline.bell, size: 24),
-                              ),
+                              // Notifications are not built yet; bring the bell back with them.
+                              // firstIcon: GestureDetector(
+                              //   child: const Icon(SolarIconsOutline.bell, size: 24),
+                              // ),
                             ),
                             const SizedBox(height: 100),
                             // Custom Timer Arc

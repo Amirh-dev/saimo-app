@@ -14,7 +14,7 @@ import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// The counselor button in the screens' headers. Without a counselor it is
-/// a dark «انتخاب مشاور» pill that a soft light crosses now and then, and
+/// a gold «انتخاب مشاور» pill that a soft light crosses now and then, and
 /// opens the list of counselors; with one, it is the counselor's photo and
 /// opens the chat.
 class ConsultantHeaderButton extends StatefulWidget {
@@ -74,7 +74,8 @@ class _ConsultantHeaderButtonState extends State<ConsultantHeaderButton> {
           final name = counselor.name ?? counselor.username;
           label = name == null ? 'گفتگو با مشاور' : 'گفتگو با مشاور، $name';
         } else {
-          child = const _ChooseCounselorPill(key: ValueKey('consultant-choose'));
+          child =
+              const _ChooseCounselorPill(key: ValueKey('consultant-choose'));
           label = 'انتخاب مشاور';
         }
 
@@ -190,7 +191,7 @@ class _CounselorAvatar extends StatelessWidget {
   }
 }
 
-/// The dark pill shown until a counselor is chosen. Every few seconds a
+/// The gold pill shown until a counselor is chosen. Every few seconds a
 /// faint band of light crosses it, enough to catch the eye without
 /// nagging; it stays still when the system asks for less motion.
 class _ChooseCounselorPill extends StatefulWidget {
@@ -229,71 +230,100 @@ class _ChooseCounselorPillState extends State<_ChooseCounselorPill>
 
   @override
   Widget build(BuildContext context) {
-    final pill = Container(
-      height: 36,
-      padding: const EdgeInsetsDirectional.only(start: 10, end: 14),
+    const pill = DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.black1,
-        borderRadius: BorderRadius.circular(100),
+        // Two close yellows, light on the reading side: gold without the
+        // gloss or bevel of a classic button.
+        gradient: LinearGradient(
+          begin: Alignment.centerRight,
+          end: Alignment.centerLeft,
+          colors: [_goldLight, _goldDeep],
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(100)),
       ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(SolarIconsBold.userSpeakRounded, size: 17, color: AppColors.white),
-          SizedBox(width: 6),
-          ReText(
-            'انتخاب مشاور',
-            fontSize: 12.5,
-            fontWeight: FontWeight.w800,
-            color: AppColors.white,
+      child: SizedBox(
+        height: 36,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(start: 10, end: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(SolarIconsBold.userSpeakRounded,
+                  size: 17, color: AppColors.black1),
+              SizedBox(width: 6),
+              ReText(
+                'انتخاب مشاور',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.black1,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(100),
-        child: AnimatedBuilder(
-          animation: _glint,
-          child: pill,
-          builder: (context, child) {
-            final t = _glint.value;
-            if (!_glint.isAnimating || t <= 0 || t >= 1) return child!;
-            return Stack(
-              children: [
-                child!,
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          // Reads like the text: right to left.
-                          begin: Alignment.centerRight,
-                          end: Alignment.centerLeft,
-                          colors: [
-                            AppColors.white.withValues(alpha: 0),
-                            AppColors.white.withValues(alpha: 0.22),
-                            AppColors.white.withValues(alpha: 0),
-                          ],
-                          stops: const [0.35, 0.5, 0.65],
-                          transform: _Slide(
-                            Curves.easeInOut.transform(t) * 2 - 1,
+      // The glow sits outside the clip that shapes the shine.
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: _goldDeep.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: AnimatedBuilder(
+            animation: _glint,
+            child: pill,
+            builder: (context, child) {
+              final t = _glint.value;
+              if (!_glint.isAnimating || t <= 0 || t >= 1) return child!;
+              return Stack(
+                children: [
+                  child!,
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            // Reads like the text: right to left.
+                            begin: Alignment.centerRight,
+                            end: Alignment.centerLeft,
+                            colors: [
+                              AppColors.white.withValues(alpha: 0),
+                              AppColors.white.withValues(alpha: 0.4),
+                              AppColors.white.withValues(alpha: 0),
+                            ],
+                            stops: const [0.35, 0.5, 0.65],
+                            transform: _Slide(
+                              Curves.easeInOut.transform(t) * 2 - 1,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 }
+
+/// The pill's gold: two close, clean yellows. A brownish shade reads as
+/// dirty, and more stops start to look like a classic metal button.
+const Color _goldLight = Color(0xFFFFD45C);
+const Color _goldDeep = Color(0xFFFFB81F);
 
 /// Moves a gradient across its box: -1 fully before it, 1 fully past it.
 class _Slide extends GradientTransform {

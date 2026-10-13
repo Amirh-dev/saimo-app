@@ -10,7 +10,6 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_state.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
-import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/date_range_picker.dart';
@@ -20,7 +19,6 @@ import 'package:simo_learn/presentation/screens/statistics/test_chart.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/colors.dart';
@@ -260,17 +258,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         bottom: false,
         child: Column(
           children: [
-            reAppHeader(
-              'آمــــار',
-              firstIcon: GestureDetector(
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-                ),
-              ),
-              secondIcon: const ConsultantHeaderButton(),
-            ),
+            AppTabHeader('آمــــار'),
             const SizedBox(height: 32),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

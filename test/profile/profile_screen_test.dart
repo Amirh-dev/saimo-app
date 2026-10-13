@@ -12,6 +12,7 @@ import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/profile/friendship_models.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
@@ -247,6 +248,60 @@ void main() {
       findsNothing,
     );
     expect(find.text('پروفایل بروزشده'), findsOneWidget);
+  });
+
+  testWidgets(
+      'in the tabs, back and leaving the tab both return to the profile',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    SharedPreferences.setMockInitialValues({});
+    final repository =
+        _ProfileGraphQLRepository(await TokenStorage.create());
+
+    await tester.pumpWidget(_profileTestApp(
+      repository,
+      const AppTabsShell(
+        initialIndex: 4,
+        tabs: [
+          Text('tab 0'),
+          Text('tab 1'),
+          Text('tab 2'),
+          Text('tab 3'),
+          ProfileScreen(),
+        ],
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final accountDetails = find.byKey(const ValueKey('open-account-details'));
+    final detailsSection = find.byKey(const ValueKey('open-profile-edit-sheet'));
+    Future<void> openDetails() async {
+      await tester.ensureVisible(accountDetails);
+      await tester.pumpAndSettle();
+      await tester.tap(accountDetails);
+      await tester.pumpAndSettle();
+      expect(detailsSection, findsOneWidget);
+    }
+
+    // Back from a section goes to the profile, not to the home tab.
+    await openDetails();
+    await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
+    await tester.pumpAndSettle();
+    expect(detailsSection, findsNothing);
+    expect(accountDetails, findsOneWidget);
+    expect(find.text('tab 0'), findsNothing);
+
+    // Leaving for another tab and coming back starts at the profile.
+    await openDetails();
+    final shell = tester.element(find.byType(ProfileScreen));
+    AppTabsShell.select(shell, 1);
+    await tester.pumpAndSettle();
+    expect(find.text('tab 1'), findsOneWidget);
+    AppTabsShell.select(shell, 4);
+    await tester.pumpAndSettle();
+    expect(detailsSection, findsNothing);
+    expect(accountDetails, findsOneWidget);
   });
 
   testWidgets('reselecting the profile tab refreshes getMe and its cache',

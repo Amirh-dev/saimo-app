@@ -34,6 +34,24 @@ class AuthCubit extends Cubit<AuthState> {
   int _lastOtpExpiresInSeconds = 0;
   String _lastOtpMessage = '';
 
+  /// The server refuses a new code this soon after the last one
+  /// (OTP_RESEND_COOLDOWN, 60s by default).
+  static const Duration otpResendCooldown = Duration(seconds: 60);
+
+  /// The clock the cooldown is measured on; tests move it forward.
+  @visibleForTesting
+  static DateTime Function() clock = DateTime.now;
+
+  DateTime? _lastOtpSentAt;
+
+  /// How long until another code may be requested; zero when it may now.
+  Duration get otpResendWait {
+    final sentAt = _lastOtpSentAt;
+    if (sentAt == null) return Duration.zero;
+    final left = otpResendCooldown - clock().difference(sentAt);
+    return left.isNegative ? Duration.zero : left;
+  }
+
   // Persian, user-facing fallback messages for auth toasts.
   static final RegExp _persianChars = RegExp(r'[؀-ۿ]');
   static const _kSendOtpFailed =
@@ -121,6 +139,7 @@ class AuthCubit extends Cubit<AuthState> {
 
       _lastOtpExpiresInSeconds = payload.expiresInSeconds;
       _lastOtpMessage = payload.message;
+      _lastOtpSentAt = clock();
 
       // Registered user:
       // phone -> OTP -> login
@@ -746,6 +765,10 @@ query GetMeForAuthCompletion {
         m.contains('network') ||
         m.contains('connection')) {
       return 'اتصال به اینترنت برقرار نیست. لطفاً شبکه‌ی خود را بررسی کنید.';
+    }
+    // The resend cooldown: "please wait before requesting another OTP".
+    if (m.contains('wait') && (m.contains('otp') || m.contains('code'))) {
+      return 'برای دریافت کد جدید کمی صبر کنید.';
     }
     if ((m.contains('expire') || m.contains('expired')) &&
         (m.contains('code') || m.contains('otp'))) {

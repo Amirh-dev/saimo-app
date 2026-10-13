@@ -8,14 +8,12 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
-import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
-import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -96,17 +94,7 @@ class _DashboardContent extends StatelessWidget {
           child: SafeArea(
             child: Column(
               children: [
-                reAppHeader(
-                  'خوش آمدید',
-                  firstIcon: GestureDetector(
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-                    ),
-                  ),
-                  secondIcon: const ConsultantHeaderButton(),
-                ),
+                AppTabHeader('خوش آمدید'),
                 const SizedBox(height: 16),
               ],
             ),

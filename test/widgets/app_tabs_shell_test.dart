@@ -28,6 +28,21 @@ class _TabState extends State<_Tab> with AppTabRevisit {
   @override
   void onTabRevisited() => widget.log.add('refresh ${widget.index}');
 
+  // Taps stand in for pages inside the tab: back undoes one. Tab 2, like
+  // the profile, also starts over when left; the others keep their state.
+  @override
+  bool onTabBack() {
+    if (_taps == 0) return false;
+    setState(() => _taps--);
+    return true;
+  }
+
+  @override
+  void onTabLeft() {
+    widget.log.add('left ${widget.index}');
+    if (widget.index == 2) setState(() => _taps = 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,6 +69,7 @@ Future<List<String>> _pumpShell(WidgetTester tester) async {
   await tester.pumpWidget(
     MaterialApp(
       home: AppTabsShell(
+        titles: null,
         tabs: [for (var index = 0; index < 3; index++) _Tab(index, log)],
       ),
     ),
@@ -80,7 +96,8 @@ void main() {
 
     // Home came back as it was, without loading again.
     expect(find.text('tab 0 taps 1'), findsOneWidget);
-    expect(log, ['load 0', 'load 1']);
+    expect(
+        log.where((entry) => entry.startsWith('load')), ['load 0', 'load 1']);
   });
 
   testWidgets('a return refreshes quietly, at most once per gap',
@@ -114,8 +131,46 @@ void main() {
     expect(find.byType(Dialog), findsNothing);
   });
 
-  testWidgets('switching from a page above the tabs closes it',
+  testWidgets('back goes back inside the tab before leaving it',
       (tester) async {
+    await _pumpShell(tester);
+    await tester.tap(find.text('go 0->2'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('tap 2'));
+    await tester.pump();
+    expect(find.text('tab 2 taps 1'), findsOneWidget);
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    await navigator.maybePop();
+    await tester.pumpAndSettle();
+    // Still on the tab, one page back.
+    expect(find.text('tab 2 taps 0'), findsOneWidget);
+
+    await navigator.maybePop();
+    await tester.pumpAndSettle();
+    expect(find.text('tab 0 taps 0'), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+  });
+
+  testWidgets('a tab left for another starts over when it comes back',
+      (tester) async {
+    final log = await _pumpShell(tester);
+    await tester.tap(find.text('go 0->2'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('tap 2'));
+    await tester.pump();
+
+    await tester.tap(find.text('go 2->1'));
+    await tester.pumpAndSettle();
+    expect(
+        log.where((entry) => entry.startsWith('left')), ['left 0', 'left 2']);
+
+    await tester.tap(find.text('go 1->2'));
+    await tester.pumpAndSettle();
+    expect(find.text('tab 2 taps 0'), findsOneWidget);
+  });
+
+  testWidgets('switching from a page above the tabs closes it', (tester) async {
     await _pumpShell(tester);
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
     navigator.push(MaterialPageRoute<void>(
