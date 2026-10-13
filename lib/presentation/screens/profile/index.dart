@@ -12,6 +12,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
@@ -21,6 +22,7 @@ import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/premium/index.dart';
@@ -60,8 +62,20 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
   late ProfileContentSection _section;
+
+  @override
+  int get tabIndex => 4;
+
+  /// Keeps the profile shown while it refreshes; a failure stays quiet.
+  @override
+  void onTabRevisited() {
+    context
+        .read<ProfileCubit>()
+        .getMe(forceRefresh: true)
+        .then((_) {}, onError: (Object _) {});
+  }
 
   @override
   void initState() {
@@ -2649,14 +2663,7 @@ class _ProfileTopCard extends StatelessWidget {
                 child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
               ),
             ),
-            secondIcon: GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
-              child: const SizedBox(
-                width: 48,
-                height: 48,
-                child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
-              ),
-            ),
+            secondIcon: const ConsultantHeaderButton(),
           ),
           _ProfileSummaryCard(profile: profile),
         ],

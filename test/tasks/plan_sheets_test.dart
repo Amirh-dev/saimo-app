@@ -163,6 +163,31 @@ void main() {
       expect(ymd(drafts.single.day), [1405, 7, 25]);
     });
 
+    testWidgets('a drag sideways browses weeks like the arrows',
+        (tester) async {
+      await openQuickAdd(tester);
+      final weeks = _key('day-picker-weeks');
+      // Later weeks lie where the reading direction goes.
+      final rtl = Directionality.of(tester.element(weeks)) == TextDirection.rtl;
+      final forward = Offset(rtl ? 300 : -300, 0);
+
+      // Nothing before this week: the drag springs back.
+      await tester.fling(weeks, -forward, 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('این هفته'), findsOneWidget);
+
+      await tester.fling(weeks, forward, 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('هفته بعد'), findsOneWidget);
+
+      await tester.tap(_key('week-day-chip-0'));
+      await tester.enterText(_key('quick-add-title'), 'هفته بعد');
+      await tester.pump();
+      await tester.tap(_key('quick-add-submit'));
+      await tester.pumpAndSettle();
+      expect(ymd(drafts.single.day), [1405, 7, 25]);
+    });
+
     testWidgets('advanced settings take over everything chosen so far',
         (tester) async {
       await openQuickAdd(tester, day: Jalali(1405, 7, 23));

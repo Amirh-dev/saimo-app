@@ -25,8 +25,9 @@ Future<T?> _showPlanSheet<T>(BuildContext context, Widget sheet) {
 
 // --------------------------------------------------------------- day picker
 
-/// A week of day chips with arrows to browse later weeks. Past days and
-/// weeks beyond the planning horizon cannot be picked.
+/// A week of day chips, browsed with the arrows or by dragging the chips
+/// sideways. Past days and weeks beyond the planning horizon cannot be
+/// picked.
 class WeekDayPicker extends StatefulWidget {
   const WeekDayPicker({
     super.key,
@@ -49,25 +50,60 @@ class WeekDayPicker extends StatefulWidget {
 
 class _WeekDayPickerState extends State<WeekDayPicker> {
   late Jalali _weekStart;
+  late final PageController _pages;
 
+  /// Page 0 is this week; the last page is the last week the server plans.
   Jalali get _firstWeek => weekStartOf(widget.today);
+  int get _weekCount =>
+      daysBetween(_firstWeek, weekStartOf(lastPlannableDay(widget.today))) ~/
+          7 +
+      1;
+
+  int get _page => daysBetween(_firstWeek, _weekStart) ~/ 7;
 
   @override
   void initState() {
     super.initState();
     final shown =
         weekStartOf(widget.selected ?? widget.markedDay ?? widget.today);
-    _weekStart = daysBetween(_firstWeek, shown) < 0 ? _firstWeek : shown;
+    final page = (daysBetween(_firstWeek, shown) ~/ 7).clamp(0, _weekCount - 1);
+    _weekStart = _firstWeek.addDays(7 * page);
+    _pages = PageController(initialPage: page);
   }
 
-  bool get _canGoBack => daysBetween(_firstWeek, _weekStart) > 0;
-  bool get _canGoForward =>
-      isWeekWithinHorizon(_weekStart.addDays(7), widget.today);
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  bool get _canGoBack => _page > 0;
+  bool get _canGoForward => _page < _weekCount - 1;
 
   void _browse(int weeks) {
     if (weeks < 0 ? !_canGoBack : !_canGoForward) return;
+    _pages.animateToPage(
+      _page + weeks,
+      duration: const Duration(milliseconds: 320),
+      curve: AppMotion.settle,
+    );
+  }
+
+  /// Arrows and drags both land here, once the new week is in place.
+  void _onPageChanged(int page) {
     HapticFeedback.selectionClick();
-    setState(() => _weekStart = _weekStart.addDays(7 * weeks));
+    setState(() => _weekStart = _firstWeek.addDays(7 * page));
+  }
+
+  Widget _week(Jalali weekStart, {bool keyed = true}) {
+    return Row(
+      children: [
+        for (var index = 0; index < 7; index++)
+          Expanded(
+            child: _chip(index, weekStart.addDays(index), keyed: keyed),
+          ),
+      ],
+    );
   }
 
   @override
@@ -104,10 +140,23 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
           ],
         ),
         const SizedBox(height: 10),
-        Row(
+        // An unseen copy of the week gives the pages their height.
+        Stack(
           children: [
-            for (var index = 0; index < 7; index++)
-              Expanded(child: _chip(index, _weekStart.addDays(index))),
+            Visibility.maintain(
+              visible: false,
+              child: ExcludeSemantics(child: _week(_weekStart, keyed: false)),
+            ),
+            Positioned.fill(
+              child: PageView.builder(
+                key: const ValueKey('day-picker-weeks'),
+                controller: _pages,
+                itemCount: _weekCount,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, page) =>
+                    _week(_firstWeek.addDays(7 * page)),
+              ),
+            ),
           ],
         ),
       ],
@@ -135,7 +184,7 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
     );
   }
 
-  Widget _chip(int index, Jalali day) {
+  Widget _chip(int index, Jalali day, {bool keyed = true}) {
     final isPast = daysBetween(widget.today, day) < 0;
     final selected =
         widget.selected != null && isSameJalaliDay(day, widget.selected!);
@@ -149,7 +198,7 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
       selected: selected,
       label: dayLabel(day),
       child: GestureDetector(
-        key: ValueKey('week-day-chip-$index'),
+        key: keyed ? ValueKey('week-day-chip-$index') : null,
         behavior: HitTestBehavior.opaque,
         onTap: isPast
             ? null

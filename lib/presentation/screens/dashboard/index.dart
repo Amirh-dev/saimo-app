@@ -5,9 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
-import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
@@ -30,8 +31,15 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with AppTabRevisit {
   Timer? _consultantPopupTimer;
+
+  @override
+  int get tabIndex => 0;
+
+  @override
+  void onTabRevisited() => context.read<DashboardCubit>().load();
 
   @override
   void initState() {
@@ -61,11 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 currentIndex: 0,
                 onTap: (index) => navigateToIndex(context, index, 0),
               ),
-              body: state.isLoading || state.status == DashboardStatus.initial
-                  ? const _DashboardSkeleton()
-                  : _DashboardContent(
-                      state: state,
-                    ),
+              body: _DashboardContent(state: state),
             );
           },
         ),
@@ -82,12 +86,8 @@ class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = Jalali.now();
-
-    final tasks = state.tasks
-        .map(
-          (task) => task.toMap(),
-        )
-        .toList(growable: false);
+    final cubit = context.read<DashboardCubit>();
+    final tasks = state.tasks;
 
     return Column(
       children: [
@@ -105,17 +105,7 @@ class _DashboardContent extends StatelessWidget {
                       child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                     ),
                   ),
-                  secondIcon: GestureDetector(
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (final _) => const ChatScreen())),
-                    child: const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
-                    ),
-                  ),
+                  secondIcon: const ConsultantHeaderButton(),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -126,30 +116,43 @@ class _DashboardContent extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                _dashboardUserInfo(state, context),
+                _DashboardSection(
+                  failed: state.hasFailed(DashboardSection.profile),
+                  ready: state.profile != null,
+                  skeleton: const _SkeletonUserInfo(),
+                  onRetry: cubit.retry,
+                  builder: () => _dashboardUserInfo(state, context),
+                ),
                 const SizedBox(height: 24),
                 _goals(state, context),
                 const SizedBox(height: 24),
-                TodayActivityWidget(
-                  date: '${now.year}/${now.month}/${now.day}',
-                  onAllTasksTap: () {
-                    navigateToIndex(
-                      context,
-                      1,
-                      0,
-                    );
-                  },
-                  onAddTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (final _) => AddTimedTaskScreen(onBack: () {
-                          context.read<DashboardCubit>().load();
-                        }),
-                      ),
-                    );
-                  },
-                  tasks: tasks,
+                _DashboardSection(
+                  failed: state.hasFailed(DashboardSection.tasks),
+                  ready: tasks != null,
+                  skeleton: const _SkeletonActivity(),
+                  onRetry: cubit.retry,
+                  builder: () => TodayActivityWidget(
+                    date: '${now.year}/${now.month}/${now.day}',
+                    onAllTasksTap: () {
+                      navigateToIndex(
+                        context,
+                        1,
+                        0,
+                      );
+                    },
+                    onAddTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (final _) =>
+                              AddTimedTaskScreen(onBack: cubit.load),
+                        ),
+                      );
+                    },
+                    tasks: tasks!
+                        .map((task) => task.toMap())
+                        .toList(growable: false),
+                  ),
                 ),
                 const SizedBox(height: 32),
               ],
@@ -160,8 +163,8 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _goals(DashboardState state, context) {
-    final goals = state.goals.map((goal) {
+  Widget _goals(DashboardState state, BuildContext context) {
+    final goals = state.goals?.map((goal) {
       final target = goal.targetDate?.toLocal();
 
       final today = DateTime.now();
@@ -215,13 +218,23 @@ class _DashboardContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        goals.isEmpty
-            ? _EmptyGoals(
-                onTap: () => navigateToIndex(context, 2, 0),
-              )
-            : GoalsCarouselWidget(
-                goals: goals,
-              ),
+        _DashboardSection(
+          failed: state.hasFailed(DashboardSection.goals),
+          ready: goals != null,
+          skeleton: const _SkeletonBox(
+            height: 75,
+            radius: 100,
+            margin: EdgeInsets.symmetric(horizontal: 32),
+          ),
+          onRetry: context.read<DashboardCubit>().retry,
+          builder: () => goals!.isEmpty
+              ? _EmptyGoals(
+                  onTap: () => navigateToIndex(context, 2, 0),
+                )
+              : GoalsCarouselWidget(
+                  goals: goals,
+                ),
+        ),
       ],
     );
   }
@@ -495,8 +508,98 @@ class _EmptyGoals extends StatelessWidget {
   }
 }
 
-class _DashboardSkeleton extends StatelessWidget {
-  const _DashboardSkeleton();
+/// One part of the home screen: its content once there is data for it, its
+/// own skeleton until then, or a retry row if loading it failed. Data already
+/// on screen stays while it refreshes, so a return to the screen shows no
+/// skeleton at all.
+class _DashboardSection extends StatelessWidget {
+  const _DashboardSection({
+    required this.ready,
+    required this.failed,
+    required this.skeleton,
+    required this.onRetry,
+    required this.builder,
+  });
+
+  final bool ready;
+  final bool failed;
+  final Widget skeleton;
+  final VoidCallback onRetry;
+  final Widget Function() builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget child;
+    if (ready) {
+      child = KeyedSubtree(key: const ValueKey('ready'), child: builder());
+    } else if (failed) {
+      child = _SectionRetry(key: const ValueKey('failed'), onRetry: onRetry);
+    } else {
+      child = _Shimmer(key: const ValueKey('loading'), child: skeleton);
+    }
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [...previous, if (current != null) current],
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Shown in place of a section that could not load and has nothing cached.
+class _SectionRetry extends StatelessWidget {
+  const _SectionRetry({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onRetry,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 56,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: const Row(
+          textDirection: TextDirection.rtl,
+          children: [
+            Expanded(
+              child: ReText(
+                'دریافت اطلاعات ناموفق بود',
+                textAlign: TextAlign.right,
+                color: AppColors.gray,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(width: 12),
+            ReText(
+              'تلاش دوباره',
+              color: AppColors.black1,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+            SizedBox(width: 6),
+            Icon(Icons.refresh_rounded, size: 18, color: AppColors.black1),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Shimmer extends StatelessWidget {
+  const _Shimmer({super.key, required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -518,19 +621,7 @@ class _DashboardSkeleton extends StatelessWidget {
           ],
         ).createShader(bounds);
       },
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 80),
-            const _SkeletonUserInfo(),
-            const SizedBox(height: 24),
-            const _SkeletonGoals(),
-            const SizedBox(height: 24),
-            const _SkeletonActivity(),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -605,47 +696,6 @@ class _SkeletonUserInfo extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SkeletonGoals extends StatelessWidget {
-  const _SkeletonGoals();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 32,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _SkeletonBox(
-                width: 90,
-                height: 36,
-                radius: 100,
-              ),
-              _SkeletonBox(
-                width: 45,
-                height: 18,
-                radius: 8,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const _SkeletonBox(
-          width: double.infinity,
-          height: 75,
-          radius: 100,
-          margin: EdgeInsets.symmetric(
-            horizontal: 32,
-          ),
-        ),
-      ],
     );
   }
 }

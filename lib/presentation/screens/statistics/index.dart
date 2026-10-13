@@ -6,13 +6,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_state.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
-import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/date_range_picker.dart';
+import 'package:simo_learn/presentation/screens/statistics/rating_chart.dart';
 import 'package:simo_learn/presentation/screens/statistics/study_chart.dart';
 import 'package:simo_learn/presentation/screens/statistics/test_chart.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
@@ -33,7 +35,15 @@ class StatisticsScreen extends StatefulWidget {
   State<StatisticsScreen> createState() => _StatisticsScreenState();
 }
 
-class _StatisticsScreenState extends State<StatisticsScreen> {
+class _StatisticsScreenState extends State<StatisticsScreen>
+    with AppTabRevisit {
+  @override
+  int get tabIndex => 3;
+
+  @override
+  void onTabRevisited() =>
+      context.read<StatisticsCubit>().refresh(quiet: true);
+
   bool _isDateStudyChart = true;
   String statGridTimeUnit = 'هفته';
 
@@ -186,6 +196,31 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           ),
                         ),
 
+                        const SizedBox(height: 16),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          child: ReText(
+                            'امتیاز به خودت',
+                            fontWeight: FontWeight(800),
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                          ),
+                          child: RatingChart(
+                            dailyBuckets:
+                            weeklyDashboard.dailyBuckets.toList(),
+                            subjectBuckets:
+                            weeklyDashboard.subjectBuckets.toList(),
+                          ),
+                        ),
+
                         const SizedBox(height: 50),
                       ],
                     ),
@@ -234,14 +269,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                 ),
               ),
-              secondIcon: GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
-                child: const SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
-                ),
-              ),
+              secondIcon: const ConsultantHeaderButton(),
             ),
             const SizedBox(height: 32),
             Padding(

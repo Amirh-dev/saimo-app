@@ -168,8 +168,16 @@ class StatisticsCubit extends Cubit<StatisticsState> {
     }
   }
 
-  Future<void> refresh() async {
+  /// Re-fetches the shown period, keeping it on screen meanwhile. [quiet]
+  /// also keeps it when the fetch fails, for a refresh nobody asked for.
+  Future<void> refresh({bool quiet = false}) async {
     if (isClosed) return;
+    // Nothing shown yet, or a load already on its way: a quiet refresh has
+    // nothing to keep fresh.
+    if (quiet &&
+        (state.dashboard == null || state.status == StatisticsStatus.loading)) {
+      return;
+    }
 
     debugPrint('[StatisticsCubit] refresh()');
 
@@ -248,6 +256,11 @@ class StatisticsCubit extends Cubit<StatisticsState> {
       debugPrintStack(
         stackTrace: stackTrace,
       );
+
+      if (quiet) {
+        emit(state.copyWith(status: StatisticsStatus.success));
+        return;
+      }
 
       emit(
         state.copyWith(

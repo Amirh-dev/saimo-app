@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
+import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/otp_code/index.dart';
@@ -22,6 +25,7 @@ import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
@@ -41,6 +45,8 @@ class MyApp extends StatelessWidget {
         listener: (context, state) {
           if (state is AuthUnauthenticated) {
             context.read<ProfileCubit>().reset();
+            context.read<DashboardCubit>().reset();
+            ActiveCounselorStore.instance.clear();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final navigator = _rootNavigatorKey.currentState;
               if (navigator == null) return;
@@ -76,7 +82,6 @@ class MyApp extends StatelessWidget {
           localizationsDelegates: const [
             PersianMaterialLocalizations.delegate,
             PersianCupertinoLocalizations.delegate,
-
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -91,6 +96,7 @@ class MyApp extends StatelessWidget {
                   alignment: Alignment.bottomCenter,
                   child: TaskTimerBanner(navigatorKey: _rootNavigatorKey),
                 ),
+                TaskReportPrompt(navigatorKey: _rootNavigatorKey),
               ],
             );
           },
@@ -176,7 +182,7 @@ class _AuthGate extends StatelessWidget {
         }
 
         if (state is AuthAuthenticated) {
-          return const DashboardScreen();
+          return const AppTabsShell();
         }
 
         if (state is AuthNeedsRegistration) {

@@ -1,6 +1,12 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 
+/// Fetches the home screen's sections, and keeps the last copy of each on
+/// disk so the screen can open with it before the network answers.
 class DashboardRepository {
   DashboardRepository(this._graphql)
       : _profileRepository = ProfileRepository(_graphql);
@@ -8,21 +14,106 @@ class DashboardRepository {
   final GraphQLRepository _graphql;
   final ProfileRepository _profileRepository;
 
-  Future<DashboardPayload> load() async {
-    final results = await Future.wait<Object?>([
-      _profileRepository.getMe(),
-      _getGoals(),
-      _getTasks(),
-    ]);
+  static const _profileKey = 'dashboard_cache.profile';
+  static const _goalsKey = 'dashboard_cache.goals';
+  static const _tasksKey = 'dashboard_cache.tasks';
 
-    return DashboardPayload(
-      profile: results[0] as ProfileUser,
-      goals: results[1] as List<DashboardGoal>,
-      tasks: results[2] as List<DashboardTask>,
-    );
+  /// The day the cached tasks belong to; they are dropped on any other day.
+  static const _tasksDayKey = 'dashboard_cache.tasks_day';
+
+  /// Bumped by [clearCache]; a fetch started before it does not write back.
+  int _epoch = 0;
+
+  Future<ProfileUser> getProfile() async {
+    final epoch = _epoch;
+    final profile = await _profileRepository.getMe();
+    _write(epoch, (prefs) => prefs.setString(
+          _profileKey,
+          jsonEncode(profile.toJson()),
+        ));
+    return profile;
   }
 
-  Future<List<DashboardGoal>> _getGoals() async {
+  Future<List<DashboardGoal>> getGoals() async {
+    final epoch = _epoch;
+    final raw = await _fetchGoals();
+    _write(epoch, (prefs) => prefs.setString(_goalsKey, jsonEncode(raw)));
+    return raw.map(DashboardGoal.fromJson).toList(growable: false);
+  }
+
+  Future<List<DashboardTask>> getTasks() async {
+    final epoch = _epoch;
+    final raw = await _fetchTasks();
+    _write(epoch, (prefs) async {
+      await prefs.setString(_tasksKey, jsonEncode(raw));
+      await prefs.setString(_tasksDayKey, _dayKey(DateTime.now()));
+    });
+    return raw.map(DashboardTask.fromJson).toList(growable: false);
+  }
+
+  /// What the last fetches left on disk; a section is null when nothing
+  /// usable is there.
+  Future<DashboardCache> readCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final profile = _decodeMap(prefs.getString(_profileKey));
+      final goals = _decodeList(prefs.getString(_goalsKey));
+      final tasksAreToday =
+          prefs.getString(_tasksDayKey) == _dayKey(DateTime.now());
+      final tasks =
+          tasksAreToday ? _decodeList(prefs.getString(_tasksKey)) : null;
+      return DashboardCache(
+        profile: profile == null ? null : ProfileUser.fromJson(profile),
+        goals: goals?.map(DashboardGoal.fromJson).toList(growable: false),
+        tasks: tasks?.map(DashboardTask.fromJson).toList(growable: false),
+      );
+    } catch (error) {
+      debugPrint('Dashboard cache unreadable: $error');
+      return const DashboardCache();
+    }
+  }
+
+  /// Forgets the cached sections, as on logout, so the next account never
+  /// sees them.
+  Future<void> clearCache() async {
+    _epoch++;
+    final prefs = await SharedPreferences.getInstance();
+    await Future.wait([
+      prefs.remove(_profileKey),
+      prefs.remove(_goalsKey),
+      prefs.remove(_tasksKey),
+      prefs.remove(_tasksDayKey),
+    ]);
+  }
+
+  /// Caching is best effort: a failed write never fails the fetch.
+  void _write(int epoch, Future<void> Function(SharedPreferences prefs) write) {
+    if (epoch != _epoch) return;
+    SharedPreferences.getInstance()
+        .then(write)
+        .catchError((Object error) => debugPrint('Dashboard cache: $error'));
+  }
+
+  static String _dayKey(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year}-${local.month}-${local.day}';
+  }
+
+  static Map<String, dynamic>? _decodeMap(String? source) {
+    if (source == null) return null;
+    final value = jsonDecode(source);
+    return value is Map<String, dynamic> ? value : null;
+  }
+
+  static List<Map<String, dynamic>>? _decodeList(String? source) {
+    if (source == null) return null;
+    final value = jsonDecode(source);
+    return value is List
+        ? value.whereType<Map<String, dynamic>>().toList(growable: false)
+        : null;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchGoals() async {
     final data = await _graphql.rawRequest(
       query: _getGoalsQuery,
     );
@@ -35,16 +126,13 @@ class DashboardRepository {
       );
     }
 
-    return value
-        .whereType<Map<String, dynamic>>()
-        .map(DashboardGoal.fromJson)
-        .toList(growable: false);
+    return value.whereType<Map<String, dynamic>>().toList(growable: false);
   }
 
   /// Today's tasks only. An unfiltered page is ordered oldest first, so once
   /// a user has history (or recurring tasks materialized ahead) today's
   /// tasks would fall outside it.
-  Future<List<DashboardTask>> _getTasks() async {
+  Future<List<Map<String, dynamic>>> _fetchTasks() async {
     final data = await _graphql.rawRequest(
       query: _getTasksQuery,
       variables: {
@@ -62,23 +150,16 @@ class DashboardRepository {
       );
     }
 
-    return value
-        .whereType<Map<String, dynamic>>()
-        .map(DashboardTask.fromJson)
-        .toList(growable: false);
+    return value.whereType<Map<String, dynamic>>().toList(growable: false);
   }
 }
 
-class DashboardPayload {
-  const DashboardPayload({
-    required this.profile,
-    required this.goals,
-    required this.tasks,
-  });
+class DashboardCache {
+  const DashboardCache({this.profile, this.goals, this.tasks});
 
-  final ProfileUser profile;
-  final List<DashboardGoal> goals;
-  final List<DashboardTask>  tasks;
+  final ProfileUser? profile;
+  final List<DashboardGoal>? goals;
+  final List<DashboardTask>? tasks;
 }
 
 class DashboardGoal {

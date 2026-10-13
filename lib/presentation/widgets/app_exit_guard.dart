@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 import '_widgets.dart';
@@ -14,9 +15,14 @@ class AppExitGuard extends StatefulWidget {
   const AppExitGuard({
     super.key,
     required this.child,
+    this.onBack,
   });
 
   final Widget child;
+
+  /// Runs first on a back press; returning true handles it without asking
+  /// to leave.
+  final bool Function()? onBack;
 
   @override
   State<AppExitGuard> createState() => _AppExitGuardState();
@@ -49,10 +55,16 @@ class _AppExitGuardState extends State<AppExitGuard> {
 
   @override
   Widget build(BuildContext context) {
+    // Inside the tabs shell, its own guard answers the back button; another
+    // here would answer it too, from a tab that is not even on screen.
+    if (widget.onBack == null && AppTabsShell.contains(context)) {
+      return widget.child;
+    }
     return PopScope<void>(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+        if (widget.onBack?.call() ?? false) return;
 
         _handleBack();
       },

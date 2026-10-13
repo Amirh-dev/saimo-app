@@ -6,14 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
@@ -73,7 +75,13 @@ class _AppearIn extends StatelessWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver, AppTabRevisit {
+  @override
+  int get tabIndex => 1;
+
+  @override
+  void onTabRevisited() => unawaited(_reloadActiveView());
+
   late Jalali _selectedDate;
 
   /// Read on demand so "today" stays correct if the app is left open past
@@ -212,8 +220,21 @@ class _TasksScreenState extends State<TasksScreen>
     _weekViewKey.currentState?.scrollToDay(day);
   }
 
+  /// The day a week opens on: today in the current week, otherwise its
+  /// first day (Saturday).
+  Jalali _openingDayOf(Jalali anyDay) {
+    final start = weekStartOf(anyDay);
+    return isSameJalaliDay(start, weekStartOf(_today)) ? _today : start;
+  }
+
   void _changeWeek(int weeks) {
-    final date = _selectedDate.addDays(7 * weeks);
+    final target = weekStartOf(_selectedDate.addDays(7 * weeks));
+    // Pulled past the board's edge toward a week the server cannot return.
+    if (!isWeekWithinHorizon(target, _today)) {
+      _explainPlanningHorizon();
+      return;
+    }
+    final date = _openingDayOf(target);
     setState(() => _selectedDate = date);
     unawaited(_week.showWeekOf(date));
   }
@@ -231,7 +252,8 @@ class _TasksScreenState extends State<TasksScreen>
   /// The strip was swiped to another week in daily mode: the same weekday
   /// there is selected, so the selection keeps its place in the strip.
   void _changeDayWeek(int weeks) {
-    setState(() => _selectedDate = _selectedDate.addDays(7 * weeks));
+    setState(
+        () => _selectedDate = _openingDayOf(_selectedDate.addDays(7 * weeks)));
     unawaited(_loadTasksForSelectedDate());
   }
 
@@ -350,8 +372,8 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   /// Checks [task] off, or back on. The change shows at once and springs
-  /// back if it cannot be saved.
-  Future<void> _setTaskDone(
+  /// back if it cannot be saved. Returns whether it was saved.
+  Future<bool> _setTaskDone(
     Map<String, dynamic> task, {
     required bool done,
   }) async {
@@ -359,8 +381,10 @@ class _TasksScreenState extends State<TasksScreen>
       try {
         await _week.setTaskDone(task, done: done);
         _clearDayCache();
+        if (!done) task['report'] = null;
+        return true;
       } catch (error) {
-        if (!mounted) return;
+        if (!mounted) return false;
         showReToast(
           context,
           _actionErrorMessage(
@@ -368,12 +392,12 @@ class _TasksScreenState extends State<TasksScreen>
           ReToastType.failed,
         );
       }
-      return;
+      return false;
     }
 
     final id = task['id'] as String?;
-    if (id == null || isTaskDone(task) == done) return;
-    if (!_pendingStatusTaskIds.add(id)) return;
+    if (id == null || isTaskDone(task) == done) return false;
+    if (!_pendingStatusTaskIds.add(id)) return false;
     final previous = task['status'];
     void show(Object? status) {
       if (!mounted) return;
@@ -384,10 +408,13 @@ class _TasksScreenState extends State<TasksScreen>
     show(done ? 'done' : 'pending');
     try {
       await _tasksApi.setTaskDone(task, done: done);
+      // The server drops the report of a task that is no longer done.
+      if (!done) task['report'] = null;
       // No cache change needed: the day's cached list holds this same task
       // map, which already shows the new status.
       // The strip's ring for this day.
       unawaited(_week.reload(silent: true));
+      return true;
     } catch (error) {
       show(previous);
       if (mounted) {
@@ -398,6 +425,7 @@ class _TasksScreenState extends State<TasksScreen>
           ReToastType.failed,
         );
       }
+      return false;
     } finally {
       _pendingStatusTaskIds.remove(id);
     }
@@ -1146,7 +1174,10 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                   ),
                   const SizedBox(width: 12),
                   status == 'done'
-                      ? const SizedBox()
+                      ? _ReportChip(
+                          report: task['report'] as TaskReport?,
+                          onTap: () => _reportTask(task, timed: true),
+                        )
                       : GestureDetector(
                           // The icon shows play/pause, so the button does
                           // exactly that; the full timer is in the details.
@@ -1400,17 +1431,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
               fontWeight: 1000,
             ),
             const Spacer(),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (final _) => const ChatScreen()),
-              ),
-              child: const SizedBox(
-                width: 48,
-                height: 48,
-                child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
-              ),
-            ),
+            const ConsultantHeaderButton(),
             SizedBox(
               width: 48,
               height: 48,
@@ -1430,6 +1451,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       onAddToDay: _openQuickAdd,
       onMoveTasks: _moveTasks,
       onRefresh: () => _week.reload(silent: true),
+      onChangeWeek: _changeWeek,
     );
   }
 
@@ -1514,8 +1536,9 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
               ),
             ),
           );
-        } else {
-          await _setTaskDone(task, done: true);
+        } else if (await _setTaskDone(task, done: true) && mounted) {
+          // Just finished: the moment to ask how it went.
+          await _reportTask(task, timed: false, justCompleted: true);
         }
       case _TaskSheetAction.edit:
         final edited = await context.to<Map<String, dynamic>>(
@@ -1524,11 +1547,58 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
         if (edited == null || !mounted) return;
         showReToast(context, 'تسک با موفقیت ویرایش شد', ReToastType.success);
         await _reloadActiveView();
+      case _TaskSheetAction.report:
+        await _reportTask(task, timed: timed);
       case _TaskSheetAction.move:
         final day = await showMoveTaskSheet(context, task: task, today: _today);
         if (day != null && mounted) await _moveTask(task, day);
       case _TaskSheetAction.delete:
         await _requestDeleteTask(task);
+    }
+  }
+
+  /// Opens the report popup for [task]. The server keeps reports only for
+  /// completed tasks, so reporting an unfinished one completes it first.
+  Future<void> _reportTask(Map<String, dynamic> task,
+      {required bool timed, bool justCompleted = false}) async {
+    var completed =
+        justCompleted || _sheetTaskState(task, timed: timed).isDone;
+    final finishesTask = !completed;
+    final timerRepository =
+        TaskTimerRepository(context.read<GraphQLRepository>());
+
+    final saved = await showTaskReportPopup(
+      context,
+      initial: task['report'] as TaskReport?,
+      finishesTask: finishesTask,
+      onSubmit: (report) async {
+        if (!completed) {
+          final id = task['id'] as String?;
+          if (timed && _timer.isActive(id)) {
+            if (!await _timer.complete(announce: false)) {
+              throw const TaskActionException(
+                  'پایان دادن تسک ناموفق بود. دوباره تلاش کنید.');
+            }
+          } else if (timed) {
+            await timerRepository.completeTimedTask(id!);
+          } else {
+            await _tasksApi.setTaskDone(task, done: true);
+          }
+          completed = true;
+        }
+        await _tasksApi.saveReport(task, report);
+      },
+    );
+
+    if (!mounted) return;
+    if (saved != null) {
+      task['report'] = saved;
+      showReToast(context, 'گزارش تسک ثبت شد', ReToastType.success);
+    }
+    // Completing the task changes the day's lists and rings, even when the
+    // report itself was then skipped or failed.
+    if (saved != null || (finishesTask && completed)) {
+      await _reloadActiveView();
     }
   }
 
@@ -1666,7 +1736,7 @@ class _TasksShimmerState extends State<_TasksShimmer>
   }
 }
 
-enum _TaskSheetAction { primary, edit, move, delete }
+enum _TaskSheetAction { primary, report, edit, move, delete }
 
 /// How much of a recurring task a delete removes.
 enum _RecurringDeleteScope { occurrence, series }
@@ -1837,6 +1907,10 @@ class _TaskDetailsSheet extends StatelessWidget {
                   ),
                 ),
               ],
+              if (task['report'] is TaskReport) ...[
+                const SizedBox(height: 18),
+                _ReportSummary(report: task['report'] as TaskReport),
+              ],
               if (state.progress != null) ...[
                 const SizedBox(height: 22),
                 Row(
@@ -1915,7 +1989,7 @@ class _TaskDetailsSheet extends StatelessWidget {
                 children: [
                   if (!state.isDone) ...[
                     Expanded(
-                      flex: 5,
+                      flex: 1,
                       child: _SheetButton(
                         text: state.primaryText,
                         icon: Icons.arrow_back_ios_new_rounded,
@@ -1925,10 +1999,26 @@ class _TaskDetailsSheet extends StatelessWidget {
                             Navigator.of(context).pop(_TaskSheetAction.primary),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                   ],
                   Expanded(
-                    flex: 4,
+                    flex: 1,
+                    child: _SheetButton(
+                      key: const ValueKey('task-sheet-report'),
+                      text: 'گزارش',
+                      icon: SolarIconsOutline.clipboardText,
+                      background: AppColors.white,
+                      textColor: AppColors.black1,
+                      borderColor: AppColors.gray2,
+                      // A filled dot: this task already has a report.
+                      marked: task['report'] != null,
+                      onTap: () =>
+                          Navigator.of(context).pop(_TaskSheetAction.report),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
                     child: _SheetButton(
                       text: 'ویرایش',
                       icon: SolarIconsOutline.pen,
@@ -1967,14 +2057,156 @@ class _TaskDetailsSheet extends StatelessWidget {
   }
 }
 
+/// The saved report in the details sheet: the self-rating and, when a test
+/// was taken, its score.
+class _ReportSummary extends StatelessWidget {
+  const _ReportSummary({required this.report});
+
+  final TaskReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = report.totalQuestions;
+    final correct = report.correctAnswers;
+    final hasTest = report.tookTest && total != null && total > 0;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        key: const ValueKey('task-sheet-report-summary'),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(SolarIconsOutline.clipboardText,
+                    size: 20, color: AppColors.black1),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ReText(
+                        'امتیاز به خودت: ${convertToPersianNumbers('${report.rating}')} از ۵',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.black1,
+                      ),
+                      const SizedBox(height: 2),
+                      ReText(
+                        hasTest
+                            ? '${convertToPersianNumbers('$correct')} پاسخ صحیح از ${convertToPersianNumbers('$total')} سوال'
+                            : 'بدون تست',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.gray,
+                      ),
+                    ],
+                  ),
+                ),
+                if (hasTest)
+                  ReText(
+                    formatPercent(correct! / total),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.success,
+                  ),
+              ],
+            ),
+            if (report.note != null) ...[
+              const SizedBox(height: 10),
+              const Divider(height: 1, color: AppColors.gray2),
+              const SizedBox(height: 10),
+              ReText(
+                report.note!,
+                key: const ValueKey('task-sheet-report-note'),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black1,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// On a finished task card: its result (accuracy when a test was taken,
+/// otherwise the self-rating), or a shortcut to report when there is none.
+class _ReportChip extends StatelessWidget {
+  const _ReportChip({required this.report, required this.onTap});
+
+  final TaskReport? report;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final report = this.report;
+    final String label;
+    final IconData icon;
+    if (report == null) {
+      label = 'گزارش';
+      icon = Icons.add_rounded;
+    } else if (report.tookTest && report.totalQuestions! > 0) {
+      label = formatPercent(report.correctAnswers! / report.totalQuestions!);
+      icon = Icons.check_rounded;
+    } else {
+      label = convertToPersianNumbers('${report.rating}');
+      icon = Icons.star_rounded;
+    }
+
+    return Semantics(
+      button: true,
+      label: report == null ? 'ثبت گزارش' : 'گزارش تسک',
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: ValueKey('task-report-chip-${report == null ? 'add' : 'done'}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: report == null ? AppColors.white : AppColors.gray1,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: AppColors.gray2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              Icon(icon, size: 15, color: AppColors.black1),
+              const SizedBox(width: 3),
+              ReText(
+                label,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: AppColors.black1,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SheetButton extends StatelessWidget {
   const _SheetButton({
+    super.key,
     required this.text,
     required this.icon,
     required this.background,
     required this.textColor,
     required this.onTap,
     this.borderColor,
+    this.marked = false,
   });
 
   final String text;
@@ -1984,6 +2216,9 @@ class _SheetButton extends StatelessWidget {
   final Color? borderColor;
   final VoidCallback onTap;
 
+  /// Shows a small success dot on the icon.
+  final bool marked;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1991,23 +2226,49 @@ class _SheetButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(100),
           border: borderColor == null ? null : Border.all(color: borderColor!),
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: textColor),
-            const Spacer(),
-            ReText(
-              text,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: textColor,
-            ),
-          ],
+        // Three of these share a row with the delete button, so the label
+        // shrinks rather than overflow on narrow phones.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 17, color: textColor),
+                  if (marked)
+                    Positioned(
+                      top: -2,
+                      right: -3,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: background, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 5),
+              ReText(
+                text,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: textColor,
+              ),
+            ],
+          ),
         ),
       ),
     );

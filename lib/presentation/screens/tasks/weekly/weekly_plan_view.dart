@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/checklists_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
@@ -28,6 +29,9 @@ const double _chipHeight = 34;
 /// While a time box is dragged this close to the board's side, the days
 /// scroll that way.
 const double _dragEdge = 44;
+
+/// How far past an edge the days must be pulled to turn the week.
+const double _weekPullDistance = 80;
 const double _dragScrollStep = 9;
 
 /// A timed task's box grows with its time box: 25 minutes is the smallest
@@ -63,9 +67,14 @@ class WeeklyPlanView extends StatefulWidget {
     required this.onAddToDay,
     required this.onMoveTasks,
     required this.onRefresh,
+    this.onChangeWeek,
   });
 
   final WeeklyPlanController controller;
+
+  /// The days were pulled past their edge: -1 past Saturday (the right
+  /// side) for the previous week, +1 past Friday (the left) for the next.
+  final ValueChanged<int>? onChangeWeek;
 
   /// Opens a task's details.
   final ValueChanged<Map<String, dynamic>> onOpenTask;
@@ -105,6 +114,11 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
 
   WeeklyPlanController get _controller => widget.controller;
 
+  /// How far the days are pulled past an edge, as a share of
+  /// [_weekPullDistance]: negative past Saturday, positive past Friday.
+  final ValueNotifier<double> _pull = ValueNotifier(0);
+  bool _pulling = false;
+
   @override
   void initState() {
     super.initState();
@@ -118,7 +132,62 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
     _scroll.dispose();
     _columns.dispose();
     _headers.dispose();
+    _pull.dispose();
     super.dispose();
+  }
+
+  // ------------------------------------------------- pulling to next week
+
+  /// Follows a finger dragging the days sideways; pulled far enough past an
+  /// edge and let go, the week turns.
+  bool _onColumnsScroll(ScrollNotification notification) {
+    if (widget.onChangeWeek == null ||
+        notification.depth != 0 ||
+        notification.metrics.axis != Axis.horizontal) {
+      return false;
+    }
+    final metrics = notification.metrics;
+    final dragging = switch (notification) {
+      ScrollStartNotification(:final dragDetails) => dragDetails != null,
+      ScrollUpdateNotification(:final dragDetails) => dragDetails != null,
+      OverscrollNotification(:final dragDetails) => dragDetails != null,
+      _ => false,
+    };
+
+    // Only measured while a finger drags; letting go is read from the
+    // pointer itself ([_onFingerUp]), which arrives even if the days are
+    // rebuilt before the scroll settles.
+    if (dragging) {
+      _pulling = true;
+      final beforeStart = metrics.minScrollExtent - metrics.pixels;
+      final afterEnd = metrics.pixels - metrics.maxScrollExtent;
+      final pulled = beforeStart > 0
+          ? -beforeStart / _weekPullDistance
+          : afterEnd > 0
+              ? afterEnd / _weekPullDistance
+              : 0.0;
+      final wasArmed = _pull.value.abs() >= 1;
+      _pull.value = pulled;
+      if (!wasArmed && pulled.abs() >= 1) HapticFeedback.mediumImpact();
+    }
+    return false;
+  }
+
+  /// The finger left the days: turn the week if it was pulled far enough,
+  /// and in any case put the hint away.
+  void _onFingerUp(PointerEvent _) {
+    final pulled = _pull.value;
+    final wasPulling = _pulling;
+    _pulling = false;
+    _pull.value = 0;
+    if (wasPulling && pulled.abs() >= 1) {
+      widget.onChangeWeek?.call(pulled < 0 ? -1 : 1);
+    }
+  }
+
+  void _onFingerCancel(PointerEvent _) {
+    _pulling = false;
+    _pull.value = 0;
   }
 
   void _syncHeaders() {
@@ -264,6 +333,11 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
               '${plan.start.year}-${plan.start.month}-${plan.start.day}';
           if (weekKey != _placedWeek) {
             _placedWeek = weekKey;
+            // A new week starts with nothing pulled (after this build, as
+            // the hints listen to it).
+            _pulling = false;
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => _pull.value = 0);
             WidgetsBinding.instance
                 .addPostFrameCallback((_) => _placeColumns());
           }
@@ -327,76 +401,190 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
               ),
               const Divider(height: 1, thickness: 1, color: AppColors.gray2),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, viewport) => RefreshIndicator(
-                    color: AppColors.primary,
-                    onRefresh: widget.onRefresh,
-                    child: SingleChildScrollView(
-                      key: const ValueKey('week-columns'),
-                      controller: _scroll,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: SingleChildScrollView(
-                        // A new week starts from its first column and replays
-                        // the entrance; a reload of the same week updates in
-                        // place.
-                        key: ValueKey('week-columns-$weekKey'),
-                        controller: _columns,
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: width,
-                            maxWidth: width,
-                            minHeight: viewport.maxHeight,
-                          ),
-                          child: CustomPaint(
-                            painter: _ColumnsPainter(columnWidth: _columnWidth),
-                            child: Padding(
-                              // Clear of the undo bar and the timer banner.
-                              padding: const EdgeInsets.only(bottom: 110),
-                              // Every column as tall as the tallest, so a box
-                              // can be dropped anywhere in a day.
-                              child: IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (var index = 0; index < 7; index++)
-                                      _Entrance(
-                                        order: index,
-                                        child: _DayColumn(
-                                          key: ValueKey(
-                                              'week-day-column-$index'),
-                                          width: _columnWidth,
-                                          index: index,
-                                          day: plan.days[index],
-                                          today: _controller.today,
-                                          showHint: index == hintIndex,
-                                          onOpenTask: widget.onOpenTask,
-                                          onShowChecklists: () =>
-                                              _openChecklists(plan.days[index]),
-                                          onAdd: () => widget.onAddToDay(
-                                              plan.days[index].date),
-                                          onMove: _move,
-                                          onDragStarted: _onDragStarted,
-                                          onDragMoved: (point) =>
-                                              _dragPoint = point,
-                                          onDragEnded: _onDragEnded,
-                                        ),
-                                      ),
-                                  ],
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: _buildColumns(plan, weekKey, width, hintIndex),
+                    ),
+                    // Shown while the days are pulled past an edge.
+                    _WeekPullHint(pull: _pull, next: false),
+                    _WeekPullHint(pull: _pull, next: true),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildColumns(
+    WeekPlan plan,
+    String weekKey,
+    double width,
+    int hintIndex,
+  ) {
+    return LayoutBuilder(
+      builder: (context, viewport) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: widget.onRefresh,
+        child: SingleChildScrollView(
+          key: const ValueKey('week-columns'),
+          controller: _scroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Listener(
+            onPointerUp: _onFingerUp,
+            onPointerCancel: _onFingerCancel,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _onColumnsScroll,
+              child: SingleChildScrollView(
+                // A new week starts from its first column and replays
+                // the entrance; a reload of the same week updates in
+                // place.
+                key: ValueKey('week-columns-$weekKey'),
+                controller: _columns,
+                scrollDirection: Axis.horizontal,
+                // Elastic past the edges, where a long pull turns the
+                // week.
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: width,
+                    maxWidth: width,
+                    minHeight: viewport.maxHeight,
+                  ),
+                  child: CustomPaint(
+                    painter: _ColumnsPainter(columnWidth: _columnWidth),
+                    child: Padding(
+                      // Clear of the undo bar and the timer banner.
+                      padding: const EdgeInsets.only(bottom: 110),
+                      // Every column as tall as the tallest, so a box
+                      // can be dropped anywhere in a day.
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var index = 0; index < 7; index++)
+                              _Entrance(
+                                order: index,
+                                child: _DayColumn(
+                                  key: ValueKey('week-day-column-$index'),
+                                  width: _columnWidth,
+                                  index: index,
+                                  day: plan.days[index],
+                                  today: _controller.today,
+                                  showHint: index == hintIndex,
+                                  onOpenTask: widget.onOpenTask,
+                                  onShowChecklists: () =>
+                                      _openChecklists(plan.days[index]),
+                                  onAdd: () =>
+                                      widget.onAddToDay(plan.days[index].date),
+                                  onMove: _move,
+                                  onDragStarted: _onDragStarted,
+                                  onDragMoved: (point) => _dragPoint = point,
+                                  onDragEnded: _onDragEnded,
                                 ),
                               ),
-                            ),
-                          ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Previous week" or "next week" at the side the days are pulled from: it
+/// fades in with the pull and fills in once letting go will turn the week.
+class _WeekPullHint extends StatelessWidget {
+  const _WeekPullHint({required this.pull, required this.next});
+
+  final ValueNotifier<double> pull;
+
+  /// Past Friday (the left side) for the next week; past Saturday (the
+  /// right) for the previous one.
+  final bool next;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 0,
+      bottom: 0,
+      left: next ? 10 : null,
+      right: next ? null : 10,
+      child: IgnorePointer(
+        child: Center(
+          child: ValueListenableBuilder<double>(
+            valueListenable: pull,
+            builder: (context, value, _) {
+              final share = next ? value : -value;
+              if (share <= 0) return const SizedBox.shrink();
+              final armed = share >= 1;
+              final shown = share.clamp(0.0, 1.0);
+              return Opacity(
+                opacity: shown,
+                child: Transform.scale(
+                  scale: 0.8 + 0.2 * shown,
+                  child: AnimatedContainer(
+                    key: ValueKey(
+                        next ? 'week-pull-next' : 'week-pull-previous'),
+                    duration: const Duration(milliseconds: 160),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: armed ? AppColors.black1 : AppColors.white,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: armed ? AppColors.black1 : AppColors.gray2,
+                      ),
+                    ),
+                    // The arrow points out to the side the week comes from;
+                    // laid out LTR so the chevrons are not mirrored.
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (next) ...[
+                            Icon(
+                              Icons.chevron_left_rounded,
+                              size: 18,
+                              color: armed ? AppColors.white : AppColors.black1,
+                            ),
+                            const SizedBox(width: 2),
+                          ],
+                          ReText(
+                            next ? 'هفته بعد' : 'هفته قبل',
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: armed ? AppColors.white : AppColors.black1,
+                          ),
+                          if (!next) ...[
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: armed ? AppColors.white : AppColors.black1,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -829,26 +1017,76 @@ class _AddButton extends StatelessWidget {
 
 // -------------------------------------------------------------------- tasks
 
-/// Tasks to do sit on a soft gray; finished ones step back to an outline.
-BoxDecoration _taskDecoration(
-    {required bool done, required double radius, bool raised = false}) {
+/// Where a time box stands, colored as in daily mode: not started (gray),
+/// running now (orange), partly done (blue), finished (green).
+enum _Stage { notStarted, running, partial, done }
+
+/// The live timer decides for the task it holds, as in daily mode; other
+/// tasks go by what the server last said.
+_Stage _stageOf(Map<String, dynamic> task) {
+  if (isTaskDone(task)) return _Stage.done;
+  final timer = TaskTimerService.instance;
+  if (timer.isActive(task['id'] as String?)) {
+    if (timer.isCompleted) return _Stage.done;
+    if (timer.isRunning) return _Stage.running;
+    return timer.elapsedSeconds > 0 ? _Stage.partial : _Stage.notStarted;
+  }
+  final status = task['status'];
+  // Another task holds the timer now, so this one is no longer ticking.
+  if (status == 'running') {
+    return timer.hasActiveTask ? _Stage.partial : _Stage.running;
+  }
+  if (status == 'paused') return _Stage.partial;
+  return (task['elapsedSeconds'] as int? ?? 0) > 0
+      ? _Stage.partial
+      : _Stage.notStarted;
+}
+
+/// The stage's color; none for a task not started, which stays neutral.
+Color? _stageColor(_Stage stage) => switch (stage) {
+      _Stage.notStarted => null,
+      _Stage.running => AppColors.primary,
+      _Stage.partial => AppColors.secondary,
+      _Stage.done => AppColors.done,
+    };
+
+/// A task not started sits on soft gray; the others on a faint wash of
+/// their stage's color (opaque, so a box being dragged hides what is under
+/// it).
+BoxDecoration _taskDecoration({
+  required _Stage stage,
+  required double radius,
+  bool raised = false,
+}) {
+  final color = _stageColor(stage);
   return BoxDecoration(
-    color: raised ? AppColors.whiteSec : (done ? null : kTaskFill),
-    border: done ? Border.all(color: AppColors.gray2) : null,
+    color: color == null
+        ? kTaskFill
+        : Color.alphaBlend(color.withValues(alpha: 0.09), AppColors.whiteSec),
     borderRadius: BorderRadius.circular(radius),
+    boxShadow: raised
+        ? [
+            BoxShadow(
+              color: AppColors.black1.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ]
+        : null,
   );
 }
 
-/// How much of a timed task's time has run, or null if none has.
+/// How much of a timed task's time has run, or null if none has; live from
+/// the timer for the task it holds.
 double? _timerProgress(Map<String, dynamic> task) {
   if (!isTimedTask(task) || isTaskDone(task)) return null;
+  final timer = TaskTimerService.instance;
+  if (timer.isActive(task['id'] as String?)) {
+    return timer.elapsedSeconds > 0 ? timer.progress : null;
+  }
   final total = task['durationSeconds'] as int? ?? 0;
   if (total <= 0) return null;
-  var elapsed = task['elapsedSeconds'] as int? ?? 0;
-  final startedAt = task['timerStartedAt'];
-  if (task['status'] == 'running' && startedAt is DateTime) {
-    elapsed += DateTime.now().difference(startedAt).inSeconds;
-  }
+  final elapsed = taskWorkedSeconds(task);
   if (elapsed <= 0) return null;
   return (elapsed / total).clamp(0.0, 1.0);
 }
@@ -880,66 +1118,91 @@ class _TaskBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final done = isTaskDone(task);
-    final progress = _timerProgress(task);
+    final stage = _stageOf(task);
+    final color = _stageColor(stage);
+    final progress = stage == _Stage.done ? null : _timerProgress(task);
     // Two title lines when the box has room for them beside the rest.
     final twoLines = height >= 2 * _pad + 2 * _titleLine + 2 + 15 + 9;
 
-    final content = Container(
+    final content = AnimatedContainer(
       key: raised ? null : ValueKey('week-task-${task['id']}'),
+      duration: const Duration(milliseconds: 260),
       height: height,
-      padding: const EdgeInsetsDirectional.fromSTEB(8, _pad, 6, _pad),
-      decoration: _taskDecoration(done: done, radius: 12, raised: raised),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      decoration: _taskDecoration(stage: stage, radius: 12, raised: raised),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ReText(
-                  task['title'] as String? ?? '',
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  lineHeight: 1.35,
-                  maxLines: twoLines ? 2 : 1,
-                  color: done ? AppColors.gray : AppColors.black1,
-                  decoration: done ? TextDecoration.lineThrough : null,
-                  textAlign: TextAlign.start,
-                ),
-              ),
-              const SizedBox(width: 3),
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: TaskStatusMark(task: task, size: 14),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          ReText(
-            _shortDuration(taskPlannedMinutes(task)),
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-            lineHeight: 1.35,
-            maxLines: 1,
-            color: AppColors.gray,
-            textAlign: TextAlign.start,
-          ),
-          const Spacer(),
-          if (progress != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 3,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                color: AppColors.primary,
-              ),
+          // The stage's color down the start side; none until started.
+          if (color != null)
+            PositionedDirectional(
+              start: 0,
+              top: 0,
+              bottom: 0,
+              width: 3,
+              child: ColoredBox(color: color.withValues(alpha: 0.85)),
             ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(9, _pad, 6, _pad),
+            child: _content(stage, color, progress, twoLines),
+          ),
         ],
       ),
     );
     return raised ? content : PressScale(onTap: onTap, child: content);
+  }
+
+  Widget _content(_Stage stage, Color? color, double? progress, bool twoLines) {
+    final done = stage == _Stage.done;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ReText(
+                task['title'] as String? ?? '',
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                lineHeight: 1.35,
+                maxLines: twoLines ? 2 : 1,
+                color: done ? AppColors.gray : AppColors.black1,
+                decoration: done ? TextDecoration.lineThrough : null,
+                textAlign: TextAlign.start,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: TaskStatusMark(task: task, size: 14, accent: color),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        ReText(
+          _shortDuration(taskPlannedMinutes(task)),
+          fontSize: 10.5,
+          fontWeight: FontWeight.w600,
+          lineHeight: 1.35,
+          maxLines: 1,
+          color: AppColors.gray,
+          textAlign: TextAlign.start,
+        ),
+        const Spacer(),
+        if (progress != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            // Orange while it runs, blue once paused part-way.
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 3,
+              backgroundColor:
+                  (color ?? AppColors.primary).withValues(alpha: 0.15),
+              color: color ?? AppColors.primary,
+            ),
+          ),
+      ],
+    );
   }
 }
 

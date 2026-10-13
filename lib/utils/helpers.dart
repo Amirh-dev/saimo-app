@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_navigation_tabs.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
@@ -314,6 +315,9 @@ String formatTime(int seconds) {
 //   }
   void  navigateToIndex(BuildContext context, int index, currentIndex) {
     if(index == currentIndex) return;
+    // The tabs live side by side in the shell; switching keeps each as it
+    // was. Opening a tab as a page is left for when no shell runs.
+    if (AppTabsShell.select(context, index)) return;
     switch (index) {
       case 0:
         context.toTab(const DashboardScreen());

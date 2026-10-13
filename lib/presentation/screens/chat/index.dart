@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/presentation/screens/chat/advisor_widgets.dart';
@@ -71,7 +72,8 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Finds the advisor and their conversation. [silent] keeps what is shown
   /// while it loads, and only switches when the answer changed.
   Future<void> _load({bool silent = false}) {
-    return _loading ??= _loadOnce(silent: silent).whenComplete(() => _loading = null);
+    return _loading ??=
+        _loadOnce(silent: silent).whenComplete(() => _loading = null);
   }
 
   Future<void> _loadOnce({required bool silent}) async {
@@ -86,6 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final currentUserID =
           _currentUserID ?? await _chatRepository.getCurrentUserID();
       final advisor = await _consultantRepository.fetchMyActiveCounselor();
+      ActiveCounselorStore.instance.set(advisor);
       final fallback = widget.initialChatUserID;
       final targetUserID = advisor?.userID ??
           (fallback != null && fallback.isNotEmpty ? fallback : null);
@@ -899,7 +902,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     isOnline: _isTargetViewingChat,
                     avatar: widget.advisor?.avatar,
                     onBack: () => Navigator.of(context).pop(),
-                    onAdvisor: widget.advisor == null ? null : _openAdvisorSheet,
+                    onAdvisor:
+                        widget.advisor == null ? null : _openAdvisorSheet,
                     connectionStatus: _displayConnectionStatus,
                   ),
                   Expanded(child: _buildMessagesBody()),
@@ -909,7 +913,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
                     onCancelReply: () => setState(() => _replyingTo = null),
                     onSend: _sendMessage,
                     onAttachment: _showUnsupportedAttachmentAction,
-                    hintText: widget.advisor == null ? 'پیام...' : 'پیام به مشاور...',
+                    hintText:
+                        widget.advisor == null ? 'پیام...' : 'پیام به مشاور...',
                   ),
                 ],
               ),
@@ -1077,62 +1082,62 @@ class _ChatRoomHeader extends StatelessWidget {
                   onTap: onAdvisor,
                   behavior: HitTestBehavior.opaque,
                   child: Row(
-                  textDirection: TextDirection.ltr,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          ReText(
-                            title,
-                            color: AppColors.black1,
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w900,
-                            maxLines: 1,
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ReText(
-                                subtitle,
-                                color: hasConnectionWarning
-                                    ? AppColors.simoCoin
-                                    : isOnline
-                                        ? AppColors.done
-                                        : AppColors.gray,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              const SizedBox(width: 5),
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: isOnline
-                                      ? AppColors.done
-                                      : AppColors.gray2,
-                                  shape: BoxShape.circle,
+                    textDirection: TextDirection.ltr,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            ReText(
+                              title,
+                              color: AppColors.black1,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w900,
+                              maxLines: 1,
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ReText(
+                                  subtitle,
+                                  color: hasConnectionWarning
+                                      ? AppColors.simoCoin
+                                      : isOnline
+                                          ? AppColors.done
+                                          : AppColors.gray,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                                const SizedBox(width: 5),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: isOnline
+                                        ? AppColors.done
+                                        : AppColors.gray2,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 9),
-                    AdvisorAvatar(path: avatar, size: 46),
-                    const SizedBox(width: 3),
-                    _CircleIconButton(
-                      icon: SolarIconsOutline.altArrowRight,
-                      onTap: onBack,
-                      iconColor: AppColors.black1.withOpacity(0.72),
-                      backgroundColor: Colors.transparent,
-                      showShadow: false,
-                      size: 36,
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 9),
+                      AdvisorAvatar(path: avatar, size: 46),
+                      const SizedBox(width: 3),
+                      _CircleIconButton(
+                        icon: SolarIconsOutline.altArrowRight,
+                        onTap: onBack,
+                        iconColor: AppColors.black1.withOpacity(0.72),
+                        backgroundColor: Colors.transparent,
+                        showShadow: false,
+                        size: 36,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

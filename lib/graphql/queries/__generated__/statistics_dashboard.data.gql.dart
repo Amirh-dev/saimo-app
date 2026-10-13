@@ -276,6 +276,7 @@ abstract class GStatisticsDashboardData_statisticsDashboard_dailyBuckets
   int get totalQuestions;
   int get correctAnswers;
   int get incorrectAnswers;
+  double? get averagePerformanceRating;
   static Serializer<GStatisticsDashboardData_statisticsDashboard_dailyBuckets>
       get serializer =>
           _$gStatisticsDashboardDataStatisticsDashboardDailyBucketsSerializer;
@@ -320,6 +321,7 @@ abstract class GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   int get totalQuestions;
   int get correctAnswers;
   int get incorrectAnswers;
+  double? get averagePerformanceRating;
   static Serializer<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
       get serializer =>
           _$gStatisticsDashboardDataStatisticsDashboardSubjectBucketsSerializer;

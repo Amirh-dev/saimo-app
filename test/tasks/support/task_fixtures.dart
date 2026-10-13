@@ -100,6 +100,15 @@ class FakeTasksApi implements TasksApi {
     doneChanges.add((task['id'] as String, done));
   }
 
+  final List<(String, TaskReport)> reports = [];
+  Object? reportError;
+
+  @override
+  Future<void> saveReport(Map<String, dynamic> task, TaskReport report) async {
+    if (reportError != null) throw reportError!;
+    reports.add((task['id'] as String, report));
+  }
+
   @override
   Future<Map<String, dynamic>> createQuickTask(QuickTaskDraft draft) async {
     created.add(draft);

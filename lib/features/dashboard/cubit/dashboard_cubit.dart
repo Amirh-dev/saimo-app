@@ -10,62 +10,136 @@ class DashboardCubit extends Cubit<DashboardState> {
 
   final DashboardRepository _repository;
 
-  Future<void> load() async {
+  bool _cacheRestored = false;
+  Future<void>? _loading;
+
+  /// Bumped by [reset]; a load started before it is not shown.
+  int _session = 0;
+
+  /// Brings every section up to date. Sections already on screen stay while
+  /// they refresh; only a section with nothing to show yet shows a skeleton.
+  /// Calls made while a load runs share it.
+  Future<void> load() {
+    final running = _loading;
+    if (running != null) return running;
+    final session = _session;
+    late final Future<void> loading;
+    loading = _load(session).whenComplete(() {
+      if (identical(_loading, loading)) _loading = null;
+    });
+    return _loading = loading;
+  }
+
+  /// Retries the sections that failed with nothing to show.
+  Future<void> retry() {
+    if (!isClosed) emit(state.copyWith(failed: const {}));
+    return load();
+  }
+
+  /// Forgets everything, as on logout, so the next account starts clean.
+  Future<void> reset() async {
+    _session++;
+    _loading = null;
+    _cacheRestored = false;
+    if (!isClosed) emit(const DashboardState());
+    try {
+      await _repository.clearCache();
+    } catch (error) {
+      debugPrint('Dashboard cache not cleared: $error');
+    }
+  }
+
+  bool _isStale(int session) => isClosed || session != _session;
+
+  Future<void> _load(int session) async {
+    if (!_cacheRestored) {
+      _cacheRestored = true;
+      await _restoreCache(session);
+    }
+    await Future.wait([
+      _refresh(
+        session,
+        DashboardSection.profile,
+        hasData: () => state.profile != null,
+        fetch: () async {
+          final profile = await _repository.getProfile();
+          return state.copyWith(profile: profile);
+        },
+      ),
+      _refresh(
+        session,
+        DashboardSection.goals,
+        hasData: () => state.goals != null,
+        fetch: () async {
+          final goals = await _repository.getGoals();
+          return state.copyWith(goals: _visibleGoals(goals));
+        },
+      ),
+      _refresh(
+        session,
+        DashboardSection.tasks,
+        hasData: () => state.tasks != null,
+        fetch: () async {
+          final tasks = await _repository.getTasks();
+          return state.copyWith(tasks: _todayTasks(tasks));
+        },
+      ),
+    ]);
+  }
+
+  /// Fills sections the screen has nothing for yet from the last session.
+  Future<void> _restoreCache(int session) async {
+    final cache = await _repository.readCache();
+    if (_isStale(session)) return;
+    final cachedGoals = cache.goals;
+    final cachedTasks = cache.tasks;
     emit(
-      state.copyWith(
-        status: DashboardStatus.loading,
-        clearError: true,
+      DashboardState(
+        profile: state.profile ?? cache.profile,
+        goals: state.goals ??
+            (cachedGoals == null ? null : _visibleGoals(cachedGoals)),
+        tasks: state.tasks ??
+            (cachedTasks == null ? null : _todayTasks(cachedTasks)),
+        failed: state.failed,
       ),
     );
+  }
 
+  /// Fetches one section. A failure only shows when the section has nothing
+  /// else to show; otherwise the data on screen stays as it was.
+  Future<void> _refresh(
+    int session,
+    DashboardSection section, {
+    required bool Function() hasData,
+    required Future<DashboardState> Function() fetch,
+  }) async {
     try {
-      final payload = await _repository.load();
-
-      final today = _dateOnly(DateTime.now());
-
-      final goals = payload.goals
-          .where(
-            (goal) => goal.title.trim().isNotEmpty,
-      )
-          .toList(growable: false);
-
-      final dashboardTasks = payload.tasks
-          .where(
-            (task) {
-              final date = task.date?.toLocal();
-              return date != null &&
-                  _isSameDate(date, today) &&
-                  task.type == 'TIMED' &&
-                  task.status != 'CANCELED';
-            }
-      )
-          .toList()
-        ..sort(
-              (a, b) => _taskSortDate(b)
-              .compareTo(_taskSortDate(a)),
-        );
-      final tasks = dashboardTasks
-          .take(7)
-          .map(_toDashboardTask)
-          .toList(growable: false);
-      emit(
-        state.copyWith(
-          status: DashboardStatus.success,
-          profile: payload.profile,
-          goals: goals,
-          tasks: tasks,
-          clearError: true,
-        ),
-      );
-      debugPrint(tasks.map((e) => e.toMap()).toList().toString());
+      final next = await fetch();
+      if (_isStale(session)) return;
+      emit(next.copyWith(failed: {...state.failed}..remove(section)));
     } catch (error) {
-      emit(
-        state.copyWith(
-          status: DashboardStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
+      debugPrint('Dashboard $section failed: $error');
+      if (_isStale(session) || hasData()) return;
+      emit(state.copyWith(failed: {...state.failed, section}));
     }
+  }
+
+  List<DashboardGoal> _visibleGoals(List<DashboardGoal> goals) => goals
+      .where((goal) => goal.title.trim().isNotEmpty)
+      .toList(growable: false);
+
+  /// Today's timed tasks, most recent first, as the activity card shows them.
+  List<DashboardTaskItem> _todayTasks(List<DashboardTask> all) {
+    final today = _dateOnly(DateTime.now());
+    final tasks = all.where((task) {
+      final date = task.date?.toLocal();
+      return date != null &&
+          _isSameDate(date, today) &&
+          task.type == 'TIMED' &&
+          task.status != 'CANCELED';
+    }).toList()
+      ..sort((a, b) => _taskSortDate(b).compareTo(_taskSortDate(a)));
+    return tasks.take(7).map(_toDashboardTask).toList(growable: false);
   }
 
   bool _isCreatedToday(

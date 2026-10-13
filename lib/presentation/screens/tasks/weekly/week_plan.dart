@@ -1,5 +1,6 @@
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/utils/helpers.dart';
 
 /// How far ahead the server builds recurring tasks; it rejects schedule
@@ -64,14 +65,27 @@ int taskPlannedMinutes(Map<String, dynamic> task) {
 int taskLoadMinutes(Map<String, dynamic> task) =>
     isTimedTask(task) ? taskPlannedMinutes(task) : kChecklistLoadMinutes;
 
-/// How much of [task]'s load is done: all of it once finished, the minutes
-/// already worked for a timed task under way, nothing otherwise.
-int taskDoneMinutes(Map<String, dynamic> task) {
-  final load = taskLoadMinutes(task);
+/// Seconds worked on a timed task so far: live from the timer for the task
+/// it holds, otherwise what the server last said plus the session running
+/// since.
+int taskWorkedSeconds(Map<String, dynamic> task) {
+  final timer = TaskTimerService.instance;
+  if (timer.isActive(task['id'] as String?)) return timer.elapsedSeconds;
+  var elapsed = task['elapsedSeconds'] as int? ?? 0;
+  final startedAt = task['timerStartedAt'];
+  if (task['status'] == 'running' && startedAt is DateTime) {
+    elapsed += DateTime.now().difference(startedAt).inSeconds;
+  }
+  return elapsed;
+}
+
+/// How much of [task]'s load is done, in seconds: all of it once finished,
+/// the time already worked for a timed task under way, nothing otherwise.
+int taskDoneSeconds(Map<String, dynamic> task) {
+  final load = taskLoadMinutes(task) * 60;
   if (isTaskDone(task)) return load;
   if (!isTimedTask(task)) return 0;
-  final worked = (task['elapsedSeconds'] as int? ?? 0) ~/ 60;
-  return worked.clamp(0, load);
+  return taskWorkedSeconds(task).clamp(0, load);
 }
 
 int _sum(Iterable<Map<String, dynamic>> tasks, int Function(Map<String, dynamic>) value) =>
@@ -104,7 +118,7 @@ class WeekDayPlan {
   double get workDoneRatio {
     final load = loadMinutes;
     if (load == 0) return 0;
-    return (_sum(tasks, taskDoneMinutes) / load).clamp(0.0, 1.0);
+    return (_sum(tasks, taskDoneSeconds) / (load * 60)).clamp(0.0, 1.0);
   }
   bool get isEmpty => tasks.isEmpty;
   bool get isAllDone => tasks.isNotEmpty && doneCount == taskCount;

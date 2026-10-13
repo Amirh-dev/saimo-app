@@ -530,20 +530,15 @@ class _StudyChartState extends State<StudyChart> {
                       )
                     : const SizedBox(),
                 const SizedBox(height: 4),
+                // The whole time in minutes, e.g. «۹۰ دقیقه».
                 Row(
                   children: [
                     ReText(
-                      item.hours,
+                      _toPersianNumber(
+                        ((item.hoursValue * 3600).round() ~/ 60).toString(),
+                      ),
                       color: AppColors.white,
                       fontSize: 12,
-                    ),
-                    const ReText(
-                      ' ساعت و ',
-                      color: Colors.white70, fontSize: 12,
-                    ),
-                    ReText(
-                      ' ${item.minutes}',
-                      color: Colors.white70, fontSize: 12,
                     ),
                     const ReText(
                       ' دقیقه',

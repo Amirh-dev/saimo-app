@@ -42,6 +42,7 @@ const String kTaskFields = r'''
     goal { id title }
     tags { id name }
     subjectTag { id name }
+    completionReport { performanceRating tookTest totalQuestions correctAnswers note }
 ''';
 
 bool isSameJalaliDay(Jalali a, Jalali b) {
@@ -144,7 +145,56 @@ Map<String, dynamic> taskFromApi(Map<String, dynamic> task) {
     'recurrenceId': task['recurrenceID'] as String?,
     'dateTime': DateTime.tryParse(date)?.toLocal(),
     'reminderTime': DateTime.tryParse(reminderTime)?.toLocal(),
+    'report': TaskReport.fromApi(task['completionReport']),
   };
+}
+
+/// What the user said about a finished task: a 1–5 self-rating and, when
+/// they took a test, its question counts.
+class TaskReport {
+  const TaskReport({
+    required this.rating,
+    this.totalQuestions,
+    this.correctAnswers,
+    this.note,
+  });
+
+  final int rating;
+  final int? totalQuestions;
+  final int? correctAnswers;
+
+  /// The user's own words on how it went; null when they wrote none.
+  final String? note;
+
+  bool get tookTest => totalQuestions != null && correctAnswers != null;
+
+  static TaskReport? fromApi(Object? report) {
+    if (report is! Map) return null;
+    final rating = report['performanceRating'];
+    if (rating is! int) return null;
+    final tookTest = report['tookTest'] == true;
+    return TaskReport(
+      rating: rating,
+      totalQuestions: tookTest ? report['totalQuestions'] as int? : null,
+      correctAnswers: tookTest ? report['correctAnswers'] as int? : null,
+      note: _nonBlank(report['note']),
+    );
+  }
+
+  /// The `SaveTaskCompletionReportInput` for this report.
+  Map<String, dynamic> toInput() => {
+        'performanceRating': rating,
+        'tookTest': tookTest,
+        if (tookTest) 'totalQuestions': totalQuestions,
+        if (tookTest) 'correctAnswers': correctAnswers,
+        if (note != null) 'note': note,
+      };
+
+  static String? _nonBlank(Object? text) {
+    if (text is! String) return null;
+    final trimmed = text.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 }
 
 Map<String, dynamic> timedTaskFromApi(Map<String, dynamic> task) {

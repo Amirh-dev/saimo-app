@@ -16,10 +16,20 @@ const Color kTaskFill = Color(0xFFF3F4F7);
 /// A ring for a task to do, a dark check once it is done; a running timer
 /// rings in the main color.
 class TaskStatusMark extends StatelessWidget {
-  const TaskStatusMark({super.key, required this.task, required this.size});
+  const TaskStatusMark({
+    super.key,
+    required this.task,
+    required this.size,
+    this.accent,
+  });
 
   final Map<String, dynamic> task;
   final double size;
+
+  /// The ring's color for a task under way (orange running, blue paused);
+  /// without it, read from the task's status. A task not started keeps a
+  /// gray ring, a finished one a green check, as in daily mode.
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -28,23 +38,38 @@ class TaskStatusMark extends StatelessWidget {
         width: size,
         height: size,
         decoration: const BoxDecoration(
-          color: AppColors.black1,
+          color: AppColors.done,
           shape: BoxShape.circle,
         ),
         child: Icon(Icons.check_rounded, size: size * 0.72, color: AppColors.white),
       );
     }
-    final running = task['status'] == 'running';
+    final ring = accent ??
+        switch (task['status']) {
+          'running' => AppColors.primary,
+          'paused' => AppColors.secondary,
+          _ => null,
+        };
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: running ? AppColors.primary : AppColors.black1.withValues(alpha: 0.55),
-          width: running ? 1.8 : 1.5,
+          color: ring ?? AppColors.black1.withValues(alpha: 0.55),
+          width: ring != null ? 1.8 : 1.5,
         ),
       ),
+      // A dot inside while it is under way.
+      child: ring == null
+          ? null
+          : Center(
+              child: Container(
+                width: size * 0.36,
+                height: size * 0.36,
+                decoration: BoxDecoration(color: ring, shape: BoxShape.circle),
+              ),
+            ),
     );
   }
 }

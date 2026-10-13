@@ -65,6 +65,25 @@ class ProfileUser {
       isPremium: json['isPremium'] == true,
     );
   }
+
+  /// The shape [ProfileUser.fromJson] reads, for keeping a profile on disk.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'username': username,
+        'phoneNumber': phoneNumber,
+        'avatarURL': avatarURL,
+        'fullName': fullName,
+        'birthDate': birthDate?.toIso8601String(),
+        'studyTime': studyTime,
+        'major': major,
+        'bio': bio,
+        'interests': [
+          for (final name in interests) {'name': name},
+        ],
+        'simoCoins': simoCoins,
+        'score': score,
+        'isPremium': isPremium,
+      };
 }
 
 class ProfileRepository {

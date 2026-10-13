@@ -69,6 +69,7 @@ Future<(WeeklyPlanController, _Calls)> _pumpWeek(
                 onAddToDay: (day, {timed = true}) =>
                     calls.add('add:${_day(day)}${timed ? '' : ':checklist'}'),
                 onRefresh: () async => calls.add('refresh'),
+                onChangeWeek: (delta) => calls.add('board-week:$delta'),
               ),
             ),
           ],
@@ -81,6 +82,54 @@ Future<(WeeklyPlanController, _Calls)> _pumpWeek(
 }
 
 void main() {
+  group('pulling the days past an edge', () {
+    // Days run right to left: Saturday sits on the right.
+    Finder columns() => find.byKey(const ValueKey('week-columns-1405-7-18'));
+
+    Future<void> pull(WidgetTester tester, double dx,
+        {required String hint}) async {
+      final gesture = await tester.startGesture(tester.getCenter(columns()));
+      // Several steps, as a finger would.
+      for (var step = 0; step < 12; step++) {
+        await gesture.moveBy(Offset(dx / 12, 0));
+        await tester.pump();
+      }
+      expect(_key(hint), findsOneWidget); // shown while pulling
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(_key(hint), findsNothing); // and gone once let go
+    }
+
+    testWidgets('past Saturday turns to the previous week', (tester) async {
+      final (_, calls) = await _pumpWeek(tester);
+      await tester.pumpAndSettle();
+
+      // Toward Saturday and beyond it: the finger moves left.
+      await pull(tester, -1400, hint: 'week-pull-previous');
+      expect(calls.log, contains('board-week:-1'));
+    });
+
+    testWidgets('past Friday turns to the next week', (tester) async {
+      final (_, calls) = await _pumpWeek(tester);
+      await tester.pumpAndSettle();
+
+      await pull(tester, 1400, hint: 'week-pull-next');
+      expect(calls.log, contains('board-week:1'));
+    });
+
+    testWidgets('a short pull just springs back', (tester) async {
+      final (_, calls) = await _pumpWeek(tester);
+      await tester.pumpAndSettle();
+
+      final gesture = await tester.startGesture(tester.getCenter(columns()));
+      await gesture.moveBy(const Offset(-40, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(calls.log.where((call) => call.startsWith('board-week')), isEmpty);
+    });
+  });
+
   group('WeeklyPlanView', () {
     Finder inColumn(String column, String text) =>
         find.descendant(of: _key(column), matching: find.text(text));

@@ -6,10 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/features/goals/cubit/goals_cubit.dart';
 import 'package:simo_learn/features/goals/cubit/goals_state.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
-import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/re_dots_loader.dart';
@@ -24,7 +25,17 @@ class GoalScreen extends StatefulWidget {
   State<GoalScreen> createState() => _GoalScreenState();
 }
 
-class _GoalScreenState extends State<GoalScreen> {
+class _GoalScreenState extends State<GoalScreen> with AppTabRevisit {
+  @override
+  int get tabIndex => 2;
+
+  /// Shown goals stay while they refresh; only an empty list shows loading.
+  @override
+  void onTabRevisited() {
+    final goals = context.read<GoalsCubit>();
+    if (!goals.state.isMutating) goals.refresh();
+  }
+
   static const Duration _goalListAnimationDuration = Duration(milliseconds: 260);
   static const double _goalItemHeight = 90.0;
   static const double _goalSheetItemExtent = 48;
@@ -1402,14 +1413,7 @@ class _GoalScreenState extends State<GoalScreen> {
                       child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
                     ),
                   ),
-                  secondIcon: GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (final _) => const ChatScreen())),
-                    child: const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(SolarIconsOutline.userSpeakRounded, size: 24),
-                    ),
-                  ),
+                  secondIcon: const ConsultantHeaderButton(),
                 ).bMargin(24),
               ),
             ),

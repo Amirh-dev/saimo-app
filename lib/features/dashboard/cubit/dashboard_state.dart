@@ -2,57 +2,43 @@ import 'package:equatable/equatable.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 
-enum DashboardStatus {
-  initial,
-  loading,
-  success,
-  failure,
-}
+/// The home screen's sections, each loaded on its own.
+enum DashboardSection { profile, goals, tasks }
 
+/// Each section's data is null until it has some, from the disk cache or the
+/// network; a section shows its skeleton only then. Data already shown stays
+/// while it refreshes, and a failed refresh keeps it.
 class DashboardState extends Equatable {
   const DashboardState({
-    this.status = DashboardStatus.initial,
     this.profile,
-    this.goals = const [],
-    this.tasks = const [],
-    this.errorMessage,
+    this.goals,
+    this.tasks,
+    this.failed = const {},
   });
 
-  final DashboardStatus status;
   final ProfileUser? profile;
-  final List<DashboardGoal> goals;
-  final List<DashboardTaskItem> tasks;
-  final String? errorMessage;
+  final List<DashboardGoal>? goals;
+  final List<DashboardTaskItem>? tasks;
 
-  bool get isLoading => status == DashboardStatus.loading;
+  /// Sections whose last load failed while they had nothing to show.
+  final Set<DashboardSection> failed;
 
-  bool get isSuccess => status == DashboardStatus.success;
+  bool hasFailed(DashboardSection section) => failed.contains(section);
 
   DashboardState copyWith({
-    DashboardStatus? status,
     ProfileUser? profile,
     List<DashboardGoal>? goals,
     List<DashboardTaskItem>? tasks,
-    String? errorMessage,
-    bool clearError = false,
+    Set<DashboardSection>? failed,
   }) {
     return DashboardState(
-      status: status ?? this.status,
       profile: profile ?? this.profile,
       goals: goals ?? this.goals,
       tasks: tasks ?? this.tasks,
-      errorMessage: clearError
-          ? null
-          : errorMessage ?? this.errorMessage,
+      failed: failed ?? this.failed,
     );
   }
 
   @override
-  List<Object?> get props => [
-    status,
-    profile,
-    goals,
-    tasks,
-    errorMessage,
-  ];
+  List<Object?> get props => [profile, goals, tasks, failed];
 }

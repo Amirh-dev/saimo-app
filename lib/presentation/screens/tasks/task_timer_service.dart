@@ -267,9 +267,13 @@ class TaskTimerService extends ChangeNotifier {
     }
   }
 
-  Future<void> complete() async {
+  /// Ends the task and tells the server. Returns whether the server took it.
+  /// With [announce], a confirmed completion is also sent to [completions]
+  /// so the app can ask for a report; pass false when the caller is already
+  /// collecting one.
+  Future<bool> complete({bool announce = true}) async {
     final id = _taskId;
-    if (id == null) return;
+    if (id == null) return false;
 
     _commitSession();
     _stopTicker();
@@ -281,8 +285,20 @@ class TaskTimerService extends ChangeNotifier {
       await _repository?.completeTimedTask(id);
     } catch (error) {
       debugPrint('TaskTimerService.complete failed: $error');
+      return false;
     }
+    final task = _taskData;
+    if (announce && task != null && !_completions.isClosed) {
+      _completions.add(task);
+    }
+    return true;
   }
+
+  final StreamController<Map<String, dynamic>> _completions =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  /// Tasks whose timer just ran out and the server confirmed as done.
+  Stream<Map<String, dynamic>> get completions => _completions.stream;
 
   /// Forget the current task entirely (e.g. after a successful refresh where
   /// the server already reports the task as done).

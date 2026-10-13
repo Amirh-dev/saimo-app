@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_screen.dart';
@@ -72,6 +73,7 @@ class ConsultantIntroPopup {
       final repository =
           ConsultantRepository(context.read<GraphQLRepository>());
       final counselor = await repository.fetchMyActiveCounselor();
+      ActiveCounselorStore.instance.set(counselor);
       if (counselor != null || !context.mounted) return;
       // Don't interrupt another screen or dialog the user has moved on to.
       if (ModalRoute.of(context)?.isCurrent != true) return;

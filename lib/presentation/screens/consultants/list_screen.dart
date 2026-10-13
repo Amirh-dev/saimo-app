@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
@@ -226,6 +227,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
 
       if (verification.succeeded) {
         setState(() => _paying = false);
+        unawaited(ActiveCounselorStore.instance.refresh(repo, force: true));
         await showConsultationSuccessSheet(
           context,
           duration: duration,

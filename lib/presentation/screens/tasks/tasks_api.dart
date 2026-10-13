@@ -101,6 +101,9 @@ abstract class TasksApi {
 
   /// Marks the task done, or back to do when [done] is false.
   Future<void> setTaskDone(Map<String, dynamic> task, {required bool done});
+
+  /// Saves [report] for a completed task, replacing any earlier one.
+  Future<void> saveReport(Map<String, dynamic> task, TaskReport report);
 }
 
 class GraphQLTasksApi implements TasksApi {
@@ -123,6 +126,12 @@ $kTaskFields
   static const String _updateMutation = r'''
 mutation PlanUpdateTask($id: ID!, $input: UpdateTaskInput!) {
   updateTask(id: $id, input: $input) { id }
+}
+''';
+
+  static const String _reportMutation = r'''
+mutation SaveTaskReport($taskID: ID!, $input: SaveTaskCompletionReportInput!) {
+  saveTaskCompletionReport(taskID: $taskID, input: $input) { id }
 }
 ''';
 
@@ -220,6 +229,26 @@ $kTaskFields
     }
     // A finished task must never keep a pending reminder.
     if (done) await _reminders.cancel(taskId);
+  }
+
+  @override
+  Future<void> saveReport(Map<String, dynamic> task, TaskReport report) async {
+    final taskId = _requireId(task);
+    try {
+      final data = await _repository.rawRequest(
+        query: _reportMutation,
+        variables: {'taskID': taskId, 'input': report.toInput()},
+      );
+      if (data['saveTaskCompletionReport'] == null) {
+        throw const TaskActionException('saveTaskCompletionReport returned no report');
+      }
+    } catch (error) {
+      debugPrint('GraphQLTasksApi.saveReport: $error');
+      throw TaskActionException(taskFailureMessage(
+        error,
+        fallback: 'ثبت گزارش ناموفق بود. دوباره تلاش کنید.',
+      ));
+    }
   }
 
   @override

@@ -12,8 +12,11 @@ import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/week_header.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart';
 
 import 'support/app_fonts.dart';
+import 'support/task_fixtures.dart' show ymd;
 
 Finder _key(String value) => find.byKey(ValueKey(value));
 
@@ -56,6 +59,7 @@ class _TasksRepository extends GraphQLRepository {
   final List<Map<String, dynamic>> createdInputs = [];
   final List<Map<String, dynamic>> created = [];
   final List<Map<String, dynamic>> updates = [];
+  final List<Map<String, dynamic>> reports = [];
 
   @override
   Future<Map<String, dynamic>> rawRequest({
@@ -70,6 +74,15 @@ class _TasksRepository extends GraphQLRepository {
       updates.add({'id': variables['id'], ...variables['input'] as Map});
       return {
         'updateTask': {'id': variables['id']},
+      };
+    }
+    if (query.contains('saveTaskCompletionReport')) {
+      reports.add({
+        'taskID': variables['taskID'],
+        ...variables['input'] as Map<String, dynamic>,
+      });
+      return {
+        'saveTaskCompletionReport': {'id': 'r-${reports.length}'},
       };
     }
     if (query.contains('createTask')) {
@@ -147,6 +160,37 @@ void main() {
     await tester.tap(_key('week-checklists-$todayIndex'));
     await tester.pumpAndSettle();
     expect(find.text('برنامه امروز'), findsOneWidget);
+  });
+
+  testWidgets('a pulled-to week opens on its first day, this week on today',
+      (tester) async {
+    await _pumpTasksScreen(tester);
+    await tester.tap(find.text('هفتگی'));
+    await tester.pumpAndSettle();
+
+    Jalali selected() =>
+        tester.widget<WeekHeader>(find.byType(WeekHeader)).selectedDate;
+    Future<void> pull(double dx) async {
+      final columns = find.byWidgetPredicate((widget) =>
+          widget.key is ValueKey<String> &&
+          (widget.key! as ValueKey<String>).value.startsWith('week-columns-'));
+      final gesture = await tester.startGesture(tester.getCenter(columns));
+      for (var step = 0; step < 12; step++) {
+        await gesture.moveBy(Offset(dx / 12, 0));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+
+    // Past Friday: next week, opening on its Saturday.
+    await pull(1400);
+    final nextSaturday = weekStartOf(today).addDays(7);
+    expect(ymd(selected()), ymd(nextSaturday));
+
+    // Back past Saturday: this week again, on today.
+    await pull(-1400);
+    expect(ymd(selected()), ymd(today));
   });
 
   testWidgets('the week stays in week mode; a time box opens its details',
@@ -307,6 +351,51 @@ void main() {
       tester.widget<Text>(find.text('برنامه امروز')).style?.decoration,
       TextDecoration.lineThrough,
     );
+  });
+
+  testWidgets('a done task reopens its report, prefilled, and saves edits',
+      (tester) async {
+    final repository = await _pumpTasksScreen(
+      tester,
+      schedule: [
+        {
+          ..._apiTask('t1', 'برنامه امروز', today),
+          'status': 'COMPLETED',
+          'completionReport': {
+            'performanceRating': 2,
+            'tookTest': true,
+            'totalQuestions': 50,
+            'correctAnswers': 42,
+          },
+        },
+      ],
+    );
+
+    await tester.tap(_key('day-checklists'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('week-checklist-more-t1'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('task-sheet-report'));
+    await tester.pumpAndSettle();
+    expect(find.text('تسک با موفقیت به پایان رسید.'), findsOneWidget);
+    expect(find.text('۵۰'), findsOneWidget);
+
+    await tester.tap(_key('task-report-rating-4'));
+    await tester.tap(_key('task-report-submit'));
+    await tester.pumpAndSettle();
+
+    // Already done: nothing to complete, only the report is saved.
+    expect(repository.updates, isEmpty);
+    expect(repository.reports, [
+      {
+        'taskID': 't1',
+        'performanceRating': 4,
+        'tookTest': true,
+        'totalQuestions': 50,
+        'correctAnswers': 42,
+      },
+    ]);
+    expect(_key('task-report-popup'), findsNothing);
   });
 
   testWidgets('the mode switch sits under the header in both modes',

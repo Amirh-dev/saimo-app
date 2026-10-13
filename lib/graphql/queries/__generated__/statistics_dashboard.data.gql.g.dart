@@ -591,7 +591,14 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBucketsSerializer
       serializers.serialize(object.incorrectAnswers,
           specifiedType: const FullType(int)),
     ];
-
+    Object? value;
+    value = object.averagePerformanceRating;
+    if (value != null) {
+      result
+        ..add('averagePerformanceRating')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(double)));
+    }
     return result;
   }
 
@@ -635,6 +642,10 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBucketsSerializer
         case 'incorrectAnswers':
           result.incorrectAnswers = serializers.deserialize(value,
               specifiedType: const FullType(int))! as int;
+          break;
+        case 'averagePerformanceRating':
+          result.averagePerformanceRating = serializers.deserialize(value,
+              specifiedType: const FullType(double)) as double?;
           break;
       }
     }
@@ -694,6 +705,13 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBucketsSerializer
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
+    value = object.averagePerformanceRating;
+    if (value != null) {
+      result
+        ..add('averagePerformanceRating')
+        ..add(serializers.serialize(value,
+            specifiedType: const FullType(double)));
+    }
     return result;
   }
 
@@ -745,6 +763,10 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBucketsSerializer
         case 'incorrectAnswers':
           result.incorrectAnswers = serializers.deserialize(value,
               specifiedType: const FullType(int))! as int;
+          break;
+        case 'averagePerformanceRating':
+          result.averagePerformanceRating = serializers.deserialize(value,
+              specifiedType: const FullType(double)) as double?;
           break;
       }
     }
@@ -1890,6 +1912,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets
   final int correctAnswers;
   @override
   final int incorrectAnswers;
+  @override
+  final double? averagePerformanceRating;
 
   factory _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets(
           [void Function(
@@ -1906,7 +1930,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets
       required this.completedTasks,
       required this.totalQuestions,
       required this.correctAnswers,
-      required this.incorrectAnswers})
+      required this.incorrectAnswers,
+      this.averagePerformanceRating})
       : super._();
   @override
   GStatisticsDashboardData_statisticsDashboard_dailyBuckets rebuild(
@@ -1931,7 +1956,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets
         completedTasks == other.completedTasks &&
         totalQuestions == other.totalQuestions &&
         correctAnswers == other.correctAnswers &&
-        incorrectAnswers == other.incorrectAnswers;
+        incorrectAnswers == other.incorrectAnswers &&
+        averagePerformanceRating == other.averagePerformanceRating;
   }
 
   @override
@@ -1944,6 +1970,7 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets
     _$hash = $jc(_$hash, totalQuestions.hashCode);
     _$hash = $jc(_$hash, correctAnswers.hashCode);
     _$hash = $jc(_$hash, incorrectAnswers.hashCode);
+    _$hash = $jc(_$hash, averagePerformanceRating.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -1958,7 +1985,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBuckets
           ..add('completedTasks', completedTasks)
           ..add('totalQuestions', totalQuestions)
           ..add('correctAnswers', correctAnswers)
-          ..add('incorrectAnswers', incorrectAnswers))
+          ..add('incorrectAnswers', incorrectAnswers)
+          ..add('averagePerformanceRating', averagePerformanceRating))
         .toString();
   }
 }
@@ -2001,6 +2029,11 @@ class GStatisticsDashboardData_statisticsDashboard_dailyBucketsBuilder
   set incorrectAnswers(int? incorrectAnswers) =>
       _$this._incorrectAnswers = incorrectAnswers;
 
+  double? _averagePerformanceRating;
+  double? get averagePerformanceRating => _$this._averagePerformanceRating;
+  set averagePerformanceRating(double? averagePerformanceRating) =>
+      _$this._averagePerformanceRating = averagePerformanceRating;
+
   GStatisticsDashboardData_statisticsDashboard_dailyBucketsBuilder() {
     GStatisticsDashboardData_statisticsDashboard_dailyBuckets
         ._initializeBuilder(this);
@@ -2016,6 +2049,7 @@ class GStatisticsDashboardData_statisticsDashboard_dailyBucketsBuilder
       _totalQuestions = $v.totalQuestions;
       _correctAnswers = $v.correctAnswers;
       _incorrectAnswers = $v.incorrectAnswers;
+      _averagePerformanceRating = $v.averagePerformanceRating;
       _$v = null;
     }
     return this;
@@ -2068,6 +2102,7 @@ class GStatisticsDashboardData_statisticsDashboard_dailyBucketsBuilder
                 incorrectAnswers,
                 r'GStatisticsDashboardData_statisticsDashboard_dailyBuckets',
                 'incorrectAnswers'),
+            averagePerformanceRating: averagePerformanceRating,
           );
     } catch (_) {
       late String _$failedField;
@@ -2107,6 +2142,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   final int correctAnswers;
   @override
   final int incorrectAnswers;
+  @override
+  final double? averagePerformanceRating;
 
   factory _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets(
           [void Function(
@@ -2125,7 +2162,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
       required this.completedTasks,
       required this.totalQuestions,
       required this.correctAnswers,
-      required this.incorrectAnswers})
+      required this.incorrectAnswers,
+      this.averagePerformanceRating})
       : super._();
   @override
   GStatisticsDashboardData_statisticsDashboard_subjectBuckets rebuild(
@@ -2153,7 +2191,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
         completedTasks == other.completedTasks &&
         totalQuestions == other.totalQuestions &&
         correctAnswers == other.correctAnswers &&
-        incorrectAnswers == other.incorrectAnswers;
+        incorrectAnswers == other.incorrectAnswers &&
+        averagePerformanceRating == other.averagePerformanceRating;
   }
 
   @override
@@ -2168,6 +2207,7 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
     _$hash = $jc(_$hash, totalQuestions.hashCode);
     _$hash = $jc(_$hash, correctAnswers.hashCode);
     _$hash = $jc(_$hash, incorrectAnswers.hashCode);
+    _$hash = $jc(_$hash, averagePerformanceRating.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -2184,7 +2224,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
           ..add('completedTasks', completedTasks)
           ..add('totalQuestions', totalQuestions)
           ..add('correctAnswers', correctAnswers)
-          ..add('incorrectAnswers', incorrectAnswers))
+          ..add('incorrectAnswers', incorrectAnswers)
+          ..add('averagePerformanceRating', averagePerformanceRating))
         .toString();
   }
 }
@@ -2236,6 +2277,11 @@ class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
   set incorrectAnswers(int? incorrectAnswers) =>
       _$this._incorrectAnswers = incorrectAnswers;
 
+  double? _averagePerformanceRating;
+  double? get averagePerformanceRating => _$this._averagePerformanceRating;
+  set averagePerformanceRating(double? averagePerformanceRating) =>
+      _$this._averagePerformanceRating = averagePerformanceRating;
+
   GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder() {
     GStatisticsDashboardData_statisticsDashboard_subjectBuckets
         ._initializeBuilder(this);
@@ -2254,6 +2300,7 @@ class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
       _totalQuestions = $v.totalQuestions;
       _correctAnswers = $v.correctAnswers;
       _incorrectAnswers = $v.incorrectAnswers;
+      _averagePerformanceRating = $v.averagePerformanceRating;
       _$v = null;
     }
     return this;
@@ -2314,6 +2361,7 @@ class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
               incorrectAnswers,
               r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
               'incorrectAnswers'),
+          averagePerformanceRating: averagePerformanceRating,
         );
     replace(_$result);
     return _$result;
