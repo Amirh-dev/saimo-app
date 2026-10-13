@@ -4,14 +4,14 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:gql/ast.dart' as _i1;
 
-const VerifyOTPAndRegister = _i1.OperationDefinitionNode(
+const Register = _i1.OperationDefinitionNode(
   type: _i1.OperationType.mutation,
-  name: _i1.NameNode(value: 'VerifyOTPAndRegister'),
+  name: _i1.NameNode(value: 'Register'),
   variableDefinitions: [
     _i1.VariableDefinitionNode(
       variable: _i1.VariableNode(name: _i1.NameNode(value: 'input')),
       type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'VerifyOTPAndRegisterInput'),
+        name: _i1.NameNode(value: 'RegisterInput'),
         isNonNull: true,
       ),
       defaultValue: _i1.DefaultValueNode(value: null),
@@ -21,7 +21,7 @@ const VerifyOTPAndRegister = _i1.OperationDefinitionNode(
   directives: [],
   selectionSet: _i1.SelectionSetNode(selections: [
     _i1.FieldNode(
-      name: _i1.NameNode(value: 'verifyOTPAndRegister'),
+      name: _i1.NameNode(value: 'register'),
       alias: null,
       arguments: [
         _i1.ArgumentNode(
@@ -64,4 +64,4 @@ const VerifyOTPAndRegister = _i1.OperationDefinitionNode(
     )
   ]),
 );
-const document = _i1.DocumentNode(definitions: [VerifyOTPAndRegister]);
+const document = _i1.DocumentNode(definitions: [Register]);

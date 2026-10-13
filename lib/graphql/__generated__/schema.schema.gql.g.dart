@@ -954,8 +954,10 @@ Serializer<GUserWhereInput> _$gUserWhereInputSerializer =
     _$GUserWhereInputSerializer();
 Serializer<GVerifyOTPAndLoginInput> _$gVerifyOTPAndLoginInputSerializer =
     _$GVerifyOTPAndLoginInputSerializer();
-Serializer<GVerifyOTPAndRegisterInput> _$gVerifyOTPAndRegisterInputSerializer =
-    _$GVerifyOTPAndRegisterInputSerializer();
+Serializer<GVerifyOTPInput> _$gVerifyOTPInputSerializer =
+    _$GVerifyOTPInputSerializer();
+Serializer<GRegisterInput> _$gRegisterInputSerializer =
+    _$GRegisterInputSerializer();
 
 class _$GAuthSessionOrderSerializer
     implements StructuredSerializer<GAuthSessionOrder> {
@@ -19473,19 +19475,15 @@ class _$GVerifyOTPAndLoginInputSerializer
   }
 }
 
-class _$GVerifyOTPAndRegisterInputSerializer
-    implements StructuredSerializer<GVerifyOTPAndRegisterInput> {
+class _$GVerifyOTPInputSerializer
+    implements StructuredSerializer<GVerifyOTPInput> {
   @override
-  final Iterable<Type> types = const [
-    GVerifyOTPAndRegisterInput,
-    _$GVerifyOTPAndRegisterInput
-  ];
+  final Iterable<Type> types = const [GVerifyOTPInput, _$GVerifyOTPInput];
   @override
-  final String wireName = 'GVerifyOTPAndRegisterInput';
+  final String wireName = 'GVerifyOTPInput';
 
   @override
-  Iterable<Object?> serialize(
-      Serializers serializers, GVerifyOTPAndRegisterInput object,
+  Iterable<Object?> serialize(Serializers serializers, GVerifyOTPInput object,
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[
       'phoneNumber',
@@ -19493,6 +19491,52 @@ class _$GVerifyOTPAndRegisterInputSerializer
           specifiedType: const FullType(String)),
       'code',
       serializers.serialize(object.code, specifiedType: const FullType(String)),
+    ];
+
+    return result;
+  }
+
+  @override
+  GVerifyOTPInput deserialize(
+      Serializers serializers, Iterable<Object?> serialized,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = GVerifyOTPInputBuilder();
+
+    final iterator = serialized.iterator;
+    while (iterator.moveNext()) {
+      final key = iterator.current! as String;
+      iterator.moveNext();
+      final Object? value = iterator.current;
+      switch (key) {
+        case 'phoneNumber':
+          result.phoneNumber = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+        case 'code':
+          result.code = serializers.deserialize(value,
+              specifiedType: const FullType(String))! as String;
+          break;
+      }
+    }
+
+    return result.build();
+  }
+}
+
+class _$GRegisterInputSerializer
+    implements StructuredSerializer<GRegisterInput> {
+  @override
+  final Iterable<Type> types = const [GRegisterInput, _$GRegisterInput];
+  @override
+  final String wireName = 'GRegisterInput';
+
+  @override
+  Iterable<Object?> serialize(Serializers serializers, GRegisterInput object,
+      {FullType specifiedType = FullType.unspecified}) {
+    final result = <Object?>[
+      'registrationToken',
+      serializers.serialize(object.registrationToken,
+          specifiedType: const FullType(String)),
       'fullName',
       serializers.serialize(object.fullName,
           specifiedType: const FullType(String)),
@@ -19511,10 +19555,10 @@ class _$GVerifyOTPAndRegisterInputSerializer
   }
 
   @override
-  GVerifyOTPAndRegisterInput deserialize(
+  GRegisterInput deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = GVerifyOTPAndRegisterInputBuilder();
+    final result = GRegisterInputBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -19522,12 +19566,8 @@ class _$GVerifyOTPAndRegisterInputSerializer
       iterator.moveNext();
       final Object? value = iterator.current;
       switch (key) {
-        case 'phoneNumber':
-          result.phoneNumber = serializers.deserialize(value,
-              specifiedType: const FullType(String))! as String;
-          break;
-        case 'code':
-          result.code = serializers.deserialize(value,
+        case 'registrationToken':
+          result.registrationToken = serializers.deserialize(value,
               specifiedType: const FullType(String))! as String;
           break;
         case 'fullName':
@@ -42850,11 +42890,103 @@ class GVerifyOTPAndLoginInputBuilder
   }
 }
 
-class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
+class _$GVerifyOTPInput extends GVerifyOTPInput {
   @override
   final String phoneNumber;
   @override
   final String code;
+
+  factory _$GVerifyOTPInput([void Function(GVerifyOTPInputBuilder)? updates]) =>
+      (GVerifyOTPInputBuilder()..update(updates))._build();
+
+  _$GVerifyOTPInput._({required this.phoneNumber, required this.code})
+      : super._();
+  @override
+  GVerifyOTPInput rebuild(void Function(GVerifyOTPInputBuilder) updates) =>
+      (toBuilder()..update(updates)).build();
+
+  @override
+  GVerifyOTPInputBuilder toBuilder() => GVerifyOTPInputBuilder()..replace(this);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(other, this)) return true;
+    return other is GVerifyOTPInput &&
+        phoneNumber == other.phoneNumber &&
+        code == other.code;
+  }
+
+  @override
+  int get hashCode {
+    var _$hash = 0;
+    _$hash = $jc(_$hash, phoneNumber.hashCode);
+    _$hash = $jc(_$hash, code.hashCode);
+    _$hash = $jf(_$hash);
+    return _$hash;
+  }
+
+  @override
+  String toString() {
+    return (newBuiltValueToStringHelper(r'GVerifyOTPInput')
+          ..add('phoneNumber', phoneNumber)
+          ..add('code', code))
+        .toString();
+  }
+}
+
+class GVerifyOTPInputBuilder
+    implements Builder<GVerifyOTPInput, GVerifyOTPInputBuilder> {
+  _$GVerifyOTPInput? _$v;
+
+  String? _phoneNumber;
+  String? get phoneNumber => _$this._phoneNumber;
+  set phoneNumber(String? phoneNumber) => _$this._phoneNumber = phoneNumber;
+
+  String? _code;
+  String? get code => _$this._code;
+  set code(String? code) => _$this._code = code;
+
+  GVerifyOTPInputBuilder();
+
+  GVerifyOTPInputBuilder get _$this {
+    final $v = _$v;
+    if ($v != null) {
+      _phoneNumber = $v.phoneNumber;
+      _code = $v.code;
+      _$v = null;
+    }
+    return this;
+  }
+
+  @override
+  void replace(GVerifyOTPInput other) {
+    _$v = other as _$GVerifyOTPInput;
+  }
+
+  @override
+  void update(void Function(GVerifyOTPInputBuilder)? updates) {
+    if (updates != null) updates(this);
+  }
+
+  @override
+  GVerifyOTPInput build() => _build();
+
+  _$GVerifyOTPInput _build() {
+    final _$result = _$v ??
+        _$GVerifyOTPInput._(
+          phoneNumber: BuiltValueNullFieldError.checkNotNull(
+              phoneNumber, r'GVerifyOTPInput', 'phoneNumber'),
+          code: BuiltValueNullFieldError.checkNotNull(
+              code, r'GVerifyOTPInput', 'code'),
+        );
+    replace(_$result);
+    return _$result;
+  }
+}
+
+class _$GRegisterInput extends GRegisterInput {
+  @override
+  final String registrationToken;
   @override
   final String fullName;
   @override
@@ -42864,33 +42996,28 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
   @override
   final GUserStudyTime studyTime;
 
-  factory _$GVerifyOTPAndRegisterInput(
-          [void Function(GVerifyOTPAndRegisterInputBuilder)? updates]) =>
-      (GVerifyOTPAndRegisterInputBuilder()..update(updates))._build();
+  factory _$GRegisterInput([void Function(GRegisterInputBuilder)? updates]) =>
+      (GRegisterInputBuilder()..update(updates))._build();
 
-  _$GVerifyOTPAndRegisterInput._(
-      {required this.phoneNumber,
-      required this.code,
+  _$GRegisterInput._(
+      {required this.registrationToken,
       required this.fullName,
       required this.username,
       required this.birthDate,
       required this.studyTime})
       : super._();
   @override
-  GVerifyOTPAndRegisterInput rebuild(
-          void Function(GVerifyOTPAndRegisterInputBuilder) updates) =>
+  GRegisterInput rebuild(void Function(GRegisterInputBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GVerifyOTPAndRegisterInputBuilder toBuilder() =>
-      GVerifyOTPAndRegisterInputBuilder()..replace(this);
+  GRegisterInputBuilder toBuilder() => GRegisterInputBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is GVerifyOTPAndRegisterInput &&
-        phoneNumber == other.phoneNumber &&
-        code == other.code &&
+    return other is GRegisterInput &&
+        registrationToken == other.registrationToken &&
         fullName == other.fullName &&
         username == other.username &&
         birthDate == other.birthDate &&
@@ -42900,8 +43027,7 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
   @override
   int get hashCode {
     var _$hash = 0;
-    _$hash = $jc(_$hash, phoneNumber.hashCode);
-    _$hash = $jc(_$hash, code.hashCode);
+    _$hash = $jc(_$hash, registrationToken.hashCode);
     _$hash = $jc(_$hash, fullName.hashCode);
     _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jc(_$hash, birthDate.hashCode);
@@ -42912,9 +43038,8 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'GVerifyOTPAndRegisterInput')
-          ..add('phoneNumber', phoneNumber)
-          ..add('code', code)
+    return (newBuiltValueToStringHelper(r'GRegisterInput')
+          ..add('registrationToken', registrationToken)
           ..add('fullName', fullName)
           ..add('username', username)
           ..add('birthDate', birthDate)
@@ -42923,18 +43048,14 @@ class _$GVerifyOTPAndRegisterInput extends GVerifyOTPAndRegisterInput {
   }
 }
 
-class GVerifyOTPAndRegisterInputBuilder
-    implements
-        Builder<GVerifyOTPAndRegisterInput, GVerifyOTPAndRegisterInputBuilder> {
-  _$GVerifyOTPAndRegisterInput? _$v;
+class GRegisterInputBuilder
+    implements Builder<GRegisterInput, GRegisterInputBuilder> {
+  _$GRegisterInput? _$v;
 
-  String? _phoneNumber;
-  String? get phoneNumber => _$this._phoneNumber;
-  set phoneNumber(String? phoneNumber) => _$this._phoneNumber = phoneNumber;
-
-  String? _code;
-  String? get code => _$this._code;
-  set code(String? code) => _$this._code = code;
+  String? _registrationToken;
+  String? get registrationToken => _$this._registrationToken;
+  set registrationToken(String? registrationToken) =>
+      _$this._registrationToken = registrationToken;
 
   String? _fullName;
   String? get fullName => _$this._fullName;
@@ -42952,13 +43073,12 @@ class GVerifyOTPAndRegisterInputBuilder
   GUserStudyTime? get studyTime => _$this._studyTime;
   set studyTime(GUserStudyTime? studyTime) => _$this._studyTime = studyTime;
 
-  GVerifyOTPAndRegisterInputBuilder();
+  GRegisterInputBuilder();
 
-  GVerifyOTPAndRegisterInputBuilder get _$this {
+  GRegisterInputBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
-      _phoneNumber = $v.phoneNumber;
-      _code = $v.code;
+      _registrationToken = $v.registrationToken;
       _fullName = $v.fullName;
       _username = $v.username;
       _birthDate = $v.birthDate.toBuilder();
@@ -42969,34 +43089,32 @@ class GVerifyOTPAndRegisterInputBuilder
   }
 
   @override
-  void replace(GVerifyOTPAndRegisterInput other) {
-    _$v = other as _$GVerifyOTPAndRegisterInput;
+  void replace(GRegisterInput other) {
+    _$v = other as _$GRegisterInput;
   }
 
   @override
-  void update(void Function(GVerifyOTPAndRegisterInputBuilder)? updates) {
+  void update(void Function(GRegisterInputBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  GVerifyOTPAndRegisterInput build() => _build();
+  GRegisterInput build() => _build();
 
-  _$GVerifyOTPAndRegisterInput _build() {
-    _$GVerifyOTPAndRegisterInput _$result;
+  _$GRegisterInput _build() {
+    _$GRegisterInput _$result;
     try {
       _$result = _$v ??
-          _$GVerifyOTPAndRegisterInput._(
-            phoneNumber: BuiltValueNullFieldError.checkNotNull(
-                phoneNumber, r'GVerifyOTPAndRegisterInput', 'phoneNumber'),
-            code: BuiltValueNullFieldError.checkNotNull(
-                code, r'GVerifyOTPAndRegisterInput', 'code'),
+          _$GRegisterInput._(
+            registrationToken: BuiltValueNullFieldError.checkNotNull(
+                registrationToken, r'GRegisterInput', 'registrationToken'),
             fullName: BuiltValueNullFieldError.checkNotNull(
-                fullName, r'GVerifyOTPAndRegisterInput', 'fullName'),
+                fullName, r'GRegisterInput', 'fullName'),
             username: BuiltValueNullFieldError.checkNotNull(
-                username, r'GVerifyOTPAndRegisterInput', 'username'),
+                username, r'GRegisterInput', 'username'),
             birthDate: birthDate.build(),
             studyTime: BuiltValueNullFieldError.checkNotNull(
-                studyTime, r'GVerifyOTPAndRegisterInput', 'studyTime'),
+                studyTime, r'GRegisterInput', 'studyTime'),
           );
     } catch (_) {
       late String _$failedField;
@@ -43005,7 +43123,7 @@ class GVerifyOTPAndRegisterInputBuilder
         birthDate.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
-            r'GVerifyOTPAndRegisterInput', _$failedField, e.toString());
+            r'GRegisterInput', _$failedField, e.toString());
       }
       rethrow;
     }

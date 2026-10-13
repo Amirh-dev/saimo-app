@@ -167,7 +167,9 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
                                     isLoading: isLoading,
                                     isEnabled: codeController.text.length == 5,
                                     onPressed: _submitCode,
-                                    text: 'ورود',
+                                    // A new number goes on to the register
+                                    // form, so it is not a log-in yet.
+                                    text: widget.isRegistered ? 'ورود' : 'تایید',
                                   ).tMargin(24),
                                   ReButton(
                                     key: const ValueKey('otp-resend'),

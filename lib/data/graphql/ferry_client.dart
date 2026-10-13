@@ -14,7 +14,8 @@ Client createFerryClient({
     final operationName = request.operation.operationName;
     final requiresAccessToken = operationName != 'SendOTP' &&
         operationName != 'VerifyOTPAndLogin' &&
-        operationName != 'VerifyOTPAndRegister' &&
+        operationName != 'VerifyOTPForRegistration' &&
+        operationName != 'Register' &&
         operationName != 'RefreshToken';
     final updatedRequest = request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(

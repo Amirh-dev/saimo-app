@@ -44,7 +44,10 @@ void main() {
 
     expect(suggestionRequests, 1);
     expect(_usernameText(tester), 'ali_rezaei');
-    expect(find.textContaining('@ali_rezaei'), findsOneWidget);
+    expect(
+      find.text('بر اساس نام شما پیشنهاد شد و قابل تغییر است.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a late suggestion never overwrites a manually entered username',
@@ -84,6 +87,63 @@ void main() {
     await tester.pump();
 
     expect(_usernameText(tester), 'custom_user');
+  });
+
+  testWidgets('Persian digits in the username become English digits',
+      (tester) async {
+    final checked = <String>[];
+    final usernameRepository = UsernameRepository.withRawRequest(({
+      required String query,
+      Map<String, dynamic> variables = const {},
+      bool requiresAuth = true,
+    }) async {
+      checked.add(variables['username'] as String);
+      return {
+        'checkUsernameAvailability': {
+          'available': true,
+          'normalizedUsername': variables['username'],
+          'suggestion': null,
+        },
+      };
+    });
+    await _pumpRegister(tester, usernameRepository);
+
+    final usernameField = find.descendant(
+      of: find.byKey(const ValueKey('register-username-field')),
+      matching: find.byType(TextFormField),
+    );
+    await tester.enterText(usernameField, 'ali۱۳۸۴٢');
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(_usernameText(tester), 'ali13842');
+    expect(checked, ['ali13842']);
+    expect(find.text('این نام کاربری در دسترس است.'), findsOneWidget);
+  });
+
+  testWidgets('submitting an empty form names every missing field',
+      (tester) async {
+    final usernameRepository = UsernameRepository.withRawRequest(({
+      required String query,
+      Map<String, dynamic> variables = const {},
+      bool requiresAuth = true,
+    }) async =>
+        const {});
+    await _pumpRegister(tester, usernameRepository);
+
+    expect(find.text('تاریخ تولد را انتخاب کنید.'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('register-submit')));
+    await tester.pump();
+
+    expect(find.text('نام و نام خانوادگی را وارد کنید.'), findsOneWidget);
+    expect(find.text('نام کاربری را وارد کنید.'), findsOneWidget);
+    expect(find.text('تاریخ تولد را انتخاب کنید.'), findsOneWidget);
+    expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('register-study-1')));
+    await tester.pump();
+
+    expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsNothing);
   });
 }
 

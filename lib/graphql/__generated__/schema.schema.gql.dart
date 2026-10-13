@@ -3087,32 +3087,53 @@ abstract class GVerifyOTPAndLoginInput
       );
 }
 
-abstract class GVerifyOTPAndRegisterInput
-    implements
-        Built<GVerifyOTPAndRegisterInput, GVerifyOTPAndRegisterInputBuilder> {
-  GVerifyOTPAndRegisterInput._();
+abstract class GVerifyOTPInput
+    implements Built<GVerifyOTPInput, GVerifyOTPInputBuilder> {
+  GVerifyOTPInput._();
 
-  factory GVerifyOTPAndRegisterInput(
-          [void Function(GVerifyOTPAndRegisterInputBuilder b) updates]) =
-      _$GVerifyOTPAndRegisterInput;
+  factory GVerifyOTPInput([void Function(GVerifyOTPInputBuilder b) updates]) =
+      _$GVerifyOTPInput;
 
   String get phoneNumber;
   String get code;
+  static Serializer<GVerifyOTPInput> get serializer =>
+      _$gVerifyOTPInputSerializer;
+
+  Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
+        GVerifyOTPInput.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GVerifyOTPInput? fromJson(Map<String, dynamic> json) =>
+      _i1.serializers.deserializeWith(
+        GVerifyOTPInput.serializer,
+        json,
+      );
+}
+
+abstract class GRegisterInput
+    implements Built<GRegisterInput, GRegisterInputBuilder> {
+  GRegisterInput._();
+
+  factory GRegisterInput([void Function(GRegisterInputBuilder b) updates]) =
+      _$GRegisterInput;
+
+  String get registrationToken;
   String get fullName;
   String get username;
   GTime get birthDate;
   GUserStudyTime get studyTime;
-  static Serializer<GVerifyOTPAndRegisterInput> get serializer =>
-      _$gVerifyOTPAndRegisterInputSerializer;
+  static Serializer<GRegisterInput> get serializer =>
+      _$gRegisterInputSerializer;
 
   Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
-        GVerifyOTPAndRegisterInput.serializer,
+        GRegisterInput.serializer,
         this,
       ) as Map<String, dynamic>);
 
-  static GVerifyOTPAndRegisterInput? fromJson(Map<String, dynamic> json) =>
+  static GRegisterInput? fromJson(Map<String, dynamic> json) =>
       _i1.serializers.deserializeWith(
-        GVerifyOTPAndRegisterInput.serializer,
+        GRegisterInput.serializer,
         json,
       );
 }

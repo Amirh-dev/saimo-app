@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
-import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/register.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart';
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_for_registration.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.gql.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.req.gql.dart';
 
 part 'auth_state.dart';
 
@@ -17,7 +17,6 @@ class AuthCubit extends Cubit<AuthState> {
     required GraphQLRepository graphQLRepository,
     required TokenStorage tokenStorage,
   })  : _graphql = graphQLRepository,
-        _usernameRepository = UsernameRepository(graphQLRepository),
         _tokenStorage = tokenStorage,
         super(const AuthInitial()) {
     _sessionExpiredSubscription = _graphql.sessionExpired.listen((_) {
@@ -26,13 +25,13 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   final GraphQLRepository _graphql;
-  final UsernameRepository _usernameRepository;
   final TokenStorage _tokenStorage;
   late final StreamSubscription<void> _sessionExpiredSubscription;
   static const _temporaryFullName = 'Simo User';
-  _PendingRegistration? _pendingRegistration;
-  int _lastOtpExpiresInSeconds = 0;
-  String _lastOtpMessage = '';
+
+  /// Proof from verifyOTPForRegistration that the phone number was verified;
+  /// the register mutation spends it once.
+  _RegistrationVerification? _registration;
 
   /// The server refuses a new code this soon after the last one
   /// (OTP_RESEND_COOLDOWN, 60s by default).
@@ -61,42 +60,13 @@ class AuthCubit extends Cubit<AuthState> {
   static const _kUpdateProfileFailed = 'به‌روزرسانی پروفایل ناموفق بود.';
   static const _kRefreshFailed =
       'تمدید نشست ناموفق بود. لطفاً دوباره وارد شوید.';
-
-  void prepareRegistrationForOtp({
-    required String phoneNumber,
-    required String fullName,
-    required String username,
-    required DateTime birthDate,
-    required dynamic studyTime,
-  }) {
-    _pendingRegistration = _PendingRegistration(
-      phoneNumber: phoneNumber,
-      fullName: fullName,
-      username: username,
-      birthDate: birthDate,
-      studyTime: _resolveStudyTime(studyTime),
-    );
-
-    emit(
-      OtpSent(
-        phoneNumber: phoneNumber,
-        expiresInSeconds: _lastOtpExpiresInSeconds,
-        isRegistered: false,
-        message: _lastOtpMessage,
-      ),
-    );
-  }
+  static const _kRegisterFailed = 'ثبت نام ناموفق بود. لطفاً دوباره تلاش کنید.';
+  static const _kRegistrationExpired =
+      'مهلت تکمیل ثبت نام به پایان رسیده است. لطفاً دوباره کد تایید دریافت کنید.';
 
   Future<void> sendOtp(String phoneNumber) async {
-    final isPendingRegistrationResend =
-        _pendingRegistration?.phoneNumber == phoneNumber;
-
-    // A new phone number means a new auth flow.
-    // Do not destroy pending registration when this is an OTP resend.
-    if (!isPendingRegistrationResend) {
-      _pendingRegistration = null;
-    }
-
+    // Every code request starts a new flow; a previous verification is void.
+    _registration = null;
     emit(const AuthLoading(AuthAction.sendOtp));
 
     try {
@@ -137,45 +107,17 @@ class AuthCubit extends Cubit<AuthState> {
         return;
       }
 
-      _lastOtpExpiresInSeconds = payload.expiresInSeconds;
-      _lastOtpMessage = payload.message;
       _lastOtpSentAt = clock();
 
-      // Registered user:
-      // phone -> OTP -> login
-      if (payload.isRegistered) {
-        _pendingRegistration = null;
-
-        emit(
-          OtpSent(
-            phoneNumber: phoneNumber,
-            expiresInSeconds: payload.expiresInSeconds,
-            isRegistered: true,
-            message: payload.message,
-          ),
-        );
-        return;
-      }
-
-      // This is an OTP resend after the user already filled
-      // the registration form. Stay on OTP screen.
-      if (isPendingRegistrationResend) {
-        emit(
-          OtpSent(
-            phoneNumber: phoneNumber,
-            expiresInSeconds: payload.expiresInSeconds,
-            isRegistered: false,
-            message: payload.message,
-          ),
-        );
-        return;
-      }
-
-      // First time seeing this phone number:
-      // phone -> register screen
+      // Both flows verify the phone first:
+      // registered:  phone -> OTP -> login
+      // new number:  phone -> OTP -> register screen
       emit(
-        AuthNeedsRegistration(
+        OtpSent(
           phoneNumber: phoneNumber,
+          expiresInSeconds: payload.expiresInSeconds,
+          isRegistered: payload.isRegistered,
+          message: payload.message,
         ),
       );
     } catch (error) {
@@ -215,91 +157,57 @@ class AuthCubit extends Cubit<AuthState> {
     required String code,
     required bool isRegistered,
   }) async {
-    emit(AuthLoading(isRegistered ? AuthAction.login : AuthAction.verifyOtp));
+    if (isRegistered) {
+      await verifyLogin(phoneNumber: phoneNumber, code: code);
+      return;
+    }
+
+    emit(const AuthLoading(AuthAction.verifyOtp));
     try {
-      final pendingRegistration = _pendingRegistration;
-      if (!isRegistered &&
-          pendingRegistration != null &&
-          pendingRegistration.phoneNumber == phoneNumber) {
-        await _verifyRegistration(
-          phoneNumber: pendingRegistration.phoneNumber,
-          code: code,
-          fullName: pendingRegistration.fullName,
-          username: pendingRegistration.username,
-          birthDate: pendingRegistration.birthDate,
-          studyTime: pendingRegistration.studyTime,
-          failureAction: AuthAction.verifyOtp,
-          emitLoading: false,
+      final response = await _graphql.requestOnce(
+        GVerifyOTPForRegistrationReq(
+          (request) => request.vars.input
+            ..phoneNumber = phoneNumber
+            ..code = code,
+        ),
+        requiresAuth: false,
+      );
+
+      if (response.hasErrors) {
+        if (response.linkException != null) throw response.linkException!;
+        final raw = graphQLResponseErrorMessage(response);
+        // The number was registered after the code was sent. The code is
+        // still unused (the server checks this first), so log in with it.
+        if (raw.toLowerCase().contains('already registered')) {
+          await _tryCompleteLogin(
+            phoneNumber: phoneNumber,
+            code: code,
+            emitFailure: true,
+          );
+          return;
+        }
+        emit(
+          AuthFailure(
+            _localizeAuthError(raw, fallback: _kInvalidCode),
+            action: AuthAction.verifyOtp,
+          ),
         );
         return;
       }
-      final loggedIn = await _tryCompleteLogin(
-        phoneNumber: phoneNumber,
-        code: code,
-        emitFailure: isRegistered,
-      );
-      if (loggedIn || isRegistered) {
-        if (loggedIn) _pendingRegistration = null;
+
+      final payload = response.data?.verifyOTPForRegistration;
+      if (payload == null || payload.registrationToken.isEmpty) {
+        emit(
+          const AuthFailure(_kInvalidCode, action: AuthAction.verifyOtp),
+        );
         return;
       }
-      emit(
-        const AuthFailure(
-          'این شماره ثبت نام نشده است.',
-          action: AuthAction.verifyOtp,
-        ),
+
+      _registration = _RegistrationVerification(
+        token: payload.registrationToken,
+        expiresAt: clock().add(Duration(seconds: payload.expiresInSeconds)),
       );
-
-      // final temporaryUsername = await _suggestTemporaryUsername();
-      // final response = await _graphql.requestOnce(
-      //   GVerifyOTPAndRegisterReq(
-      //     (request) => request.vars.input
-      //       ..phoneNumber = phoneNumber
-      //       ..code = code
-      //       ..fullName = _temporaryFullName
-      //       ..username = temporaryUsername
-      //       ..birthDate.value = DateTime.utc(2000).toIso8601String()
-      //       ..studyTime = GUserStudyTime.UNDER_4_HOURS,
-      //   ),
-      //   requiresAuth: false,
-      // );
-
-      // if (response.hasErrors) {
-      //   emit(
-      //     AuthFailure(
-      //       _extractGraphQLErrorMessage(
-      //         response,
-      //         fallbackMessage: _kInvalidCode,
-      //       ),
-      //       action: AuthAction.verifyOtp,
-      //     ),
-      //   );
-      //   return;
-      // }
-      //
-      // final payload = response.data?.verifyOTPAndRegister;
-      // if (payload == null ||
-      //     payload.accessToken.isEmpty ||
-      //     payload.refreshToken.isEmpty) {
-      //   emit(
-      //     const AuthFailure(
-      //       _kInvalidCode,
-      //       action: AuthAction.verifyOtp,
-      //     ),
-      //   );
-      //   return;
-      // }
-      //
-      // await _tokenStorage.saveTokenPair(
-      //   accessToken: payload.accessToken,
-      //   refreshToken: payload.refreshToken,
-      //   issuedAt: DateTime.now().toUtc(),
-      // );
-      // emit(
-      //   AuthNeedsRegistration(
-      //     phoneNumber: phoneNumber,
-      //     completeProfileOnly: true,
-      //   ),
-      // );
+      emit(AuthNeedsRegistration(phoneNumber: phoneNumber));
     } catch (error) {
       emit(
         AuthFailure(
@@ -310,74 +218,52 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> verifyRegister({
-    required String phoneNumber,
-    required String code,
+  /// Creates the account for the phone number verified by
+  /// [verifyOtpForNextStep], using the profile entered on the register screen.
+  Future<void> register({
     required String fullName,
     required String username,
     required DateTime birthDate,
     required dynamic studyTime,
   }) async {
-    await _verifyRegistration(
-      phoneNumber: phoneNumber,
-      code: code,
-      fullName: fullName,
-      username: username,
-      birthDate: birthDate,
-      studyTime: _resolveStudyTime(studyTime),
-      failureAction: AuthAction.register,
-      emitLoading: true,
-    );
-  }
+    final registration = _registration;
+    if (registration == null || !clock().isBefore(registration.expiresAt)) {
+      _restartAfterSpentRegistration(_kRegistrationExpired);
+      return;
+    }
 
-  Future<void> _verifyRegistration({
-    required String phoneNumber,
-    required String code,
-    required String fullName,
-    required String username,
-    required DateTime birthDate,
-    required GUserStudyTime studyTime,
-    required AuthAction failureAction,
-    required bool emitLoading,
-  }) async {
-    if (emitLoading) emit(const AuthLoading(AuthAction.register));
-
+    emit(const AuthLoading(AuthAction.register));
     try {
       final response = await _graphql.requestOnce(
-        GVerifyOTPAndRegisterReq(
+        GRegisterReq(
           (request) => request.vars.input
-            ..phoneNumber = phoneNumber
-            ..code = code
+            ..registrationToken = registration.token
             ..fullName = fullName
             ..username = username
             ..birthDate.value = _dateOnlyUtc(birthDate).toIso8601String()
-            ..studyTime = studyTime,
+            ..studyTime = _resolveStudyTime(studyTime),
         ),
         requiresAuth: false,
       );
 
       if (response.hasErrors) {
-        emit(
-          AuthFailure(
-            _extractGraphQLErrorMessage(
-              response,
-              fallbackMessage: _kInvalidCode,
-            ),
-            action: failureAction,
-          ),
-        );
+        if (response.linkException != null) throw response.linkException!;
+        final raw = graphQLResponseErrorMessage(response);
+        final message = _localizeAuthError(raw, fallback: _kRegisterFailed);
+        if (_registrationTokenWasSpent(raw)) {
+          _restartAfterSpentRegistration(message);
+          return;
+        }
+        emit(AuthFailure(message, action: AuthAction.register));
         return;
       }
 
-      final payload = response.data?.verifyOTPAndRegister;
+      final payload = response.data?.register;
       if (payload == null ||
           payload.accessToken.isEmpty ||
           payload.refreshToken.isEmpty) {
         emit(
-          AuthFailure(
-            _kInvalidCode,
-            action: failureAction,
-          ),
+          const AuthFailure(_kRegisterFailed, action: AuthAction.register),
         );
         return;
       }
@@ -387,7 +273,7 @@ class AuthCubit extends Cubit<AuthState> {
         refreshToken: payload.refreshToken,
         issuedAt: DateTime.now().toUtc(),
       );
-      _pendingRegistration = null;
+      _registration = null;
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
@@ -398,11 +284,28 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (error) {
       emit(
         AuthFailure(
-          _friendlyError(error, fallbackMessage: _kInvalidCode),
-          action: failureAction,
+          _friendlyError(error, fallbackMessage: _kRegisterFailed),
+          action: AuthAction.register,
         ),
       );
     }
+  }
+
+  /// The server spends the registration token before it creates the user, so
+  /// after these errors only a new code can complete registration.
+  bool _registrationTokenWasSpent(String raw) {
+    final m = raw.toLowerCase();
+    return m.contains('registration verification') ||
+        m.contains('already registered') ||
+        m.contains('failed to complete registration') ||
+        m.contains('failed to create user');
+  }
+
+  /// Shows [message] on the register screen, then returns to phone entry.
+  void _restartAfterSpentRegistration(String message) {
+    _registration = null;
+    emit(AuthFailure(message, action: AuthAction.register));
+    emit(const AuthUnauthenticated());
   }
 
   Future<void> completeRegistrationProfile({
@@ -557,7 +460,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
       return;
     }
 
-    _pendingRegistration = null;
+    _registration = null;
     emit(const AuthLoading(AuthAction.logout));
     try {
       await _graphql.clearAuthSession();
@@ -592,15 +495,6 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
 
   DateTime _dateOnlyUtc(DateTime value) {
     return DateTime.utc(value.year, value.month, value.day);
-  }
-
-  Future<String> _suggestTemporaryUsername() async {
-    final suggestion =
-        await _usernameRepository.suggestUsername(_temporaryFullName);
-    if (!suggestion.available) {
-      throw const GraphQLRawException('Username suggestion is unavailable');
-    }
-    return suggestion.username;
   }
 
   Future<bool> _tryCompleteLogin({
@@ -766,6 +660,14 @@ query GetMeForAuthCompletion {
         m.contains('connection')) {
       return 'اتصال به اینترنت برقرار نیست. لطفاً شبکه‌ی خود را بررسی کنید.';
     }
+    // "registration verification is expired; request a new OTP".
+    if (m.contains('registration verification')) {
+      return _kRegistrationExpired;
+    }
+    // "phone number or username is already registered".
+    if (m.contains('username') && m.contains('already registered')) {
+      return 'این نام کاربری یا شماره قبلاً ثبت شده است. لطفاً دوباره تلاش کنید.';
+    }
     // The resend cooldown: "please wait before requesting another OTP".
     if (m.contains('wait') && (m.contains('otp') || m.contains('code'))) {
       return 'برای دریافت کد جدید کمی صبر کنید.';
@@ -822,18 +724,12 @@ class _AuthProfile {
   final bool isComplete;
 }
 
-class _PendingRegistration {
-  const _PendingRegistration({
-    required this.phoneNumber,
-    required this.fullName,
-    required this.username,
-    required this.birthDate,
-    required this.studyTime,
+class _RegistrationVerification {
+  const _RegistrationVerification({
+    required this.token,
+    required this.expiresAt,
   });
 
-  final String phoneNumber;
-  final String fullName;
-  final String username;
-  final DateTime birthDate;
-  final GUserStudyTime studyTime;
+  final String token;
+  final DateTime expiresAt;
 }

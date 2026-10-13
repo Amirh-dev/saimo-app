@@ -61,6 +61,7 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GOrderDirection,
         GRecurrenceInput,
         GRefreshTokenInput,
+        GRegisterInput,
         GRequestCounselingInput,
         GSaveTaskCompletionReportInput,
         GSendMessageInput,
@@ -91,7 +92,7 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart'
         GUserStudyTime,
         GUserWhereInput,
         GVerifyOTPAndLoginInput,
-        GVerifyOTPAndRegisterInput;
+        GVerifyOTPInput;
 import 'package:simo_learn/graphql/mutations/__generated__/complete_timed_task.data.gql.dart'
     show GCompleteTimedTaskData, GCompleteTimedTaskData_completeTimedTask;
 import 'package:simo_learn/graphql/mutations/__generated__/complete_timed_task.req.gql.dart'
@@ -149,6 +150,12 @@ import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.req.gql
     show GRefreshTokenReq;
 import 'package:simo_learn/graphql/mutations/__generated__/refresh_token.var.gql.dart'
     show GRefreshTokenVars;
+import 'package:simo_learn/graphql/mutations/__generated__/register.data.gql.dart'
+    show GRegisterData, GRegisterData_register, GRegisterData_register_user;
+import 'package:simo_learn/graphql/mutations/__generated__/register.req.gql.dart'
+    show GRegisterReq;
+import 'package:simo_learn/graphql/mutations/__generated__/register.var.gql.dart'
+    show GRegisterVars;
 import 'package:simo_learn/graphql/mutations/__generated__/register_device_token.data.gql.dart'
     show GRegisterDeviceTokenData;
 import 'package:simo_learn/graphql/mutations/__generated__/register_device_token.req.gql.dart'
@@ -191,6 +198,14 @@ import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.d
     show GUpdateTaskReq;
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.var.gql.dart'
     show GUpdateTaskVars;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_for_registration.data.gql.dart'
+    show
+        GVerifyOTPForRegistrationData,
+        GVerifyOTPForRegistrationData_verifyOTPForRegistration;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_for_registration.req.gql.dart'
+    show GVerifyOTPForRegistrationReq;
+import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_for_registration.var.gql.dart'
+    show GVerifyOTPForRegistrationVars;
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.data.gql.dart'
     show
         GVerifyOTPAndLoginData,
@@ -200,15 +215,6 @@ import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.req.
     show GVerifyOTPAndLoginReq;
 import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_login.var.gql.dart'
     show GVerifyOTPAndLoginVars;
-import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.data.gql.dart'
-    show
-        GVerifyOTPAndRegisterData,
-        GVerifyOTPAndRegisterData_verifyOTPAndRegister,
-        GVerifyOTPAndRegisterData_verifyOTPAndRegister_user;
-import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.req.gql.dart'
-    show GVerifyOTPAndRegisterReq;
-import 'package:simo_learn/graphql/mutations/__generated__/verify_otp_register.var.gql.dart'
-    show GVerifyOTPAndRegisterVars;
 import 'package:simo_learn/graphql/queries/__generated__/get_chat_messages.data.gql.dart'
     show
         GGetChatMessagesData,
@@ -401,9 +407,15 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GRefreshTokenInput,
   GRefreshTokenReq,
   GRefreshTokenVars,
+  GRegisterData,
+  GRegisterData_register,
+  GRegisterData_register_user,
   GRegisterDeviceTokenData,
   GRegisterDeviceTokenReq,
   GRegisterDeviceTokenVars,
+  GRegisterInput,
+  GRegisterReq,
+  GRegisterVars,
   GRequestCounselingInput,
   GSaveTaskCompletionReportInput,
   GSendMessageData,
@@ -475,11 +487,10 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GVerifyOTPAndLoginInput,
   GVerifyOTPAndLoginReq,
   GVerifyOTPAndLoginVars,
-  GVerifyOTPAndRegisterData,
-  GVerifyOTPAndRegisterData_verifyOTPAndRegister,
-  GVerifyOTPAndRegisterData_verifyOTPAndRegister_user,
-  GVerifyOTPAndRegisterInput,
-  GVerifyOTPAndRegisterReq,
-  GVerifyOTPAndRegisterVars,
+  GVerifyOTPForRegistrationData,
+  GVerifyOTPForRegistrationData_verifyOTPForRegistration,
+  GVerifyOTPForRegistrationReq,
+  GVerifyOTPForRegistrationVars,
+  GVerifyOTPInput,
 ])
 final Serializers serializers = _serializersBuilder.build();

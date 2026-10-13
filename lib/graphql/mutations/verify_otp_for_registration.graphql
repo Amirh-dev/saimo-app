@@ -1,0 +1,6 @@
+mutation VerifyOTPForRegistration($input: VerifyOTPInput!) {
+  verifyOTPForRegistration(input: $input) {
+    registrationToken
+    expiresInSeconds
+  }
+}

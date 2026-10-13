@@ -1643,7 +1643,8 @@ input MessageWhereInput {
 
 type Mutation {
   sendOTP(input: SendOTPInput!): SendOTPPayload!
-  verifyOTPAndRegister(input: VerifyOTPAndRegisterInput!): AuthPayload!
+  verifyOTPForRegistration(input: VerifyOTPInput!): RegistrationVerificationPayload!
+  register(input: RegisterInput!): AuthPayload!
   verifyOTPAndLogin(input: VerifyOTPAndLoginInput!): AuthPayload!
   refreshToken(input: RefreshTokenInput!): AuthPayload!
   logout(refreshToken: String!): LogoutPayload!
@@ -2932,12 +2933,21 @@ input VerifyOTPAndLoginInput {
   code: String!
 }
 
-input VerifyOTPAndRegisterInput {
+input VerifyOTPInput {
   phoneNumber: String!
   code: String!
+}
+
+input RegisterInput {
+  registrationToken: String!
   fullName: String!
   username: String!
   birthDate: Time!
   studyTime: UserStudyTime!
+}
+
+type RegistrationVerificationPayload {
+  registrationToken: String!
+  expiresInSeconds: Int!
 }
 

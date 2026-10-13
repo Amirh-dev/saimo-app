@@ -1,32 +1,33 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'verify_otp_register.req.gql.dart';
+part of 'verify_otp_for_registration.req.gql.dart';
 
 // **************************************************************************
 // BuiltValueGenerator
 // **************************************************************************
 
-Serializer<GVerifyOTPAndRegisterReq> _$gVerifyOTPAndRegisterReqSerializer =
-    _$GVerifyOTPAndRegisterReqSerializer();
+Serializer<GVerifyOTPForRegistrationReq>
+    _$gVerifyOTPForRegistrationReqSerializer =
+    _$GVerifyOTPForRegistrationReqSerializer();
 
-class _$GVerifyOTPAndRegisterReqSerializer
-    implements StructuredSerializer<GVerifyOTPAndRegisterReq> {
+class _$GVerifyOTPForRegistrationReqSerializer
+    implements StructuredSerializer<GVerifyOTPForRegistrationReq> {
   @override
   final Iterable<Type> types = const [
-    GVerifyOTPAndRegisterReq,
-    _$GVerifyOTPAndRegisterReq
+    GVerifyOTPForRegistrationReq,
+    _$GVerifyOTPForRegistrationReq
   ];
   @override
-  final String wireName = 'GVerifyOTPAndRegisterReq';
+  final String wireName = 'GVerifyOTPForRegistrationReq';
 
   @override
   Iterable<Object?> serialize(
-      Serializers serializers, GVerifyOTPAndRegisterReq object,
+      Serializers serializers, GVerifyOTPForRegistrationReq object,
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[
       'vars',
       serializers.serialize(object.vars,
-          specifiedType: const FullType(_i3.GVerifyOTPAndRegisterVars)),
+          specifiedType: const FullType(_i3.GVerifyOTPForRegistrationVars)),
       'operation',
       serializers.serialize(object.operation,
           specifiedType: const FullType(_i4.Operation)),
@@ -47,7 +48,7 @@ class _$GVerifyOTPAndRegisterReqSerializer
       result
         ..add('optimisticResponse')
         ..add(serializers.serialize(value,
-            specifiedType: const FullType(_i2.GVerifyOTPAndRegisterData)));
+            specifiedType: const FullType(_i2.GVerifyOTPForRegistrationData)));
     }
     value = object.updateCacheHandlerKey;
     if (value != null) {
@@ -75,10 +76,10 @@ class _$GVerifyOTPAndRegisterReqSerializer
   }
 
   @override
-  GVerifyOTPAndRegisterReq deserialize(
+  GVerifyOTPForRegistrationReq deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
-    final result = GVerifyOTPAndRegisterReqBuilder();
+    final result = GVerifyOTPForRegistrationReqBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -88,8 +89,9 @@ class _$GVerifyOTPAndRegisterReqSerializer
       switch (key) {
         case 'vars':
           result.vars.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i3.GVerifyOTPAndRegisterVars))!
-              as _i3.GVerifyOTPAndRegisterVars);
+                  specifiedType:
+                      const FullType(_i3.GVerifyOTPForRegistrationVars))!
+              as _i3.GVerifyOTPForRegistrationVars);
           break;
         case 'operation':
           result.operation = serializers.deserialize(value,
@@ -101,8 +103,9 @@ class _$GVerifyOTPAndRegisterReqSerializer
           break;
         case 'optimisticResponse':
           result.optimisticResponse.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(_i2.GVerifyOTPAndRegisterData))!
-              as _i2.GVerifyOTPAndRegisterData);
+                  specifiedType:
+                      const FullType(_i2.GVerifyOTPForRegistrationData))!
+              as _i2.GVerifyOTPForRegistrationData);
           break;
         case 'updateCacheHandlerKey':
           result.updateCacheHandlerKey = serializers.deserialize(value,
@@ -131,19 +134,19 @@ class _$GVerifyOTPAndRegisterReqSerializer
   }
 }
 
-class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
+class _$GVerifyOTPForRegistrationReq extends GVerifyOTPForRegistrationReq {
   @override
-  final _i3.GVerifyOTPAndRegisterVars vars;
+  final _i3.GVerifyOTPForRegistrationVars vars;
   @override
   final _i4.Operation operation;
   @override
   final String? requestId;
   @override
-  final _i2.GVerifyOTPAndRegisterData? Function(
-          _i2.GVerifyOTPAndRegisterData?, _i2.GVerifyOTPAndRegisterData?)?
-      updateResult;
+  final _i2.GVerifyOTPForRegistrationData? Function(
+      _i2.GVerifyOTPForRegistrationData?,
+      _i2.GVerifyOTPForRegistrationData?)? updateResult;
   @override
-  final _i2.GVerifyOTPAndRegisterData? optimisticResponse;
+  final _i2.GVerifyOTPForRegistrationData? optimisticResponse;
   @override
   final String? updateCacheHandlerKey;
   @override
@@ -155,11 +158,11 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
   @override
   final _i4.Context? context;
 
-  factory _$GVerifyOTPAndRegisterReq(
-          [void Function(GVerifyOTPAndRegisterReqBuilder)? updates]) =>
-      (GVerifyOTPAndRegisterReqBuilder()..update(updates))._build();
+  factory _$GVerifyOTPForRegistrationReq(
+          [void Function(GVerifyOTPForRegistrationReqBuilder)? updates]) =>
+      (GVerifyOTPForRegistrationReqBuilder()..update(updates))._build();
 
-  _$GVerifyOTPAndRegisterReq._(
+  _$GVerifyOTPForRegistrationReq._(
       {required this.vars,
       required this.operation,
       this.requestId,
@@ -172,19 +175,19 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
       this.context})
       : super._();
   @override
-  GVerifyOTPAndRegisterReq rebuild(
-          void Function(GVerifyOTPAndRegisterReqBuilder) updates) =>
+  GVerifyOTPForRegistrationReq rebuild(
+          void Function(GVerifyOTPForRegistrationReqBuilder) updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GVerifyOTPAndRegisterReqBuilder toBuilder() =>
-      GVerifyOTPAndRegisterReqBuilder()..replace(this);
+  GVerifyOTPForRegistrationReqBuilder toBuilder() =>
+      GVerifyOTPForRegistrationReqBuilder()..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     final dynamic _$dynamicOther = other;
-    return other is GVerifyOTPAndRegisterReq &&
+    return other is GVerifyOTPForRegistrationReq &&
         vars == other.vars &&
         operation == other.operation &&
         requestId == other.requestId &&
@@ -216,7 +219,7 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
 
   @override
   String toString() {
-    return (newBuiltValueToStringHelper(r'GVerifyOTPAndRegisterReq')
+    return (newBuiltValueToStringHelper(r'GVerifyOTPForRegistrationReq')
           ..add('vars', vars)
           ..add('operation', operation)
           ..add('requestId', requestId)
@@ -231,15 +234,17 @@ class _$GVerifyOTPAndRegisterReq extends GVerifyOTPAndRegisterReq {
   }
 }
 
-class GVerifyOTPAndRegisterReqBuilder
+class GVerifyOTPForRegistrationReqBuilder
     implements
-        Builder<GVerifyOTPAndRegisterReq, GVerifyOTPAndRegisterReqBuilder> {
-  _$GVerifyOTPAndRegisterReq? _$v;
+        Builder<GVerifyOTPForRegistrationReq,
+            GVerifyOTPForRegistrationReqBuilder> {
+  _$GVerifyOTPForRegistrationReq? _$v;
 
-  _i3.GVerifyOTPAndRegisterVarsBuilder? _vars;
-  _i3.GVerifyOTPAndRegisterVarsBuilder get vars =>
-      _$this._vars ??= _i3.GVerifyOTPAndRegisterVarsBuilder();
-  set vars(_i3.GVerifyOTPAndRegisterVarsBuilder? vars) => _$this._vars = vars;
+  _i3.GVerifyOTPForRegistrationVarsBuilder? _vars;
+  _i3.GVerifyOTPForRegistrationVarsBuilder get vars =>
+      _$this._vars ??= _i3.GVerifyOTPForRegistrationVarsBuilder();
+  set vars(_i3.GVerifyOTPForRegistrationVarsBuilder? vars) =>
+      _$this._vars = vars;
 
   _i4.Operation? _operation;
   _i4.Operation? get operation => _$this._operation;
@@ -249,24 +254,25 @@ class GVerifyOTPAndRegisterReqBuilder
   String? get requestId => _$this._requestId;
   set requestId(String? requestId) => _$this._requestId = requestId;
 
-  _i2.GVerifyOTPAndRegisterData? Function(
-          _i2.GVerifyOTPAndRegisterData?, _i2.GVerifyOTPAndRegisterData?)?
-      _updateResult;
-  _i2.GVerifyOTPAndRegisterData? Function(
-          _i2.GVerifyOTPAndRegisterData?, _i2.GVerifyOTPAndRegisterData?)?
+  _i2.GVerifyOTPForRegistrationData? Function(
+      _i2.GVerifyOTPForRegistrationData?,
+      _i2.GVerifyOTPForRegistrationData?)? _updateResult;
+  _i2.GVerifyOTPForRegistrationData? Function(
+          _i2.GVerifyOTPForRegistrationData?,
+          _i2.GVerifyOTPForRegistrationData?)?
       get updateResult => _$this._updateResult;
   set updateResult(
-          _i2.GVerifyOTPAndRegisterData? Function(
-                  _i2.GVerifyOTPAndRegisterData?,
-                  _i2.GVerifyOTPAndRegisterData?)?
+          _i2.GVerifyOTPForRegistrationData? Function(
+                  _i2.GVerifyOTPForRegistrationData?,
+                  _i2.GVerifyOTPForRegistrationData?)?
               updateResult) =>
       _$this._updateResult = updateResult;
 
-  _i2.GVerifyOTPAndRegisterDataBuilder? _optimisticResponse;
-  _i2.GVerifyOTPAndRegisterDataBuilder get optimisticResponse =>
-      _$this._optimisticResponse ??= _i2.GVerifyOTPAndRegisterDataBuilder();
+  _i2.GVerifyOTPForRegistrationDataBuilder? _optimisticResponse;
+  _i2.GVerifyOTPForRegistrationDataBuilder get optimisticResponse =>
+      _$this._optimisticResponse ??= _i2.GVerifyOTPForRegistrationDataBuilder();
   set optimisticResponse(
-          _i2.GVerifyOTPAndRegisterDataBuilder? optimisticResponse) =>
+          _i2.GVerifyOTPForRegistrationDataBuilder? optimisticResponse) =>
       _$this._optimisticResponse = optimisticResponse;
 
   String? _updateCacheHandlerKey;
@@ -295,11 +301,11 @@ class GVerifyOTPAndRegisterReqBuilder
   _i4.Context? get context => _$this._context;
   set context(_i4.Context? context) => _$this._context = context;
 
-  GVerifyOTPAndRegisterReqBuilder() {
-    GVerifyOTPAndRegisterReq._initializeBuilder(this);
+  GVerifyOTPForRegistrationReqBuilder() {
+    GVerifyOTPForRegistrationReq._initializeBuilder(this);
   }
 
-  GVerifyOTPAndRegisterReqBuilder get _$this {
+  GVerifyOTPForRegistrationReqBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _vars = $v.vars.toBuilder();
@@ -318,26 +324,26 @@ class GVerifyOTPAndRegisterReqBuilder
   }
 
   @override
-  void replace(GVerifyOTPAndRegisterReq other) {
-    _$v = other as _$GVerifyOTPAndRegisterReq;
+  void replace(GVerifyOTPForRegistrationReq other) {
+    _$v = other as _$GVerifyOTPForRegistrationReq;
   }
 
   @override
-  void update(void Function(GVerifyOTPAndRegisterReqBuilder)? updates) {
+  void update(void Function(GVerifyOTPForRegistrationReqBuilder)? updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  GVerifyOTPAndRegisterReq build() => _build();
+  GVerifyOTPForRegistrationReq build() => _build();
 
-  _$GVerifyOTPAndRegisterReq _build() {
-    _$GVerifyOTPAndRegisterReq _$result;
+  _$GVerifyOTPForRegistrationReq _build() {
+    _$GVerifyOTPForRegistrationReq _$result;
     try {
       _$result = _$v ??
-          _$GVerifyOTPAndRegisterReq._(
+          _$GVerifyOTPForRegistrationReq._(
             vars: vars.build(),
             operation: BuiltValueNullFieldError.checkNotNull(
-                operation, r'GVerifyOTPAndRegisterReq', 'operation'),
+                operation, r'GVerifyOTPForRegistrationReq', 'operation'),
             requestId: requestId,
             updateResult: updateResult,
             optimisticResponse: _optimisticResponse?.build(),
@@ -346,7 +352,7 @@ class GVerifyOTPAndRegisterReqBuilder
             fetchPolicy: fetchPolicy,
             executeOnListen: BuiltValueNullFieldError.checkNotNull(
                 executeOnListen,
-                r'GVerifyOTPAndRegisterReq',
+                r'GVerifyOTPForRegistrationReq',
                 'executeOnListen'),
             context: context,
           );
@@ -360,7 +366,7 @@ class GVerifyOTPAndRegisterReqBuilder
         _optimisticResponse?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
-            r'GVerifyOTPAndRegisterReq', _$failedField, e.toString());
+            r'GVerifyOTPForRegistrationReq', _$failedField, e.toString());
       }
       rethrow;
     }

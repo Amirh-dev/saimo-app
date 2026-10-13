@@ -1,9 +1,0 @@
-mutation VerifyOTPAndRegister($input: VerifyOTPAndRegisterInput!) {
-  verifyOTPAndRegister(input: $input) {
-    accessToken
-    refreshToken
-    user {
-      id
-    }
-  }
-}

@@ -10415,14 +10415,33 @@ const Mutation = _i1.ObjectTypeDefinitionNode(
       ),
     ),
     _i1.FieldDefinitionNode(
-      name: _i1.NameNode(value: 'verifyOTPAndRegister'),
+      name: _i1.NameNode(value: 'verifyOTPForRegistration'),
       directives: [],
       args: [
         _i1.InputValueDefinitionNode(
           name: _i1.NameNode(value: 'input'),
           directives: [],
           type: _i1.NamedTypeNode(
-            name: _i1.NameNode(value: 'VerifyOTPAndRegisterInput'),
+            name: _i1.NameNode(value: 'VerifyOTPInput'),
+            isNonNull: true,
+          ),
+          defaultValue: null,
+        )
+      ],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'RegistrationVerificationPayload'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'register'),
+      directives: [],
+      args: [
+        _i1.InputValueDefinitionNode(
+          name: _i1.NameNode(value: 'input'),
+          directives: [],
+          type: _i1.NamedTypeNode(
+            name: _i1.NameNode(value: 'RegisterInput'),
             isNonNull: true,
           ),
           defaultValue: null,
@@ -19621,8 +19640,8 @@ const VerifyOTPAndLoginInput = _i1.InputObjectTypeDefinitionNode(
     ),
   ],
 );
-const VerifyOTPAndRegisterInput = _i1.InputObjectTypeDefinitionNode(
-  name: _i1.NameNode(value: 'VerifyOTPAndRegisterInput'),
+const VerifyOTPInput = _i1.InputObjectTypeDefinitionNode(
+  name: _i1.NameNode(value: 'VerifyOTPInput'),
   directives: [],
   fields: [
     _i1.InputValueDefinitionNode(
@@ -19636,6 +19655,21 @@ const VerifyOTPAndRegisterInput = _i1.InputObjectTypeDefinitionNode(
     ),
     _i1.InputValueDefinitionNode(
       name: _i1.NameNode(value: 'code'),
+      directives: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'String'),
+        isNonNull: true,
+      ),
+      defaultValue: null,
+    ),
+  ],
+);
+const RegisterInput = _i1.InputObjectTypeDefinitionNode(
+  name: _i1.NameNode(value: 'RegisterInput'),
+  directives: [],
+  fields: [
+    _i1.InputValueDefinitionNode(
+      name: _i1.NameNode(value: 'registrationToken'),
       directives: [],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'String'),
@@ -19678,6 +19712,31 @@ const VerifyOTPAndRegisterInput = _i1.InputObjectTypeDefinitionNode(
         isNonNull: true,
       ),
       defaultValue: null,
+    ),
+  ],
+);
+const RegistrationVerificationPayload = _i1.ObjectTypeDefinitionNode(
+  name: _i1.NameNode(value: 'RegistrationVerificationPayload'),
+  directives: [],
+  interfaces: [],
+  fields: [
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'registrationToken'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'String'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'expiresInSeconds'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'Int'),
+        isNonNull: true,
+      ),
     ),
   ],
 );
@@ -19812,5 +19871,7 @@ const document = _i1.DocumentNode(definitions: [
   UserWhereInput,
   UUID,
   VerifyOTPAndLoginInput,
-  VerifyOTPAndRegisterInput,
+  VerifyOTPInput,
+  RegisterInput,
+  RegistrationVerificationPayload,
 ]);

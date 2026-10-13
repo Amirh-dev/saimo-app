@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -18,6 +19,7 @@ import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/enums.dart';
 import 'package:simo_learn/utils/extentions.dart';
 import 'package:simo_learn/utils/fonts.dart';
+import 'package:simo_learn/utils/helpers.dart';
 import 'package:simo_learn/utils/username.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -39,16 +41,12 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _fullNameController;
   late TextEditingController _usernameController;
-  late TextEditingController _phoneController;
   late FocusNode _fullNameFocusNode;
+  late FocusNode _usernameFocusNode;
   late UsernameRepository _usernameRepository;
   Timer? _usernameAvailabilityDebounce;
   Jalali? _birthDate;
   int? _selectedStudyIndex;
-  bool _isStudyMenuExpanded = false;
-  final LayerLink _studyLayerLink = LayerLink();
-  final GlobalKey _studyHeaderKey = GlobalKey();
-  OverlayEntry? _studyOverlayEntry;
   UsernameAvailability? _usernameAvailability;
   String? _validatedUsername;
   String? _usernameError;
@@ -61,12 +59,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _suggestionFullNameInFlight;
   String? _lastSuggestedFullName;
 
+  /// Set by the first tap on «ثبت نام»; from then on every missing field
+  /// says so under itself.
+  bool _showMissingFields = false;
+
   static const _usernameDebounceDuration = Duration(milliseconds: 650);
 
   static const List<String> _studyOptions = [
     'زیر ۴ ساعت',
-    'بین ۴ تا ۷ ساعت',
+    '۴ تا ۷ ساعت',
     'بیش از ۷ ساعت',
+  ];
+
+  /// Usernames are Latin, but a Persian keyboard types Persian digits; they
+  /// become English digits as they are typed.
+  static final List<TextInputFormatter> _usernameFormatters = [
+    TextInputFormatter.withFunction(
+      (oldValue, newValue) =>
+          newValue.copyWith(text: convertToEnglishNumbers(newValue.text)),
+    ),
+    LengthLimitingTextInputFormatter(64),
   ];
 
   @override
@@ -74,22 +86,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.initState();
     _fullNameController = TextEditingController();
     _usernameController = TextEditingController();
-    _phoneController = TextEditingController(text: widget.phoneNumber);
     _fullNameFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
+    _usernameFocusNode = FocusNode();
     _usernameRepository = widget.usernameRepository ??
         UsernameRepository(context.read<GraphQLRepository>());
   }
 
   @override
   void dispose() {
-    _removeStudyOverlay();
     _usernameAvailabilityDebounce?.cancel();
     _fullNameFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
+    _usernameFocusNode.dispose();
     _fullNameController.dispose();
     _usernameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -242,12 +253,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _openBirthDatePicker() async {
-    _closeStudyMenu();
+    FocusManager.instance.primaryFocus?.unfocus();
+    // Most users are students, so the wheel starts near their birth year
+    // rather than at today.
+    final now = Jalali.now();
     final selectedDate = await showReModalBottomSheet<Jalali>(
       context: context,
       isScrollControlled: false,
       builder: (_) => BirthDatePickerBottomSheet(
-        initialDate: _birthDate ?? Jalali.now(),
+        initialDate: _birthDate ?? Jalali(now.year - 16, 1, 1),
       ),
     );
 
@@ -257,195 +271,137 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
-  void _removeStudyOverlay() {
-    _studyOverlayEntry?.remove();
-    _studyOverlayEntry = null;
-  }
+  // ── Field errors, shown once the user has tried to submit ──
 
-  void _closeStudyMenu() {
-    _removeStudyOverlay();
-    if (!mounted || !_isStudyMenuExpanded) return;
-    setState(() {
-      _isStudyMenuExpanded = false;
-    });
-  }
-
-  void _toggleStudyMenu() {
-    if (_isStudyMenuExpanded) {
-      _closeStudyMenu();
-      return;
+  String? get _fullNameMessage {
+    final text = _fullNameController.text.trim();
+    if (text.isNotEmpty && !_hasValidPersianFullName) {
+      return 'نام و نام خانوادگی را به فارسی وارد کنید.';
     }
-
-    final currentContext = _studyHeaderKey.currentContext;
-    if (currentContext == null) return;
-    final renderBox = currentContext.findRenderObject() as RenderBox?;
-    final overlay = Overlay.of(context);
-    if (renderBox == null) return;
-
-    final menuWidth = renderBox.size.width;
-    _studyOverlayEntry = OverlayEntry(
-      builder: (context) => Positioned.fill(
-        child: Material(
-          color: Colors.transparent,
-          child: Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _closeStudyMenu,
-                child: const SizedBox.expand(),
-              ),
-              CompositedTransformFollower(
-                link: _studyLayerLink,
-                showWhenUnlinked: false,
-                offset: const Offset(0, 60),
-                child: SizedBox(
-                  width: menuWidth,
-                  child: _buildStudyOptions(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    overlay.insert(_studyOverlayEntry!);
-    if (!mounted) return;
-    setState(() {
-      _isStudyMenuExpanded = true;
-    });
+    if (_showMissingFields && text.isEmpty) {
+      return 'نام و نام خانوادگی را وارد کنید.';
+    }
+    return null;
   }
 
-  Widget _buildNameAndDateRow() {
-    const double rowHeight = 55;
+  bool get _usernameMissing =>
+      _showMissingFields &&
+      _usernameError == null &&
+      _usernameController.text.trim().isEmpty;
 
-    return SizedBox(
-      height: rowHeight,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 122,
-            child: GestureDetector(
-              onTap: _openBirthDatePicker,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.gray2),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 12,
-                      color: AppColors.black,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: ReText(
-                        _birthDate == null
-                            ? 'تاریخ تولد'
-                            : '${_birthDate!.year}/${_birthDate!.month}/${_birthDate!.day}',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _birthDate == null
-                            ? AppColors.black
-                            : AppColors.black1,
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              height: rowHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.gray1,
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: _fullNameFocusNode.hasFocus
-                      ? AppColors.primary
-                      : AppColors.gray1,
-                  width: _fullNameFocusNode.hasFocus ? kFocusedFieldBorderWidth : 0,
-                ),
-                boxShadow:
-                    _fullNameFocusNode.hasFocus ? kFocusedFieldShadow : null,
-              ),
-              alignment: Alignment.center,
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: TextFormField(
-                  key: const ValueKey('register-full-name-field'),
-                  focusNode: _fullNameFocusNode,
-                  controller: _fullNameController,
-                  onChanged: _onFullNameChanged,
-                  textInputAction: TextInputAction.next,
-                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                  onTapOutside: (_) =>
-                      FocusManager.instance.primaryFocus?.unfocus(),
-                  textAlign: TextAlign.right,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: TextStyle(
-                    fontFamily: AppFonts.iranSansVar,
-                    fontSize: 13,
-                    height: 1.2,
-                    fontVariations: AppFonts.fontVariations(FontWeight.w600),
-                    color: AppColors.black1,
-                  ),
-                  decoration: InputDecoration(
-                    isCollapsed: true,
-                    border: InputBorder.none,
-                    hintText: 'نام و نام خانوادگی',
-                    hintStyle: TextStyle(
-                      fontFamily: AppFonts.iranSansVar,
-                      fontSize: 13,
-                      height: 1.2,
-                      fontVariations: AppFonts.fontVariations(FontWeight.w600),
-                      color: AppColors.black1.withOpacity(0.45),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+  String? get _birthDateMessage => _showMissingFields && _birthDate == null
+      ? 'تاریخ تولد را انتخاب کنید.'
+      : null;
+
+  String? get _studyMessage =>
+      _showMissingFields && _selectedStudyIndex == null
+          ? 'میزان مطالعه روزانه را انتخاب کنید.'
+          : null;
+
+  // ── Building blocks ──
+
+  Widget _label(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6, bottom: 6),
+      child: ReText(
+        text,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: AppColors.gray,
+        textAlign: TextAlign.right,
       ),
     );
   }
 
-  Widget _buildPhoneField() {
-    return AbsorbPointer(
-      child: ReTextField(
-        controller: _phoneController,
-        keyboardType: TextInputType.number,
-        maxLength: 11,
-        placeholderAlign: TextAlign.right,
-        placeholder: 'شماره تماس',
-        backgroundColor: AppColors.gray1,
-        borderRadius: 100,
-        fontSize: 13,
+  Widget _note(String text, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6, top: 5),
+      child: ReText(
+        text,
+        fontSize: 10,
         fontWeight: FontWeight.w600,
-        suffixIcon: const Padding(
-          padding: EdgeInsets.only(left: 15),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            widthFactor: 1,
-            child: ReText(
-              '..0912',
-              isPersian: true,
-              fontSize: 13,
+        color: color ?? AppColors.black1.withValues(alpha: 0.55),
+        textAlign: TextAlign.right,
+        maxLines: 2,
+      ),
+    );
+  }
+
+  Widget _error(String text) => _note(text, color: AppColors.errorColor);
+
+  Widget _verifiedPhone() {
+    final phone = widget.phoneNumber?.trim() ?? '';
+    if (phone.isEmpty) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.gray2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.verified_rounded, size: 16, color: AppColors.done),
+            const SizedBox(width: 6),
+            ReText(
+              'شماره تأییدشده: ${convertToPersianNumbers(phone)}',
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.black1,
             ),
+          ],
+        ),
+      ),
+    ).bMargin(14);
+  }
+
+  Widget _buildFullNameField() {
+    final hasFocus = _fullNameFocusNode.hasFocus;
+    final hasError = _showMissingFields && _fullNameMessage != null;
+    final textStyle = TextStyle(
+      fontFamily: AppFonts.iranSansVar,
+      fontSize: 13,
+      height: 1.2,
+      fontVariations: AppFonts.fontVariations(FontWeight.w600),
+      color: AppColors.black1,
+    );
+    return Container(
+      height: 55,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(
+          color: hasFocus
+              ? AppColors.primary
+              : hasError
+                  ? AppColors.errorColor
+                  : AppColors.gray1,
+          width: hasFocus || hasError ? kFocusedFieldBorderWidth : 0,
+        ),
+        boxShadow: hasFocus ? kFocusedFieldShadow : null,
+      ),
+      alignment: Alignment.center,
+      child: TextFormField(
+        key: const ValueKey('register-full-name-field'),
+        focusNode: _fullNameFocusNode,
+        controller: _fullNameController,
+        onChanged: _onFullNameChanged,
+        textInputAction: TextInputAction.next,
+        onFieldSubmitted: (_) => _usernameFocusNode.requestFocus(),
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        textAlign: TextAlign.right,
+        textAlignVertical: TextAlignVertical.center,
+        style: textStyle,
+        decoration: InputDecoration(
+          isCollapsed: true,
+          border: InputBorder.none,
+          hintText: 'مثلاً علی رضایی',
+          hintStyle: textStyle.copyWith(
+            color: AppColors.black1.withValues(alpha: 0.45),
           ),
         ),
       ),
@@ -454,17 +410,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildUsernameField() {
     final isBusy = _isSuggestingUsername || _isCheckingUsername;
+    final isAvailable = _usernameAvailability?.available == true;
+    final suggestion = _usernameAvailability?.suggestion;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ReTextField(
           key: const ValueKey('register-username-field'),
           controller: _usernameController,
-          placeholder: 'نام کاربری',
+          focusNode: _usernameFocusNode,
+          placeholder: 'مثلاً ali_rezaei',
           inputTextAlign: TextAlign.left,
           placeholderAlign: TextAlign.right,
           keyboardType: TextInputType.text,
-          textInputAction: TextInputAction.next,
-          maxLength: 64,
+          textInputAction: TextInputAction.done,
+          inputFormatters: _usernameFormatters,
           backgroundColor: AppColors.gray1,
           borderRadius: 100,
           fontSize: 13,
@@ -484,145 +444,125 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     )
                   : Icon(
-                      _usernameAvailability?.available == true
+                      isAvailable
                           ? Icons.check_circle_rounded
                           : Icons.alternate_email_rounded,
-                      color: _usernameAvailability?.available == true
-                          ? AppColors.done
-                          : AppColors.black1,
+                      color: isAvailable ? AppColors.done : AppColors.black1,
                       size: 19,
                     ),
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ReText(
-                _usernameError ??
-                    (_isSuggestedUsername
-                        ? 'نام کاربری پیشنهادی: @$_validatedUsername'
-                        : _usernameAvailability?.available == true
-                            ? 'این نام کاربری در دسترس است.'
-                            : 'فقط از حروف انگلیسی، عدد و _ استفاده کنید.'),
-                color: _usernameError != null
-                    ? AppColors.errorColor
-                    : _usernameAvailability?.available == true
-                        ? AppColors.done
-                        : AppColors.black1.withOpacity(0.55),
+        if (_usernameError != null)
+          _error(_usernameError!)
+        else if (_usernameMissing)
+          _error('نام کاربری را وارد کنید.')
+        else if (_isSuggestedUsername)
+          _note('بر اساس نام شما پیشنهاد شد و قابل تغییر است.')
+        else if (isAvailable)
+          _note('این نام کاربری در دسترس است.', color: AppColors.done)
+        else
+          _note('فقط از حروف انگلیسی، عدد و _ استفاده کنید.'),
+        if (suggestion != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => _useUsernameSuggestion(suggestion),
+              child: ReText(
+                'استفاده از @$suggestion',
+                color: AppColors.primary,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                textAlign: TextAlign.right,
-                maxLines: 2,
-              ),
-              if (_usernameAvailability?.suggestion != null)
-                GestureDetector(
-                  onTap: () => _useUsernameSuggestion(
-                    _usernameAvailability!.suggestion!,
-                  ),
-                  child: ReText(
-                    '  استفاده از @${_usernameAvailability!.suggestion}',
-                    color: AppColors.primary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    textAlign: TextAlign.left,
-                    isPersian: false,
-                  ),
-                ),
-            ],
+                fontWeight: FontWeight.w800,
+                isPersian: false,
+              ).hMargin(6).tMargin(4),
+            ),
           ),
-        ).tMargin(5),
       ],
     );
   }
 
-  Widget _buildStudyHeader() {
-    return CompositedTransformTarget(
-      link: _studyLayerLink,
-      child: GestureDetector(
-        onTap: _toggleStudyMenu,
-        child: Container(
-          key: _studyHeaderKey,
-          height: 55,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: _isStudyMenuExpanded ? AppColors.gray1 : AppColors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.gray2, width: 1.5),
+  Widget _buildBirthDateField() {
+    final hasError = _birthDateMessage != null;
+    final date = _birthDate;
+    final text = date == null
+        ? 'انتخاب کنید'
+        : convertToPersianNumbers(
+            '${date.day} ${date.formatter.mN} ${date.year}',
+          );
+    return GestureDetector(
+      key: const ValueKey('register-birth-date-field'),
+      onTap: _openBirthDatePicker,
+      child: Container(
+        height: 55,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: hasError ? AppColors.errorColor : AppColors.gray1,
+            width: hasError ? kFocusedFieldBorderWidth : 0,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          child: Row(
-            children: [
-              Icon(
-                _isStudyMenuExpanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                size: 22,
-                color: AppColors.black1,
-              ),
-              const Spacer(),
-              ReText(
-                _selectedStudyIndex == null
-                    ? 'میزان مطالعه'
-                    : _studyOptions[_selectedStudyIndex!],
-                fontSize: 14,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: ReText(
+                text,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppColors.black1,
+                color: date == null
+                    ? AppColors.black1.withValues(alpha: 0.45)
+                    : AppColors.black1,
+                textAlign: TextAlign.right,
+                maxLines: 1,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(
+              Icons.calendar_month_outlined,
+              size: 19,
+              color: AppColors.black1,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStudyOptions() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.gray2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black1.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(_studyOptions.length, (index) {
-            final isSelected = _selectedStudyIndex == index;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedStudyIndex = index;
-                });
-                _closeStudyMenu();
-              },
-              child: Container(
-                height: 62,
-                width: double.infinity,
-                color: isSelected ? AppColors.gray2 : AppColors.white,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+  Widget _buildStudyChips() {
+    return Row(
+      children: [
+        for (var index = 0; index < _studyOptions.length; index++) ...[
+          if (index > 0) const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              key: ValueKey('register-study-$index'),
+              onTap: () => setState(() => _selectedStudyIndex = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _selectedStudyIndex == index
+                      ? AppColors.black1
+                      : AppColors.gray1,
+                  borderRadius: BorderRadius.circular(100),
+                ),
                 child: ReText(
                   _studyOptions[index],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.black1,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _selectedStudyIndex == index
+                      ? AppColors.white
+                      : AppColors.black1,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
                 ),
               ),
-            );
-          }),
-        ),
-      ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -637,15 +577,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ReToastType.success,
           );
         } else if (state is AuthFailure &&
-            (state.action == AuthAction.register ||
-                state.action == AuthAction.sendOtp)) {
+            state.action == AuthAction.register) {
           showReToast(context, state.message, ReToastType.failed);
         }
       },
       builder: (context, state) {
-        final isLoading = state is AuthLoading &&
-            (state.action == AuthAction.register ||
-                state.action == AuthAction.sendOtp);
+        final isLoading =
+            state is AuthLoading && state.action == AuthAction.register;
+        final fullNameMessage = _fullNameMessage;
 
         return Scaffold(
           backgroundColor: AppColors.gray1,
@@ -660,66 +599,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             authHeaderWidget(
                               context,
                               authType: AuthMode.register,
+                              subtitle: 'فقط چند مورد کوتاه تا شروع',
                             ),
-                            Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
-                                borderRadius: BorderRadius.circular(40),
-                              ),
+                            Directionality(
+                              textDirection: TextDirection.rtl,
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _buildNameAndDateRow(),
-                                  if (_fullNameController.text
-                                          .trim()
-                                          .isNotEmpty &&
-                                      !_hasValidPersianFullName)
-                                    const Align(
-                                      alignment: Alignment.centerRight,
-                                      child: ReText(
-                                        'نام و نام خانوادگی را به فارسی وارد کنید.',
-                                        color: AppColors.errorColor,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ).tMargin(5),
-                                  _buildUsernameField().tMargin(8),
-                                  _buildPhoneField().tMargin(8),
-                                  _buildStudyHeader().tMargin(8),
-                                  ReButton(
-                                    isLoading: isLoading,
-                                    isEnabled: _canSubmitRegistration,
-                                    onPressed: _submitRegistration,
-                                    text: 'ثبت نام',
-                                  ).tMargin(16),
-                                  ReButton(
-                                    isOutlined: true,
-                                    color: AppColors.gray2,
-                                    textColor: AppColors.black1,
-                                    background: AppColors.white,
-                                    onPressed: () {
-                                      _closeStudyMenu();
-                                      context.read<AuthCubit>().logout();
-                                    },
-                                    text: 'ورود به حساب',
-                                  ).tMargin(8),
+                                  _verifiedPhone(),
+                                  Container(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 20, 16, 18),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.white,
+                                      borderRadius: BorderRadius.circular(32),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        _label('نام و نام خانوادگی'),
+                                        _buildFullNameField(),
+                                        if (fullNameMessage != null)
+                                          _error(fullNameMessage),
+                                        const SizedBox(height: 14),
+                                        _label('نام کاربری'),
+                                        _buildUsernameField(),
+                                        const SizedBox(height: 14),
+                                        _label('تاریخ تولد'),
+                                        _buildBirthDateField(),
+                                        if (_birthDateMessage != null)
+                                          _error(_birthDateMessage!),
+                                        const SizedBox(height: 14),
+                                        _label('میزان مطالعه روزانه'),
+                                        _buildStudyChips(),
+                                        if (_studyMessage != null)
+                                          _error(_studyMessage!),
+                                        ReButton(
+                                          key: const ValueKey(
+                                              'register-submit'),
+                                          isLoading: isLoading,
+                                          isEnabled: !isLoading,
+                                          onPressed: _submitRegistration,
+                                          text: 'ثبت نام',
+                                        ).tMargin(20),
+                                      ],
+                                    ),
+                                  ),
                                 ],
-                              ).hMargin(16).vMargin(18),
+                              ).tMargin(14),
                             ),
                           ],
-                        ).tMargin(130),
+                        ).tMargin(64),
                         const ReText(
                           'سایمو لرن',
                           color: AppColors.black1,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                        ).bMargin(10)
+                        ).tMargin(16).bMargin(10)
                       ],
-                    ).hMargin(30),
+                    ).hMargin(24),
                   ),
                 ),
               ),
@@ -730,23 +674,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  bool get _canSubmitRegistration {
+  bool get _isFormComplete {
     return _hasValidPersianFullName &&
         _usernameAvailability?.available == true &&
         _validatedUsername != null &&
-        !_isSuggestingUsername &&
-        !_isCheckingUsername &&
-        _normalizeDigits(_phoneController.text).length == 11 &&
         _birthDate != null &&
         _selectedStudyIndex != null;
   }
 
   void _submitRegistration() {
-    _closeStudyMenu();
+    // Wait for the username check in flight; its answer decides validity.
+    if (_isSuggestingUsername || _isCheckingUsername) return;
 
-    final phoneNumber = _normalizeDigits(_phoneController.text);
+    if (!_isFormComplete) {
+      setState(() => _showMissingFields = true);
+      if (!_hasValidPersianFullName) {
+        _fullNameFocusNode.requestFocus();
+      } else if (_validatedUsername == null) {
+        _usernameFocusNode.requestFocus();
+      } else {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
     final birthDate = _birthDate!.toGregorian();
-
     final registrationBirthDate = DateTime(
       birthDate.year,
       birthDate.month,
@@ -755,21 +708,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (widget.completeProfileOnly) {
       context.read<AuthCubit>().completeRegistrationProfile(
-        fullName: _fullNameController.text.trim(),
-        username: _validatedUsername!,
-        birthDate: registrationBirthDate,
-        studyTime: _studyTime,
-      );
+            fullName: _fullNameController.text.trim(),
+            username: _validatedUsername!,
+            birthDate: registrationBirthDate,
+            studyTime: _studyTime,
+          );
       return;
     }
 
-    context.read<AuthCubit>().prepareRegistrationForOtp(
-      phoneNumber: phoneNumber,
-      fullName: _fullNameController.text.trim(),
-      username: _validatedUsername!,
-      birthDate: registrationBirthDate,
-      studyTime: _studyTime,
-    );
+    context.read<AuthCubit>().register(
+          fullName: _fullNameController.text.trim(),
+          username: _validatedUsername!,
+          birthDate: registrationBirthDate,
+          studyTime: _studyTime,
+        );
   }
 
   GUserStudyTime get _studyTime {
@@ -779,16 +731,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       2 => GUserStudyTime.OVER_7_HOURS,
       _ => throw StateError('Study time is not selected'),
     };
-  }
-
-  String _normalizeDigits(String value) {
-    const persian = '۰۱۲۳۴۵۶۷۸۹';
-    const arabic = '٠١٢٣٤٥٦٧٨٩';
-    var result = value;
-    for (var i = 0; i < 10; i++) {
-      result = result.replaceAll(persian[i], '$i').replaceAll(arabic[i], '$i');
-    }
-    return result;
   }
 }
 

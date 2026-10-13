@@ -10,6 +10,7 @@ Row authHeaderWidget(
   required Enum authType,
   VoidCallback? onBack,
   bool backButton = false,
+  String? subtitle,
 }) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
@@ -63,11 +64,12 @@ Row authHeaderWidget(
                 fontWeight: FontWeight.w900,
               ),
               ReText(
-                authType == AuthMode.register
-                    ? 'یک حساب ایجاد کنید.'
-                    : authType == AuthMode.login
-                        ? 'به حساب کاربری خود وارد شوید.'
-                        : 'کد تایید ارسال شده را وارد کنید.',
+                subtitle ??
+                    (authType == AuthMode.register
+                        ? 'یک حساب ایجاد کنید.'
+                        : authType == AuthMode.login
+                            ? 'به حساب کاربری خود وارد شوید.'
+                            : 'کد تایید ارسال شده را وارد کنید.'),
                 fontSize: 11.fs,
                 color: AppColors.gray,
                 fontWeight: FontWeight.w600,
