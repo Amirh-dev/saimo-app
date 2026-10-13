@@ -1,0 +1,23 @@
+
+web.saimo.app {
+	root * /srv/saimo-web/current
+	encode zstd gzip
+
+	header {
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "require-corp"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Entry points must always be revalidated so users pick up new releases.
+	@entry path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /version.json /manifest.json
+	header @entry Cache-Control "no-cache"
+
+	# Everything else (wasm, js, fonts, images) can be cached for a day.
+	@static not path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /version.json /manifest.json
+	header @static Cache-Control "public, max-age=86400"
+
+	try_files {path} /index.html
+	file_server
+}
