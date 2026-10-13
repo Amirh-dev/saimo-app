@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -27,9 +28,65 @@ class TodayActivityWidget extends StatefulWidget {
   State<TodayActivityWidget> createState() => _TodayActivityWidgetState();
 }
 
-class _TodayActivityWidgetState extends State<TodayActivityWidget> {
+class _TodayActivityWidgetState extends State<TodayActivityWidget>
+    with SingleTickerProviderStateMixin {
   OverlayEntry? _overlayEntry;
   Timer? _tooltipTimer;
+
+  /// Plays when the card first shows its tasks, and again when they change:
+  /// the capsules rise in one after another, each fills up to its progress,
+  /// and the day's bar and percentage follow.
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1300),
+  );
+
+  /// Every capsule's shape, whatever its state, so a filling one keeps the
+  /// same round ends as the rest.
+  static const BorderRadius _capsule = BorderRadius.all(Radius.circular(100));
+
+  @override
+  void initState() {
+    super.initState();
+    _intro.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (reduceMotion(context)) _intro.value = 1;
+  }
+
+  @override
+  void didUpdateWidget(TodayActivityWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_signature(oldWidget.tasks) != _signature(widget.tasks) &&
+        !reduceMotion(context)) {
+      _intro.forward(from: 0);
+    }
+  }
+
+  static String _signature(List<Map<String, dynamic>> tasks) => [
+        for (final task in tasks) '${task['title']}:${task['percentage']}',
+      ].join('|');
+
+  /// Item [index]'s share of the intro: when it appears, then when it fills.
+  Animation<double> _appear(int index) => CurvedAnimation(
+        parent: _intro,
+        curve: Interval(index * 0.06, index * 0.06 + 0.45,
+            curve: Curves.easeOutCubic),
+      );
+
+  Animation<double> _fill(int index) => CurvedAnimation(
+        parent: _intro,
+        curve: Interval(0.2 + index * 0.06, 0.2 + index * 0.06 + 0.42,
+            curve: Curves.easeInOutCubic),
+      );
+
+  late final Animation<double> _bar = CurvedAnimation(
+    parent: _intro,
+    curve: const Interval(0.35, 1, curve: Curves.easeOutCubic),
+  );
 
   // Helper to convert digits to Persian
   String _toPersianNumber(String input) {
@@ -83,12 +140,15 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
             Positioned(
               top: offset.dy - 55,
               left: isRightHalf ? null : offset.dx,
-              right: isRightHalf ? (screenWidth - offset.dx - size.width) : null,
+              right:
+                  isRightHalf ? (screenWidth - offset.dx - size.width) : null,
               child: Material(
                 color: Colors.transparent,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: isRightHalf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  crossAxisAlignment: isRightHalf
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -110,14 +170,17 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ReText(
-                            duration > 0 ? '$title ${_toPersianNumber(duration.toString())} دقیقه' : '$title --',
+                            duration > 0
+                                ? '$title ${_toPersianNumber(duration.toString())} دقیقه'
+                                : '$title --',
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(width: 6),
-                          SvgPicture.asset('assets/icons/timer.svg',color: AppColors.white,width: 12)
+                          SvgPicture.asset('assets/icons/timer.svg',
+                              color: AppColors.white, width: 12)
                         ],
                       ),
                     ),
@@ -164,6 +227,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
   @override
   void dispose() {
     _removePopup();
+    _intro.dispose();
     super.dispose();
   }
 
@@ -223,7 +287,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 16),
+                padding: const EdgeInsets.only(
+                    left: 8, right: 8, top: 8, bottom: 16),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(32),
@@ -258,12 +323,27 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: List.generate(7, (index) {
-                              final task = index < widget.tasks.length ? widget.tasks[index] : null;
+                              final task = index < widget.tasks.length
+                                  ? widget.tasks[index]
+                                  : null;
 
+                              final appear = _appear(index);
                               return Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                                  child: Container(child: _buildTaskItem(task)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 3.0),
+                                  child: AnimatedBuilder(
+                                    animation: appear,
+                                    builder: (context, child) => Opacity(
+                                      opacity: appear.value,
+                                      child: Transform.translate(
+                                        offset:
+                                            Offset(0, 14 * (1 - appear.value)),
+                                        child: child,
+                                      ),
+                                    ),
+                                    child: _buildTaskItem(task, _fill(index)),
+                                  ),
                                 ),
                               );
                             }),
@@ -311,7 +391,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
     );
   }
 
-  Widget _buildTaskItem(Map<String, dynamic>? task) {
+  Widget _buildTaskItem(Map<String, dynamic>? task, Animation<double> fill) {
     bool isEmpty = task == null || task.isEmpty;
 
     double percentage = isEmpty ? 0 : (task['percentage'] ?? 0).toDouble();
@@ -322,7 +402,9 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
 
     String title = task?['title'] ?? '';
     int duration = task?['maxDuration'] ?? 0;
-    Color color = task?['percentage'] == 100 ? const Color(0xFF4263EB) : const Color(0xFFF14922);
+    Color color = task?['percentage'] == 100
+        ? const Color(0xFF4263EB)
+        : const Color(0xFFF14922);
 
     // Unique key for tooltip anchor targeting
     final GlobalKey itemKey = GlobalKey();
@@ -331,7 +413,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
       key: itemKey,
       onDoubleTap: isEmpty
           ? widget.onAddTap
-          : () => Navigator.of(context).push(MaterialPageRoute(builder: (final _) => TaskTimerScreen(task: task, onPop: (){}))),
+          : () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (final _) => TaskTimerScreen(task: task, onPop: () {}))),
       onTap: isEmpty
           ? widget.onAddTap
           : () => _showSmartPopup(
@@ -349,32 +432,33 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
           Container(
             height: 93,
             decoration: BoxDecoration(
-              borderRadius: isDoing ? const BorderRadius.vertical(top: Radius.circular(100), bottom: Radius.circular(70)) : BorderRadius.circular(100),
+              borderRadius: _capsule,
               color: Colors.white,
               border: isEmpty ? Border.all(color: AppColors.gray2) : null,
             ),
+            // The fill is a plain level clipped by the capsule, so the
+            // bottom stays round however full it gets.
             child: ClipRRect(
-              borderRadius: isDoing ? const BorderRadius.vertical(top: Radius.circular(100), bottom: Radius.circular(70)) : BorderRadius.circular(100),
+              borderRadius: _capsule,
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
-                  if (isDone)
-                    Container(
-                      color: const Color(0xFF426fEB),
-                    ),
                   if (isDoing)
                     Container(
-                      color: const Color(0xFFF14922).withOpacity(0.12),
+                      color: const Color(0xFFF14922).withValues(alpha: 0.12),
                     ),
-                  if (isDoing)
-                    FractionallySizedBox(
-                      heightFactor: percentage / 100,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF14922),
-                          borderRadius: BorderRadius.circular(80)
+                  if (isDone || isDoing)
+                    AnimatedBuilder(
+                      animation: fill,
+                      builder: (context, _) => FractionallySizedBox(
+                        heightFactor:
+                            (isDone ? 1.0 : percentage / 100) * fill.value,
+                        widthFactor: 1,
+                        child: ColoredBox(
+                          color: isDone
+                              ? const Color(0xFF426fEB)
+                              : const Color(0xFFF14922),
                         ),
-
                       ),
                     ),
                   if (isNotStarted)
@@ -414,11 +498,14 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
                                       : AppColors.gray1,
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8.0, vertical: 2),
                               child: ReText(
                                 title,
                                 fontSize: 10,
-                                color: (isDone || isDoing) ? Colors.white : Colors.grey.shade600,
+                                color: (isDone || isDoing)
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
                                 fontWeight: FontWeight.w400,
                                 textAlign: TextAlign.center,
                               ),
@@ -489,7 +576,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
           if (!isEmpty) ...[
             const SizedBox(height: 8),
             ReText(
-              task['durationText']?.toString() ?? _toPersianNumber(duration.toString()),
+              task['durationText']?.toString() ??
+                  _toPersianNumber(duration.toString()),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               textAlign: TextAlign.center,
@@ -586,7 +674,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
 
     int totalDone = blueTotal + orangeTotal;
 
-    int totalPercent = totalMax > 0 ? ((totalDone / totalMax) * 100).toInt() : 0;
+    int totalPercent =
+        totalMax > 0 ? ((totalDone / totalMax) * 100).toInt() : 0;
 
     int grayTotal = totalMax - totalDone;
 
@@ -594,11 +683,15 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          ReText(
-            '${_toPersianNumber(totalPercent.toString())}٪',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            textAlign: TextAlign.center,
+          // Counts up with the capsules.
+          AnimatedBuilder(
+            animation: _bar,
+            builder: (context, _) => ReText(
+              '${_toPersianNumber((totalPercent * _bar.value).round().toString())}٪',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -609,41 +702,50 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Row(
-                  children: [
-                    if (blueTotal > 0)
-                      Expanded(
-                        flex: blueTotal,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.horizontal(
-                              left: Radius.circular(50),
+                // Drawn in from the start as the capsules fill.
+                child: AnimatedBuilder(
+                  animation: _bar,
+                  builder: (context, child) => Align(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: _bar.value,
+                    child: child,
+                  ),
+                  child: Row(
+                    children: [
+                      if (blueTotal > 0)
+                        Expanded(
+                          flex: blueTotal,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.horizontal(
+                                left: Radius.circular(50),
+                              ),
+                              color: Color(0xFF4263EB),
                             ),
-                            color: Color(0xFF4263EB),
                           ),
                         ),
-                      ),
-                    if (orangeTotal > 0)
-                      Expanded(
-                        flex: orangeTotal,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.horizontal(
-                              right: Radius.circular(50),
+                      if (orangeTotal > 0)
+                        Expanded(
+                          flex: orangeTotal,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.horizontal(
+                                right: Radius.circular(50),
+                              ),
+                              color: Color(0xFFF14922),
                             ),
-                            color: Color(0xFFF14922),
                           ),
                         ),
-                      ),
-                    if (grayTotal > 0 || totalMax == 0)
-                      Expanded(
-                        flex: totalMax == 0 ? 1 : grayTotal,
-                        child: Container(
-                          height: 2,
-                          color: const Color(0xFFE5E7EB),
+                      if (grayTotal > 0 || totalMax == 0)
+                        Expanded(
+                          flex: totalMax == 0 ? 1 : grayTotal,
+                          child: Container(
+                            height: 2,
+                            color: const Color(0xFFE5E7EB),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:pinput/pinput.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
+import 'package:simo_learn/presentation/widgets/re_text_field.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import '../../../widgets/re_text.dart';
@@ -159,6 +160,7 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
         border: isFocused
             ? Border.all(color: AppColors.primary, width: 2)
             : Border.all(color: const Color(0xFFd0d0d0)),
+        boxShadow: isFocused ? kFocusedFieldShadow : null,
       ),
       child: pin.value.isEmpty
           ? (isFocused

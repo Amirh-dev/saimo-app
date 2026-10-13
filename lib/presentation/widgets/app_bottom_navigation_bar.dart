@@ -22,6 +22,9 @@ class AppBottomNavigationBar extends StatelessWidget {
   /// overlays (e.g. the task timer banner) use it to clear the bar.
   static final ValueNotifier<bool> isVisible = ValueNotifier<bool>(false);
 
+  /// Height the bar takes above the bottom safe-area inset.
+  static const double height = _NavBar._barHeight + _NavBar._circleDiameter / 2;
+
   /// Every screen's bar shares this hero tag: while screens change the bar
   /// stays where it is and its circle glides over to the new tab.
   static const String _heroTag = 'app-bottom-navigation-bar';

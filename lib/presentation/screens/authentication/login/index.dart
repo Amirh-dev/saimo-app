@@ -82,8 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: 100,
                                         onChanged: (p0) {
                                           setState(() {});
-                                        },
-                                        showFocusShadow: false,
+                                        },
                                         controller: phoneController,
                                         placeholderAlign: TextAlign.right,
                                         backgroundColor: AppColors.gray1,

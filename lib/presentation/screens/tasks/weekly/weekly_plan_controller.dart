@@ -50,6 +50,23 @@ class WeeklyPlanController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Shows just-created [tasks] that fall in this week at once; the silent
+  /// reload that follows settles them.
+  void showAdded(Iterable<Map<String, dynamic>> tasks) {
+    if (!_hasData) return;
+    final added = [
+      for (final task in tasks)
+        if (task['date'] case final Jalali day
+            when daysBetween(weekStart, day) >= 0 &&
+                daysBetween(weekStart, day) < 7)
+          task,
+    ];
+    if (added.isEmpty) return;
+    _tasks = [..._tasks, ...added];
+    _plan = null;
+    notifyListeners();
+  }
+
   /// Marks [task] done, or back to do, showing the change at once. On failure
   /// the change is undone and the error rethrown for the caller to report.
   Future<void> setTaskDone(Map<String, dynamic> task, {required bool done}) async {

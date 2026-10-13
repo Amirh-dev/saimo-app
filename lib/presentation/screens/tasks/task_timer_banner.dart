@@ -13,19 +13,17 @@ import 'package:simo_learn/utils/colors.dart';
 /// hides itself automatically while [TaskTimerScreen] is open. Mount it once,
 /// app-wide, through `MaterialApp.builder` (see the notes in chat).
 class TaskTimerBanner extends StatelessWidget {
-  /// Distance from the bottom of the screen while an [AppBottomNavigationBar]
-  /// is visible, so the banner floats above it. Other screens only keep the
-  /// bottom safe-area inset.
-  final double bottomOffset;
-
   /// Needed to push the timer screen from outside the Navigator's subtree.
   final GlobalKey<NavigatorState>? navigatorKey;
 
   const TaskTimerBanner({
     super.key,
-    this.bottomOffset = 110,
     this.navigatorKey,
   });
+
+  /// Gap between the banner and the bottom nav bar (or the screen's bottom
+  /// safe area when no bar is shown).
+  static const double _gap = 16;
 
   static const Color _background = Color(0xFF1A1A1A);
   static const Color _accent = Color(0xFFEE5A2B);
@@ -64,9 +62,7 @@ class TaskTimerBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final timer = TaskTimerService.instance;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: ListenableBuilder(
+    return ListenableBuilder(
         listenable: Listenable.merge([timer, AppBottomNavigationBar.isVisible]),
         builder: (context, _) {
           final visible = timer.shouldShowBanner;
@@ -92,15 +88,16 @@ class TaskTimerBanner extends StatelessWidget {
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
-                bottom: AppBottomNavigationBar.isVisible.value
-                    ? bottomOffset
-                    : MediaQuery.viewPaddingOf(context).bottom,
+                bottom: MediaQuery.viewPaddingOf(context).bottom +
+                    (AppBottomNavigationBar.isVisible.value
+                        ? AppBottomNavigationBar.height
+                        : 0) +
+                    _gap,
               ),
               child: _buildPill(context, timer),
             ),
           );
         },
-      ),
     );
   }
 
@@ -222,6 +219,43 @@ class TaskTimerBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Hides the [TaskTimerBanner] while a popup route (bottom sheet, dialog,
+/// date picker, ...) is open. The banner sits above the Navigator, so without
+/// this it would float over every modal.
+class TaskTimerBannerRouteObserver extends NavigatorObserver {
+  final Set<Route<dynamic>> _popups = {};
+
+  void _add(Route<dynamic>? route) {
+    if (route is PopupRoute && _popups.add(route)) {
+      TaskTimerService.instance.suppressBanner();
+    }
+  }
+
+  void _remove(Route<dynamic>? route) {
+    if (route != null && _popups.remove(route)) {
+      TaskTimerService.instance.unsuppressBanner();
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _add(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _remove(route);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _remove(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _remove(oldRoute);
+    _add(newRoute);
   }
 }
 

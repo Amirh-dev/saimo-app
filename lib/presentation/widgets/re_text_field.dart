@@ -7,6 +7,23 @@ import 'package:simo_learn/utils/_utils.dart';
 
 import '_widgets.dart';
 
+/// The soft glow under a focused input, worn with a 1.4 primary border. Every
+/// form field shares it: auth, the task forms and [ReTextField].
+const List<BoxShadow> kFocusedFieldShadow = [
+  BoxShadow(
+    color: Color(0x1AF14922), // primary at 10%
+    blurRadius: 10,
+    offset: Offset(0, 4),
+  ),
+  BoxShadow(
+    color: Color(0x0523232B), // black1 at 2%
+    blurRadius: 4,
+    offset: Offset(0, 1),
+  ),
+];
+
+const double kFocusedFieldBorderWidth = 1.4;
+
 class ReTextField extends StatefulWidget {
   final String? placeholder;
   final TextAlign? placeholderAlign;
@@ -177,15 +194,8 @@ class _ReTextFieldState extends State<ReTextField> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(resolvedRadius),
-        boxShadow: widget.showFocusShadow && _hasFocus
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.20),
-                  spreadRadius: 2.5,
-                  offset: Offset.zero,
-                ),
-              ]
-            : null,
+        boxShadow:
+            widget.showFocusShadow && _hasFocus ? kFocusedFieldShadow : null,
       ),
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -281,8 +291,8 @@ class _ReTextFieldState extends State<ReTextField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(resolvedRadius),
               borderSide: BorderSide(
-                color: (widget.color ?? AppColors.primary).withOpacity(0.80),
-                width: 1.5,
+                color: widget.color ?? AppColors.primary,
+                width: kFocusedFieldBorderWidth,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(

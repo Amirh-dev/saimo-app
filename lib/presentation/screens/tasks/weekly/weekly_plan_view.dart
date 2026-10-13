@@ -25,9 +25,6 @@ const double _columnPad = 4;
 const double _taskGap = 6;
 const double _chipHeight = 34;
 
-/// Minutes of time boxes that fill a day's load bar at the least.
-const int _minBarScale = 240;
-
 /// While a time box is dragged this close to the board's side, the days
 /// scroll that way.
 const double _dragEdge = 44;
@@ -307,12 +304,6 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
               ? available / 7
               : math.max(_minColumnWidth, available / _visibleColumns);
           final width = _columnWidth * 7;
-          // A day's bar fills at the week's busiest day, but never for less
-          // than [_minBarScale] minutes, so a light week reads as light.
-          final scale = plan.days.fold<int>(
-            _minBarScale,
-            (max, day) => math.max(max, day.plannedMinutes),
-          );
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,7 +320,6 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
                         child: _DayHeader(
                           key: ValueKey('week-day-header-$index'),
                           day: plan.days[index],
-                          scale: scale,
                         ),
                       ),
                   ],
@@ -442,27 +432,29 @@ class _Entrance extends StatelessWidget {
 // ----------------------------------------------------------------- calendar
 
 /// The weekday, today's in a dark pill, over the time the day has boxed and
-/// a thin bar that compares it with the rest of the week. An overloaded
-/// day's time and bar take the main color. Dates live in the strip above.
+/// a thin bar of how much of the day's work is done (see
+/// [WeekDayPlan.workDoneRatio]); green once all of it is. An overloaded
+/// day's time takes the main color. Dates live in the strip above.
 class _DayHeader extends StatelessWidget {
-  const _DayHeader({super.key, required this.day, required this.scale});
+  const _DayHeader({super.key, required this.day});
 
   final WeekDayPlan day;
-
-  /// Minutes a full bar stands for.
-  final int scale;
 
   @override
   Widget build(BuildContext context) {
     final planned = day.plannedMinutes;
     final over = day.isHeavy;
-    final accent = over
-        ? AppColors.primary
-        : AppColors.black1.withValues(alpha: day.isPast ? 0.3 : 0.75);
+    final done = day.workDoneRatio;
+    final accent = day.isAllDone
+        ? AppColors.done
+        : AppColors.black1.withValues(alpha: day.isPast ? 0.35 : 0.75);
+    final percent = convertToPersianNumbers('${(done * 100).round()}');
     return Semantics(
-      label: planned > 0
-          ? '${dayLabel(day.date)}، ${formatDuration(planned)}'
-          : dayLabel(day.date),
+      label: [
+        dayLabel(day.date),
+        if (planned > 0) formatDuration(planned),
+        if (!day.isEmpty) '$percent درصد انجام شده',
+      ].join('، '),
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -507,8 +499,7 @@ class _DayHeader extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(100),
               child: TweenAnimationBuilder<double>(
-                tween: Tween(
-                    end: scale <= 0 ? 0 : (planned / scale).clamp(0.0, 1.0)),
+                tween: Tween(end: done),
                 duration: const Duration(milliseconds: 600),
                 curve: AppMotion.settle,
                 builder: (context, value, _) => LinearProgressIndicator(
@@ -804,7 +795,7 @@ class _AddButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'افزودن تسک',
+      label: 'ثبت تسک',
       excludeSemantics: true,
       child: PressScale(
         onTap: onTap,
@@ -821,7 +812,7 @@ class _AddButton extends StatelessWidget {
               SizedBox(width: 3),
               Flexible(
                 child: ReText(
-                  'افزودن',
+                  'ثبت تسک',
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: AppColors.gray,

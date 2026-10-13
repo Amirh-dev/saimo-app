@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_form_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_dots_loader.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -95,19 +96,22 @@ class PlanPillButton extends StatelessWidget {
   }
 }
 
-/// The white bottom sheet used by the tasks screens: orange handle, a title
-/// with an optional subtitle and a round close button.
+/// The white bottom sheet used by the tasks screens: gray handle, a title
+/// with an optional subtitle and a round close button. A [footer] stays
+/// pinned below the scrolling content, so its actions are always in reach.
 class PlanSheetFrame extends StatelessWidget {
   const PlanSheetFrame({
     super.key,
     required this.title,
     required this.child,
     this.subtitle,
+    this.footer,
   });
 
   final String title;
   final String? subtitle;
   final Widget child;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -125,80 +129,47 @@ class PlanSheetFrame extends StatelessWidget {
             ),
             child: SafeArea(
               top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 48,
-                        height: 4,
-                        margin: const EdgeInsets.only(top: 8, bottom: 20),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Flexible(child: _scrollingBody(context)),
+                  if (footer != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                      child: footer,
                     ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ReText(
-                                title,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.black1,
-                                maxLines: 1,
-                              ),
-                              if (subtitle != null) ...[
-                                const SizedBox(height: 4),
-                                ReText(
-                                  subtitle!,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.gray,
-                                  maxLines: 2,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Semantics(
-                          button: true,
-                          label: 'بستن',
-                          child: GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.gray2),
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                size: 18,
-                                color: AppColors.black1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    child,
-                  ],
-                ),
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _scrollingBody(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, footer == null ? 20 : 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 48,
+              height: 4,
+              margin: const EdgeInsets.only(top: 8, bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.dark4Color,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+          ),
+          TaskFormHeader(title: title, subtitle: subtitle),
+          const SizedBox(height: 18),
+          child,
+        ],
       ),
     );
   }
@@ -425,7 +396,8 @@ class DepthOnSwipe extends StatelessWidget {
       builder: (context, child) {
         var offset = 0.0;
         if (pages.hasClients && pages.position.haveDimensions) {
-          offset = ((pages.page ?? page.toDouble()) - page).abs().clamp(0.0, 1.0);
+          offset =
+              ((pages.page ?? page.toDouble()) - page).abs().clamp(0.0, 1.0);
         }
         return Opacity(
           opacity: 1 - 0.5 * offset,

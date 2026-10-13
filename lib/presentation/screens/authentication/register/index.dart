@@ -375,22 +375,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: _fullNameFocusNode.hasFocus
                       ? AppColors.primary
                       : AppColors.gray1,
-                  width: _fullNameFocusNode.hasFocus ? 1.4 : 0,
+                  width: _fullNameFocusNode.hasFocus ? kFocusedFieldBorderWidth : 0,
                 ),
-                boxShadow: _fullNameFocusNode.hasFocus
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.10),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                        BoxShadow(
-                          color: AppColors.black1.withOpacity(0.02),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ]
-                    : null,
+                boxShadow:
+                    _fullNameFocusNode.hasFocus ? kFocusedFieldShadow : null,
               ),
               alignment: Alignment.center,
               child: Directionality(

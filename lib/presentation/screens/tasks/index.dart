@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
+import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
@@ -27,6 +28,7 @@ import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_controller.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_view.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
+import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -37,8 +39,41 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
+/// Fades and slides a just-added row into place, once.
+class _AppearIn extends StatelessWidget {
+  const _AppearIn({
+    super.key,
+    required this.animate,
+    required this.onDone,
+    required this.child,
+  });
+
+  final bool animate;
+  final VoidCallback onDone;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!animate || reduceMotion(context)) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      onEnd: onDone,
+      child: child,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 16 * (1 - t)),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 class _TasksScreenState extends State<TasksScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late Jalali _selectedDate;
 
   /// Read on demand so "today" stays correct if the app is left open past
@@ -51,6 +86,10 @@ class _TasksScreenState extends State<TasksScreen>
   List<Map<String, dynamic>> _timedTasks = [];
   bool _isLoadingTasks = false;
   final TaskTimerService _timer = TaskTimerService.instance;
+  final ScrollController _timedListController = ScrollController();
+
+  /// Tasks created a moment ago; their rows animate in once.
+  final Set<String> _justAddedIds = {};
 
   /// Ticks whenever the day's checklists change, so their popup follows.
   final ValueNotifier<int> _dayChecklistsChanged = ValueNotifier(0);
@@ -66,6 +105,7 @@ class _TasksScreenState extends State<TasksScreen>
   /// around the same day.
   TasksViewMode _mode = TasksViewMode.day;
   late final TasksApi _tasksApi;
+  late final TagSuggestionRepository _tagSuggestions;
   late final WeeklyPlanController _week;
   final GlobalKey<WeeklyPlanViewState> _weekViewKey = GlobalKey();
   ({String message, VoidCallback onUndo})? _undo;
@@ -78,9 +118,12 @@ class _TasksScreenState extends State<TasksScreen>
     super.initState();
     _selectedDate = _today;
     _tasksApi = GraphQLTasksApi(context.read<GraphQLRepository>());
+    _tagSuggestions =
+        TagSuggestionRepository(context.read<GraphQLRepository>());
     _week = WeeklyPlanController(_tasksApi)..addListener(_onWeekChanged);
 
     _timer.addListener(_onGlobalTimerChanged);
+    WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _timer.bindRepository(
@@ -96,8 +139,17 @@ class _TasksScreenState extends State<TasksScreen>
       ..removeListener(_onWeekChanged)
       ..dispose();
     _timer.removeListener(_onGlobalTimerChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    _timedListController.dispose();
     _dayChecklistsChanged.dispose();
     super.dispose();
+  }
+
+  /// Tasks may have changed elsewhere (another device, the web) while the
+  /// app was in the background.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_reloadActiveView());
   }
 
   /// "امروز" / "فردا" / "دیروز", or the date itself, for headings and copy.
@@ -141,7 +193,9 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   /// Reloads what the current mode shows, keeping it on screen meanwhile.
+  /// Called after every change to tasks, so it also drops the day cache.
   Future<void> _reloadActiveView() {
+    _clearDayCache();
     return _isWeekMode
         ? _week.reload(silent: true)
         : _loadTasksForSelectedDate(showLoading: false);
@@ -170,7 +224,8 @@ class _TasksScreenState extends State<TasksScreen>
   void _selectDay(Jalali day) {
     if (isSameJalaliDay(day, _selectedDate)) return;
     setState(() => _selectedDate = day);
-    unawaited(_loadTasksForSelectedDate());
+    // Changing day doesn't change the week's data; its rings stay as they are.
+    unawaited(_loadTasksForSelectedDate(refreshWeek: false));
   }
 
   /// The strip was swiped to another week in daily mode: the same weekday
@@ -188,11 +243,14 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   /// Keeps the strip's progress rings current in daily mode, for the weeks
-  /// the server can return.
-  void _syncWeekStrip() {
-    if (isWeekWithinHorizon(weekStartOf(_selectedDate), _today)) {
-      unawaited(_week.showWeekOf(_selectedDate));
+  /// the server can return. Without [force], a week already loaded is kept.
+  void _syncWeekStrip({bool force = true}) {
+    final start = weekStartOf(_selectedDate);
+    if (!isWeekWithinHorizon(start, _today)) return;
+    if (!force && _week.hasData && isSameJalaliDay(start, _week.weekStart)) {
+      return;
     }
+    unawaited(_week.showWeekOf(_selectedDate));
   }
 
   Future<void> _pickWeekDate() async {
@@ -300,6 +358,7 @@ class _TasksScreenState extends State<TasksScreen>
     if (_isWeekMode) {
       try {
         await _week.setTaskDone(task, done: done);
+        _clearDayCache();
       } catch (error) {
         if (!mounted) return;
         showReToast(
@@ -325,6 +384,8 @@ class _TasksScreenState extends State<TasksScreen>
     show(done ? 'done' : 'pending');
     try {
       await _tasksApi.setTaskDone(task, done: done);
+      // No cache change needed: the day's cached list holds this same task
+      // map, which already shows the new status.
       // The strip's ring for this day.
       unawaited(_week.reload(silent: true));
     } catch (error) {
@@ -356,30 +417,88 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   Future<void> _openQuickAdd(Jalali day, {bool timed = true}) async {
+    // Held until the sheet closes, so the new rows animate in where the
+    // user can see them.
+    final created = <Map<String, dynamic>>[];
+    var sheetOpen = true;
     await showQuickAddSheet(
       context,
       initialDay: day,
       today: _today,
       initialTimed: timed,
-      subjects: [for (final tag in GlobalData.instance.parentTags) tag.name],
+      suggestTags: _tagSuggestions.suggestTags,
+      tagCatalog: [for (final tag in GlobalData.instance.parentTags) tag.name],
       onSubmit: (draft) async {
         try {
-          await _tasksApi.createQuickTask(draft);
+          final task = await _tasksApi.createQuickTask(draft);
+          if (sheetOpen) {
+            created.add(task);
+          } else if (mounted) {
+            _showCreated([task]);
+          }
           return null;
         } catch (error) {
-          return _actionErrorMessage(
-              error, 'افزودن تسک ناموفق بود. دوباره تلاش کنید.');
+          debugPrint('Quick add failed: $error');
+          return taskFailureMessage(
+            error,
+            fallback: 'ثبت تسک ناموفق بود؛ دوباره تلاش کنید.',
+          );
         }
       },
       onMoreOptions: _openFullAddForm,
     );
-    // Shows the new tasks, with what the server filled in (the subject).
-    if (mounted) unawaited(_reloadActiveView());
+    sheetOpen = false;
+    if (mounted && created.isNotEmpty) _showCreated(created);
+  }
+
+  /// Puts tasks the server just created straight into the lists and the day
+  /// cache. The create response has every field a fetch would (subject
+  /// included), so the day is not fetched again.
+  void _showCreated(List<Map<String, dynamic>> tasks) {
+    var addedTimedHere = false;
+    setState(() {
+      for (final task in tasks) {
+        final day = task['date'];
+        if (day is! Jalali) continue;
+        final timed = isTimedTask(task);
+        if (isSameJalaliDay(day, _selectedDate)) {
+          // The selected day's cache entry holds these same lists.
+          (timed ? _timedTasks : _checklistTasks).add(task);
+          if (task['id'] case final String id) _justAddedIds.add(id);
+          addedTimedHere |= timed;
+        } else {
+          final cached = _dayCache[_dayKey(day)];
+          (timed ? cached?.timed : cached?.checklist)?.add(task);
+        }
+      }
+    });
+    _dayChecklistsChanged.value++;
+    if (addedTimedHere) _scrollToLastTimedTask();
+
+    _week.showAdded(tasks);
+    // The strip's rings and the week view, in the background.
+    unawaited(_week.reload(silent: true));
+  }
+
+  void _scrollToLastTimedTask() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_timedListController.hasClients) return;
+      final position = _timedListController.position;
+      if (reduceMotion(context)) {
+        position.jumpTo(position.maxScrollExtent);
+      } else {
+        position.animateTo(
+          position.maxScrollExtent,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   /// "Advanced settings": the full form, filled with what quick add had.
   Future<void> _openFullAddForm(QuickTaskDraft draft) async {
-    final tags = [if (draft.subject != null) draft.subject!];
+    final tags = draft.tags;
     final created = await context.to<Map<String, dynamic>>(
       draft.isTimed
           ? AddTimedTaskScreen(
@@ -413,7 +532,38 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
 }
 ''';
 
-  Future<void> _loadTasksForSelectedDate({bool showLoading = true}) async {
+  /// Days already loaded, keyed by [_dayKey]. A cached day is shown without
+  /// asking the server again. Any change to tasks clears the whole cache
+  /// ([_clearDayCache]), so only the day on screen is fetched again.
+  final Map<String, ({
+    List<Map<String, dynamic>> checklist,
+    List<Map<String, dynamic>> timed,
+  })> _dayCache = {};
+
+  static String _dayKey(Jalali day) => '${day.year}-${day.month}-${day.day}';
+
+  /// Clearing everything rather than the touched days: a recurring task, a
+  /// move or an edited date can change days other than the one on screen.
+  void _clearDayCache() => _dayCache.clear();
+
+  Future<void> _loadTasksForSelectedDate({
+    bool showLoading = true,
+    bool refreshWeek = true,
+  }) async {
+    final cached = _dayCache[_dayKey(_selectedDate)];
+    if (cached != null) {
+      if (!mounted) return;
+      setState(() {
+        _checklistTasks = cached.checklist;
+        _timedTasks = cached.timed;
+        _isLoadingTasks = false;
+      });
+      _dayChecklistsChanged.value++;
+      _resumeServerTimer(cached.timed);
+      if (!_isWeekMode) _syncWeekStrip(force: refreshWeek);
+      return;
+    }
+
     if (showLoading && mounted) setState(() => _isLoadingTasks = true);
     try {
       final selectedDate = _selectedDate;
@@ -453,6 +603,8 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
         }
       }
 
+      _dayCache[_dayKey(selectedDate)] =
+          (checklist: checklistTasks, timed: timedTasks);
       setState(() {
         _checklistTasks = checklistTasks;
         _timedTasks = timedTasks;
@@ -460,7 +612,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       });
       _dayChecklistsChanged.value++;
       _resumeServerTimer(timedTasks);
-      if (!_isWeekMode) _syncWeekStrip();
+      if (!_isWeekMode) _syncWeekStrip(force: refreshWeek);
     } catch (error) {
       if (!mounted) return;
       setState(() => _isLoadingTasks = false);
@@ -1075,30 +1227,37 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: ListView.builder(
+          controller: _timedListController,
           padding: const EdgeInsets.fromLTRB(16, 18, 14, 16),
           itemCount: _timedTasks.length,
           itemBuilder: (context, index) {
             final task = _timedTasks[index];
             final rowHeight = _timedTaskRowHeight(task);
-            return SizedBox(
-              height: rowHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: _buildTimedTaskTile(task, index),
+            final id = task['id'] as String?;
+            return _AppearIn(
+              key: ValueKey('timed-row-$id'),
+              animate: id != null && _justAddedIds.contains(id),
+              onDone: () => _justAddedIds.remove(id),
+              child: SizedBox(
+                height: rowHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: _buildTimedTaskTile(task, index),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildTimedTaskMarker(
-                    task: task,
-                    showTopLine: index != 0,
-                    showBottomLine: index != _timedTasks.length - 1,
-                    height: rowHeight,
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    _buildTimedTaskMarker(
+                      task: task,
+                      showTopLine: index != 0,
+                      showBottomLine: index != _timedTasks.length - 1,
+                      height: rowHeight,
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -1327,23 +1486,19 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
 
   Future<void> _showTaskDetails(Map<String, dynamic> task,
       {required bool timed}) async {
-    _timer.suppressBanner();
-    final _TaskSheetAction? action;
-    try {
-      action = await showModalBottomSheet<_TaskSheetAction>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (_) => _TaskDetailsSheet(
-          task: task,
-          timed: timed,
-          listenable: _timer,
-          resolveState: () => _sheetTaskState(task, timed: timed),
-        ),
-      );
-    } finally {
-      _timer.unsuppressBanner();
-    }
+    // The banner hides itself while this sheet is open
+    // (TaskTimerBannerRouteObserver).
+    final action = await showModalBottomSheet<_TaskSheetAction>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _TaskDetailsSheet(
+        task: task,
+        timed: timed,
+        listenable: _timer,
+        resolveState: () => _sheetTaskState(task, timed: timed),
+      ),
+    );
 
     if (!mounted || action == null) return;
 
@@ -1870,7 +2025,7 @@ class _AddTaskButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'افزودن تسک یا چک‌لیست',
+      label: 'ثبت تسک یا چک‌لیست',
       excludeSemantics: true,
       child: PressScale(
         onTap: onTap,
@@ -1889,7 +2044,7 @@ class _AddTaskButton extends StatelessWidget {
               Icon(Icons.add_rounded, size: 20, color: AppColors.white),
               SizedBox(width: 4),
               ReText(
-                'افزودن',
+                'ثبت تسک',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
                 color: AppColors.white,

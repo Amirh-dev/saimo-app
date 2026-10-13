@@ -16,20 +16,71 @@ class TaskActionException implements Exception {
   String toString() => message;
 }
 
+/// Why saving a task failed, in words the user can act on. [error] is what
+/// was thrown, or the server's own (English) message; anything not
+/// recognised gets [fallback].
+String taskFailureMessage(Object? error, {required String fallback}) {
+  if (error is TaskActionException) return error.message;
+  if (error is UnauthorizedException) {
+    return 'نشست شما به پایان رسیده است؛ دوباره وارد شوید.';
+  }
+  final text = (error ?? '').toString();
+  final lower = text.toLowerCase();
+  const offlineHints = [
+    'socketexception',
+    'failed host lookup',
+    'connection refused',
+    'connection closed',
+    'connection reset',
+    'network is unreachable',
+    'clientexception',
+    'timed out',
+    'timeoutexception',
+  ];
+  if (error is TimeoutException || offlineHints.any(lower.contains)) {
+    return 'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره تلاش کنید.';
+  }
+  if (lower.contains('blocked tags')) {
+    final colon = text.lastIndexOf(':');
+    final tag = colon < 0 ? '' : text.substring(colon + 1).trim();
+    return tag.isEmpty
+        ? 'یکی از تگ‌ها قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.'
+        : 'تگ «$tag» قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.';
+  }
+  if (lower.contains('goal not found')) {
+    return 'هدف این تسک پیدا نشد؛ شاید حذف شده باشد.';
+  }
+  if (lower.contains('weekday')) {
+    return 'روزهای تکرار درست انتخاب نشده‌اند؛ دوباره انتخاب کنید.';
+  }
+  if (lower.contains('already has an occurrence')) {
+    return 'این تسک تکرارشونده برای آن روز هم برنامه‌ریزی شده است.';
+  }
+  if (lower.contains('duration')) {
+    return 'مدت زمان تسک را انتخاب کنید.';
+  }
+  if (lower.contains('internal server error') ||
+      lower.contains('status code: 5') ||
+      lower.contains('statuscode: 5')) {
+    return 'سرور فعلاً پاسخ نمی‌دهد؛ کمی بعد دوباره تلاش کنید.';
+  }
+  return fallback;
+}
+
 /// What the quick-add sheet creates: a one-off task with a title and,
-/// optionally, a duration (a timed task) and a subject.
+/// optionally, a duration (a timed task) and tags.
 class QuickTaskDraft {
   const QuickTaskDraft({
     required this.title,
     required this.day,
     this.timedMinutes,
-    this.subject,
+    this.tags = const [],
   });
 
   final String title;
   final Jalali day;
   final int? timedMinutes;
-  final String? subject;
+  final List<String> tags;
 
   bool get isTimed => timedMinutes != null;
 }
@@ -182,15 +233,15 @@ $kTaskFields
           'date': rfc3339Local(_onDay(draft.day, null)),
           if (draft.isTimed) 'durationM': draft.timedMinutes,
           'hasReminder': false,
-          // The server infers the subject from its tag, as with the full form.
-          if (draft.subject != null) 'tagNames': [draft.subject],
+          // The server infers the subject from the tags, as with the full form.
+          if (draft.tags.isNotEmpty) 'tagNames': draft.tags,
         },
       },
     );
 
     final created = data['createTask'];
     if (created is! Map<String, dynamic>) {
-      throw const TaskActionException('افزودن تسک ناموفق بود. دوباره تلاش کنید.');
+      throw const TaskActionException('ثبت تسک ناموفق بود؛ دوباره تلاش کنید.');
     }
     return plannedTaskFromApi(created);
   }

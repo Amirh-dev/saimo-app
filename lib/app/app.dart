@@ -82,16 +82,14 @@ class MyApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           navigatorKey: _rootNavigatorKey,
+          navigatorObservers: [TaskTimerBannerRouteObserver()],
           builder: (context, child) {
             return Stack(
               children: [
                 child ?? const SizedBox.shrink(),
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: TaskTimerBanner(
-                    navigatorKey: _rootNavigatorKey,
-                    bottomOffset: 110, // raise until it clears your bottom nav bar
-                  ),
+                  child: TaskTimerBanner(navigatorKey: _rootNavigatorKey),
                 ),
               ],
             );
@@ -99,9 +97,39 @@ class MyApp extends StatelessWidget {
           title: AppStrings.appName,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+            // A seeded scheme turns the brand orange into a muddy brown and
+            // tints surfaces pink, and every widget left on its defaults
+            // (cursor, selection handles, dialogs, pickers) picks that up.
+            // Pin the app's own colors instead.
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              primary: AppColors.primary,
+              onPrimary: AppColors.whiteSec,
+              secondary: AppColors.black1,
+              onSecondary: AppColors.whiteSec,
+              surface: AppColors.whiteSec,
+              onSurface: AppColors.black1,
+              onSurfaceVariant: AppColors.gray,
+              surfaceTint: Colors.transparent,
+              surfaceContainerLowest: AppColors.whiteSec,
+              surfaceContainerLow: AppColors.white,
+              surfaceContainer: AppColors.gray1,
+              surfaceContainerHigh: AppColors.gray1,
+              surfaceContainerHighest: AppColors.gray2,
+              outline: AppColors.dark5Color,
+              outlineVariant: AppColors.gray2,
+              error: AppColors.errorColor,
+            ),
             fontFamily: AppFonts.iranSansVar,
             useMaterial3: true,
+            textSelectionTheme: TextSelectionThemeData(
+              cursorColor: AppColors.primary,
+              selectionHandleColor: AppColors.primary,
+              selectionColor: AppColors.primary.withValues(alpha: 0.22),
+            ),
+            // Spinners stay neutral.
+            progressIndicatorTheme:
+                const ProgressIndicatorThemeData(color: AppColors.black1),
             pageTransitionsTheme: kAppPageTransitionsTheme,
           ),
           home: const _AuthGate(),
@@ -132,7 +160,10 @@ class _AuthGate extends StatelessWidget {
       builder: (context, state) {
         if (state is AuthInitial ||
             (state is AuthLoading && state.action == AuthAction.checkStatus)) {
+          // Shown while the saved session is checked (token refresh and
+          // profile load), before the first screen is known.
           return const Scaffold(
+            backgroundColor: AppColors.gray1,
             body: Center(child: CircularProgressIndicator.adaptive()),
           );
         }

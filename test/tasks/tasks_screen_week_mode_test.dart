@@ -267,6 +267,12 @@ void main() {
 
     expect(find.byType(AddTimedTaskScreen), findsOneWidget);
     expect(find.text('تمرین تستی'), findsOneWidget);
+    // The form picks tags as quick add does: with a title there is no hint,
+    // only the tags (none suggested here) and the chip to add one.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(_key('task-form-tags-hint'), findsNothing);
+    expect(_key('task-form-tag-new'), findsOneWidget);
   });
 
   testWidgets('daily mode shows checklists in the pill and checks them off',

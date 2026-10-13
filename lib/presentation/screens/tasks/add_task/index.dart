@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:ferry/ferry.dart' show OperationResponse;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:gql_http_link/gql_http_link.dart' show HttpLinkServerException;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/core/global/global_data.dart';
-import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
@@ -11,10 +13,14 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/tasks/tag_selection.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_form_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
+import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
-import 'package:simo_learn/presentation/widgets/re_toast.dart';
+import 'package:simo_learn/presentation/widgets/re_text_field.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
@@ -26,10 +32,6 @@ DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
     time?.hour ?? 0,
     time?.minute ?? 0,
   );
-}
-
-List<String> _parseTagNames(String value) {
-  return value.split(' ').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).take(2).toList();
 }
 
 String? _emptyToNull(String value) {
@@ -49,22 +51,36 @@ Jalali _pickerMinDate(Jalali selected) {
   return selectedIsPast ? selected : now;
 }
 
-List<ParentTagModel> _tagsFromNames(Iterable<String> names) {
-  return [
-    for (final name in names)
-      ParentTagModel(
-        id: 'existing_$name',
-        name: name,
-        kind: 'SUGGESTED',
-        moderationStatus: 'APPROVED',
-      ),
-  ];
+/// The form's tags, picked as in quick add: the task's own when editing, or
+/// what quick add chose. Tags already chosen belong to the title they came
+/// with, so the server is asked only once the title changes; a title handed
+/// over without tags is asked about at once.
+TagSelection _formTagSelection(
+  BuildContext context, {
+  required Map<String, dynamic>? editing,
+  required String title,
+  required List<String> initialTags,
+}) {
+  final existing = editing != null
+      ? (editing['tags'] as List?)?.cast<String>() ?? const <String>[]
+      : initialTags;
+  return TagSelection(
+    suggest:
+        TagSuggestionRepository(context.read<GraphQLRepository>()).suggestTags,
+    catalog: [for (final tag in GlobalData.instance.parentTags) tag.name],
+    initial: existing,
+    initialTitle: editing != null || existing.isNotEmpty ? title : '',
+  )..titleChanged(title);
 }
 
 Set<String> _weekdaysFromRecurring(String? raw) {
   if (raw == null) return {};
   final known = _weekDayOptions.map((day) => day.code).toSet();
-  return RegExp(r'[A-Za-z]{3}').allMatches(raw).map((m) => m.group(0)!.toUpperCase()).where(known.contains).toSet();
+  return RegExp(r'[A-Za-z]{3}')
+      .allMatches(raw)
+      .map((m) => m.group(0)!.toUpperCase())
+      .where(known.contains)
+      .toSet();
 }
 
 class WeekDayOption {
@@ -85,7 +101,10 @@ const List<WeekDayOption> _weekDayOptions = [
 ];
 
 List<String> _recurrenceWeekdays(Set<String> selectedDays) {
-  return _weekDayOptions.map((day) => day.code).where(selectedDays.contains).toList();
+  return _weekDayOptions
+      .map((day) => day.code)
+      .where(selectedDays.contains)
+      .toList();
 }
 
 /// Schedules the local reminder for a freshly created task: weekly on the
@@ -101,7 +120,8 @@ Future<void> _scheduleReminder(
   final service = TaskReminderService.instance;
   final days = isWeekly ? _recurrenceWeekdays(weekdays) : const <String>[];
   if (days.isNotEmpty) {
-    await service.scheduleWeekly(taskId: taskId, title: title, weekdays: days, time: time);
+    await service.scheduleWeekly(
+        taskId: taskId, title: title, weekdays: days, time: time);
   } else {
     await service.scheduleOnce(
       taskId: taskId,
@@ -135,13 +155,16 @@ Future<void> _scheduleCreatedTaskReminder(
         query: _taskRecurrenceQuery,
         variables: {'id': taskId},
       );
-      final recurrenceId = (data['getTask'] as Map?)?['recurrenceID'] as String?;
-      if (recurrenceId != null) key = TaskReminderService.recurrenceKey(recurrenceId);
+      final recurrenceId =
+          (data['getTask'] as Map?)?['recurrenceID'] as String?;
+      if (recurrenceId != null)
+        key = TaskReminderService.recurrenceKey(recurrenceId);
     } catch (error) {
       debugPrint('Loading task recurrence for its reminder failed: $error');
     }
   }
-  await _scheduleReminder(key, title, date, isWeekly: isWeekly, weekdays: weekdays, time: time);
+  await _scheduleReminder(key, title, date,
+      isWeekly: isWeekly, weekdays: weekdays, time: time);
 }
 
 /// Default reminder hour for a new task: the start of the next hour.
@@ -164,7 +187,8 @@ bool _isReminderInPast(Jalali date, TimeOfDay time, {required bool isWeekly}) {
   return !_toDateTime(date, time: time).isAfter(DateTime.now());
 }
 
-Future<TimeOfDay?> _showReminderTimePicker(BuildContext context, TimeOfDay initial) {
+Future<TimeOfDay?> _showReminderTimePicker(
+    BuildContext context, TimeOfDay initial) {
   FocusManager.instance.primaryFocus?.unfocus();
   return showModalBottomSheet<TimeOfDay>(
     context: context,
@@ -172,6 +196,154 @@ Future<TimeOfDay?> _showReminderTimePicker(BuildContext context, TimeOfDay initi
     isScrollControlled: true,
     builder: (_) => _ReminderTimePickerSheet(initialTime: initial),
   );
+}
+
+/// The header's subtitle: when the task happens.
+String _formSubtitle(String dateLabel, bool weekly) =>
+    weekly ? 'تکرار هفتگی' : 'برای $dateLabel';
+
+/// The scrolling column the forms' sections sit in.
+Widget _taskFormBody({required List<Widget> children}) {
+  return SingleChildScrollView(
+    physics: const ClampingScrollPhysics(),
+    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Pinned under the form, as in quick add: what went wrong, if anything,
+/// then «لغو» and the main action.
+Widget _taskFormFooter({
+  required String? error,
+  required String submitText,
+  required bool isSubmitting,
+  required VoidCallback onSubmit,
+  required VoidCallback? onCancel,
+}) {
+  return DecoratedBox(
+    decoration: const BoxDecoration(
+      color: AppColors.white,
+      border: Border(top: BorderSide(color: AppColors.gray2)),
+    ),
+    child: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        // heightFactor: a bottom bar may be as tall as the screen; without
+        // it this would stretch over (and swallow taps on) the whole form.
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TaskFormError(
+                  message: error,
+                  messageKey: const ValueKey('task-form-error'),
+                ),
+                const SizedBox(height: 12),
+                TaskFormActions(
+                  secondary: PlanPillButton.outlined(
+                    key: const ValueKey('task-form-cancel'),
+                    text: 'لغو',
+                    icon: Icons.close_rounded,
+                    onTap: onCancel,
+                  ),
+                  primary: PlanPillButton(
+                    key: const ValueKey('task-form-submit'),
+                    text: submitText,
+                    icon: Icons.check_rounded,
+                    isLoading: isSubmitting,
+                    onTap: onSubmit,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// The tags, picked as in quick add.
+Widget _formTagsSection(TagSelection tags) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      TaskSectionLabel(
+        'تگ‌ها',
+        trailing: TagSuggestionStatus(selection: tags, keyPrefix: 'task-form'),
+      ),
+      TagSelectionChips(selection: tags, keyPrefix: 'task-form'),
+    ],
+  );
+}
+
+/// Why the server refused to save the task, for the form's error box.
+String _responseFailure(OperationResponse<dynamic, dynamic> response) {
+  const fallback = 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.';
+  final link = response.linkException;
+  if (link != null) {
+    if (link is HttpLinkServerException) {
+      final status = link.response.statusCode;
+      if (status == 401) {
+        return taskFailureMessage(const UnauthorizedException(),
+            fallback: fallback);
+      }
+      if (status >= 500) {
+        return 'سرور فعلاً پاسخ نمی‌دهد؛ کمی بعد دوباره تلاش کنید.';
+      }
+    }
+    // No answer at all: most often the connection.
+    return taskFailureMessage(
+      link.originalException ?? link,
+      fallback:
+          'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره تلاش کنید.',
+    );
+  }
+  return taskFailureMessage(graphQLResponseErrorMessage(response),
+      fallback: fallback);
+}
+
+/// How both full forms tell the user what is wrong: the title field itself
+/// for a missing title, the box above the actions for everything else.
+mixin _TaskFormFeedback<T extends StatefulWidget> on State<T> {
+  String? _titleError;
+  int _titleErrorTick = 0;
+  String? _formError;
+
+  FocusNode get _titleFocusNode;
+
+  void _showTitleError() {
+    setState(() {
+      _titleError = 'عنوان تسک را بنویسید.';
+      _titleErrorTick++;
+    });
+    _titleFocusNode.requestFocus();
+  }
+
+  void _failWith(String message) {
+    HapticFeedback.heavyImpact();
+    setState(() => _formError = message);
+  }
+
+  void _clearTitleErrorFor(String title) {
+    if (_titleError != null && title.trim().isNotEmpty) {
+      setState(() => _titleError = null);
+    }
+  }
 }
 
 class AddTimedTaskScreen extends StatefulWidget {
@@ -206,7 +378,8 @@ class AddTimedTaskScreen extends StatefulWidget {
   State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
 }
 
-class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
+class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
+    with _TaskFormFeedback {
   static const List<String> _persianMonths = [
     'فروردین',
     'اردیبهشت',
@@ -239,27 +412,19 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
   late Jalali _visibleCalendarMonth;
 
   int _selectedMinutes = 45;
-  late PageController _minutesPageController;
 
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _tagController;
   late TextEditingController _noteController;
 
+  @override
   late FocusNode _titleFocusNode;
   late FocusNode _descriptionFocusNode;
-  late FocusNode _tagFocusNode;
   late FocusNode _noteFocusNode;
-
-  List<ParentTagModel> availableTags = GlobalData.instance.parentTags;
 
   @override
   void initState() {
     super.initState();
-
-    _tagSuggestionRepository = TagSuggestionRepository(
-      context.read<GraphQLRepository>(),
-    );
 
     _selectedDate = widget.initialDate ?? Jalali.now();
     _reminderTime = _initialReminderTime(widget.task);
@@ -269,51 +434,39 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       _selectedDate = editing['date'] as Jalali? ?? _selectedDate;
       final seconds = editing['durationSeconds'] as int?;
       if (seconds != null && seconds > 0) _selectedMinutes = seconds ~/ 60;
-    } else {
-      _selectedTags.addAll(_tagsFromNames(widget.initialTags));
     }
-    _minuteOptions = {..._baseMinuteOptions, _selectedMinutes}.toList()..sort((a, b) => b.compareTo(a));
+    _minuteOptions = {..._baseMinuteOptions, _selectedMinutes}.toList()..sort();
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
-    _minutesPageController = PageController(
-      initialPage: _minuteOptions.indexOf(_selectedMinutes).clamp(
-            0,
-            _minuteOptions.length - 1,
-          ),
-      viewportFraction: 0.22,
+    _titleController = TextEditingController(
+        text: widget.task?['title'] as String? ?? widget.initialTitle ?? '');
+    _tags = _formTagSelection(
+      context,
+      editing: editing,
+      title: _titleController.text,
+      initialTags: widget.initialTags,
     );
-    _titleController = TextEditingController(text: widget.task?['title'] as String? ?? widget.initialTitle ?? '');
-    if (editing == null && _titleController.text.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _onTitleChanged(_titleController.text);
-      });
-    }
-    _descriptionController = TextEditingController(text: widget.task?['shortDescription'] as String? ?? '');
-    _tagController = TextEditingController();
-    _noteController = TextEditingController(text: widget.task?['note'] as String? ?? '');
+    _descriptionController = TextEditingController(
+        text: widget.task?['shortDescription'] as String? ?? '');
+    _noteController =
+        TextEditingController(text: widget.task?['note'] as String? ?? '');
     if (editing != null) {
-      _selectedTags.addAll(_tagsFromNames((editing['tags'] as List?)?.cast<String>() ?? const []));
       _isReminderEnabled = editing['reminder'] as bool? ?? false;
-      _selectedWeekDays.addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
+      _selectedWeekDays
+          .addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
       _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
     }
     _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
-    _tagFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _noteFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
   }
 
   @override
   void dispose() {
-    _tagSuggestionDebounce?.cancel();
-    _tagSuggestionRequestId++;
-
+    _tags.dispose();
     _titleFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
     _descriptionFocusNode
-      ..removeListener(_handleFieldFocusChange)
-      ..dispose();
-    _tagFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
     _noteFocusNode
@@ -321,9 +474,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       ..dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _tagController.dispose();
     _noteController.dispose();
-    _minutesPageController.dispose();
     super.dispose();
   }
 
@@ -332,136 +483,20 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     setState(() {});
   }
 
-  final List<ParentTagModel> _selectedTags = [];
-
-  late final TagSuggestionRepository _tagSuggestionRepository;
-  Timer? _tagSuggestionDebounce;
-  int _tagSuggestionRequestId = 0;
-  List<ParentTagModel> _specificSuggestedTags = <ParentTagModel>[];
+  late final TagSelection _tags;
 
   void _onTitleChanged(String value) {
-    setState(() {
-      _tagSuggestionDebounce?.cancel();
-
-      final title = value.trim();
-
-      if (title.isEmpty) {
-        _tagSuggestionRequestId++;
-
-        if (mounted) {
-          _specificSuggestedTags = <ParentTagModel>[];
-          availableTags = GlobalData.instance.parentTags;
-        }
-
-        return;
-      }
-
-      // Clear the previous title's suggestions immediately.
-      // Until the new API result arrives, global public tags are used as backup.
-      if (mounted) {
-        _specificSuggestedTags = <ParentTagModel>[];
-        availableTags = GlobalData.instance.parentTags;
-      }
-
-      // Avoid sending one request for every keystroke.
-      _tagSuggestionDebounce = Timer(
-        const Duration(milliseconds: 450),
-            () => _loadSpecificSuggestedTags(title),
-      );
-    });
-  }
-
-  Future<void> _loadSpecificSuggestedTags(String title) async {
-    final requestId = ++_tagSuggestionRequestId;
-
-    try {
-      final names = await _tagSuggestionRepository.suggestTags(title);
-
-      // Ignore an old response if the user has already typed a newer title.
-      if (!mounted || requestId != _tagSuggestionRequestId) return;
-
-      final uniqueNames = <String>[];
-      final seen = <String>{};
-
-      for (final name in names) {
-        final normalized = name.trim();
-
-        if (normalized.isEmpty) continue;
-
-        final key = normalized.toLowerCase();
-
-        if (seen.add(key)) {
-          uniqueNames.add(normalized);
-        }
-      }
-
-        _specificSuggestedTags = [
-          for (var index = 0; index < uniqueNames.length; index++)
-            ParentTagModel(
-              id: 'suggested_${index}_${uniqueNames[index]}',
-              name: uniqueNames[index],
-              kind: 'SUGGESTED',
-              moderationStatus: 'APPROVED',
-            ),
-        ];
-        availableTags = _specificSuggestedTags;
-    } catch (error) {
-      if (!mounted || requestId != _tagSuggestionRequestId) return;
-
-      debugPrint('SUGGEST TAGS ERROR: $error');
-
-      // Empty means "use the global public tags as fallback".
-        _specificSuggestedTags = <ParentTagModel>[];
-        availableTags = GlobalData.instance.parentTags;
-    }
-  }
-
-  List<String> get _selectedTagNames {
-    return _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
-  }
-
-  bool _isTagAlreadySelected(ParentTagModel tag) {
-    final selected = _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty);
-
-    return selected.any(
-      (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
-    );
-  }
-
-  void _selectTag(ParentTagModel tag) {
-    if (_isTagAlreadySelected(tag)) return;
-
-    final currentText = _tagController.text.trim();
-
-    // Maximum 2 tags.
-    final currentParts = currentText.split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
-
-    if (currentParts.length >= 2) return;
-
-    final newText = currentText.isEmpty ? tag.name.trim() : '$currentText ${tag.name.trim()}';
-
-    _tagController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: newText.length),
-    );
-
-    setState(() {});
-
-    // Keep keyboard open so the user can select the second tag.
-    _tagFocusNode.requestFocus();
+    _tags.titleChanged(value);
+    _clearTitleErrorFor(value);
   }
 
   bool get _isFormValid => _titleController.text.trim().isNotEmpty;
 
-  int get _descriptionCount => _descriptionController.text.length;
-
-  int get _noteCount => _noteController.text.length;
-
-  int get _tagsCount => _selectedTags.length;
-
   String get _scheduleDateLabel {
     final today = Jalali.now();
-    final isToday = _selectedDate.year == today.year && _selectedDate.month == today.month && _selectedDate.day == today.day;
+    final isToday = _selectedDate.year == today.year &&
+        _selectedDate.month == today.month &&
+        _selectedDate.day == today.day;
     final prefix = isToday ? 'امروز، ' : '';
     return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
@@ -469,7 +504,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
   void _selectDateModeTimed() {
     setState(() {
       _isWeeklyRepeat = false;
-      _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
+      _visibleCalendarMonth =
+          Jalali(_selectedDate.year, _selectedDate.month, 1);
     });
     _openCalendarModal();
   }
@@ -538,7 +574,10 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   Future<void> _updateTimedTask() async {
     final taskId = widget.task!['id'] as String;
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _formError = null;
+    });
 
     try {
       final taskDate = _toDateTime(_selectedDate);
@@ -552,14 +591,17 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ..note = _noteController.text.trim()
               ..durationM = _selectedMinutes
               ..hasReminder = _isReminderEnabled
-              ..tagNames.replace(_selectedTags.map((tag) => tag.name));
+              ..tagNames.replace(_tags.selected);
 
             // An edit targets this task, or this one occurrence of a recurring
             // task; updateTask has no recurrence input.
             request.vars.input.date.value = taskDate.toUtc().toIso8601String();
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
+              request.vars.input.reminderTime.value =
+                  _toDateTime(_selectedDate, time: _reminderTime)
+                      .toUtc()
+                      .toIso8601String();
             }
           },
         ),
@@ -568,39 +610,46 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        _failWith(_responseFailure(response));
         return;
       }
 
       final task = response.data!.updateTask;
       await TaskReminderService.instance.cancel(taskId);
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, time: _reminderTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate,
+            time: _reminderTime));
       }
       if (!mounted) return;
 
-      Navigator.of(context).pop(<String, dynamic>{'id': task.id, 'updated': true});
+      Navigator.of(context)
+          .pop(<String, dynamic>{'id': task.id, 'updated': true});
     } catch (error) {
       if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
+      debugPrint('Saving the task failed: $error');
+      _failWith(taskFailureMessage(error,
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _submitTimedTask() async {
+    setState(() => _formError = null);
     if (!_isFormValid) {
-      showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
+      _showTitleError();
       return;
     }
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
-      showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      _failWith('حداقل یک روز را برای تکرار انتخاب کنید.');
       return;
     }
 
-    if (_isReminderEnabled && _isReminderInPast(_selectedDate, _reminderTime, isWeekly: _isWeeklyRepeat)) {
-      showReToast(context, 'زمان یادآوری گذشته است', ReToastType.warning);
+    if (_isReminderEnabled &&
+        _isReminderInPast(_selectedDate, _reminderTime,
+            isWeekly: _isWeeklyRepeat)) {
+      _failWith('زمان یادآوری گذشته است؛ زمان دیگری انتخاب کنید.');
       return;
     }
 
@@ -610,16 +659,17 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
     }
 
     final description = _descriptionController.text.trim();
-    final tags = _tagController.text.trim();
+    final tags = _tags.selected.join(' ');
     final note = _noteController.text.trim();
 
     setState(() {
       _isSubmitting = true;
+      _formError = null;
     });
 
     try {
       final taskDate = _toDateTime(_selectedDate);
-      final tagNames = _selectedTags.map((tag) => tag.name).toList();
+      final tagNames = _tags.selected;
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -633,11 +683,14 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
               ..tagNames.addAll(tagNames);
 
             // The server requires exactly one of `date` or `recurrence`.
-            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            final weekdays = _isWeeklyRepeat
+                ? _recurrenceWeekdays(_selectedWeekDays)
+                : <String>[];
             if (weekdays.isNotEmpty) {
               request.vars.input.recurrence.weekdays.replace(weekdays);
             } else {
-              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.date.value =
+                  taskDate.toUtc().toIso8601String();
             }
 
             final goalId = _emptyToNull(widget.goalId ?? '');
@@ -648,7 +701,10 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
             // The server rejects reminderTime on a recurring task; its weekly
             // reminder is scheduled on the device below.
             if (_isReminderEnabled && weekdays.isEmpty) {
-              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
+              request.vars.input.reminderTime.value =
+                  _toDateTime(_selectedDate, time: _reminderTime)
+                      .toUtc()
+                      .toIso8601String();
             }
           },
         ),
@@ -657,20 +713,26 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.createTask == null) {
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
+        debugPrint(
+            'Creating the task failed: ${response.graphqlErrors} ${response.linkException}');
+        _failWith(_responseFailure(response));
         return;
       }
 
       final task = response.data!.createTask;
       if (_isReminderEnabled) {
-        unawaited(_scheduleCreatedTaskReminder(context.read<GraphQLRepository>(), task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
+        unawaited(_scheduleCreatedTaskReminder(
+            context.read<GraphQLRepository>(), task.id, task.title, taskDate,
+            isWeekly: _isWeeklyRepeat,
+            weekdays: _selectedWeekDays,
+            time: _reminderTime));
       }
       final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
-      final subtitle = task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (task.note?.trim().isNotEmpty == true ? task.note!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
+      final subtitle = task.shortDescription?.trim().isNotEmpty == true
+          ? task.shortDescription!.trim()
+          : (task.note?.trim().isNotEmpty == true
+              ? task.note!.trim()
+              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'));
       final durationSeconds = (task.durationM ?? _selectedMinutes) * 60;
 
       Navigator.of(context).pop(
@@ -691,7 +753,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
+      debugPrint('Saving the task failed: $error');
+      _failWith(taskFailureMessage(error,
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -703,9 +767,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final width = context.deviceWidth;
-    final horizontalPadding = width < 360 ? 14.0 : 18.0;
-    final sectionSpacing = width < 360 ? 10.0 : 12.0;
+    var section = 0;
+    Widget enter(Widget child) =>
+        TaskFormEntrance(index: section++, child: child);
 
     return PopScope(
       onPopInvokedWithResult: (final _, final __) {
@@ -714,660 +778,92 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen> {
       child: Scaffold(
         backgroundColor: AppColors.white,
         body: SafeArea(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalPadding,
-                    10,
-                    horizontalPadding,
-                    14,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildTimedHeader(context),
-                      SizedBox(height: sectionSpacing),
-                      _buildPillField(
-                        hintText: 'عنوان',
-                        controller: _titleController,
-                        focusNode: _titleFocusNode,
-                        onChanged: _onTitleChanged,
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      _buildPillField(
-                        hintText: 'توضیح کوتاه',
-                        controller: _descriptionController,
-                        focusNode: _descriptionFocusNode,
-                        maxLength: 50,
-                        leadingPill: '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      _buildTagSuggestionField(),
-                      SizedBox(height: sectionSpacing + 2),
-                      _buildDurationPicker(),
-                      SizedBox(height: sectionSpacing),
-                      _buildNoteField(),
-                      SizedBox(height: sectionSpacing),
-                      _buildDateCardCompact(),
-                      SizedBox(height: sectionSpacing),
-                      _buildReminderCardCompact(),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _ActionButton(
-                              text: _isEditing ? 'ذخیره' : 'افزودن',
-                              icon: Icons.add,
-                              background: AppColors.primary,
-                              textColor: AppColors.white,
-                              isLoading: _isSubmitting,
-                              onTap: _submitTimedTask,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _ActionButton(
-                              text: 'لغو',
-                              icon: Icons.close,
-                              background: AppColors.white,
-                              textColor: AppColors.black1,
-                              borderColor: AppColors.gray2,
-                              onTap: _isSubmitting ? () {} : () => Navigator.of(context).pop(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTagSuggestionField() {
-    final isFocused = _tagFocusNode.hasFocus;
-
-    return RawAutocomplete<ParentTagModel>(
-      textEditingController: _tagController,
-      focusNode: _tagFocusNode,
-      key: ValueKey(
-        _specificSuggestedTags
-            .map((e) => '${e.id}_${e.name}')
-            .join('|'),
-      ),
-
-      optionsBuilder: (TextEditingValue textEditingValue) {
-        final tags = availableTags;
-
-        debugPrint(
-          'AVAILABLE TAGS: ${tags.map((e) => e.name).toList()}',
-        );
-
-        return tags.where((tag) {
-          final query = textEditingValue.text.trim().toLowerCase();
-
-          if (query.isEmpty) {
-            return true;
-          }
-
-          return tag.name.toLowerCase().contains(query);
-        });
-      },
-      displayStringForOption: (ParentTagModel tag) => tag.name,
-      onSelected: (ParentTagModel tag) {
-        if (_selectedTags.length >= 2) return;
-
-        setState(() {
-          _selectedTags.add(tag);
-        });
-
-        // The controller is ONLY the search/query text.
-        _tagController.clear();
-
-        // Let the user immediately type the second tag.
-        _tagFocusNode.requestFocus();
-      },
-      fieldViewBuilder: (
-        BuildContext context,
-        TextEditingController controller,
-        FocusNode focusNode,
-        VoidCallback onFieldSubmitted,
-      ) {
-        return Container(
-          constraints: const BoxConstraints(
-            minHeight: 55,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.gray1,
-            borderRadius: BorderRadius.circular(100),
-            border: isFocused
-                ? Border.all(
-                    color: AppColors.primary,
-                    width: 1.4,
-                  )
-                : null,
-            boxShadow: isFocused
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.10),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 7,
-          ),
-          child: Row(
+          bottom: false,
+          child: _taskFormBody(
             children: [
-              // Counter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: ReText(
-                  '${_selectedTags.length}/2',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.black1.withOpacity(0.35),
+              enter(
+                TaskFormHeader(
+                  title:
+                      _isEditing ? 'ویرایش تسک زمان‌دار' : 'تسک زمان‌دار جدید',
+                  subtitle: _formSubtitle(_scheduleDateLabel, _isWeeklyRepeat),
                 ),
               ),
-
-              const SizedBox(width: 4),
-
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  runSpacing: 4,
+              const SizedBox(height: 22),
+              enter(
+                TaskTextField(
+                  fieldKey: const ValueKey('task-form-title'),
+                  controller: _titleController,
+                  focusNode: _titleFocusNode,
+                  hint: 'عنوان تسک، مثلاً «حل تمرین فصل ۳»',
+                  error: _titleError,
+                  errorTick: _titleErrorTick,
+                  textInputAction: TextInputAction.next,
+                  onChanged: _onTitleChanged,
+                ),
+              ),
+              const SizedBox(height: 10),
+              enter(
+                TaskTextField(
+                  fieldKey: const ValueKey('task-form-description'),
+                  controller: _descriptionController,
+                  focusNode: _descriptionFocusNode,
+                  hint: 'توضیح کوتاه (اختیاری)',
+                  maxLength: 50,
+                ),
+              ),
+              enter(_formTagsSection(_tags)),
+              enter(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Search / typing field
-                    if (_selectedTags.length < 2)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minWidth: 70,
-                        ),
-                        child: IntrinsicWidth(
-                          child: TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            onTapOutside: (_) => focusNode.unfocus(),
-                            textAlign: TextAlign.right,
-                            textDirection: TextDirection.rtl,
-                            cursorColor: AppColors.primary,
-                            onChanged: (_) {
-                              setState(() {});
-                            },
-                            style: TextStyle(
-                              fontFamily: AppFonts.iranSansVar,
-                              color: AppColors.black1,
-                              fontSize: 15,
-                              fontVariations: AppFonts.fontVariations(
-                                FontWeight.w600,
-                              ),
-                            ),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'افزودن تگ',
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                              hintStyle: TextStyle(
-                                fontFamily: AppFonts.iranSansVar,
-                                color: AppColors.black1.withOpacity(0.45),
-                                fontSize: 13,
-                                fontVariations: AppFonts.fontVariations(
-                                  FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Selected tag pills
-                    ..._selectedTags.map(
-                      (tag) => _buildSelectedTagChip(tag),
+                    const TaskSectionLabel('مدت زمان'),
+                    TaskDurationPicker(
+                      options: _minuteOptions,
+                      selected: _selectedMinutes,
+                      keyPrefix: 'task-form',
+                      onChanged: (minutes) =>
+                          setState(() => _selectedMinutes = minutes),
                     ),
+                  ],
+                ),
+              ),
+              enter(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const TaskSectionLabel('یادداشت'),
+                    TaskTextField(
+                      fieldKey: const ValueKey('task-form-note'),
+                      controller: _noteController,
+                      focusNode: _noteFocusNode,
+                      hint: 'نکته‌ای که موقع انجام کار لازم دارید (اختیاری)',
+                      maxLength: 200,
+                      maxLines: 4,
+                    ),
+                  ],
+                ),
+              ),
+              enter(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const TaskSectionLabel('زمان'),
+                    _buildDateCardCompact(),
+                    const SizedBox(height: 10),
+                    _buildReminderCardCompact(),
                   ],
                 ),
               ),
             ],
           ),
-        );
-      },
-      optionsViewBuilder: (
-        BuildContext context,
-        AutocompleteOnSelected<ParentTagModel> onSelected,
-        Iterable<ParentTagModel> options,
-      ) {
-        final items = options.toList();
-
-        if (items.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Align(
-          alignment: Alignment.topRight,
-          child: Material(
-            color: AppColors.white,
-            elevation: 8,
-            shadowColor: AppColors.black1.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              width: MediaQuery.of(context).size.width - 36,
-              constraints: const BoxConstraints(
-                maxHeight: 230,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.gray2,
-                ),
-              ),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                ),
-                shrinkWrap: true,
-                itemCount: items.length,
-                separatorBuilder: (_, __) {
-                  return Divider(
-                    height: 1,
-                    color: AppColors.gray2,
-                  );
-                },
-                itemBuilder: (context, index) {
-                  final tag = items[index];
-
-                  return InkWell(
-                    onTap: () => onSelected(tag),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ReText(
-                            tag.name,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black1,
-                            textAlign: TextAlign.right,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSelectedTagChip(ParentTagModel tag) {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.only(
-        left: 8,
-        right: 12,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.gray2,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedTags.removeWhere(
-                  (selected) => selected.id == tag.id,
-                );
-              });
-
-              _tagFocusNode.requestFocus();
-            },
-            child: Icon(
-              Icons.close,
-              size: 18,
-              color: AppColors.black1.withOpacity(0.45),
-            ),
-          ),
-          const SizedBox(width: 5),
-          ReText(
-            '#${tag.name}',
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimedHeader(BuildContext context) {
-    return SizedBox(
-      height: 62,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ReText(
-                _isEditing ? 'ویرایش تسک زمان دار' : 'افزودن تسک زمان دار',
-                color: AppColors.black1,
-                fontSize: 16,
-                fontWeight: 1100,
-              ),
-              ReText(
-                _isEditing ? 'ویرایش تسک زمان دار' : 'افزودن تسک زمان دار',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gray,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ).rMargin(16).tMargin(3),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.gray2),
-                  color: AppColors.white,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  color: AppColors.black1,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPillField({
-    required String hintText,
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    String? leadingPill,
-    int? maxLength,
-    ValueChanged<String>? onChanged,
-  }) {
-    final isFocused = focusNode.hasFocus;
-
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(100),
-        border: isFocused ? Border.all(color: AppColors.primary, width: 1.4) : null,
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.10),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.black1.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : null,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: Row(
-        children: [
-          if (leadingPill != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.gray2,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: ReText(
-                leadingPill,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.black1.withOpacity(0.45),
-                textDirection: TextDirection.ltr,
-              ),
-            ),
-            const SizedBox(width: 10),
-          ],
-          Expanded(
-            child: TextField(
-              focusNode: focusNode,
-              controller: controller,
-              maxLength: maxLength,
-              textAlign: TextAlign.right,
-              textAlignVertical: TextAlignVertical.center,
-              textDirection: TextDirection.rtl,
-              cursorColor: AppColors.primary,
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-              inputFormatters: const [
-                PersianDigitsInputFormatter(),
-              ],
-              onChanged: onChanged,
-              style: TextStyle(
-                fontFamily: AppFonts.iranSansVar,
-                color: AppColors.black1,
-                fontSize: 15,
-                fontVariations: AppFonts.fontVariations(FontWeight.w600),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                counterText: '',
-                isDense: true,
-                hintStyle: TextStyle(
-                  fontFamily: AppFonts.iranSansVar,
-                  color: AppColors.black1.withOpacity(0.45),
-                  fontSize: 13,
-                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDurationPicker() {
-    const itemHeight = 44.0;
-    const pickerHeight = 48.0;
-    const highlightWidth = 64.0;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ReText(
-                'دقیقه',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black1.withOpacity(0.5),
-              ).rMargin(4),
-              const ReText(
-                'تنظیم مدت زمان',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black1,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: AppColors.gray2),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Selection highlight (fixed size so the wheel doesn't "jump")
-                Container(
-                  width: highlightWidth,
-                  height: itemHeight,
-                  decoration: BoxDecoration(
-                    color: AppColors.black1,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-                PageView.builder(
-                  controller: _minutesPageController,
-                  padEnds: true,
-                  itemCount: _minuteOptions.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _selectedMinutes = _minuteOptions[index];
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    final value = _minuteOptions[index];
-                    final isSelected = value == _selectedMinutes;
-                    return Center(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          _minutesPageController.animateToPage(
-                            index,
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                          );
-                        },
-                        child: SizedBox(
-                          width: highlightWidth,
-                          height: itemHeight,
-                          child: Center(
-                            child: ReText(
-                              convertToPersianNumbers(value.toString()),
-                              fontSize: isSelected ? 16 : 13,
-                              fontWeight: FontWeight.w400,
-                              color: isSelected ? AppColors.white : AppColors.gray,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoteField() {
-    final isFocused = _noteFocusNode.hasFocus;
-    final safeCount = _noteCount > 200 ? 200 : _noteCount;
-
-    return Container(
-      height: 110,
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(32),
-        border: isFocused ? Border.all(color: AppColors.primary, width: 1.4) : Border.all(color: Colors.transparent),
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.gray2,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: ReText(
-              '${convertToPersianNumbers(safeCount.toString())}/200',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.black1.withOpacity(0.45),
-              textDirection: TextDirection.ltr,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              focusNode: _noteFocusNode,
-              controller: _noteController,
-              maxLength: 200,
-              maxLines: 4,
-              minLines: 3,
-              textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
-              cursorColor: AppColors.primary,
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-              inputFormatters: const [
-                PersianDigitsInputFormatter(),
-              ],
-              onChanged: (_) => setState(() {}),
-              style: TextStyle(
-                fontFamily: AppFonts.iranSansVar,
-                color: AppColors.black1,
-                fontSize: 14,
-                fontVariations: AppFonts.fontVariations(FontWeight.w600),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'یادداشت',
-                counterText: '',
-                isDense: true,
-                hintStyle: TextStyle(
-                  fontFamily: AppFonts.iranSansVar,
-                  color: AppColors.black1.withOpacity(0.45),
-                  fontSize: 13,
-                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+        bottomNavigationBar: _taskFormFooter(
+          error: _formError,
+          submitText: _isEditing ? 'ذخیره' : 'ثبت تسک',
+          isSubmitting: _isSubmitting,
+          onSubmit: _submitTimedTask,
+          onCancel: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -1424,7 +920,7 @@ class AddTaskScreen extends StatefulWidget {
   State<AddTaskScreen> createState() => _AddTaskScreenState();
 }
 
-class _AddTaskScreenState extends State<AddTaskScreen> {
+class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
   bool _isWeeklyRepeat = false;
   bool _isReminderEnabled = false;
   late TimeOfDay _reminderTime;
@@ -1440,13 +936,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _tagController;
+  @override
   late FocusNode _titleFocusNode;
   late FocusNode _descriptionFocusNode;
-  late FocusNode _tagFocusNode;
-
-  List<ParentTagModel> availableTags = GlobalData.instance.parentTags;
-
 
   static const List<String> _persianMonths = [
     'فروردین',
@@ -1467,10 +959,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void initState() {
     super.initState();
 
-    _tagSuggestionRepository = TagSuggestionRepository(
-      context.read<GraphQLRepository>(),
-    );
-
     _selectedDate = widget.initialDate ?? Jalali.now();
     _reminderTime = _initialReminderTime(widget.task);
     _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
@@ -1478,174 +966,48 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final editing = widget.task;
     if (editing != null) {
       _selectedDate = editing['date'] as Jalali? ?? _selectedDate;
-      _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
+      _visibleCalendarMonth =
+          Jalali(_selectedDate.year, _selectedDate.month, 1);
       final dateTime = editing['dateTime'] as DateTime?;
       if (dateTime != null) _selectedTime = TimeOfDay.fromDateTime(dateTime);
-      _selectedTags.addAll(_tagsFromNames((editing['tags'] as List?)?.cast<String>() ?? const []));
       _isReminderEnabled = editing['reminder'] as bool? ?? false;
-      _selectedWeekDays.addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
+      _selectedWeekDays
+          .addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
       _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
-    } else {
-      _selectedTags.addAll(_tagsFromNames(widget.initialTags));
     }
-    _titleController = TextEditingController(text: editing?['title'] as String? ?? widget.initialTitle ?? '');
-    if (editing == null && _titleController.text.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _onTitleChanged(_titleController.text);
-      });
-    }
-    _descriptionController = TextEditingController(text: editing?['shortDescription'] as String? ?? '');
-    _tagController = TextEditingController();
+    _titleController = TextEditingController(
+        text: editing?['title'] as String? ?? widget.initialTitle ?? '');
+    _tags = _formTagSelection(
+      context,
+      editing: editing,
+      title: _titleController.text,
+      initialTags: widget.initialTags,
+    );
+    _descriptionController = TextEditingController(
+        text: editing?['shortDescription'] as String? ?? '');
     _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
-    _tagFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
   }
 
   @override
   void dispose() {
-    _tagSuggestionDebounce?.cancel();
-    _tagSuggestionRequestId++;
-
+    _tags.dispose();
     _titleFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
     _descriptionFocusNode
       ..removeListener(_handleFieldFocusChange)
       ..dispose();
-    _tagFocusNode
-      ..removeListener(_handleFieldFocusChange)
-      ..dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _tagController.dispose();
     super.dispose();
   }
 
-  final List<ParentTagModel> _selectedTags = [];
-
-  late final TagSuggestionRepository _tagSuggestionRepository;
-  Timer? _tagSuggestionDebounce;
-  int _tagSuggestionRequestId = 0;
-  List<ParentTagModel> _specificSuggestedTags = <ParentTagModel>[];
-
-  List<ParentTagModel> get _availableTags {
-    if (_specificSuggestedTags.isNotEmpty) {
-      return _specificSuggestedTags;
-    }
-
-    return GlobalData.instance.parentTags;
-  }
+  late final TagSelection _tags;
 
   void _onTitleChanged(String value) {
-    setState(() {
-      _tagSuggestionDebounce?.cancel();
-
-      final title = value.trim();
-
-      if (title.isEmpty) {
-        _tagSuggestionRequestId++;
-
-        if (mounted) {
-          _specificSuggestedTags = <ParentTagModel>[];
-          availableTags = GlobalData.instance.parentTags;
-        }
-
-        return;
-      }
-
-      // Clear the previous title's suggestions immediately.
-      // Until the new API result arrives, global public tags are used as backup.
-      if (mounted) {
-        _specificSuggestedTags = <ParentTagModel>[];
-        availableTags = GlobalData.instance.parentTags;
-      }
-
-      // Avoid sending one request for every keystroke.
-      _tagSuggestionDebounce = Timer(
-        const Duration(milliseconds: 450),
-            () => _loadSpecificSuggestedTags(title),
-      );
-    });
-  }
-
-  Future<void> _loadSpecificSuggestedTags(String title) async {
-    final requestId = ++_tagSuggestionRequestId;
-
-    try {
-      final names = await _tagSuggestionRepository.suggestTags(title);
-
-      // Ignore an old response if the user has already typed a newer title.
-      if (!mounted || requestId != _tagSuggestionRequestId) return;
-
-      final uniqueNames = <String>[];
-      final seen = <String>{};
-
-      for (final name in names) {
-        final normalized = name.trim();
-
-        if (normalized.isEmpty) continue;
-
-        final key = normalized.toLowerCase();
-
-        if (seen.add(key)) {
-          uniqueNames.add(normalized);
-        }
-      }
-
-      _specificSuggestedTags = [
-        for (var index = 0; index < uniqueNames.length; index++)
-          ParentTagModel(
-            id: 'suggested_${index}_${uniqueNames[index]}',
-            name: uniqueNames[index],
-            kind: 'SUGGESTED',
-            moderationStatus: 'APPROVED',
-          ),
-      ];
-      availableTags = _specificSuggestedTags;
-    } catch (error) {
-      if (!mounted || requestId != _tagSuggestionRequestId) return;
-
-      debugPrint('SUGGEST TAGS ERROR: $error');
-
-      // Empty means "use the global public tags as fallback".
-      _specificSuggestedTags = <ParentTagModel>[];
-      availableTags = GlobalData.instance.parentTags;
-    }
-  }
-
-  List<String> get _selectedTagNames {
-    return _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
-  }
-
-  bool _isTagAlreadySelected(ParentTagModel tag) {
-    final selected = _tagController.text.trim().split(RegExp(r'\s+')).where((value) => value.isNotEmpty);
-
-    return selected.any(
-      (value) => value.toLowerCase() == tag.name.trim().toLowerCase(),
-    );
-  }
-
-  void _selectTag(ParentTagModel tag) {
-    if (_isTagAlreadySelected(tag)) return;
-
-    final currentText = _tagController.text.trim();
-
-    // Maximum 2 tags.
-    final currentParts = currentText.split(RegExp(r'\s+')).where((value) => value.isNotEmpty).toList();
-
-    if (currentParts.length >= 2) return;
-
-    final newText = currentText.isEmpty ? tag.name.trim() : '$currentText ${tag.name.trim()}';
-
-    _tagController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: newText.length),
-    );
-
-    setState(() {});
-
-    // Keep keyboard open so the user can select the second tag.
-    _tagFocusNode.requestFocus();
+    _tags.titleChanged(value);
+    _clearTitleErrorFor(value);
   }
 
   void _handleFieldFocusChange() {
@@ -1653,15 +1015,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     setState(() {});
   }
 
-  int get _descriptionCount => _descriptionController.text.length;
-
-  int get _tagsCount => _selectedTags.length;
-
   bool get _isFormValid => _titleController.text.trim().isNotEmpty;
 
   String get _scheduleDateLabel {
     final today = Jalali.now();
-    final isToday = _selectedDate.year == today.year && _selectedDate.month == today.month && _selectedDate.day == today.day;
+    final isToday = _selectedDate.year == today.year &&
+        _selectedDate.month == today.month &&
+        _selectedDate.day == today.day;
     final prefix = isToday ? 'امروز، ' : '';
     return '$prefix${_selectedDate.day} ${_persianMonths[_selectedDate.month - 1]} ${_selectedDate.year}';
   }
@@ -1669,7 +1029,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void _selectDateModeDirectly() {
     setState(() {
       _isWeeklyRepeat = false;
-      _visibleCalendarMonth = Jalali(_selectedDate.year, _selectedDate.month, 1);
+      _visibleCalendarMonth =
+          Jalali(_selectedDate.year, _selectedDate.month, 1);
     });
     _openCalendarModal();
   }
@@ -1738,7 +1099,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   Future<void> _updateTask() async {
     final taskId = widget.task!['id'] as String;
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _formError = null;
+    });
 
     try {
       final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
@@ -1750,14 +1114,17 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ..title = _titleController.text.trim()
               ..shortDescription = _descriptionController.text.trim()
               ..hasReminder = _isReminderEnabled
-              ..tagNames.replace(_selectedTags.map((tag) => tag.name));
+              ..tagNames.replace(_tags.selected);
 
             // An edit targets this task, or this one occurrence of a recurring
             // task; updateTask has no recurrence input.
             request.vars.input.date.value = taskDate.toUtc().toIso8601String();
 
             if (_isReminderEnabled) {
-              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
+              request.vars.input.reminderTime.value =
+                  _toDateTime(_selectedDate, time: _reminderTime)
+                      .toUtc()
+                      .toIso8601String();
             }
           },
         ),
@@ -1766,39 +1133,46 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.updateTask == null) {
-        showReToast(context, graphQLResponseErrorMessage(response), ReToastType.failed);
+        _failWith(_responseFailure(response));
         return;
       }
 
       final task = response.data!.updateTask;
       await TaskReminderService.instance.cancel(taskId);
       if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate, time: _reminderTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate,
+            time: _reminderTime));
       }
       if (!mounted) return;
 
-      Navigator.of(context).pop(<String, dynamic>{'id': task.id, 'updated': true});
+      Navigator.of(context)
+          .pop(<String, dynamic>{'id': task.id, 'updated': true});
     } catch (error) {
       if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
+      debugPrint('Saving the task failed: $error');
+      _failWith(taskFailureMessage(error,
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _submitTask() async {
+    setState(() => _formError = null);
     if (!_isFormValid) {
-      showReToast(context, 'عنوان تسک را وارد کنید', ReToastType.warning);
+      _showTitleError();
       return;
     }
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
-      showReToast(context, 'حداقل یک روز تکرار را انتخاب کنید', ReToastType.warning);
+      _failWith('حداقل یک روز را برای تکرار انتخاب کنید.');
       return;
     }
 
-    if (_isReminderEnabled && _isReminderInPast(_selectedDate, _reminderTime, isWeekly: _isWeeklyRepeat)) {
-      showReToast(context, 'زمان یادآوری گذشته است', ReToastType.warning);
+    if (_isReminderEnabled &&
+        _isReminderInPast(_selectedDate, _reminderTime,
+            isWeekly: _isWeeklyRepeat)) {
+      _failWith('زمان یادآوری گذشته است؛ زمان دیگری انتخاب کنید.');
       return;
     }
 
@@ -1808,16 +1182,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     }
 
     final description = _descriptionController.text.trim();
-    final tags = _tagController.text.trim();
-    final time = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+    final tags = _tags.selected.join(' ');
+    final time =
+        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
     setState(() {
       _isSubmitting = true;
+      _formError = null;
     });
 
     try {
       final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
-      final tagNames = _selectedTags.map((tag) => tag.name).toList();
+      final tagNames = _tags.selected;
       final response = await context.read<GraphQLRepository>().requestOnce(
         GCreateTaskReq(
           (request) {
@@ -1829,11 +1205,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ..tagNames.addAll(tagNames);
 
             // The server requires exactly one of `date` or `recurrence`.
-            final weekdays = _isWeeklyRepeat ? _recurrenceWeekdays(_selectedWeekDays) : <String>[];
+            final weekdays = _isWeeklyRepeat
+                ? _recurrenceWeekdays(_selectedWeekDays)
+                : <String>[];
             if (weekdays.isNotEmpty) {
               request.vars.input.recurrence.weekdays.replace(weekdays);
             } else {
-              request.vars.input.date.value = taskDate.toUtc().toIso8601String();
+              request.vars.input.date.value =
+                  taskDate.toUtc().toIso8601String();
             }
 
             final goalId = _emptyToNull(widget.goalId ?? '');
@@ -1844,7 +1223,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             // The server rejects reminderTime on a recurring task; its weekly
             // reminder is scheduled on the device below.
             if (_isReminderEnabled && weekdays.isEmpty) {
-              request.vars.input.reminderTime.value = _toDateTime(_selectedDate, time: _reminderTime).toUtc().toIso8601String();
+              request.vars.input.reminderTime.value =
+                  _toDateTime(_selectedDate, time: _reminderTime)
+                      .toUtc()
+                      .toIso8601String();
             }
           },
         ),
@@ -1853,25 +1235,27 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       if (!mounted) return;
 
       if (response.hasErrors || response.data?.createTask == null) {
-        debugPrint(response.graphqlErrors.toString());
-        debugPrint(response.linkException.toString());
-        showReToast(
-          context,
-          graphQLResponseErrorMessage(response),
-          ReToastType.failed,
-        );
+        debugPrint(
+            'Creating the task failed: ${response.graphqlErrors} ${response.linkException}');
+        _failWith(_responseFailure(response));
         return;
       }
 
       final task = response.data!.createTask;
       if (_isReminderEnabled) {
-        unawaited(_scheduleCreatedTaskReminder(context.read<GraphQLRepository>(), task.id, task.title, taskDate, isWeekly: _isWeeklyRepeat, weekdays: _selectedWeekDays, time: _reminderTime));
+        unawaited(_scheduleCreatedTaskReminder(
+            context.read<GraphQLRepository>(), task.id, task.title, taskDate,
+            isWeekly: _isWeeklyRepeat,
+            weekdays: _selectedWeekDays,
+            time: _reminderTime));
       }
       Navigator.of(context).pop(
         <String, dynamic>{
           'id': task.id,
           'title': task.title,
-          'subtitle': task.shortDescription?.trim().isNotEmpty == true ? task.shortDescription!.trim() : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
+          'subtitle': task.shortDescription?.trim().isNotEmpty == true
+              ? task.shortDescription!.trim()
+              : (tags.isNotEmpty ? tags : 'توضیحی ثبت نشده'),
           'time': time,
           'status': 'pending',
           'date': _selectedDate,
@@ -1882,7 +1266,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      showReToast(context, error.toString(), ReToastType.failed);
+      debugPrint('Saving the task failed: $error');
+      _failWith(taskFailureMessage(error,
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -1894,493 +1280,66 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final width = context.deviceWidth;
-    final horizontalPadding = width < 360 ? 14.0 : 18.0;
-    final sectionSpacing = width < 360 ? 10.0 : 12.0;
+    var section = 0;
+    Widget enter(Widget child) =>
+        TaskFormEntrance(index: section++, child: child);
 
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  10,
-                  horizontalPadding,
-                  14,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildHeader(context),
-                    SizedBox(height: sectionSpacing),
-                    _buildField(
-                      hintText: 'عنوان',
-                      controller: _titleController,
-                      focusNode: _titleFocusNode,
-                      onChanged: _onTitleChanged,
-                    ),
-                    SizedBox(height: sectionSpacing),
-                    _buildField(
-                      hintText: 'توضیح کوتاه',
-                      controller: _descriptionController,
-                      focusNode: _descriptionFocusNode,
-                      maxLength: 50,
-                      leadingText: '${_descriptionCount > 50 ? 50 : _descriptionCount}/50',
-                    ),
-                    SizedBox(height: sectionSpacing),
-                    _buildTagSuggestionField(),
-                    SizedBox(height: sectionSpacing + 4),
-                    _buildDateCard(),
-                    SizedBox(height: sectionSpacing + 2),
-                    _buildReminderCard(),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: _ActionButton(
-                            text: _isEditing ? 'ذخیره' : 'افزودن',
-                            icon: Icons.add,
-                            background: AppColors.primary,
-                            textColor: AppColors.white,
-                            isLoading: _isSubmitting,
-                            onTap: _submitTask,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ActionButton(
-                            text: 'لغو',
-                            icon: Icons.close,
-                            background: AppColors.white,
-                            textColor: AppColors.black1,
-                            borderColor: AppColors.gray2,
-                            onTap: _isSubmitting
-                                ? () {}
-                                : () {
-                                    Navigator.of(context).pop();
-                                  },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+        bottom: false,
+        child: _taskFormBody(
+          children: [
+            enter(
+              TaskFormHeader(
+                title: _isEditing ? 'ویرایش چک‌لیست' : 'چک‌لیست جدید',
+                subtitle: _formSubtitle(_scheduleDateLabel, _isWeeklyRepeat),
               ),
             ),
-          ),
+            const SizedBox(height: 22),
+            enter(
+              TaskTextField(
+                fieldKey: const ValueKey('task-form-title'),
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                hint: 'عنوان تسک، مثلاً «خرید کتاب تست»',
+                error: _titleError,
+                errorTick: _titleErrorTick,
+                textInputAction: TextInputAction.next,
+                onChanged: _onTitleChanged,
+              ),
+            ),
+            const SizedBox(height: 10),
+            enter(
+              TaskTextField(
+                fieldKey: const ValueKey('task-form-description'),
+                controller: _descriptionController,
+                focusNode: _descriptionFocusNode,
+                hint: 'توضیح کوتاه (اختیاری)',
+                maxLength: 50,
+              ),
+            ),
+            enter(_formTagsSection(_tags)),
+            enter(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const TaskSectionLabel('زمان'),
+                  _buildDateCard(),
+                  const SizedBox(height: 10),
+                  _buildReminderCard(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTagSuggestionField() {
-    final isFocused = _tagFocusNode.hasFocus;
-
-    return RawAutocomplete<ParentTagModel>(
-      textEditingController: _tagController,
-      focusNode: _tagFocusNode,
-      key: ValueKey(
-        _specificSuggestedTags
-            .map((e) => '${e.id}_${e.name}')
-            .join('|'),
-      ),
-
-      optionsBuilder: (TextEditingValue textEditingValue) {
-        final tags = availableTags;
-
-        debugPrint(
-          'AVAILABLE TAGS: ${tags.map((e) => e.name).toList()}',
-        );
-
-        return tags.where((tag) {
-          final query = textEditingValue.text.trim().toLowerCase();
-
-          if (query.isEmpty) {
-            return true;
-          }
-
-          return tag.name.toLowerCase().contains(query);
-        });
-      },
-      displayStringForOption: (ParentTagModel tag) => tag.name,
-      onSelected: (ParentTagModel tag) {
-        if (_selectedTags.length >= 2) return;
-
-        setState(() {
-          _selectedTags.add(tag);
-        });
-
-        // The controller is ONLY the search/query text.
-        _tagController.clear();
-
-        // Let the user immediately type the second tag.
-        _tagFocusNode.requestFocus();
-      },
-      fieldViewBuilder: (
-          BuildContext context,
-          TextEditingController controller,
-          FocusNode focusNode,
-          VoidCallback onFieldSubmitted,
-          ) {
-        return Container(
-          constraints: const BoxConstraints(
-            minHeight: 55,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.gray1,
-            borderRadius: BorderRadius.circular(100),
-            border: isFocused
-                ? Border.all(
-              color: AppColors.primary,
-              width: 1.4,
-            )
-                : null,
-            boxShadow: isFocused
-                ? [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.10),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ]
-                : null,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 7,
-          ),
-          child: Row(
-            children: [
-              // Counter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: ReText(
-                  '${_selectedTags.length}/2',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.black1.withOpacity(0.35),
-                ),
-              ),
-
-              const SizedBox(width: 4),
-
-              Expanded(
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    // Search / typing field
-                    if (_selectedTags.length < 2)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minWidth: 70,
-                        ),
-                        child: IntrinsicWidth(
-                          child: TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            onTapOutside: (_) => focusNode.unfocus(),
-                            textAlign: TextAlign.right,
-                            textDirection: TextDirection.rtl,
-                            cursorColor: AppColors.primary,
-                            onChanged: (_) {
-                              setState(() {});
-                            },
-                            style: TextStyle(
-                              fontFamily: AppFonts.iranSansVar,
-                              color: AppColors.black1,
-                              fontSize: 15,
-                              fontVariations: AppFonts.fontVariations(
-                                FontWeight.w600,
-                              ),
-                            ),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'افزودن تگ',
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                              hintStyle: TextStyle(
-                                fontFamily: AppFonts.iranSansVar,
-                                color: AppColors.black1.withOpacity(0.45),
-                                fontSize: 13,
-                                fontVariations: AppFonts.fontVariations(
-                                  FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Selected tag pills
-                    ..._selectedTags.map(
-                          (tag) => _buildSelectedTagChip(tag),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      optionsViewBuilder: (
-          BuildContext context,
-          AutocompleteOnSelected<ParentTagModel> onSelected,
-          Iterable<ParentTagModel> options,
-          ) {
-        final items = options.toList();
-
-        if (items.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Align(
-          alignment: Alignment.topRight,
-          child: Material(
-            color: AppColors.white,
-            elevation: 8,
-            shadowColor: AppColors.black1.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              width: MediaQuery.of(context).size.width - 36,
-              constraints: const BoxConstraints(
-                maxHeight: 230,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.gray2,
-                ),
-              ),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                ),
-                shrinkWrap: true,
-                itemCount: items.length,
-                separatorBuilder: (_, __) {
-                  return Divider(
-                    height: 1,
-                    color: AppColors.gray2,
-                  );
-                },
-                itemBuilder: (context, index) {
-                  final tag = items[index];
-
-                  return InkWell(
-                    onTap: () => onSelected(tag),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ReText(
-                            tag.name,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black1,
-                            textAlign: TextAlign.right,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSelectedTagChip(ParentTagModel tag) {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.only(
-        left: 8,
-        right: 12,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.gray2,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedTags.removeWhere(
-                  (selected) => selected.id == tag.id,
-                );
-              });
-
-              _tagFocusNode.requestFocus();
-            },
-            child: Icon(
-              Icons.close,
-              size: 18,
-              color: AppColors.black1.withOpacity(0.45),
-            ),
-          ),
-          const SizedBox(width: 5),
-          ReText(
-            '#${tag.name}',
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return SizedBox(
-      height: 62,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ReText(
-                _isEditing ? 'ویرایش چک لیست' : 'افزودن چک لیست',
-                color: AppColors.black1,
-                fontSize: 16,
-                fontWeight: 1000,
-              ),
-              ReText(
-                _isEditing ? 'ویرایش تسک چک لیست' : 'افزودن تسک چک لیست',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gray,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ).rMargin(16).tMargin(3),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.gray2),
-                  color: AppColors.white,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  color: AppColors.black1,
-                  size: 18,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildField({
-    required String hintText,
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    String? leadingText,
-    int? maxLength,
-    ValueChanged<String>? onChanged,
-  }) {
-    final isFocused = focusNode.hasFocus;
-
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(
-        color: AppColors.gray1,
-        borderRadius: BorderRadius.circular(100),
-        border: isFocused
-            ? Border.all(
-                color: AppColors.primary,
-                width: 1.4,
-              )
-            : null,
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.10),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.black1.withOpacity(0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : null,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Row(
-        children: [
-          if (leadingText != null) ...[
-            ReText(
-              leadingText,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.black1.withOpacity(0.35),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: TextField(
-              focusNode: focusNode,
-              controller: controller,
-              maxLength: maxLength,
-              textAlign: TextAlign.right,
-              textAlignVertical: TextAlignVertical.center,
-              textDirection: TextDirection.rtl,
-              cursorColor: AppColors.primary,
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-              inputFormatters: const [
-                PersianDigitsInputFormatter(),
-              ],
-              onChanged: onChanged,
-              style: TextStyle(
-                fontFamily: AppFonts.iranSansVar,
-                color: AppColors.black1,
-                fontSize: 15,
-                fontVariations: AppFonts.fontVariations(FontWeight.w600),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hintText,
-                counterText: '',
-                isDense: true,
-                hintStyle: TextStyle(
-                  fontFamily: AppFonts.iranSansVar,
-                  color: AppColors.black1.withOpacity(0.45),
-                  fontSize: 13,
-                  fontVariations: AppFonts.fontVariations(FontWeight.w600),
-                ),
-              ),
-            ),
-          ),
-        ],
+      bottomNavigationBar: _taskFormFooter(
+        error: _formError,
+        submitText: _isEditing ? 'ذخیره' : 'ثبت تسک',
+        isSubmitting: _isSubmitting,
+        onSubmit: _submitTask,
+        onCancel: _isSubmitting ? null : () => Navigator.of(context).pop(),
       ),
     );
   }
@@ -2461,7 +1420,9 @@ class _ScheduleSelectionCard extends StatelessWidget {
                     'تاریخ',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDateModeSelected ? AppColors.black1 : AppColors.dark7Color,
+                    color: isDateModeSelected
+                        ? AppColors.black1
+                        : AppColors.dark7Color,
                   ),
                   const SizedBox(width: 8),
                   _RadioDot(isSelected: isDateModeSelected),
@@ -2476,43 +1437,45 @@ class _ScheduleSelectionCard extends StatelessWidget {
             onTap: onSelectDateMode,
           ),
           if (showWeeklyRepeat) ...[
-          const SizedBox(height: 16),
-          const Divider(
-            color: AppColors.gray2,
-            thickness: 1,
-            height: 1,
-          ),
-          GestureDetector(
-            onTap: onSelectWeeklyRepeat,
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              opacity: isWeeklyRepeat ? 1 : 0.55,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    ReText(
-                      'تـکــــرار هفتگی',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isWeeklyRepeat ? AppColors.black1 : AppColors.dark7Color,
-                    ),
-                    const SizedBox(width: 8),
-                    _RadioDot(isSelected: isWeeklyRepeat).bMargin(8),
-                  ],
+            const SizedBox(height: 16),
+            const Divider(
+              color: AppColors.gray2,
+              thickness: 1,
+              height: 1,
+            ),
+            GestureDetector(
+              onTap: onSelectWeeklyRepeat,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                opacity: isWeeklyRepeat ? 1 : 0.55,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16, bottom: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ReText(
+                        'تـکــــرار هفتگی',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isWeeklyRepeat
+                            ? AppColors.black1
+                            : AppColors.dark7Color,
+                      ),
+                      const SizedBox(width: 8),
+                      _RadioDot(isSelected: isWeeklyRepeat).bMargin(8),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          if (isWeeklyRepeat)
-            _WeekDaysPopupField(
-              selectedDays: selectedWeekDays,
-              onToggleDay: onToggleWeekDay,
-              timedTask: timedTask,
-            ),
+            if (isWeeklyRepeat)
+              _WeekDaysPopupField(
+                selectedDays: selectedWeekDays,
+                onToggleDay: onToggleWeekDay,
+                timedTask: timedTask,
+              ),
           ],
         ],
       ),
@@ -2579,15 +1542,18 @@ class _WeekDaysPopupFieldState extends State<_WeekDaysPopupField> {
               ),
             ),
             Positioned(
-              bottom: widget.timedTask ?  50 : 100,
+              bottom: widget.timedTask ? 50 : 100,
               child: SafeArea(
                 child: Material(
                   color: Colors.transparent,
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width,maxHeight: 300),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width,
+                        maxHeight: 300),
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(24),
@@ -2628,7 +1594,9 @@ class _WeekDaysPopupFieldState extends State<_WeekDaysPopupField> {
 
   String get _triggerLabel {
     if (widget.selectedDays.isEmpty) return 'انتخاب روز';
-    final labels = _weekDayOptions.where((day) => widget.selectedDays.contains(day.code)).map((day) => day.label);
+    final labels = _weekDayOptions
+        .where((day) => widget.selectedDays.contains(day.code))
+        .map((day) => day.label);
     return 'هر ${labels.join('، ')}';
   }
 
@@ -2642,13 +1610,16 @@ class _WeekDaysPopupFieldState extends State<_WeekDaysPopupField> {
         decoration: BoxDecoration(
           color: AppColors.gray1,
           borderRadius: BorderRadius.circular(34),
-          border: Border.all(color: _isOpen ? AppColors.primary : AppColors.gray2),
+          border:
+              Border.all(color: _isOpen ? AppColors.primary : AppColors.gray2),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
             Icon(
-              _isOpen ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+              _isOpen
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
               color: AppColors.black1.withOpacity(0.5),
               size: 20,
             ),
@@ -2694,14 +1665,15 @@ class _WeekDaysGrid extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 0),
       itemCount: items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 5,
-        childAspectRatio: 3.1,
-        mainAxisExtent: 35
-      ),
+          crossAxisCount: 2,
+          crossAxisSpacing: 5,
+          childAspectRatio: 3.1,
+          mainAxisExtent: 35),
       itemBuilder: (context, index) {
         final entry = items[index];
-        final isChecked = entry.key == 'ALL' ? _isAllSelected : selectedDays.contains(entry.key);
+        final isChecked = entry.key == 'ALL'
+            ? _isAllSelected
+            : selectedDays.contains(entry.key);
 
         return GestureDetector(
           onTap: () => onToggleDay(entry.key),
@@ -2714,7 +1686,9 @@ class _WeekDaysGrid extends StatelessWidget {
                 entry.value,
                 fontSize: 13,
                 fontWeight: isChecked ? FontWeight.w700 : FontWeight.w600,
-                color: isChecked ? AppColors.black1 : AppColors.black1.withOpacity(0.55),
+                color: isChecked
+                    ? AppColors.black1
+                    : AppColors.black1.withOpacity(0.55),
               ),
               const SizedBox(width: 8),
               _SquareCheckbox(isChecked: isChecked),
@@ -2739,7 +1713,9 @@ class _SquareCheckbox extends StatelessWidget {
       height: 22,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
-        color: isChecked ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+        color: isChecked
+            ? AppColors.primary.withOpacity(0.12)
+            : Colors.transparent,
         border: Border.all(
           color: isChecked ? AppColors.primary : AppColors.dark4Color,
           width: 1.2,
@@ -2816,25 +1792,36 @@ class _RadioDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // The picked option in the brand color; the dot grows in.
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
       width: 20,
       height: 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.dark4Color),
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.10)
+            : Colors.transparent,
+        border: Border.all(
+          color: isSelected ? AppColors.primary : AppColors.dark4Color,
+          width: isSelected ? 1.5 : 1,
+        ),
       ),
-      child: isSelected
-          ? Center(
-              child: Container(
-                width: 9,
-                height: 9,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            )
-          : null,
+      child: Center(
+        child: AnimatedScale(
+          scale: isSelected ? 1 : 0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutBack,
+          child: Container(
+            width: 9,
+            height: 9,
+            decoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2899,7 +1886,8 @@ class _ReminderSwitch extends StatelessWidget {
           height: 28,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: value ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
+            color:
+                value ? AppColors.primary.withOpacity(0.25) : AppColors.gray2,
             borderRadius: BorderRadius.circular(100),
           ),
           child: AnimatedAlign(
@@ -2933,10 +1921,12 @@ class _ThreeColumnJalaliDatePickerSheet extends StatefulWidget {
   final List<String> monthNames;
 
   @override
-  State<_ThreeColumnJalaliDatePickerSheet> createState() => _ThreeColumnJalaliDatePickerSheetState();
+  State<_ThreeColumnJalaliDatePickerSheet> createState() =>
+      _ThreeColumnJalaliDatePickerSheetState();
 }
 
-class _ThreeColumnJalaliDatePickerSheetState extends State<_ThreeColumnJalaliDatePickerSheet> {
+class _ThreeColumnJalaliDatePickerSheetState
+    extends State<_ThreeColumnJalaliDatePickerSheet> {
   static const double _wheelItemExtent = 56.0;
   static const double _dayChipSize = 46.0;
   static const double _yearChipSize = 54.0;
@@ -3007,7 +1997,8 @@ class _ThreeColumnJalaliDatePickerSheetState extends State<_ThreeColumnJalaliDat
     return a.day.compareTo(b.day);
   }
 
-  Jalali get _selectedDate => Jalali(_selectedYear, _selectedMonth, _selectedDay);
+  Jalali get _selectedDate =>
+      Jalali(_selectedYear, _selectedMonth, _selectedDay);
 
   bool get _canSubmit => _compareJalaliDate(_selectedDate, widget.minDate) >= 0;
 
@@ -3145,7 +2136,9 @@ class _ThreeColumnJalaliDatePickerSheetState extends State<_ThreeColumnJalaliDat
                           child: Container(
                             width: 64,
                             height: 48,
-                            decoration: BoxDecoration(color: AppColors.black1, borderRadius: BorderRadius.circular(100)),
+                            decoration: BoxDecoration(
+                                color: AppColors.black1,
+                                borderRadius: BorderRadius.circular(100)),
                             alignment: Alignment.center,
                             child: ReText(
                               convertToPersianNumbers(_selectedDay.toString()),
@@ -3319,7 +2312,8 @@ class _ReminderTimePickerSheet extends StatefulWidget {
   final TimeOfDay initialTime;
 
   @override
-  State<_ReminderTimePickerSheet> createState() => _ReminderTimePickerSheetState();
+  State<_ReminderTimePickerSheet> createState() =>
+      _ReminderTimePickerSheetState();
 }
 
 class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
@@ -3337,7 +2331,8 @@ class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
     _selectedHour = widget.initialTime.hour;
     _selectedMinute = widget.initialTime.minute ~/ _minuteStep * _minuteStep;
     _hourController = FixedExtentScrollController(initialItem: _selectedHour);
-    _minuteController = FixedExtentScrollController(initialItem: _selectedMinute ~/ _minuteStep);
+    _minuteController = FixedExtentScrollController(
+        initialItem: _selectedMinute ~/ _minuteStep);
   }
 
   @override
@@ -3367,7 +2362,8 @@ class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
               height: _wheelItemExtent,
               child: Center(
                 child: ReText(
-                  convertToPersianNumbers(valueAt(index).toString().padLeft(2, '0')),
+                  convertToPersianNumbers(
+                      valueAt(index).toString().padLeft(2, '0')),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                   color: AppColors.gray,
@@ -3381,7 +2377,9 @@ class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
           child: Container(
             width: 64,
             height: 48,
-            decoration: BoxDecoration(color: AppColors.black1, borderRadius: BorderRadius.circular(100)),
+            decoration: BoxDecoration(
+                color: AppColors.black1,
+                borderRadius: BorderRadius.circular(100)),
             alignment: Alignment.center,
             child: ReText(
               convertToPersianNumbers(selectedValue.toString().padLeft(2, '0')),
@@ -3578,7 +2576,8 @@ class _ReminderCard extends StatelessWidget {
             GestureDetector(
               onTap: onTapTime,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.gray1,
                   borderRadius: BorderRadius.circular(100),
@@ -3586,7 +2585,8 @@ class _ReminderCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                    const Icon(Icons.access_time_rounded,
+                        size: 16, color: AppColors.primary),
                     const SizedBox(width: 6),
                     ReText(
                       _formatReminderTime(time),

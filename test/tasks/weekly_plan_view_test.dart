@@ -261,27 +261,31 @@ void main() {
       expect(decorationOf('هنوز مانده'), isNot(TextDecoration.lineThrough));
     });
 
-    testWidgets('each day header shows its planned time and load',
+    testWidgets('each day header shows its planned time and work done',
         (tester) async {
       await _pumpWeek(tester, size: const Size(1000, 1200), schedule: [
-        buildTask(Jalali(1405, 7, 21), timedMinutes: 180),
-        buildTask(Jalali(1405, 7, 21), timedMinutes: 90),
+        // 330 minutes planned: 180 done, 45 of 90 worked, 60 not started.
+        buildTask(Jalali(1405, 7, 21), timedMinutes: 180, done: true),
+        buildTask(Jalali(1405, 7, 21), timedMinutes: 90, elapsedMinutes: 45),
         buildTask(Jalali(1405, 7, 21), timedMinutes: 60),
-        buildTask(Jalali(1405, 7, 22), timedMinutes: 165),
+        // A checklist counts 20 minutes: one of two ticked is half.
+        buildTask(Jalali(1405, 7, 22), done: true),
+        buildTask(Jalali(1405, 7, 22)),
+        buildTask(Jalali(1405, 7, 23), timedMinutes: 30, done: true),
       ]);
       await tester.pumpAndSettle();
 
       expect(inColumn('week-day-header-3', '۵:۳۰'), findsOneWidget);
-      double loadOf(int day) => tester
-          .widget<LinearProgressIndicator>(find.descendant(
+      LinearProgressIndicator barOf(int day) =>
+          tester.widget<LinearProgressIndicator>(find.descendant(
             of: _key('week-day-header-$day'),
             matching: find.byType(LinearProgressIndicator),
-          ))
-          .value!;
-      // The busiest day fills its bar; the others compare with it.
-      expect(loadOf(3), 1);
-      expect(loadOf(4), closeTo(0.5, 0.001));
-      expect(loadOf(5), 0);
+          ));
+      expect(barOf(3).value, closeTo(225 / 330, 0.001));
+      expect(barOf(4).value, closeTo(0.5, 0.001));
+      expect(barOf(5).value, 1);
+      expect(barOf(5).color, AppColors.done); // all done turns it green
+      expect(barOf(6).value, 0);
     });
 
     testWidgets('a time box opens its details; the week stays the week',

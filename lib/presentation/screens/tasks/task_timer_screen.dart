@@ -375,35 +375,46 @@ class TimerPainter extends CustomPainter {
     required this.hatchedSeconds,
   });
 
+  static const double _strokeWidth = 40;
+
+  // The half circle from the left end, over the top, to the right end.
+  static const double _startAngle = pi;
+  static const double _sweepAngle = pi;
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
-    // Arc starts at 150 degrees (bottom-left) and sweeps 240 degrees to bottom-right
-    const startAngle = 6 * pi / 6;
-    const sweepAngle = 3 * pi / 3;
-    const strokeW = 40.0;
-
-    // 1. Draw Background Arc (Light Gray)
-    final bgPaint = Paint()
-      ..color = const Color(0xFFF1F3F5)
+    // 1. The track (light gray), round at both ends.
+    Paint track(Paint paint) => paint
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeW
+      ..strokeWidth = _strokeWidth
       ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, startAngle, sweepAngle, false, bgPaint);
+    canvas.drawArc(rect, _startAngle, _sweepAngle, false,
+        track(Paint()..color = const Color(0xFFF1F3F5)));
 
-    final totalDrawn = solidSeconds + hatchedSeconds;
+    if (totalSeconds <= 0) return;
 
-    // 2. Draw Hatched Arc (Light Blue with diagonal lines)
-    if (totalDrawn > 0) {
-      final totalSweep = (totalDrawn / totalSeconds) * sweepAngle;
+    // Progress is the track itself, in color, cut at the progress angle.
+    // Drawing it as its own round-capped arc (as before) put a cap half the
+    // stroke wide past the true end: about 9% showed at 1%, and the end
+    // always ran ahead. Clipping keeps it exact, inside the track, with the
+    // round ends filled as it reaches them.
+    void fillTo(double seconds, Paint paint) {
+      final fraction = (seconds / totalSeconds).clamp(0.0, 1.0);
+      if (fraction <= 0) return;
+      canvas.save();
+      canvas.clipPath(_wedge(center, radius, fraction));
+      canvas.drawArc(rect, _startAngle, _sweepAngle, false, track(paint));
+      canvas.restore();
+    }
 
-      final hatchPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeW
-        ..strokeCap = StrokeCap.round
+    // 2. This session so far (hatched), under what was already done.
+    fillTo(
+      solidSeconds + hatchedSeconds,
+      Paint()
         ..shader = ui.Gradient.linear(
           Offset.zero,
           const Offset(5, 5),
@@ -415,22 +426,27 @@ class TimerPainter extends CustomPainter {
           ],
           [0.0, 0.2, 0.2, 1.0],
           TileMode.repeated,
-        );
+        ),
+    );
 
-      canvas.drawArc(rect, startAngle, totalSweep, false, hatchPaint);
-    }
+    // 3. Earlier sessions (solid).
+    fillTo(solidSeconds, Paint()..color = AppColors.secondary);
+  }
 
-    // 3. Draw Solid Arc (Dark Blue)
-    if (solidSeconds > 0) {
-      final solidSweep = (solidSeconds / totalSeconds) * sweepAngle;
-      final solidPaint = Paint()
-        ..color = AppColors.secondary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeW
-        ..strokeCap = StrokeCap.round;
-
-      canvas.drawArc(rect, startAngle, solidSweep, false, solidPaint);
-    }
+  /// The slice of the dial from the start of the track (its round end
+  /// included) to [fraction] of the way to the end of the other round end.
+  static Path _wedge(Offset center, double radius, double fraction) {
+    // How far, as an angle seen from the center, a round end reaches past
+    // the arc's own end.
+    final capAngle = atan((_strokeWidth / 2) / (radius - _strokeWidth / 2));
+    final from = _startAngle - capAngle;
+    final sweep = (_sweepAngle + 2 * capAngle) * fraction;
+    final reach = radius + _strokeWidth;
+    return Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(Rect.fromCircle(center: center, radius: reach), from, sweep,
+          false)
+      ..close();
   }
 
   @override

@@ -64,6 +64,16 @@ int taskPlannedMinutes(Map<String, dynamic> task) {
 int taskLoadMinutes(Map<String, dynamic> task) =>
     isTimedTask(task) ? taskPlannedMinutes(task) : kChecklistLoadMinutes;
 
+/// How much of [task]'s load is done: all of it once finished, the minutes
+/// already worked for a timed task under way, nothing otherwise.
+int taskDoneMinutes(Map<String, dynamic> task) {
+  final load = taskLoadMinutes(task);
+  if (isTaskDone(task)) return load;
+  if (!isTimedTask(task)) return 0;
+  final worked = (task['elapsedSeconds'] as int? ?? 0) ~/ 60;
+  return worked.clamp(0, load);
+}
+
 int _sum(Iterable<Map<String, dynamic>> tasks, int Function(Map<String, dynamic>) value) =>
     tasks.fold(0, (total, task) => total + value(task));
 
@@ -87,6 +97,15 @@ class WeekDayPlan {
   int get plannedMinutes => _sum(tasks, taskPlannedMinutes);
   int get loadMinutes => _sum(tasks, taskLoadMinutes);
   int get doneLoadMinutes => _sum(tasks.where(isTaskDone), taskLoadMinutes);
+
+  /// Share of the day's work done, 0 to 1, weighed by time: a timed task
+  /// counts its minutes (worked so far, if under way), a checklist task
+  /// [kChecklistLoadMinutes] once ticked.
+  double get workDoneRatio {
+    final load = loadMinutes;
+    if (load == 0) return 0;
+    return (_sum(tasks, taskDoneMinutes) / load).clamp(0.0, 1.0);
+  }
   bool get isEmpty => tasks.isEmpty;
   bool get isAllDone => tasks.isNotEmpty && doneCount == taskCount;
 }
