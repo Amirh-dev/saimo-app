@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -71,13 +70,13 @@ class AvatarUploader {
         response = await http.Response.fromStream(await _client.send(request).timeout(_timeout)).timeout(_timeout);
       } on TimeoutException {
         throw const AvatarUploadException('بارگذاری بیش از حد طول کشید. دوباره تلاش کنید.');
-      } on SocketException {
-        throw const AvatarUploadException(_offline);
       } on http.ClientException {
+        // No connection, on every platform: the browser client and the
+        // dart:io one both report it this way.
         throw const AvatarUploadException(_offline);
       }
 
-      if (response.statusCode == HttpStatus.unauthorized && attempt == 0) continue;
+      if (response.statusCode == 401 && attempt == 0) continue;
       return _avatarUrl(response);
     }
     throw const AvatarUploadException(_signedOut);

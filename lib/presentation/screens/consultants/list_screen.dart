@@ -8,6 +8,7 @@ import 'package:simo_learn/presentation/screens/consultants/active_counselor_sto
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
+import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
 import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_webview_screen.dart';
@@ -37,9 +38,9 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   bool _loading = true;
   bool _fromApi = false;
 
-  /// True from submitting the request until the payment is verified; blocks
-  /// the screen so a second purchase can't start mid-flow.
-  bool _paying = false;
+  /// True while the payment result is read back after the gateway closes;
+  /// blocks the screen so a second purchase can't start mid-flow.
+  bool _verifying = false;
 
   // Second card expanded by default, matching the design.
   int _expandedIndex = 1;
@@ -109,11 +110,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     );
     if (plan == null || !context.mounted) return;
 
-    final paid =
-        await showInvoiceSheet(context, duration: duration, plan: plan);
-    if (paid != true || !context.mounted) return;
-
-    await _submitAndPay(consultant, duration, plan);
+    await _payFromInvoice(context, consultant, duration, plan);
   }
 
   Future<List<CounselingOffer>> _loadOffers(Consultant consultant) async {
@@ -155,12 +152,14 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     }).toList();
   }
 
-  /// Creates the pending subscription, opens the bank gateway in-app, then
-  /// verifies the payment. The success dialog is shown ONLY when the server
-  /// confirms the attempt SUCCEEDED and the subscription is ACTIVE; every
-  /// other outcome leaves the user without a counselor. The charged amount is
+  /// Shows the invoice, and on "تایید و پرداخت" reserves the request and opens
+  /// the bank gateway in-app, then verifies the payment. A cancelled or failed
+  /// payment reopens the invoice with an explanation so the student can retry
+  /// in one tap. The success dialog is shown ONLY when the server confirms the
+  /// attempt SUCCEEDED and the subscription is ACTIVE. The charged amount is
   /// always the server-side cost, independent of the displayed price.
-  Future<void> _submitAndPay(
+  Future<void> _payFromInvoice(
+    BuildContext context,
     Consultant consultant,
     ConsultationDurationOption duration,
     ConsultationPlan plan,
@@ -177,128 +176,78 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
       );
       return;
     }
-    if (_paying) return;
-    setState(() => _paying = true);
+    final checkout = CounselingCheckout(repo);
 
-    try {
-      final CounselingRequest request;
-      final PaymentInitiation initiation;
-      try {
-        request = await repo.requestCounseling(
+    String? notice;
+    var noticeIsError = false;
+    while (true) {
+      if (!context.mounted) return;
+      final initiation = await showInvoiceSheet<PaymentInitiation>(
+        context,
+        duration: duration,
+        plan: plan,
+        notice: notice,
+        noticeIsError: noticeIsError,
+        onConfirm: () => checkout.start(
           counselorProfileID: consultant.id,
           durationMonths: duration.months,
           planType: plan.planType,
-        );
-        initiation = await repo.beginPayment(
-          subscriptionID: request.subscriptionID,
-          // Stable per subscription so a repeated begin resumes the same attempt.
-          idempotencyKey: 'sub_${request.subscriptionID}',
-        );
-      } catch (e) {
-        messenger
-            .showSnackBar(_snack('شروع پرداخت ناموفق بود: $e', error: true));
-        return;
-      }
-      if (!mounted) return;
+        ),
+      );
+      if (initiation == null || !context.mounted) return;
 
       final result = await context.to<PaymentWebViewResult>(
         PaymentWebViewScreen(redirectURL: initiation.redirectURL),
       );
-      if (!mounted) return;
+      if (!mounted || !context.mounted) return;
 
       // Verify regardless of how the WebView closed: the bank may have
-      // completed the transaction even if the user tapped back.
-      final verification = await _verifyPayment(
-        repo,
-        initiation.attemptID,
-        waitWhilePending: result == PaymentWebViewResult.completed,
-      );
-      if (!mounted) return;
-
-      if (verification == null) {
-        // Server unreachable: the outcome is unknown, so grant nothing. The
-        // backend activates the subscription itself if the bank settles it.
-        messenger.showSnackBar(_snack(
-          'وضعیت پرداخت مشخص نشد. در صورت کسر وجه، مشاور پس از تایید پرداخت برای شما فعال می‌شود.',
-          error: true,
-        ));
-        return;
-      }
-
-      if (verification.succeeded) {
-        setState(() => _paying = false);
-        unawaited(ActiveCounselorStore.instance.refresh(repo, force: true));
-        await showConsultationSuccessSheet(
-          context,
-          duration: duration,
-          plan: plan,
-        );
-        return;
-      }
-
-      if (verification.failed) {
-        unawaited(_cancelPendingQuietly(repo, request.subscriptionID));
-        final message = verification.failureMessage;
-        messenger.showSnackBar(_snack(
-          (message != null && message.isNotEmpty)
-              ? message
-              : 'پرداخت ناموفق بود',
-          error: true,
-        ));
-        return;
-      }
-
-      messenger.showSnackBar(_snack(
-        result == PaymentWebViewResult.cancelled
-            ? 'پرداخت انجام نشد. می‌توانید دوباره تلاش کنید.'
-            : 'پرداخت شما در حال تایید است. پس از تایید، مشاور برای شما فعال می‌شود.',
-        error: true,
-      ));
-    } finally {
-      if (mounted && _paying) setState(() => _paying = false);
-    }
-  }
-
-  /// Verifies [attemptID], retrying transient errors. When [waitWhilePending]
-  /// (the gateway returned to the callback) it also polls briefly while the
-  /// bank is still confirming. Returns null if the server never answered.
-  Future<PaymentVerification?> _verifyPayment(
-    ConsultantRepository repo,
-    String attemptID, {
-    required bool waitWhilePending,
-  }) async {
-    const maxTries = 4;
-    PaymentVerification? last;
-    for (var i = 0; i < maxTries; i++) {
-      if (i > 0) await Future<void>.delayed(const Duration(seconds: 2));
+      // completed the transaction even if the student left early.
+      setState(() => _verifying = true);
+      final CheckoutOutcome outcome;
       try {
-        last = await repo.verifyPayment(attemptID);
-        if (!last.pending || !waitWhilePending) return last;
-      } catch (_) {
-        // Network/server hiccup: try again.
+        outcome = await checkout.finish(
+          initiation,
+          returnedFromGateway: result == PaymentWebViewResult.completed,
+        );
+      } finally {
+        if (mounted) setState(() => _verifying = false);
       }
-    }
-    return last;
-  }
+      if (!context.mounted) return;
 
-  Future<void> _cancelPendingQuietly(
-    ConsultantRepository repo,
-    String subscriptionID,
-  ) async {
-    try {
-      await repo.cancelPendingSubscription(subscriptionID);
-    } catch (_) {
-      // Best effort: the server also expires unpaid subscriptions.
+      switch (outcome.kind) {
+        case CheckoutOutcomeKind.succeeded:
+          unawaited(ActiveCounselorStore.instance.refresh(repo, force: true));
+          await showConsultationSuccessSheet(
+            context,
+            duration: duration,
+            plan: plan,
+          );
+          return;
+        case CheckoutOutcomeKind.pending:
+        case CheckoutOutcomeKind.unknown:
+          // Possibly charged: offering "pay again" here would invite a double
+          // payment. The server activates the counselor once the bank settles.
+          unawaited(ActiveCounselorStore.instance.refresh(repo, force: true));
+          messenger.showSnackBar(_snack(outcome.message));
+          return;
+        case CheckoutOutcomeKind.cancelled:
+        case CheckoutOutcomeKind.failed:
+          notice = outcome.message;
+          noticeIsError = outcome.kind == CheckoutOutcomeKind.failed;
+      }
     }
   }
 
   SnackBar _snack(String message, {bool error = false}) {
     return SnackBar(
-      backgroundColor: error ? AppColors.errorColor : AppColors.done,
+      backgroundColor: error ? AppColors.errorColor : AppColors.black1,
+      duration: const Duration(seconds: 6),
       content: Directionality(
         textDirection: TextDirection.rtl,
         child: ReText(
           message,
+          maxLines: 5,
           color: AppColors.white,
           fontSize: 13,
           fontWeight: FontWeight.w700,
@@ -315,9 +264,9 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
       body: Stack(
         children: [
           _buildContent(context),
-          if (_paying) ...[
+          if (_verifying) ...[
             const ModalBarrier(dismissible: false, color: Colors.black26),
-            const Center(child: CircularProgressIndicator.adaptive()),
+            const Center(child: _VerifyingCard()),
           ],
         ],
       ),
@@ -383,6 +332,52 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// Shown over the list while the payment result is being confirmed.
+class _VerifyingCard extends StatelessWidget {
+  const _VerifyingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(32),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AppColors.black1,
+            ),
+          ),
+          SizedBox(height: 16),
+          ReText(
+            'در حال بررسی وضعیت پرداخت',
+            color: AppColors.black1,
+            fontSize: 15,
+            fontWeight: 900,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 4),
+          ReText(
+            'چند لحظه صبر کنید…',
+            color: AppColors.gray,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

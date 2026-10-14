@@ -32,6 +32,10 @@ class UserAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
+            // On the web, a picture host that does not allow the app's origin
+            // (CORS) would otherwise leave only the placeholder; a plain
+            // <img> element can still show it.
+            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
             errorBuilder: (_, __, ___) => placeholder,
             loadingBuilder: (_, child, progress) =>
                 progress == null ? child : placeholder,

@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5105,6 +5106,7 @@ class ProfileAvatarBottomSheet extends StatefulWidget {
     required this.onUpload,
     this.name,
     this.pickImage,
+    this.offerCamera = !kIsWeb,
   });
 
   final String? currentImageUrl;
@@ -5120,6 +5122,11 @@ class ProfileAvatarBottomSheet extends StatefulWidget {
 
   /// Stands in for the system picker and cropper, for tests.
   final AvatarImagePicker? pickImage;
+
+  /// Whether the camera gets its own tile. Not on the web: a desktop browser
+  /// would open the same file dialog, and a phone's browser already offers
+  /// the camera in its own picker.
+  final bool offerCamera;
 
   @override
   State<ProfileAvatarBottomSheet> createState() => _ProfileAvatarBottomSheetState();
@@ -5145,6 +5152,7 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
     );
     if (picked == null || !mounted) return null;
 
+    final cropSide = math.min(MediaQuery.sizeOf(context).width - 48, 480).round();
     final cropped = await ImageCropper().cropImage(
       sourcePath: picked.path,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
@@ -5176,7 +5184,22 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
         WebUiSettings(
           context: context,
           presentStyle: WebPresentStyle.dialog,
-          size: const CropperSize(width: 500, height: 500),
+          // Fits a phone's browser as well as a desktop window.
+          size: CropperSize(width: cropSide, height: cropSide),
+          initialAspectRatio: 1,
+          viewwMode: WebViewMode.mode_1,
+          dragMode: WebDragMode.move,
+          cropBoxMovable: false,
+          cropBoxResizable: false,
+          guides: false,
+          center: false,
+          translations: const WebTranslations(
+            title: 'برش تصویر',
+            rotateLeftTooltip: 'چرخش به چپ',
+            rotateRightTooltip: 'چرخش به راست',
+            cancelButton: 'انصراف',
+            cropButton: 'تأیید',
+          ),
         ),
       ],
     );
@@ -5347,20 +5370,23 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
                               Expanded(
                                 child: _AvatarSourceTile(
                                   key: const ValueKey('avatar-source-gallery'),
-                                  icon: IconsaxPlusLinear.gallery,
-                                  label: 'گالری',
+                                  icon: widget.offerCamera ? IconsaxPlusLinear.gallery : IconsaxPlusLinear.gallery_add,
+                                  label: widget.offerCamera ? 'گالری' : 'انتخاب تصویر',
+                                  caption: widget.offerCamera ? null : 'JPG یا PNG، تا ۵ مگابایت',
                                   onTap: _isBusy ? null : () => _choose(ImageSource.gallery),
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _AvatarSourceTile(
-                                  key: const ValueKey('avatar-source-camera'),
-                                  icon: IconsaxPlusLinear.camera,
-                                  label: 'دوربین',
-                                  onTap: _isBusy ? null : () => _choose(ImageSource.camera),
+                              if (widget.offerCamera) ...[
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _AvatarSourceTile(
+                                    key: const ValueKey('avatar-source-camera'),
+                                    icon: IconsaxPlusLinear.camera,
+                                    label: 'دوربین',
+                                    onTap: _isBusy ? null : () => _choose(ImageSource.camera),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                   ),
@@ -5380,10 +5406,14 @@ class _AvatarSourceTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.caption,
   });
 
   final IconData icon;
   final String label;
+
+  /// A short note under the label, such as the accepted formats.
+  final String? caption;
   final VoidCallback? onTap;
 
   @override
@@ -5403,6 +5433,10 @@ class _AvatarSourceTile extends StatelessWidget {
               Icon(icon, size: 26, color: color),
               const SizedBox(height: 8),
               ReText(label, fontSize: 14, fontWeight: FontWeight.w800, color: color),
+              if (caption != null) ...[
+                const SizedBox(height: 2),
+                ReText(caption!, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.gray),
+              ],
             ],
           ),
         ),

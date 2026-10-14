@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
 import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
@@ -8,30 +9,94 @@ import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// Screen 5 of the consultants flow: "صورتحساب" — payment summary. Shown as a
-/// modal bottom sheet. Static data.
+/// modal bottom sheet.
 ///
-/// Returns true when the user taps "تایید و پرداخت", null on cancel/dismiss.
-Future<bool?> showInvoiceSheet(
+/// "تایید و پرداخت" runs [onConfirm] (preparing the bank gateway) with the
+/// button in its loading state and the sheet still open, so a failure shows
+/// inline and the student can retry without picking the plan again. Returns
+/// [onConfirm]'s result, or null on cancel/dismiss. [notice] explains the
+/// previous try (e.g. "payment was not completed") when the sheet reopens;
+/// [noticeIsError] tints it as an error.
+Future<T?> showInvoiceSheet<T>(
   BuildContext context, {
   required ConsultationDurationOption duration,
   required ConsultationPlan plan,
+  required Future<T> Function() onConfirm,
+  String? notice,
+  bool noticeIsError = false,
 }) {
-  return showModalBottomSheet<bool>(
+  return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
+    // Closing mid-request is blocked below; the buttons stay available.
+    enableDrag: false,
     backgroundColor: Colors.transparent,
-    builder: (_) => _InvoiceSheet(duration: duration, plan: plan),
+    builder: (_) => _InvoiceSheet<T>(
+      duration: duration,
+      plan: plan,
+      onConfirm: onConfirm,
+      notice: notice,
+      noticeIsError: noticeIsError,
+    ),
   );
 }
 
-class _InvoiceSheet extends StatelessWidget {
-  const _InvoiceSheet({required this.duration, required this.plan});
+class _InvoiceSheet<T> extends StatefulWidget {
+  const _InvoiceSheet({
+    super.key,
+    required this.duration,
+    required this.plan,
+    required this.onConfirm,
+    this.notice,
+    this.noticeIsError = false,
+  });
 
   final ConsultationDurationOption duration;
   final ConsultationPlan plan;
+  final Future<T> Function() onConfirm;
+  final String? notice;
+  final bool noticeIsError;
+
+  @override
+  State<_InvoiceSheet<T>> createState() => _InvoiceSheetState<T>();
+}
+
+class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
+  bool _busy = false;
+  late String? _message = widget.notice;
+  late bool _messageIsError = widget.noticeIsError;
+
+  ConsultationDurationOption get duration => widget.duration;
+  ConsultationPlan get plan => widget.plan;
+
+  Future<void> _confirm() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final result = await widget.onConfirm();
+      if (mounted) Navigator.of(context).pop(result);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _message = checkoutErrorMessage(error);
+        _messageIsError = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_busy,
+      child: _buildSheet(context),
+    );
+  }
+
+  Widget _buildSheet(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -49,8 +114,14 @@ class _InvoiceSheet extends StatelessWidget {
             _buildDurationRow(),
             const SizedBox(height: 12),
             _buildPlanRow(),
+            if (_message != null) ...[
+              const SizedBox(height: 16),
+              _buildMessage(_message!),
+            ],
             const SizedBox(height: 24),
             _buildActions(context),
+            const SizedBox(height: 12),
+            _buildSecureNote(),
           ],
         ),
       ),
@@ -95,7 +166,7 @@ class _InvoiceSheet extends StatelessWidget {
             ).rMargin(6),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).maybePop(),
+              onTap: _busy ? null : () => Navigator.of(context).maybePop(),
               child: Container(
                 width: 48,
                 height: 48,
@@ -290,19 +361,83 @@ class _InvoiceSheet extends StatelessWidget {
     );
   }
 
+  /// Inline result of the last try: red for errors, neutral otherwise.
+  Widget _buildMessage(String message) {
+    final color = _messageIsError ? AppColors.errorColor : AppColors.black1;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _messageIsError
+            ? AppColors.errorColor.withOpacity(0.06)
+            : AppColors.gray1,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _messageIsError
+                  ? SolarIconsOutline.dangerCircle
+                  : SolarIconsOutline.infoCircle,
+              size: 18,
+              color: color,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ReText(
+                message,
+                maxLines: 5,
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                textAlign: TextAlign.start,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecureNote() {
+    return const Directionality(
+      textDirection: TextDirection.rtl,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 14,
+            color: AppColors.gray,
+          ),
+          SizedBox(width: 4),
+          ReText(
+            'پرداخت از طریق درگاه امن بانکی (شاپرک)',
+            color: AppColors.gray,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActions(BuildContext context) {
     return Row(
       children: [
         Expanded(
           child: ReButton(
-            text: 'تایید و پرداخت',
+            text: widget.notice == null ? 'تایید و پرداخت' : 'پرداخت دوباره',
             icon: SolarIconsOutline.altArrowLeft,
             reverseIconPosition: true,
             background: AppColors.primary,
             borderRadius: 40,
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            onPressed: () => Navigator.of(context).pop(true),
+            isLoading: _busy,
+            onPressed: _confirm,
           ),
         ),
         const SizedBox(width: 12),
@@ -318,6 +453,7 @@ class _InvoiceSheet extends StatelessWidget {
             iconColor: AppColors.black1,
             borderRadius: 40,
             fontSize: 16,
+            isEnabled: !_busy,
             onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),

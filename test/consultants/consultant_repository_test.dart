@@ -167,6 +167,118 @@ void main() {
         throwsA(isA<GraphQLRawException>()),
       );
     });
+
+    test('returns a closed attempt that came back without a URL', () async {
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async =>
+          const {
+            'beginCounselingPayment': {
+              'redirectURL': '',
+              'attempt': {'id': 'attempt-1', 'status': 'EXPIRED'},
+            },
+          });
+
+      final initiation = await repository.beginPayment(
+        subscriptionID: 'sub-1',
+        idempotencyKey: 'sub_sub-1_1',
+      );
+
+      expect(initiation.subscriptionID, 'sub-1');
+      expect(initiation.status, 'EXPIRED');
+      expect(initiation.isOpen, isFalse);
+    });
+  });
+
+  group('fetchPendingSubscription', () {
+    test('maps the unpaid purchase and its deadline', () async {
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        expect(query, contains('myCounselingSubscriptions(status: PENDING'));
+        return {
+          'myCounselingSubscriptions': [
+            {
+              'id': 'sub-1',
+              'counselorID': 'counselor-1',
+              'planType': 'PROFESSIONAL',
+              'durationMonths': 6,
+              'pendingExpiresAt': '2026-10-14T10:30:00Z',
+            },
+          ],
+        };
+      });
+
+      final pending = await repository.fetchPendingSubscription();
+
+      expect(pending, isNotNull);
+      expect(pending!.id, 'sub-1');
+      expect(
+        pending.matches(
+          counselorProfileID: 'counselor-1',
+          durationMonths: 6,
+          planType: 'PROFESSIONAL',
+        ),
+        isTrue,
+      );
+      expect(pending.isExpiredAt(DateTime.utc(2026, 10, 14, 10, 29)), isFalse);
+      expect(pending.isExpiredAt(DateTime.utc(2026, 10, 14, 10, 30)), isTrue);
+    });
+
+    test('returns null when there is none', () async {
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async =>
+          const {'myCounselingSubscriptions': []});
+
+      expect(await repository.fetchPendingSubscription(), isNull);
+    });
+  });
+
+  group('fetchPaymentAttempts', () {
+    test('maps attempts and tells which one can still be opened', () async {
+      Map<String, dynamic>? sentVariables;
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        expect(query, contains('myCounselingPaymentAttempts'));
+        sentVariables = variables;
+        return {
+          'myCounselingPaymentAttempts': [
+            {
+              'id': 'attempt-2',
+              'status': 'PENDING',
+              'redirectURL': 'https://pay.example.com/2',
+              'expiresAt': '2026-10-14T10:15:00Z',
+            },
+            {
+              'id': 'attempt-1',
+              'status': 'FAILED',
+              'redirectURL': 'https://pay.example.com/1',
+              'expiresAt': '2026-10-14T10:00:00Z',
+            },
+          ],
+        };
+      });
+
+      final attempts = await repository.fetchPaymentAttempts('sub-1');
+      final before = DateTime.utc(2026, 10, 14, 10, 10);
+      final after = DateTime.utc(2026, 10, 14, 10, 20);
+
+      expect(sentVariables, {'subscriptionID': 'sub-1'});
+      expect(attempts.map((a) => a.id), ['attempt-2', 'attempt-1']);
+      expect(attempts.first.isOpenAt(before), isTrue);
+      expect(attempts.first.isOpenAt(after), isFalse);
+      expect(attempts.last.isOpenAt(before), isFalse);
+    });
   });
 
   group('verifyPayment', () {
@@ -261,7 +373,8 @@ void main() {
   });
 
   group('fetchMyActiveCounselor', () {
-    ConsultantRepository repositoryReturning(Map<String, dynamic> subscription) {
+    ConsultantRepository repositoryReturning(
+        Map<String, dynamic> subscription) {
       return ConsultantRepository.withRawRequest(({
         required String query,
         Map<String, dynamic> variables = const {},
@@ -289,9 +402,11 @@ void main() {
 
     test('keeps the counselor title and the subscription end date', () async {
       final active = subscription('ACTIVE', endDate: '2100-01-01T00:00:00Z');
-      (active['counselor'] as Map<String, dynamic>)['title'] = 'مشاور تحصیلی کنکور';
+      (active['counselor'] as Map<String, dynamic>)['title'] =
+          'مشاور تحصیلی کنکور';
 
-      final counselor = await repositoryReturning(active).fetchMyActiveCounselor();
+      final counselor =
+          await repositoryReturning(active).fetchMyActiveCounselor();
 
       expect(counselor?.title, 'مشاور تحصیلی کنکور');
       expect(counselor?.endDate, DateTime.utc(2100));

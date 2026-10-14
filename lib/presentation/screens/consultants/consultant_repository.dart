@@ -110,12 +110,36 @@ class ConsultantRepository {
         attempt {
           id
           status
+          failureCode
           failureMessage
         }
         subscription {
           id
           status
         }
+      }
+    }
+  ''';
+
+  static const String _pendingSubscriptionQuery = r'''
+    query MyPendingCounselingSubscription {
+      myCounselingSubscriptions(status: PENDING, limit: 1) {
+        id
+        counselorID
+        planType
+        durationMonths
+        pendingExpiresAt
+      }
+    }
+  ''';
+
+  static const String _paymentAttemptsQuery = r'''
+    query MyCounselingPaymentAttempts($subscriptionID: ID!) {
+      myCounselingPaymentAttempts(subscriptionID: $subscriptionID) {
+        id
+        status
+        redirectURL
+        expiresAt
       }
     }
   ''';
@@ -243,22 +267,25 @@ class ConsultantRepository {
     if (payload is! Map<String, dynamic>) {
       throw const GraphQLRawException('شروع پرداخت ناموفق بود');
     }
-    final redirectURL = (payload['redirectURL'] as String?)?.trim();
+    final redirectURL = (payload['redirectURL'] as String?)?.trim() ?? '';
     final attempt = payload['attempt'];
-    final attemptID =
-        attempt is Map<String, dynamic> ? attempt['id'] as String? : null;
-    if (redirectURL == null ||
-        redirectURL.isEmpty ||
-        attemptID == null ||
-        attemptID.isEmpty) {
+    final attemptMap = attempt is Map<String, dynamic> ? attempt : const {};
+    final attemptID = attemptMap['id'] as String?;
+    final status = attemptMap['status'] as String? ?? 'PENDING';
+    // A resumed attempt that has meanwhile expired or failed comes back
+    // without a URL, and the caller opens a fresh one. An open attempt
+    // without a gateway URL is a broken response.
+    if (attemptID == null ||
+        attemptID.isEmpty ||
+        (status == 'PENDING' && redirectURL.isEmpty)) {
       throw const GraphQLRawException('اطلاعات درگاه پرداخت نامعتبر بود');
     }
 
     return PaymentInitiation(
+      subscriptionID: subscriptionID,
       attemptID: attemptID,
       redirectURL: redirectURL,
-      status:
-          (attempt as Map<String, dynamic>)['status'] as String? ?? 'PENDING',
+      status: status,
     );
   }
 
@@ -283,8 +310,59 @@ class ConsultantRepository {
     return PaymentVerification(
       attemptStatus: (attemptMap['status'] as String?) ?? 'PENDING',
       subscriptionStatus: (subscriptionMap['status'] as String?) ?? '',
+      failureCode: (attemptMap['failureCode'] as String?)?.trim(),
       failureMessage: (attemptMap['failureMessage'] as String?)?.trim(),
     );
+  }
+
+  /// Returns the student's unpaid (PENDING) counseling purchase, if any. Only
+  /// one can exist at a time, and it blocks [requestCounseling] until it is
+  /// paid, cancelled or expired.
+  Future<PendingCounselingSubscription?> fetchPendingSubscription() async {
+    final data = await _rawRequest(
+      query: _pendingSubscriptionQuery,
+      variables: const {},
+    );
+
+    final raw = data['myCounselingSubscriptions'];
+    if (raw is! List) return null;
+    for (final item in raw.whereType<Map<String, dynamic>>()) {
+      final id = item['id'];
+      if (id is! String || id.isEmpty) continue;
+      return PendingCounselingSubscription(
+        id: id,
+        counselorProfileID: (item['counselorID'] as String?) ?? '',
+        planType: (item['planType'] as String?) ?? '',
+        durationMonths: (item['durationMonths'] as num?)?.toInt() ?? 0,
+        expiresAt: DateTime.tryParse(item['pendingExpiresAt'] as String? ?? ''),
+      );
+    }
+    return null;
+  }
+
+  /// Lists the payment attempts of [subscriptionID], newest first.
+  Future<List<CounselingPaymentAttemptInfo>> fetchPaymentAttempts(
+    String subscriptionID,
+  ) async {
+    final data = await _rawRequest(
+      query: _paymentAttemptsQuery,
+      variables: {'subscriptionID': subscriptionID},
+    );
+
+    final raw = data['myCounselingPaymentAttempts'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .where((item) => item['id'] is String)
+        .map(
+          (item) => CounselingPaymentAttemptInfo(
+            id: item['id'] as String,
+            status: (item['status'] as String?) ?? '',
+            redirectURL: (item['redirectURL'] as String?)?.trim() ?? '',
+            expiresAt: DateTime.tryParse(item['expiresAt'] as String? ?? ''),
+          ),
+        )
+        .toList();
   }
 
   /// Cancels a subscription whose payment definitively failed, so an unpaid
@@ -415,14 +493,74 @@ class CounselingRequest {
 /// the bank gateway URL to open.
 class PaymentInitiation {
   const PaymentInitiation({
+    required this.subscriptionID,
     required this.attemptID,
     required this.redirectURL,
     required this.status,
   });
 
+  final String subscriptionID;
   final String attemptID;
   final String redirectURL;
   final String status;
+
+  /// Still payable: the gateway can be opened with [redirectURL].
+  bool get isOpen => status == 'PENDING' && redirectURL.isNotEmpty;
+}
+
+/// The student's unpaid counseling purchase (see
+/// [ConsultantRepository.fetchPendingSubscription]).
+class PendingCounselingSubscription {
+  const PendingCounselingSubscription({
+    required this.id,
+    required this.counselorProfileID,
+    required this.planType,
+    required this.durationMonths,
+    this.expiresAt,
+  });
+
+  final String id;
+  final String counselorProfileID;
+  final String planType;
+  final int durationMonths;
+
+  /// When the server cancels it for non-payment.
+  final DateTime? expiresAt;
+
+  bool isExpiredAt(DateTime now) =>
+      expiresAt != null && !expiresAt!.isAfter(now);
+
+  bool matches({
+    required String counselorProfileID,
+    required int durationMonths,
+    required String planType,
+  }) =>
+      this.counselorProfileID == counselorProfileID &&
+      this.durationMonths == durationMonths &&
+      this.planType == planType;
+}
+
+/// One row of [ConsultantRepository.fetchPaymentAttempts].
+class CounselingPaymentAttemptInfo {
+  const CounselingPaymentAttemptInfo({
+    required this.id,
+    required this.status,
+    required this.redirectURL,
+    this.expiresAt,
+  });
+
+  final String id;
+  final String status;
+  final String redirectURL;
+  final DateTime? expiresAt;
+
+  bool get isPending => status == 'PENDING';
+
+  /// Pending with a gateway URL that has not expired yet.
+  bool isOpenAt(DateTime now) =>
+      isPending &&
+      redirectURL.isNotEmpty &&
+      (expiresAt == null || expiresAt!.isAfter(now));
 }
 
 /// Result of [ConsultantRepository.verifyPayment].
@@ -430,11 +568,17 @@ class PaymentVerification {
   const PaymentVerification({
     required this.attemptStatus,
     required this.subscriptionStatus,
+    this.failureCode,
     this.failureMessage,
   });
 
   final String attemptStatus;
   final String subscriptionStatus;
+
+  /// Machine-readable reason, e.g. `MELLAT_CALLBACK_17` (cancelled on the
+  /// bank page). [failureMessage] is the provider's English text, so the UI
+  /// must not show it.
+  final String? failureCode;
   final String? failureMessage;
 
   /// Paid AND the subscription was activated. Only this grants a counselor.

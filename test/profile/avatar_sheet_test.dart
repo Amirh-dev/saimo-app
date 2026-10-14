@@ -24,6 +24,7 @@ void main() {
     WidgetTester tester, {
     required AvatarImagePicker pickImage,
     required Future<String> Function(Uint8List bytes) upload,
+    bool offerCamera = true,
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -42,6 +43,7 @@ void main() {
                   builder: (_) => ProfileAvatarBottomSheet(
                     currentImageUrl: null,
                     pickImage: pickImage,
+                    offerCamera: offerCamera,
                     onUpload: ({required imageBytes, required fileName}) =>
                         upload(imageBytes),
                   ),
@@ -163,5 +165,28 @@ void main() {
       find.text('دسترسی به عکس‌ها داده نشده است. آن را از تنظیمات گوشی فعال کنید.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('on the web, one tile picks a file and names the formats',
+      (tester) async {
+    final sources = <ImageSource>[];
+    await open(
+      tester,
+      offerCamera: false,
+      pickImage: (source) async {
+        sources.add(source);
+        return _png;
+      },
+      upload: (_) async => 'https://cdn.example/w.jpg',
+    );
+
+    expect(byKey('avatar-source-camera'), findsNothing);
+    expect(find.text('انتخاب تصویر'), findsOneWidget);
+    expect(find.text('JPG یا PNG، تا ۵ مگابایت'), findsOneWidget);
+
+    await tester.tap(byKey('avatar-source-gallery'));
+    await tester.pumpAndSettle();
+    expect(sources, [ImageSource.gallery]);
+    expect(byKey('avatar-save'), findsOneWidget);
   });
 }
