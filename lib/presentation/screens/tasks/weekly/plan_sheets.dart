@@ -26,8 +26,9 @@ Future<T?> _showPlanSheet<T>(BuildContext context, Widget sheet) {
 // --------------------------------------------------------------- day picker
 
 /// A week of day chips, browsed with the arrows or by dragging the chips
-/// sideways. Past days and weeks beyond the planning horizon cannot be
-/// picked.
+/// sideways. Nothing can be planned for a day that has passed, so past days
+/// are left out; their slots stay empty so every weekday keeps its column
+/// from week to week. Weeks beyond the planning horizon cannot be reached.
 class WeekDayPicker extends StatefulWidget {
   const WeekDayPicker({
     super.key,
@@ -100,7 +101,9 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
       children: [
         for (var index = 0; index < 7; index++)
           Expanded(
-            child: _chip(index, weekStart.addDays(index), keyed: keyed),
+            child: daysBetween(widget.today, weekStart.addDays(index)) < 0
+                ? const SizedBox.shrink()
+                : _chip(index, weekStart.addDays(index), keyed: keyed),
           ),
       ],
     );
@@ -185,7 +188,6 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
   }
 
   Widget _chip(int index, Jalali day, {bool keyed = true}) {
-    final isPast = daysBetween(widget.today, day) < 0;
     final selected =
         widget.selected != null && isSameJalaliDay(day, widget.selected!);
     final marked =
@@ -194,18 +196,15 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
 
     return Semantics(
       button: true,
-      enabled: !isPast,
       selected: selected,
       label: dayLabel(day),
       child: GestureDetector(
         key: keyed ? ValueKey('week-day-chip-$index') : null,
         behavior: HitTestBehavior.opaque,
-        onTap: isPast
-            ? null
-            : () {
-                HapticFeedback.selectionClick();
-                widget.onChanged(day);
-              },
+        onTap: () {
+          HapticFeedback.selectionClick();
+          widget.onChanged(day);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -219,30 +218,27 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
               width: 1.5,
             ),
           ),
-          child: Opacity(
-            opacity: isPast ? 0.35 : 1,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ReText(
-                  kPersianWeekdayInitials[index],
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: selected
-                      ? AppColors.white.withValues(alpha: 0.7)
-                      : isToday
-                          ? AppColors.black1
-                          : AppColors.gray,
-                ),
-                const SizedBox(height: 2),
-                ReText(
-                  '${day.day}',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: selected ? AppColors.white : AppColors.black1,
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReText(
+                kPersianWeekdayInitials[index],
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: selected
+                    ? AppColors.white.withValues(alpha: 0.7)
+                    : isToday
+                        ? AppColors.black1
+                        : AppColors.gray,
+              ),
+              const SizedBox(height: 2),
+              ReText(
+                '${day.day}',
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: selected ? AppColors.white : AppColors.black1,
+              ),
+            ],
           ),
         ),
       ),

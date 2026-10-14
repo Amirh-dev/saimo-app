@@ -8,3 +8,4 @@ export 're_toast.dart';
 export 're_search_pill.dart';
 export 'app_bottom_navigation_bar.dart';
 export 're_modal_bottom_sheet.dart';
+export 'user_avatar.dart';

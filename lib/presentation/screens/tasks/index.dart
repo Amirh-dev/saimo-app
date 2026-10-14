@@ -1537,27 +1537,16 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       {required bool timed, bool justCompleted = false}) async {
     var completed =
         justCompleted || _sheetTaskState(task, timed: timed).isDone;
+    // A timed task ends only when its timer runs out; never finish it here.
+    if (timed && !completed) return;
     final finishesTask = !completed;
-    final timerRepository =
-        TaskTimerRepository(context.read<GraphQLRepository>());
-
     final saved = await showTaskReportPopup(
       context,
       initial: task['report'] as TaskReport?,
       finishesTask: finishesTask,
       onSubmit: (report) async {
         if (!completed) {
-          final id = task['id'] as String?;
-          if (timed && _timer.isActive(id)) {
-            if (!await _timer.complete(announce: false)) {
-              throw const TaskActionException(
-                  'پایان دادن تسک ناموفق بود. دوباره تلاش کنید.');
-            }
-          } else if (timed) {
-            await timerRepository.completeTimedTask(id!);
-          } else {
-            await _tasksApi.setTaskDone(task, done: true);
-          }
+          await _tasksApi.setTaskDone(task, done: true);
           completed = true;
         }
         await _tasksApi.saveReport(task, report);
@@ -1975,22 +1964,26 @@ class _TaskDetailsSheet extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  Expanded(
-                    flex: 1,
-                    child: _SheetButton(
-                      key: const ValueKey('task-sheet-report'),
-                      text: 'گزارش',
-                      icon: SolarIconsOutline.clipboardText,
-                      background: AppColors.white,
-                      textColor: AppColors.black1,
-                      borderColor: AppColors.gray2,
-                      // A filled dot: this task already has a report.
-                      marked: task['report'] != null,
-                      onTap: () =>
-                          Navigator.of(context).pop(_TaskSheetAction.report),
+                  // A timed task ends only when its timer runs out, so it can
+                  // be reported on only once it is done.
+                  if (!timed || state.isDone) ...[
+                    Expanded(
+                      flex: 1,
+                      child: _SheetButton(
+                        key: const ValueKey('task-sheet-report'),
+                        text: 'گزارش',
+                        icon: SolarIconsOutline.clipboardText,
+                        background: AppColors.white,
+                        textColor: AppColors.black1,
+                        borderColor: AppColors.gray2,
+                        // A filled dot: this task already has a report.
+                        marked: task['report'] != null,
+                        onTap: () =>
+                            Navigator.of(context).pop(_TaskSheetAction.report),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     flex: 1,
                     child: _SheetButton(

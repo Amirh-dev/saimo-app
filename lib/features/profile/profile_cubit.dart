@@ -1,24 +1,26 @@
-import 'dart:convert';
+import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 
+import 'avatar_uploader.dart';
 import 'profile_repository.dart';
-import 'package:http/http.dart' as http;
-import 'dart:typed_data';
 
 part 'profile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit(GraphQLRepository graphql)
       : _repository = ProfileRepository(graphql),
+        _avatarUploader = AvatarUploader.fromGraphQL(graphql),
         super(ProfileInitial());
 
-  ProfileCubit.withRepository(this._repository) : super(ProfileInitial());
+  ProfileCubit.withRepository(this._repository, {AvatarUploader? avatarUploader})
+      : _avatarUploader = avatarUploader,
+        super(ProfileInitial());
 
   final ProfileRepository _repository;
+  final AvatarUploader? _avatarUploader;
   ProfileUser? _cachedProfile;
   Future<ProfileUser>? _activeLoad;
   int _cacheRevision = 0;
@@ -95,56 +97,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileInitial());
   }
 
+  /// Uploads a new profile picture and returns its URL. The profile is then
+  /// reloaded in the background, so every screen showing it picks it up.
   Future<String> uploadProfileImage({
     required Uint8List imageBytes,
     required String fileName,
   }) async {
-    final tokenStorage = await TokenStorage.create();
-
-    final token = tokenStorage.currentAccessToken;
-
-    if (token == null || token.isEmpty) {
-      throw Exception('Access token is missing');
+    final uploader = _avatarUploader;
+    if (uploader == null) {
+      throw const AvatarUploadException('بارگذاری تصویر فعلاً ممکن نیست.');
     }
-
-    final uri = Uri.parse(
-      'https://simo.raa-vi.ir/uploads/avatar',
-    );
-
-    final request = http.MultipartRequest('POST', uri);
-
-    request.headers['Authorization'] = 'Bearer $token';
-
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        imageBytes,
-        filename: fileName,
-      ),
-    );
-
-    final streamedResponse = await request.send();
-
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-
-      final data = jsonResponse['data'] as Map<String, dynamic>?;
-
-      final avatarUrl = data?['avatarUrl'] as String?;
-
-      if (avatarUrl == null || avatarUrl.isEmpty) {
-        throw Exception('Avatar URL is missing from server response');
-      }
-
-      return avatarUrl;
-    }
-
-    throw Exception(
-      'Failed to upload profile image. '
-      'Status code: ${response.statusCode}. '
-      'Response: ${response.body}',
-    );
+    final avatarUrl = await uploader.upload(imageBytes, fileName: fileName);
+    unawaited(getMe(forceRefresh: true).then<void>((_) {}, onError: (_) {}));
+    return avatarUrl;
   }
 }

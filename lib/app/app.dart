@@ -25,6 +25,7 @@ import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
@@ -97,6 +98,7 @@ class MyApp extends StatelessWidget {
                   child: TaskTimerBanner(navigatorKey: _rootNavigatorKey),
                 ),
                 TaskReportPrompt(navigatorKey: _rootNavigatorKey),
+                SimoGuardNotice(navigatorKey: _rootNavigatorKey),
               ],
             );
           },

@@ -51,5 +51,10 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<!-- Choosing or taking a profile picture. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>برای انتخاب تصویر پروفایل، به عکس‌های شما دسترسی لازم است.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>برای گرفتن عکس پروفایل، به دوربین دسترسی لازم است.</string>
 </dict>
 </plist>

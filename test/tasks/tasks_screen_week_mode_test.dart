@@ -214,6 +214,9 @@ void main() {
     await tester.tap(_key('week-task-t1'));
     await tester.pumpAndSettle();
     expect(_key('task-sheet-move'), findsOneWidget);
+    // A timed task ends only through its timer, so an unfinished one
+    // offers no report (which would finish it).
+    expect(_key('task-sheet-report'), findsNothing);
     expect(_key('weekly-plan-view'), findsOneWidget);
   });
 

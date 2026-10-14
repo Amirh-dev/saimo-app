@@ -130,6 +130,7 @@ Future<_FormsRepository> _pumpForm(
 
 void main() {
   group('full task forms', () {
+
     testWidgets('a missing title is shown on the field, nothing is sent',
         (tester) async {
       final repository = await _pumpForm(tester, const AddTaskScreen());

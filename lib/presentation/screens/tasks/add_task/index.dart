@@ -1937,58 +1937,85 @@ class _ThreeColumnJalaliDatePickerSheetState
   late int _selectedMonth;
   late int _selectedDay;
 
+  /// Only [minDate] and later are offered: a task cannot be planned for a
+  /// day that has passed, so those days are not shown at all.
   late List<int> _years;
   late FixedExtentScrollController _yearController;
   late FixedExtentScrollController _monthController;
-  FixedExtentScrollController? _dayController;
+  late FixedExtentScrollController _dayController;
 
   @override
   void initState() {
     super.initState();
-    final today = Jalali.now();
-    final baseYear = today.year;
+    final min = widget.minDate;
+    final soon = Jalali.now().year + 2;
+    final lastYear =
+        widget.initialDate.year > soon ? widget.initialDate.year : soon;
+    _years = [for (var y = min.year; y <= lastYear; y++) y];
 
-    _years = [for (var y = baseYear + 2; y >= baseYear - 4; y--) y];
-    if (!_years.contains(widget.initialDate.year)) {
-      _years = [
-        widget.initialDate.year,
-        ..._years.where((y) => y != widget.initialDate.year),
-      ];
-    }
-
-    _selectedYear = widget.initialDate.year;
+    _selectedYear = widget.initialDate.year.clamp(_years.first, _years.last);
     _selectedMonth = widget.initialDate.month;
     _selectedDay = widget.initialDate.day;
 
     _yearController = FixedExtentScrollController(
-      initialItem: _years.indexOf(_selectedYear).clamp(0, _years.length - 1),
+      initialItem: _years.indexOf(_selectedYear),
     );
-    _monthController = FixedExtentScrollController(
-      initialItem: (_selectedMonth - 1).clamp(0, 11),
-    );
-    _resetDayController();
+    _monthController = _monthControllerFor(_selectedYear);
+    _dayController = _dayControllerFor();
   }
 
   @override
   void dispose() {
     _yearController.dispose();
     _monthController.dispose();
-    _dayController?.dispose();
+    _dayController.dispose();
     super.dispose();
   }
 
-  void _resetDayController() {
-    _dayController?.dispose();
-    final days = _daysInSelectedMonth;
-    _selectedDay = _selectedDay.clamp(1, days.length);
-    _dayController = FixedExtentScrollController(
-      initialItem: (_selectedDay - 1).clamp(0, days.length - 1),
-    );
+  List<int> get _monthsInSelectedYear {
+    final first =
+        _selectedYear == widget.minDate.year ? widget.minDate.month : 1;
+    return [for (var m = first; m <= 12; m++) m];
   }
 
   List<int> get _daysInSelectedMonth {
     final monthLength = Jalali(_selectedYear, _selectedMonth, 1).monthLength;
-    return [for (var d = 1; d <= monthLength; d++) d];
+    final min = widget.minDate;
+    final first =
+        _selectedYear == min.year && _selectedMonth == min.month ? min.day : 1;
+    return [for (var d = first; d <= monthLength; d++) d];
+  }
+
+  /// Keeps the month within [year]'s offered months and returns a wheel
+  /// controller resting on it.
+  FixedExtentScrollController _monthControllerFor(int year) {
+    final months = _monthsInSelectedYear;
+    _selectedMonth = _selectedMonth.clamp(months.first, months.last);
+    return FixedExtentScrollController(
+      initialItem: months.indexOf(_selectedMonth),
+    );
+  }
+
+  FixedExtentScrollController _dayControllerFor() {
+    final days = _daysInSelectedMonth;
+    _selectedDay = _selectedDay.clamp(days.first, days.last);
+    return FixedExtentScrollController(
+      initialItem: days.indexOf(_selectedDay),
+    );
+  }
+
+  /// Swaps in fresh wheels after the year or month changed, since the
+  /// offered months and days may have changed with it. The old controllers
+  /// are let go once the new wheels are built.
+  void _rebuildWheels({required bool months}) {
+    final oldMonth = months ? _monthController : null;
+    final oldDay = _dayController;
+    if (months) _monthController = _monthControllerFor(_selectedYear);
+    _dayController = _dayControllerFor();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      oldMonth?.dispose();
+      oldDay.dispose();
+    });
   }
 
   int _compareJalaliDate(Jalali a, Jalali b) {
@@ -2108,16 +2135,16 @@ class _ThreeColumnJalaliDatePickerSheetState
                       alignment: Alignment.center,
                       children: [
                         _PickerWheel(
-                          controller: _dayController!,
+                          controller: _dayController,
                           itemCount: _daysInSelectedMonth.length,
                           itemExtent: _wheelItemExtent,
                           onSelected: (index) {
                             setState(() {
-                              _selectedDay = index + 1;
+                              _selectedDay = _daysInSelectedMonth[index];
                             });
                           },
                           itemBuilder: (context, index) {
-                            final day = index + 1;
+                            final day = _daysInSelectedMonth[index];
                             return SizedBox(
                               height: _wheelItemExtent,
                               child: Center(
@@ -2158,16 +2185,17 @@ class _ThreeColumnJalaliDatePickerSheetState
                       children: [
                         _PickerWheel(
                           controller: _monthController,
-                          itemCount: widget.monthNames.length,
+                          itemCount: _monthsInSelectedYear.length,
                           itemExtent: _wheelItemExtent,
                           onSelected: (index) {
                             setState(() {
-                              _selectedMonth = index + 1;
-                              _resetDayController();
+                              _selectedMonth = _monthsInSelectedYear[index];
+                              _rebuildWheels(months: false);
                             });
                           },
                           itemBuilder: (context, index) {
-                            final name = widget.monthNames[index];
+                            final name =
+                                widget.monthNames[_monthsInSelectedYear[index] - 1];
                             return SizedBox(
                               height: _wheelItemExtent,
                               child: Center(
@@ -2222,7 +2250,7 @@ class _ThreeColumnJalaliDatePickerSheetState
                           onSelected: (index) {
                             setState(() {
                               _selectedYear = _years[index];
-                              _resetDayController();
+                              _rebuildWheels(months: true);
                             });
                           },
                           itemBuilder: (context, index) {

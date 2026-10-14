@@ -16,6 +16,7 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
+import 'package:simo_learn/features/profile/avatar_uploader.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
@@ -4838,12 +4839,13 @@ class _ProfileSummaryCard extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () async {
-                  final avatarUrl = await showReModalBottomSheet<String>(
+                  await showReModalBottomSheet<String>(
                     context: context,
                     isScrollControlled: true,
                     builder: (_) {
                       return ProfileAvatarBottomSheet(
-                        currentImageUrl: profile?.avatarURL ?? Assets.profilePlaceholder,
+                        currentImageUrl: profile?.avatarURL,
+                        name: profile?.fullName,
                         onUpload: ({
                           required Uint8List imageBytes,
                           required String fileName,
@@ -4859,14 +4861,11 @@ class _ProfileSummaryCard extends StatelessWidget {
                 },
                 child: Stack(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ReImage(
-                        profile?.avatarURL ?? Assets.profilePlaceholder,
-                        fit: BoxFit.cover,
-                        width: 56,
-                        height: 56,
-                      ),
+                    UserAvatar(
+                      imageUrl: profile?.avatarURL,
+                      name: profile?.fullName,
+                      size: 56,
+                      borderRadius: 12,
                     ),
                     Container(
                       padding: const EdgeInsets.all(3),
@@ -5095,14 +5094,23 @@ String _friendlyProfileError(Object error) {
   return text.replaceFirst('Exception: ', '');
 }
 
+/// Picks a photo from [source] and crops it square; null when the user
+/// backs out.
+typedef AvatarImagePicker = Future<Uint8List?> Function(ImageSource source);
+
 class ProfileAvatarBottomSheet extends StatefulWidget {
   const ProfileAvatarBottomSheet({
     super.key,
     required this.currentImageUrl,
     required this.onUpload,
+    this.name,
+    this.pickImage,
   });
 
   final String? currentImageUrl;
+
+  /// The user's name, for the placeholder shown while there is no picture.
+  final String? name;
 
   /// Receives the cropped image bytes and returns the uploaded avatar URL.
   final Future<String> Function({
@@ -5110,275 +5118,328 @@ class ProfileAvatarBottomSheet extends StatefulWidget {
     required String fileName,
   }) onUpload;
 
+  /// Stands in for the system picker and cropper, for tests.
+  final AvatarImagePicker? pickImage;
+
   @override
   State<ProfileAvatarBottomSheet> createState() => _ProfileAvatarBottomSheetState();
 }
 
 class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
-  final ImagePicker _imagePicker = ImagePicker();
-
-  Uint8List? _newImageBytes;
-  String? _newFileName;
-
+  Uint8List? _newImage;
   bool _isPicking = false;
   bool _isSaving = false;
+  String? _error;
 
-  bool get _hasChanges => _newImageBytes != null;
+  bool get _isBusy => _isPicking || _isSaving;
 
-  Future<void> _editImage() async {
-    if (_isPicking || _isSaving) return;
+  /// The system picker, then the cropper. The crop is kept small (1024px,
+  /// JPEG) so it uploads quickly and stays well under the server's 5 MB.
+  Future<Uint8List?> _pickAndCrop(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 2048,
+      maxHeight: 2048,
+      imageQuality: 95,
+      preferredCameraDevice: CameraDevice.front,
+    );
+    if (picked == null || !mounted) return null;
 
-    setState(() => _isPicking = true);
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      maxWidth: 1024,
+      maxHeight: 1024,
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 85,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'برش تصویر',
+          toolbarColor: AppColors.white,
+          toolbarWidgetColor: AppColors.black1,
+          statusBarColor: AppColors.white,
+          activeControlsWidgetColor: AppColors.primary,
+          cropStyle: CropStyle.circle,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: true,
+        ),
+        IOSUiSettings(
+          title: 'برش تصویر',
+          doneButtonTitle: 'تأیید',
+          cancelButtonTitle: 'انصراف',
+          cropStyle: CropStyle.circle,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+          aspectRatioPickerButtonHidden: true,
+        ),
+        WebUiSettings(
+          context: context,
+          presentStyle: WebPresentStyle.dialog,
+          size: const CropperSize(width: 500, height: 500),
+        ),
+      ],
+    );
+    return cropped?.readAsBytes();
+  }
 
+  Future<void> _choose(ImageSource source) async {
+    if (_isBusy) return;
+    setState(() {
+      _isPicking = true;
+      _error = null;
+    });
     try {
-      final XFile? pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 100,
-      );
-
-      if (pickedFile == null) {
-        if (mounted) {
-          setState(() => _isPicking = false);
-        }
-        return;
-      }
-
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        compressQuality: 90,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'ویرایش تصویر',
-            toolbarColor: AppColors.white,
-            toolbarWidgetColor: AppColors.black1,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-            hideBottomControls: false,
-          ),
-          IOSUiSettings(
-            title: 'ویرایش تصویر',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-          WebUiSettings(
-            context: context,
-            presentStyle: WebPresentStyle.dialog,
-            size: const CropperSize(
-              width: 500,
-              height: 500,
-            ),
-          ),
-        ],
-      );
-
-      if (croppedFile == null) {
-        if (mounted) {
-          setState(() => _isPicking = false);
-        }
-        return;
-      }
-
-      final bytes = await croppedFile.readAsBytes();
-
+      final bytes = await (widget.pickImage ?? _pickAndCrop)(source);
       if (!mounted) return;
-
       setState(() {
-        _newImageBytes = bytes;
-        _newFileName = pickedFile.name;
         _isPicking = false;
+        if (bytes != null) _newImage = bytes;
       });
     } catch (error) {
       if (!mounted) return;
-
-      setState(() => _isPicking = false);
-
-      showReToast(
-        context,
-        'انتخاب تصویر با خطا مواجه شد',
-        ReToastType.failed,
-      );
+      final denied = error is PlatformException && error.code.contains('access_denied');
+      setState(() {
+        _isPicking = false;
+        _error = !denied
+            ? 'باز کردن تصویر ممکن نشد. دوباره تلاش کنید.'
+            : source == ImageSource.camera
+                ? 'دسترسی به دوربین داده نشده است. آن را از تنظیمات گوشی فعال کنید.'
+                : 'دسترسی به عکس‌ها داده نشده است. آن را از تنظیمات گوشی فعال کنید.';
+      });
     }
   }
 
   Future<void> _save() async {
-    if (_isSaving || _newImageBytes == null) return;
-
-    setState(() => _isSaving = true);
-
+    final bytes = _newImage;
+    if (bytes == null || _isBusy) return;
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
     try {
-      final avatarUrl = await widget.onUpload(
-        imageBytes: _newImageBytes!,
-        fileName: _newFileName ?? 'avatar.jpg',
-      );
-
+      final avatarUrl = await widget.onUpload(imageBytes: bytes, fileName: 'avatar.jpg');
       if (!mounted) return;
-
-      showReToast(
-        context,
-        'تصویر پروفایل با موفقیت ذخیره شد',
-        ReToastType.success,
-      );
-
-      try {
-        await context.read<ProfileCubit>().getMe(
-          forceRefresh: true,
-        );
-      } catch (error) {
-        if (!mounted) return;
-        showReToast(context, _friendlyProfileError(error), ReToastType.failed);
-      }
-
+      HapticFeedback.lightImpact();
+      showReToast(context, 'تصویر پروفایل به‌روز شد', ReToastType.success);
       Navigator.of(context).pop(avatarUrl);
     } catch (error) {
       if (!mounted) return;
-
-      setState(() => _isSaving = false);
-
-      showReToast(
-        context,
-        _friendlyAvatarError(error),
-        ReToastType.failed,
-      );
+      setState(() {
+        _isSaving = false;
+        _error = error is AvatarUploadException ? error.message : 'ذخیره تصویر ناموفق بود. دوباره تلاش کنید.';
+      });
     }
   }
 
-  String _friendlyAvatarError(Object error) {
-    final message = error.toString();
-
-    if (message.contains('Access token')) {
-      return 'نشست شما منقضی شده است.';
-    }
-
-    if (message.contains('Failed to upload')) {
-      return 'آپلود تصویر با خطا مواجه شد.';
-    }
-
-    return 'ذخیره تصویر با خطا مواجه شد.';
+  void _repick() {
+    if (_isBusy) return;
+    setState(() {
+      _newImage = null;
+      _error = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.sizeOf(context).height;
+    final hasNew = _newImage != null;
+    final hint = _isSaving
+        ? 'در حال بارگذاری تصویر…'
+        : hasNew
+            ? 'اگر تصویر مناسب است، آن را ذخیره کنید.'
+            : 'یک عکس واضح از چهره‌تان انتخاب کنید.';
 
-    final sheetHeight = screenHeight < 700 ? screenHeight * 0.78 : math.min(620.0, screenHeight * 0.68);
-
-    return Container(
-      height: sheetHeight,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(34),
-          topRight: Radius.circular(34),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Drag handle
-            Container(
-              width: 62,
-              height: 5,
-              margin: const EdgeInsets.only(top: 0),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  28,
-                  22,
-                  28,
-                  20,
-                ),
-                child: Column(
-                  children: [
-                    _ProfileAvatarSheetHeader(
-                      onClose: () => Navigator.of(context).pop(),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Avatar
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      child: _AvatarPreview(
-                        key: ValueKey(
-                          _newImageBytes != null ? 'new-avatar' : 'current-avatar',
-                        ),
-                        imageUrl: widget.currentImageUrl,
-                        imageBytes: _newImageBytes,
-                        isLoading: _isPicking,
+    return PopScope(
+      // An upload in flight finishes or fails before the sheet can close.
+      canPop: !_isSaving,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.gray2,
+                        borderRadius: BorderRadius.circular(100),
                       ),
                     ),
-
-                    const SizedBox(height: 22),
-
-                    ReText(
-                      _hasChanges ? 'تصویر جدید آماده ذخیره است' : 'تصویر پروفایل',
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
+                  ),
+                  const SizedBox(height: 14),
+                  _ProfileAvatarSheetHeader(
+                    hint: hint,
+                    onClose: _isSaving ? null : () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: _AvatarPreview(
+                      key: const ValueKey('avatar-preview'),
+                      imageUrl: widget.currentImageUrl,
+                      name: widget.name,
+                      imageBytes: _newImage,
+                      isLoading: _isBusy,
                     ),
-
-                    const SizedBox(height: 7),
-
-                    ReText(
-                      _hasChanges ? 'در صورت تأیید، تصویر جدید برای پروفایل شما ذخیره می‌شود.' : 'تصویر پروفایل خود را انتخاب یا ویرایش کنید.',
-                      color: AppColors.gray,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      textAlign: TextAlign.center,
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ReButton(
-                            key: ValueKey(
-                              _hasChanges ? 'save-avatar' : 'edit-avatar',
-                            ),
-                            text: _hasChanges ? 'ذخیره' : 'ویرایش',
-                            icon: _hasChanges ? Icons.check_rounded : Icons.edit_rounded,
-                            reverseIconPosition: true,
-                            isLoading: _isSaving || _isPicking,
-                            onPressed: _hasChanges ? _save : _editImage,
-                            height: 54,
-                            borderRadius: 100,
-                            background: AppColors.primary,
+                  ),
+                  const SizedBox(height: 24),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    child: _error == null
+                        ? const SizedBox(width: double.infinity)
+                        : Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: _AvatarErrorNote(message: _error!),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        SizedBox(
-                          width: 112,
-                          child: ReButton(
-                            text: 'لغو',
-                            icon: Icons.close_rounded,
-                            reverseIconPosition: true,
-                            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-                            height: 54,
-                            borderRadius: 100,
-                            isOutlined: true,
-                            background: AppColors.white,
-                            color: AppColors.gray2,
-                            textColor: AppColors.black1,
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: hasNew
+                        ? Column(
+                            key: const ValueKey('avatar-confirm'),
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ReButton(
+                                key: const ValueKey('avatar-save'),
+                                text: _error != null ? 'تلاش دوباره' : 'ذخیره تصویر',
+                                icon: _error != null ? Icons.refresh_rounded : Icons.check_rounded,
+                                reverseIconPosition: true,
+                                isLoading: _isSaving,
+                                onPressed: _isSaving ? null : _save,
+                                height: 54,
+                                borderRadius: 100,
+                                background: AppColors.primary,
+                              ),
+                              const SizedBox(height: 6),
+                              TextButton(
+                                key: const ValueKey('avatar-repick'),
+                                onPressed: _isSaving ? null : _repick,
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                  shape: const StadiumBorder(),
+                                ),
+                                child: ReText(
+                                  'انتخاب عکس دیگر',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _isSaving ? AppColors.gray : AppColors.black1,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            key: const ValueKey('avatar-sources'),
+                            children: [
+                              Expanded(
+                                child: _AvatarSourceTile(
+                                  key: const ValueKey('avatar-source-gallery'),
+                                  icon: IconsaxPlusLinear.gallery,
+                                  label: 'گالری',
+                                  onTap: _isBusy ? null : () => _choose(ImageSource.gallery),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _AvatarSourceTile(
+                                  key: const ValueKey('avatar-source-camera'),
+                                  icon: IconsaxPlusLinear.camera,
+                                  label: 'دوربین',
+                                  onTap: _isBusy ? null : () => _choose(ImageSource.camera),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _AvatarSourceTile extends StatelessWidget {
+  const _AvatarSourceTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = onTap == null ? AppColors.gray : AppColors.black1;
+    return Material(
+      color: AppColors.gray1,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: SizedBox(
+          height: 92,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 26, color: color),
+              const SizedBox(height: 8),
+              ReText(label, fontSize: 14, fontWeight: FontWeight.w800, color: color),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarErrorNote extends StatelessWidget {
+  const _AvatarErrorNote({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('avatar-error'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.errorColor.withAlpha(18),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 18, color: AppColors.errorColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ReText(
+              message,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.errorColor,
+              textAlign: TextAlign.start,
+              maxLines: 3,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -5388,107 +5449,66 @@ class _AvatarPreview extends StatelessWidget {
   const _AvatarPreview({
     super.key,
     required this.imageUrl,
+    required this.name,
     required this.imageBytes,
     required this.isLoading,
   });
 
+  static const double _size = 168;
+
   final String? imageUrl;
+  final String? name;
   final Uint8List? imageBytes;
   final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    Widget image;
+    final Widget image = imageBytes != null
+        ? Image.memory(imageBytes!, key: ValueKey(imageBytes), fit: BoxFit.cover, gaplessPlayback: true)
+        : UserAvatar(key: ValueKey(imageUrl), imageUrl: imageUrl, name: name, size: _size);
 
-    if (imageBytes != null) {
-      image = Image.memory(
-        imageBytes!,
-        width: 250,
-        height: 250,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-      );
-    } else if (imageUrl != null && imageUrl!.isNotEmpty) {
-      image = imageUrl?.startsWith('http') ?? false
-          ? Image.network(
-              imageUrl!,
-              width: 250,
-              height: 250,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return const _DefaultAvatar();
-              },
-            )
-          : Image.asset(
-              imageUrl!,
-              width: 250,
-              height: 250,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
-                return const _DefaultAvatar();
-              },
-            );
-    } else {
-      image = const _DefaultAvatar();
-    }
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 250,
-          height: 250,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.gray2,
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 30,
-                offset: const Offset(0, 12),
-                color: Colors.black.withOpacity(0.08),
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: image,
-          ),
-        ),
-        if (isLoading)
-          Container(
-            width: 250,
-            height: 250,
+    return SizedBox(
+      width: _size,
+      height: _size,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35),
               shape: BoxShape.circle,
+              color: AppColors.gray1,
+              border: Border.all(color: AppColors.gray2, width: 4),
             ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppColors.white,
+            child: ClipOval(
+              // The new photo fades in over the old one.
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                child: SizedBox.expand(key: image.key, child: image),
               ),
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _DefaultAvatar extends StatelessWidget {
-  const _DefaultAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.gray1,
-      child: const Center(
-        child: Icon(
-          Icons.person_rounded,
-          size: 90,
-          color: AppColors.gray,
-        ),
+          IgnorePointer(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: isLoading ? 1 : 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.black1.withAlpha(90),
+                  shape: BoxShape.circle,
+                ),
+                child: isLoading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.white),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -5496,61 +5516,55 @@ class _DefaultAvatar extends StatelessWidget {
 
 class _ProfileAvatarSheetHeader extends StatelessWidget {
   const _ProfileAvatarSheetHeader({
+    required this.hint,
     required this.onClose,
   });
 
-  final VoidCallback onClose;
+  final String hint;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                ReText(
-                  'تصویر پروفایل',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-                SizedBox(height: 4),
-                ReText(
-                  'تصویر پروفایل خود را تغییر دهید.',
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const ReText(
+                'تصویر پروفایل',
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppColors.black1,
+                textAlign: TextAlign.start,
+              ),
+              const SizedBox(height: 4),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: ReText(
+                  hint,
+                  key: ValueKey(hint),
                   color: AppColors.gray,
-                  fontSize: 10.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onClose,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.gray2,
+                  textAlign: TextAlign.start,
                 ),
               ),
-              child: const Icon(
-                Icons.close_rounded,
-                color: AppColors.gray,
-                size: 18,
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          key: const ValueKey('avatar-close'),
+          tooltip: 'بستن',
+          onPressed: onClose,
+          style: IconButton.styleFrom(
+            side: const BorderSide(color: AppColors.gray2),
+            fixedSize: const Size(44, 44),
+          ),
+          icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.gray),
+        ),
+      ],
     );
   }
 }

@@ -4,7 +4,6 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_repositor
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
-import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -73,14 +72,7 @@ class AdvisorAvatar extends StatelessWidget {
               ]
             : null,
       ),
-      child: ClipOval(
-        child: ReImage(
-          path ?? 'Assets.profilePlaceholder',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-        ),
-      ),
+      child: UserAvatar(imageUrl: path, size: size),
     );
   }
 }

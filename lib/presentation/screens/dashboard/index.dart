@@ -14,10 +14,9 @@ import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
-import 'package:simo_learn/presentation/widgets/re_image.dart';
+import 'package:simo_learn/presentation/widgets/user_avatar.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:simo_learn/utils/assets.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/helpers.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -262,14 +261,10 @@ class _DashboardContent extends StatelessWidget {
                 Row(
                   textDirection: TextDirection.rtl,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: ReImage(
-                        profile?.avatarURL ?? Assets.profilePlaceholder,
-                        fit: BoxFit.cover,
-                        width: 56,
-                        height: 56,
-                      ),
+                    UserAvatar(
+                      imageUrl: profile?.avatarURL,
+                      name: profile?.fullName,
+                      size: 56,
                     ),
                     const SizedBox(width: 14),
                     Expanded(
