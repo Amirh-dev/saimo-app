@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
@@ -11,6 +12,8 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_repositor
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
 import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
+import 'package:simo_learn/presentation/screens/consultants/payment_tab.dart';
+import 'package:simo_learn/presentation/screens/consultants/payment_tab_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_webview_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/success_sheet.dart';
@@ -182,22 +185,44 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     var noticeIsError = false;
     while (true) {
       if (!context.mounted) return;
+      PaymentTab? tab;
       final initiation = await showInvoiceSheet<PaymentInitiation>(
         context,
         duration: duration,
         plan: plan,
         notice: notice,
         noticeIsError: noticeIsError,
-        onConfirm: () => checkout.start(
-          counselorProfileID: consultant.id,
-          durationMonths: duration.months,
-          planType: plan.planType,
-        ),
+        onConfirm: () async {
+          // Web: open the tab now, while still inside the tap, or the
+          // browser blocks it as a popup once the request below returns.
+          if (kIsWeb) tab = openPaymentTab();
+          try {
+            return await checkout.start(
+              counselorProfileID: consultant.id,
+              durationMonths: duration.months,
+              planType: plan.planType,
+            );
+          } catch (_) {
+            tab?.close();
+            tab = null;
+            rethrow;
+          }
+        },
       );
-      if (initiation == null || !context.mounted) return;
+      if (initiation == null || !context.mounted) {
+        tab?.close();
+        return;
+      }
 
       final result = await context.to<PaymentWebViewResult>(
-        PaymentWebViewScreen(redirectURL: initiation.redirectURL),
+        kIsWeb
+            ? PaymentTabScreen(
+                redirectURL: initiation.redirectURL,
+                tab: tab,
+                checkStatus: () =>
+                    repo.fetchPaymentAttemptStatus(initiation.attemptID),
+              )
+            : PaymentWebViewScreen(redirectURL: initiation.redirectURL),
       );
       if (!mounted || !context.mounted) return;
 

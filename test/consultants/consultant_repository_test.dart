@@ -241,6 +241,29 @@ void main() {
     });
   });
 
+  group('fetchPaymentAttemptStatus', () {
+    test('reads the stored status without verifying', () async {
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        expect(query, contains('myCounselingPaymentAttempt('));
+        expect(query, isNot(contains('verifyCounselingPayment')));
+        expect(variables, {'id': 'attempt-1'});
+        return {
+          'myCounselingPaymentAttempt': {
+            'id': 'attempt-1',
+            'status': 'PENDING'
+          },
+        };
+      });
+
+      expect(
+          await repository.fetchPaymentAttemptStatus('attempt-1'), 'PENDING');
+    });
+  });
+
   group('fetchPaymentAttempts', () {
     test('maps attempts and tells which one can still be opened', () async {
       Map<String, dynamic>? sentVariables;

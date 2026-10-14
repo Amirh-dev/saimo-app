@@ -144,6 +144,15 @@ class ConsultantRepository {
     }
   ''';
 
+  static const String _paymentAttemptStatusQuery = r'''
+    query MyCounselingPaymentAttempt($id: ID!) {
+      myCounselingPaymentAttempt(id: $id) {
+        id
+        status
+      }
+    }
+  ''';
+
   /// Fetches published counselors and maps them to [Consultant] view models.
   Future<List<Consultant>> fetchCounselors(
       {int limit = 20, int offset = 0}) async {
@@ -338,6 +347,25 @@ class ConsultantRepository {
       );
     }
     return null;
+  }
+
+  /// Reads an attempt's stored status without contacting the bank, so it is
+  /// safe to poll while the student is still on the gateway (verifying an
+  /// unpaid ZarinPal checkout would close it as failed). The server marks an
+  /// attempt EXPIRED here once its deadline passes.
+  Future<String> fetchPaymentAttemptStatus(String attemptID) async {
+    final data = await _rawRequest(
+      query: _paymentAttemptStatusQuery,
+      variables: {'id': attemptID},
+    );
+
+    final attempt = data['myCounselingPaymentAttempt'];
+    final status =
+        attempt is Map<String, dynamic> ? attempt['status'] as String? : null;
+    if (status == null || status.isEmpty) {
+      throw const GraphQLRawException('وضعیت پرداخت دریافت نشد');
+    }
+    return status;
   }
 
   /// Lists the payment attempts of [subscriptionID], newest first.

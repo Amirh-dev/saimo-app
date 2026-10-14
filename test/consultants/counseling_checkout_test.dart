@@ -377,6 +377,19 @@ void main() {
       );
     });
 
+    test('an expired attempt explains the deadline', () async {
+      final api = _FakeApi({
+        'verifyCounselingPayment': (_) async => _verify('EXPIRED'),
+        'cancelPendingCounselingSubscription': _ok,
+      });
+
+      final outcome =
+          await _checkout(api).finish(_initiation, returnedFromGateway: true);
+
+      expect(outcome.kind, CheckoutOutcomeKind.cancelled);
+      expect(outcome.message, kCheckoutExpiredMessage);
+    });
+
     test('cancel on the bank page reads as cancelled, not failed', () async {
       final api = _FakeApi({
         'verifyCounselingPayment': (_) async =>

@@ -73,6 +73,10 @@ dependencies:
   # verification. Pinned to the newest release compatible with the project's
   # Dart 3.3.3 SDK (keeps the transitive `web` package at 0.5.x).
   webview_flutter: ^4.14.1
+  # Web builds open the bank gateway in a new browser tab instead (webview has
+  # no web implementation, and bank pages refuse to be framed). Kept at the
+  # 0.5.x line webview_flutter already resolves.
+  web: ^0.5.1
 
 dev_dependencies:
   flutter_test:

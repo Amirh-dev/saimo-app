@@ -50,6 +50,8 @@ const String kCheckoutPendingMessage =
     'پرداخت شما در حال تایید بانک است. پس از تایید، مشاور برای شما فعال می‌شود.';
 const String kCheckoutUnknownMessage =
     'وضعیت پرداخت هنوز مشخص نیست. اگر مبلغی از حساب شما کسر شده باشد، پس از تایید بانک مشاور برای شما فعال می‌شود؛ در غیر این صورت مبلغ حداکثر تا ۷۲ ساعت برمی‌گردد.';
+const String kCheckoutExpiredMessage =
+    'مهلت پرداخت به پایان رسید. می‌توانید دوباره پرداخت کنید.';
 const String kCheckoutPreviousPaymentOpenMessage =
     'پرداخت قبلی شما هنوز باز است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.';
 
@@ -120,6 +122,10 @@ class CounselingCheckout {
       // Frees the student to pick another plan right away; the server would
       // otherwise hold the request until it times out.
       await _releaseQuietly(initiation.subscriptionID);
+      if (verification.attemptStatus == 'EXPIRED') {
+        return const CheckoutOutcome(
+            CheckoutOutcomeKind.cancelled, kCheckoutExpiredMessage);
+      }
       // Closing the gateway early also reads as a failure (ZarinPal reports
       // the unpaid checkout as failed), but to the student it is a cancel.
       return !returnedFromGateway ||
