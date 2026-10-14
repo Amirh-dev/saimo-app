@@ -171,19 +171,56 @@ void main() {
       );
     });
 
-    test('opens a fresh attempt when the resumed one had expired', () async {
+    test('never hands back a stored gateway link', () async {
+      // Reopening a Mellat RefId fails at the bank with "transaction
+      // timeout", so an open attempt is replaced, not resumed.
+      final api = _FakeApi({
+        'myCounselingSubscriptions': _pending(),
+        'myCounselingPaymentAttempts': _attempts([
+          {
+            'id': 'attempt-1',
+            'status': 'PENDING',
+            'redirectURL': 'https://pay.example.com/attempt-1',
+            'expiresAt': '2026-10-14T10:20:00Z',
+          },
+        ]),
+        'beginCounselingPayment': (_) async => _begin('attempt-2'),
+      });
+
+      final initiation = await _start(api);
+
+      expect(initiation.attemptID, 'attempt-2');
+      expect(
+        api.callsTo('beginCounselingPayment').single['input']['idempotencyKey'],
+        'sub_sub-1_2',
+      );
+    });
+
+    test('retries the slot of an attempt whose initiation failed', () async {
+      final api = _FakeApi({
+        'myCounselingSubscriptions': _pending(),
+        'myCounselingPaymentAttempts': _attempts([
+          {'id': 'attempt-1', 'status': 'PENDING', 'redirectURL': ''},
+        ]),
+        'beginCounselingPayment': (_) async => _begin('attempt-1'),
+      });
+
+      await _start(api);
+
+      expect(
+        api.callsTo('beginCounselingPayment').single['input']['idempotencyKey'],
+        'sub_sub-1_1',
+      );
+    });
+
+    test('moves on when the slot attempt expired meanwhile', () async {
       var round = 0;
       final api = _FakeApi({
         'myCounselingSubscriptions': _pending(),
-        'myCounselingPaymentAttempts': (_) async => {
-              'myCounselingPaymentAttempts': [
-                {
-                  'id': 'attempt-1',
-                  'status': round == 0 ? 'PENDING' : 'EXPIRED',
-                  'redirectURL': 'x',
-                },
-              ],
-            },
+        'myCounselingPaymentAttempts': (_) async => _attempts([
+              if (round > 0)
+                {'id': 'attempt-1', 'status': 'EXPIRED', 'redirectURL': ''},
+            ])({}),
         'beginCounselingPayment': (_) async => round++ == 0
             ? _begin('attempt-1', status: 'EXPIRED')
             : _begin('attempt-2'),
@@ -200,24 +237,42 @@ void main() {
       );
     });
 
-    test('reuses an open attempt that was started under another key', () async {
+    test('waits while the server is still confirming an earlier payment',
+        () async {
       final api = _FakeApi({
         'myCounselingSubscriptions': _pending(),
         'myCounselingPaymentAttempts': _attempts([
           {
-            'id': 'attempt-old',
+            'id': 'attempt-1',
             'status': 'PENDING',
-            'redirectURL': 'https://pay.example.com/old',
-            'expiresAt': '2026-10-14T10:20:00Z',
+            'redirectURL': 'https://pay.example.com/attempt-1',
           },
         ]),
         'beginCounselingPayment': (_) async => throw _pendingAttemptError,
+        'verifyCounselingPayment': (_) async => _verify('PENDING'),
       });
 
-      final initiation = await _start(api);
+      await expectLater(
+        _start(api),
+        _checkoutError(kCheckoutPreviousPaymentOpenMessage),
+      );
+    });
 
-      expect(initiation.attemptID, 'attempt-old');
-      expect(initiation.redirectURL, 'https://pay.example.com/old');
+    test('reports an earlier payment that went through', () async {
+      final api = _FakeApi({
+        'myCounselingSubscriptions': _pending(),
+        'myCounselingPaymentAttempts': _attempts([
+          {'id': 'attempt-1', 'status': 'PENDING', 'redirectURL': 'x'},
+        ]),
+        'beginCounselingPayment': (_) async => throw _pendingAttemptError,
+        'verifyCounselingPayment': (_) async =>
+            _verify('SUCCEEDED', subscriptionStatus: 'ACTIVE'),
+      });
+
+      await expectLater(
+        _start(api),
+        _checkoutError(kCheckoutPreviousSucceededMessage),
+      );
     });
 
     test('cancels a leftover purchase for another plan, then requests',

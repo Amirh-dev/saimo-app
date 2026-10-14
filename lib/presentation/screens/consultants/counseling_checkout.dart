@@ -53,7 +53,9 @@ const String kCheckoutUnknownMessage =
 const String kCheckoutExpiredMessage =
     'مهلت پرداخت به پایان رسید. می‌توانید دوباره پرداخت کنید.';
 const String kCheckoutPreviousPaymentOpenMessage =
-    'پرداخت قبلی شما هنوز باز است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.';
+    'پرداخت قبلی شما هنوز در حال بررسی است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.';
+const String kCheckoutPreviousSucceededMessage =
+    'پرداخت قبلی شما تایید شد و مشاور برای شما فعال است.';
 
 /// Drives one counseling purchase against the API: reserve the request,
 /// open (or resume) a payment attempt, and read back the verified result.
@@ -177,15 +179,9 @@ class CounselingCheckout {
     } catch (_) {
       // Most likely an open payment attempt; settle it and retry once.
     }
-    final attempts = await _repository.fetchPaymentAttempts(subscriptionID);
-    for (final attempt in attempts.where((a) => a.isPending)) {
-      final verification = await _verify(attempt.id, tries: 1);
-      if (verification != null && verification.succeeded) {
-        throw const CheckoutException(
-          'پرداخت قبلی شما تایید شد و مشاور برای شما فعال است.',
-        );
-      }
-    }
+    await _throwIfAnAttemptSucceeded(
+      await _repository.fetchPaymentAttempts(subscriptionID),
+    );
     try {
       await _repository.cancelPendingSubscription(subscriptionID);
     } catch (_) {
@@ -193,45 +189,57 @@ class CounselingCheckout {
     }
   }
 
-  /// Opens a payment attempt, resuming the open one when there is one.
+  /// Opens a new payment attempt with a fresh gateway token.
   ///
-  /// The idempotency key is numbered by how many attempts have already
-  /// closed, so it repeats exactly while an attempt is open (a double tap or
-  /// a retry converges on it) and moves on once that attempt has ended.
+  /// A stored gateway link is never handed out again: a Mellat RefId expires
+  /// long before the purchase does and cannot be posted to the bank twice,
+  /// so reopening one fails at the bank with "transaction timeout". Each tap
+  /// therefore takes the next idempotency slot (a double tap still converges
+  /// on it), and the server closes the abandoned attempt it replaces. The
+  /// only slot reused is that of an attempt whose initiation failed before
+  /// any token was issued.
   Future<PaymentInitiation> _openAttempt(String subscriptionID) async {
     for (var round = 0; round < 2; round++) {
       final attempts = await _repository.fetchPaymentAttempts(subscriptionID);
-      final closed = attempts.where((a) => !a.isPending).length;
+      final latest = attempts.isEmpty ? null : attempts.first;
+      final slot = latest != null &&
+              latest.isPending &&
+              latest.redirectURL.isEmpty
+          ? attempts.length
+          : attempts.length + 1;
       final PaymentInitiation initiation;
       try {
         initiation = await _repository.beginPayment(
           subscriptionID: subscriptionID,
-          idempotencyKey: 'sub_${subscriptionID}_${closed + 1}',
+          idempotencyKey: 'sub_${subscriptionID}_$slot',
         );
       } catch (error) {
         if (!_mentions(error, 'already has a pending payment attempt')) {
           rethrow;
         }
-        // Opened under another key (e.g. an older app build): reuse it.
-        for (final attempt in attempts) {
-          if (attempt.isOpenAt(_now())) {
-            return PaymentInitiation(
-              subscriptionID: subscriptionID,
-              attemptID: attempt.id,
-              redirectURL: attempt.redirectURL,
-              status: attempt.status,
-            );
-          }
-        }
+        // The bank has returned from an earlier attempt and the server is
+        // still confirming it (older servers also refuse while any attempt
+        // is open). It may well have been paid.
+        await _throwIfAnAttemptSucceeded(attempts);
         throw const CheckoutException(kCheckoutPreviousPaymentOpenMessage);
       }
       if (initiation.isOpen) return initiation;
-      // The resumed attempt had expired meanwhile; the next round opens a
-      // fresh one under the next key.
+      // The slot's attempt had expired meanwhile; the next round moves on.
     }
     throw const CheckoutException(
       'درگاه پرداخت باز نشد. لطفاً دوباره تلاش کنید.',
     );
+  }
+
+  Future<void> _throwIfAnAttemptSucceeded(
+    List<CounselingPaymentAttemptInfo> attempts,
+  ) async {
+    for (final attempt in attempts.where((a) => a.isPending)) {
+      final verification = await _verify(attempt.id, tries: 1);
+      if (verification != null && verification.succeeded) {
+        throw const CheckoutException(kCheckoutPreviousSucceededMessage);
+      }
+    }
   }
 
   /// Verifies [attemptID], retrying transient errors and, when
