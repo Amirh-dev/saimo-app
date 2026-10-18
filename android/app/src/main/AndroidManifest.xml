@@ -29,6 +29,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- saimo:// links open the app, e.g. "بازگشت به اپلیکیشن" on the
+                 payment result page (saimo://payment-result?attemptID=...).
+                 MainActivity hands them to Dart (AppLinks). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="saimo"/>
+            </intent-filter>
+            <!-- Flutter would otherwise push each link as a named route, and
+                 the app has no route table to resolve it. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
         </activity>
         <!-- The profile picture cropper (image_cropper); without it, opening
              the cropper crashes the app. -->

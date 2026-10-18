@@ -41,7 +41,8 @@ class TaskStatusMark extends StatelessWidget {
           color: AppColors.done,
           shape: BoxShape.circle,
         ),
-        child: Icon(Icons.check_rounded, size: size * 0.72, color: AppColors.white),
+        child: Icon(Icons.check_rounded,
+            size: size * 0.72, color: AppColors.white),
       );
     }
     final ring = accent ??
@@ -83,12 +84,16 @@ class ChecklistsPill extends StatelessWidget {
     required this.onTap,
     this.height = 32,
     this.fontSize = 11,
+    this.color = kTaskFill,
   });
 
   final List<Map<String, dynamic>> tasks;
   final VoidCallback onTap;
   final double height;
   final double fontSize;
+
+  /// The pill's fill; the count's badge takes a contrasting one.
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +106,10 @@ class ChecklistsPill extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: height,
-          padding: EdgeInsetsDirectional.fromSTEB(height * 0.32, 0, height * 0.16, 0),
+          padding: EdgeInsetsDirectional.fromSTEB(
+              height * 0.32, 0, height * 0.16, 0),
           decoration: BoxDecoration(
-            color: kTaskFill,
+            color: color,
             borderRadius: BorderRadius.circular(100),
           ),
           child: Row(
@@ -129,7 +135,11 @@ class ChecklistsPill extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: allDone ? AppColors.black1 : AppColors.whiteSec,
+                  color: allDone
+                      ? AppColors.black1
+                      : color == AppColors.whiteSec
+                          ? AppColors.gray1
+                          : AppColors.whiteSec,
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: ReText(
@@ -257,7 +267,9 @@ class _ChecklistsPopup extends StatelessWidget {
                             child: SingleChildScrollView(
                               child: Column(
                                 children: [
-                                  for (var index = 0; index < items.length; index++) ...[
+                                  for (var index = 0;
+                                      index < items.length;
+                                      index++) ...[
                                     if (index > 0)
                                       const Divider(
                                         height: 1,
@@ -265,7 +277,8 @@ class _ChecklistsPopup extends StatelessWidget {
                                         color: AppColors.gray1,
                                       ),
                                     _ChecklistRow(
-                                      key: ValueKey('week-checklist-${items[index]['id']}'),
+                                      key: ValueKey(
+                                          'week-checklist-${items[index]['id']}'),
                                       task: items[index],
                                       onTap: () => onToggle(items[index]),
                                       onMore: onOpenTask == null
@@ -340,7 +353,8 @@ class _ChecklistsPopup extends StatelessWidget {
                 color: AppColors.gray1,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close_rounded, size: 18, color: AppColors.black1),
+              child: const Icon(Icons.close_rounded,
+                  size: 18, color: AppColors.black1),
             ),
           ),
         ),
@@ -392,7 +406,8 @@ class _ChecklistRow extends StatelessWidget {
                         ),
                         child: child,
                       ),
-                      child: TaskStatusMark(key: ValueKey(done), task: task, size: 20),
+                      child: TaskStatusMark(
+                          key: ValueKey(done), task: task, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -424,7 +439,8 @@ class _ChecklistRow extends StatelessWidget {
               child: const SizedBox(
                 width: 40,
                 height: 44,
-                child: Icon(Icons.more_horiz_rounded, size: 20, color: AppColors.dark6Color),
+                child: Icon(Icons.more_horiz_rounded,
+                    size: 20, color: AppColors.dark6Color),
               ),
             ),
           ),

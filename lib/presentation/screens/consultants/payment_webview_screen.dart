@@ -24,6 +24,11 @@ enum PaymentPageKind {
   /// means the bank has finished with the student.
   serverReturn,
 
+  /// The result page's "بازگشت به اپلیکیشن" link (`saimo://`, or an Android
+  /// `intent://` for it). A WebView cannot open it, and the page it sits on
+  /// has already loaded.
+  appReturn,
+
   /// Anything else: the bank's own pages.
   gateway,
 }
@@ -31,6 +36,10 @@ enum PaymentPageKind {
 @visibleForTesting
 PaymentPageKind classifyPaymentUrl(String url) {
   final uri = Uri.tryParse(url);
+  if (uri?.scheme == 'saimo' ||
+      (uri?.scheme == 'intent' && url.contains('scheme=saimo;'))) {
+    return PaymentPageKind.appReturn;
+  }
   final path = uri?.path ?? url;
   if (path.contains('/payments/counseling/callback/') ||
       (uri?.queryParameters.containsKey('paymentStatus') ?? false)) {
@@ -86,9 +95,12 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
           // iOS reports the bank's callback POST here; Android does not
           // report POSTs, so onPageStarted covers it there.
           onNavigationRequest: (request) {
-            if (request.isMainFrame &&
-                classifyPaymentUrl(request.url) ==
-                    PaymentPageKind.serverReturn) {
+            final kind = classifyPaymentUrl(request.url);
+            if (kind == PaymentPageKind.appReturn) {
+              _complete();
+              return NavigationDecision.prevent;
+            }
+            if (request.isMainFrame && kind == PaymentPageKind.serverReturn) {
               _beginReturn();
             }
             return NavigationDecision.navigate;

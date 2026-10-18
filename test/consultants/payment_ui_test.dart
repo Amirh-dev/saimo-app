@@ -33,6 +33,23 @@ void main() {
       );
     });
 
+    test('recognises the result page link back into the app', () {
+      expect(
+        classifyPaymentUrl('saimo://payment-result?attemptID=a1'),
+        PaymentPageKind.appReturn,
+      );
+      expect(
+        classifyPaymentUrl(
+          'intent://payment-result#Intent;scheme=saimo;package=app.ravi.saimo;end',
+        ),
+        PaymentPageKind.appReturn,
+      );
+      expect(
+        classifyPaymentUrl('intent://pay#Intent;scheme=otherbank;end'),
+        PaymentPageKind.gateway,
+      );
+    });
+
     test('tells the Mellat launcher apart from the bank page', () {
       expect(
         classifyPaymentUrl(

@@ -411,10 +411,85 @@ void main() {
     await tester.pumpAndSettle();
     expect(_key('weekly-plan-view'), findsOneWidget);
     expect(_key('tasks-view-mode-toggle'), findsOneWidget);
-    expect(_key('tasks-add-button'), findsOneWidget);
+    // Each day has its own add button, so the toolbar's turns the week.
+    expect(_key('tasks-add-button'), findsNothing);
+    expect(_key('week-nav'), findsOneWidget);
 
     await tester.tap(find.text('روزانه'));
     await tester.pumpAndSettle();
     expect(_key('weekly-plan-view'), findsNothing);
+    expect(_key('tasks-add-button'), findsOneWidget);
+    expect(_key('week-nav'), findsNothing);
+  });
+
+  testWidgets('in weekly mode the strip folds into a row of rings',
+      (tester) async {
+    await _pumpTasksScreen(tester);
+    final dailyHeight = tester.getSize(_key('week-tray')).height;
+
+    await tester.tap(find.text('هفتگی'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(_key('week-tray')).height, lessThan(dailyHeight));
+    // The selection shrinks to a dot on today's ring.
+    expect(tester.getSize(_key('week-selection')).width, lessThan(40));
+
+    await tester.tap(find.text('روزانه'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(_key('week-tray')).height, dailyHeight);
+  });
+
+  testWidgets('the strip folds and follows the board without rebuilding',
+      (tester) async {
+    await _pumpTasksScreen(tester);
+    Widget strip() => tester.element(_key('week-strip')).widget;
+
+    await tester.tap(find.text('هفتگی'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    final folding = strip();
+    for (var frame = 0; frame < 20; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(identical(strip(), folding), isTrue, reason: 'frame $frame');
+    }
+    await tester.pumpAndSettle();
+
+    // Scrolling the board moves the window behind the rings by repaint.
+    final settled = strip();
+    final columns = find.byWidgetPredicate((widget) =>
+        widget.key is ValueKey<String> &&
+        (widget.key! as ValueKey<String>).value.startsWith('week-columns-'));
+    final gesture = await tester.startGesture(tester.getCenter(columns));
+    for (var step = 0; step < 8; step++) {
+      await gesture.moveBy(const Offset(12, 0));
+      await tester.pump();
+      expect(identical(strip(), settled), isTrue);
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('the week switcher turns the week', (tester) async {
+    await _pumpTasksScreen(tester, weekly: true);
+    final thisWeek = weekStartOf(today);
+    Jalali selected() =>
+        tester.widget<WeekHeader>(find.byType(WeekHeader)).selectedDate;
+
+    // Days run right to left: the previous week lies to the right.
+    expect(
+      tester.getCenter(_key('week-nav-previous')).dx,
+      greaterThan(tester.getCenter(_key('week-nav-next')).dx),
+    );
+    Icon iconOf(String key) => tester.widget<Icon>(
+        find.descendant(of: _key(key), matching: find.byType(Icon)));
+    expect(iconOf('week-nav-previous').icon, Icons.chevron_right_rounded);
+    expect(iconOf('week-nav-previous').textDirection, TextDirection.ltr);
+
+    await tester.tap(_key('week-nav-next'));
+    await tester.pumpAndSettle();
+    expect(ymd(selected()), ymd(thisWeek.addDays(7)));
+
+    await tester.tap(_key('week-nav-previous'));
+    await tester.pumpAndSettle();
+    expect(ymd(selected()), ymd(today));
   });
 }

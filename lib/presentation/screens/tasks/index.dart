@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -114,6 +115,10 @@ class _TasksScreenState extends State<TasksScreen>
   late final TagSuggestionRepository _tagSuggestions;
   late final WeeklyPlanController _week;
   final GlobalKey<WeeklyPlanViewState> _weekViewKey = GlobalKey();
+
+  /// The days the week board shows, for the window in the folded strip.
+  final ValueNotifier<VisibleDays> _visibleDays =
+      ValueNotifier((first: 0, count: 2.5));
   ({String message, VoidCallback onUndo})? _undo;
   Timer? _undoTimer;
 
@@ -148,6 +153,7 @@ class _TasksScreenState extends State<TasksScreen>
     WidgetsBinding.instance.removeObserver(this);
     _timedListController.dispose();
     _dayChecklistsChanged.dispose();
+    _visibleDays.dispose();
     super.dispose();
   }
 
@@ -561,10 +567,12 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
   /// Days already loaded, keyed by [_dayKey]. A cached day is shown without
   /// asking the server again. Any change to tasks clears the whole cache
   /// ([_clearDayCache]), so only the day on screen is fetched again.
-  final Map<String, ({
-    List<Map<String, dynamic>> checklist,
-    List<Map<String, dynamic>> timed,
-  })> _dayCache = {};
+  final Map<
+      String,
+      ({
+        List<Map<String, dynamic>> checklist,
+        List<Map<String, dynamic>> timed,
+      })> _dayCache = {};
 
   static String _dayKey(Jalali day) => '${day.year}-${day.month}-${day.day}';
 
@@ -1331,6 +1339,9 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                           ? (start) => isWeekWithinHorizon(start, _today)
                           : null,
                       onBlockedForward: _explainPlanningHorizon,
+                      // The board names each day, so the strip folds away.
+                      compact: _isWeekMode,
+                      visibleDays: _visibleDays,
                     ),
                   ),
                 ],
@@ -1338,15 +1349,29 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
             ),
           ),
           // The toolbar of the body below: which view it shows, and adding to
-          // it. It stays put while the body changes.
+          // the day, or in weekly mode (where each day has its own add
+          // button) turning the week. It stays put while the body changes.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               textDirection: TextDirection.rtl,
               children: [
                 TasksViewModeToggle(mode: _mode, onChanged: _setMode),
-                const Spacer(),
-                _AddTaskButton(onTap: () => _openQuickAdd(_selectedDate)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Align(
+                    // The row's end: the left, in this right-to-left row.
+                    alignment: Alignment.centerLeft,
+                    child: _ToolbarAction(
+                      weekly: _isWeekMode,
+                      weekLabel: weekRangeLabel(weekStartOf(_selectedDate),
+                          today: _today),
+                      onAdd: () => _openQuickAdd(_selectedDate),
+                      onPreviousWeek: () => _changeWeek(-1),
+                      onNextWeek: () => _changeWeek(1),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1426,6 +1451,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       onMoveTasks: _moveTasks,
       onRefresh: () => _week.reload(silent: true),
       onChangeWeek: _changeWeek,
+      visibleDays: _visibleDays,
     );
   }
 
@@ -1535,8 +1561,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
   /// completed tasks, so reporting an unfinished one completes it first.
   Future<void> _reportTask(Map<String, dynamic> task,
       {required bool timed, bool justCompleted = false}) async {
-    var completed =
-        justCompleted || _sheetTaskState(task, timed: timed).isDone;
+    var completed = justCompleted || _sheetTaskState(task, timed: timed).isDone;
     // A timed task ends only when its timer runs out; never finish it here.
     if (timed && !completed) return;
     final finishesTask = !completed;
@@ -2242,10 +2267,218 @@ class _SheetButton extends StatelessWidget {
   }
 }
 
-/// "+ افزودن" at the end of the toolbar: adds a time box or a checklist to
-/// whichever view is open; quick add asks which.
-class _AddTaskButton extends StatelessWidget {
-  const _AddTaskButton({required this.onTap});
+/// The white pill at the end of the toolbar. In daily mode it adds to the
+/// day ("ثبت تسک +"; quick add asks for a time box or a checklist). In
+/// weekly mode, where every day has its own add button, the same pill turns
+/// into the week switcher: the week's range between previous and next.
+class _ToolbarAction extends StatefulWidget {
+  const _ToolbarAction({
+    required this.weekly,
+    required this.weekLabel,
+    required this.onAdd,
+    required this.onPreviousWeek,
+    required this.onNextWeek,
+  });
+
+  final bool weekly;
+  final String weekLabel;
+  final VoidCallback onAdd;
+  final VoidCallback onPreviousWeek;
+  final VoidCallback onNextWeek;
+
+  @override
+  State<_ToolbarAction> createState() => _ToolbarActionState();
+}
+
+enum _PillPart { pill, add, week }
+
+/// One motion, run forward into weekly mode and backward out of it: the
+/// pill eases between the widths of its two contents while the add label
+/// rolls up and out over the first half and the week switcher rolls up
+/// into place over the second, overlapping a little. Width, slides and
+/// fades all read the same controller, so they never drift apart, and none
+/// of it rebuilds or lays out the contents again.
+class _ToolbarActionState extends State<_ToolbarAction>
+    with SingleTickerProviderStateMixin {
+  static const double _height = 44;
+
+  late final AnimationController _morph = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 560),
+    value: widget.weekly ? 1 : 0,
+  )..addStatusListener((_) => setState(() {}));
+
+  /// The two contents' natural widths, measured as they are laid out.
+  final _PillWidths _widths = _PillWidths();
+
+  static final Animatable<double> _addFade = Tween<double>(begin: 1, end: 0)
+      .chain(CurveTween(curve: const Interval(0, 0.4, curve: Curves.easeIn)));
+  static final Animatable<Offset> _addRoll = Tween<Offset>(
+          begin: Offset.zero, end: const Offset(0, -0.55))
+      .chain(CurveTween(curve: const Interval(0, 0.55, curve: Curves.easeIn)));
+  static final Animatable<double> _weekFade = Tween<double>(begin: 0, end: 1)
+      .chain(
+          CurveTween(curve: const Interval(0.3, 0.9, curve: Curves.easeOut)));
+  static final Animatable<Offset> _weekRoll =
+      Tween<Offset>(begin: const Offset(0, 0.55), end: Offset.zero).chain(
+          CurveTween(
+              curve: const Interval(0.25, 1, curve: Curves.easeOutCubic)));
+
+  @override
+  void didUpdateWidget(covariant _ToolbarAction oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.weekly == widget.weekly) return;
+    if (reduceMotion(context)) {
+      _morph.value = widget.weekly ? 1 : 0;
+    } else if (widget.weekly) {
+      _morph.forward();
+    } else {
+      _morph.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _morph.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // A side is built only while it shows, and takes taps only once it is
+    // the one arriving.
+    final showAdd = _morph.value < 1;
+    final showWeek = _morph.value > 0;
+    return ClipRRect(
+      clipper: _PillClipper(morph: _morph, widths: _widths, height: _height),
+      child: CustomMultiChildLayout(
+        delegate: _PillLayout(morph: _morph, widths: _widths, height: _height),
+        children: [
+          LayoutId(
+            id: _PillPart.pill,
+            child: const ColoredBox(color: AppColors.white),
+          ),
+          if (showAdd)
+            LayoutId(
+              id: _PillPart.add,
+              child: IgnorePointer(
+                ignoring: widget.weekly,
+                child: FadeTransition(
+                  opacity: _morph.drive(_addFade),
+                  child: SlideTransition(
+                    position: _morph.drive(_addRoll),
+                    child: _AddLabel(onTap: widget.onAdd),
+                  ),
+                ),
+              ),
+            ),
+          if (showWeek)
+            LayoutId(
+              id: _PillPart.week,
+              child: IgnorePointer(
+                ignoring: !widget.weekly,
+                child: FadeTransition(
+                  opacity: _morph.drive(_weekFade),
+                  child: SlideTransition(
+                    position: _morph.drive(_weekRoll),
+                    child: _WeekSwitcher(
+                      label: widget.weekLabel,
+                      onPrevious: widget.onPreviousWeek,
+                      onNext: widget.onNextWeek,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillWidths {
+  double add = 0;
+  double week = 0;
+
+  /// The pill's width at [morph] (0 adding, 1 switching weeks).
+  double at(double morph) =>
+      lerpDouble(add, week, Curves.easeInOutCubic.transform(morph))!;
+}
+
+/// Lays the pill out at the start (the left) of the space it is given, as
+/// wide as [_PillWidths.at] says, with whichever contents show centred in
+/// it. Relayout per frame touches only the pill; the contents keep their
+/// constraints and are not laid out again.
+class _PillLayout extends MultiChildLayoutDelegate {
+  _PillLayout({
+    required this.morph,
+    required this.widths,
+    required this.height,
+  }) : super(relayout: morph);
+
+  final Animation<double> morph;
+  final _PillWidths widths;
+  final double height;
+
+  @override
+  Size getSize(BoxConstraints constraints) =>
+      Size(constraints.maxWidth, height);
+
+  @override
+  void performLayout(Size size) {
+    final loose = BoxConstraints(maxWidth: size.width, maxHeight: height);
+    Size? add, week;
+    if (hasChild(_PillPart.add)) add = layoutChild(_PillPart.add, loose);
+    if (hasChild(_PillPart.week)) week = layoutChild(_PillPart.week, loose);
+    widths
+      ..add = add?.width ?? week?.width ?? widths.add
+      ..week = week?.width ?? add?.width ?? widths.week;
+
+    final width = widths.at(morph.value).clamp(0.0, size.width);
+    layoutChild(_PillPart.pill, BoxConstraints.tight(Size(width, height)));
+    positionChild(_PillPart.pill, Offset.zero);
+    for (final (id, child) in [(_PillPart.add, add), (_PillPart.week, week)]) {
+      if (child == null) continue;
+      positionChild(
+        id,
+        Offset((width - child.width) / 2, (height - child.height) / 2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRelayout(_PillLayout oldDelegate) =>
+      oldDelegate.morph != morph || oldDelegate.widths != widths;
+}
+
+/// Rounds the pill and keeps the contents inside it while it changes width.
+class _PillClipper extends CustomClipper<RRect> {
+  _PillClipper({
+    required this.morph,
+    required this.widths,
+    required this.height,
+  }) : super(reclip: morph);
+
+  final Animation<double> morph;
+  final _PillWidths widths;
+  final double height;
+
+  @override
+  RRect getClip(Size size) => RRect.fromLTRBR(
+        0,
+        0,
+        widths.at(morph.value).clamp(0.0, size.width),
+        height,
+        Radius.circular(height / 2),
+      );
+
+  @override
+  bool shouldReclip(_PillClipper oldClipper) =>
+      oldClipper.morph != morph || oldClipper.widths != widths;
+}
+
+class _AddLabel extends StatelessWidget {
+  const _AddLabel({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -2257,27 +2490,122 @@ class _AddTaskButton extends StatelessWidget {
       excludeSemantics: true,
       child: PressScale(
         onTap: onTap,
-        child: Container(
-          key: const ValueKey('tasks-add-button'),
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.black1,
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: const Row(
+        child: const Padding(
+          key: ValueKey('tasks-add-button'),
+          padding: EdgeInsets.symmetric(horizontal: 18),
+          // The label first, the plus after it on the left.
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
-              Icon(Icons.add_rounded, size: 20, color: AppColors.white),
-              SizedBox(width: 4),
               ReText(
                 'ثبت تسک',
                 fontSize: 13.5,
                 fontWeight: FontWeight.w800,
-                color: AppColors.white,
+                color: AppColors.black1,
               ),
+              SizedBox(width: 10),
+              Icon(Icons.add_rounded, size: 22, color: AppColors.primary),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "‹ ۲۵ مهر تا ۱ آبان ›": the previous week on the right, the next on the
+/// left, as the days run.
+class _WeekSwitcher extends StatelessWidget {
+  const _WeekSwitcher({
+    required this.label,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final String label;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const ValueKey('week-nav'),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        textDirection: TextDirection.rtl,
+        children: [
+          _WeekArrow(
+            key: const ValueKey('week-nav-previous'),
+            label: 'هفته قبل',
+            icon: Icons.chevron_right_rounded,
+            onTap: onPrevious,
+          ),
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  child: ReText(
+                    label,
+                    key: ValueKey(label),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.black1,
+                    maxLines: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          _WeekArrow(
+            key: const ValueKey('week-nav-next'),
+            label: 'هفته بعد',
+            icon: Icons.chevron_left_rounded,
+            onTap: onNext,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekArrow extends StatelessWidget {
+  const _WeekArrow({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: PressScale(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: const BoxDecoration(
+            color: AppColors.gray1,
+            shape: BoxShape.circle,
+          ),
+          // Unmirrored: each arrow points out to the side its week lies on.
+          child: Icon(
+            icon,
+            size: 20,
+            color: AppColors.black1,
+            textDirection: TextDirection.ltr,
           ),
         ),
       ),

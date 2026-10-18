@@ -8,6 +8,7 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/links/app_links.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
@@ -21,7 +22,9 @@ import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
 import 'package:simo_learn/presentation/screens/chat/index.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
+import 'package:simo_learn/presentation/screens/consultants/payment_return.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
@@ -243,10 +246,14 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   late final InboxSubscriptionClient _inboxClient;
   late final ChatRepository _chatRepository;
   late final DeviceTokenRepository _deviceTokenRepository;
+  late final ConsultantRepository _consultantRepository;
   StreamSubscription<AuthState>? _authSubscription;
   StreamSubscription<InboxEvent>? _inboxEventSubscription;
   bool _isAuthenticated = false;
   String? _registeredToken;
+
+  /// A return from the payment result page that arrived before login.
+  PaymentReturn? _pendingPaymentReturn;
 
   @override
   void initState() {
@@ -257,6 +264,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     final graphql = context.read<GraphQLRepository>();
     _chatRepository = ChatRepository(graphql);
     _deviceTokenRepository = DeviceTokenRepository(graphql);
+    _consultantRepository = ConsultantRepository(graphql);
     // Tapping a notification (from any app state) brings the user to chat.
     NotificationService.instance.onOpenChat = _openChatFromNotification;
     // Register this device's FCM token with the backend so the server can push
@@ -268,6 +276,8 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     _inboxEventSubscription = _inboxClient.events.listen(_handleInboxEvent);
     _handleAuthState(_authCubit.state);
     _authSubscription = _authCubit.stream.listen(_handleAuthState);
+    // "بازگشت به اپلیکیشن" on the payment result page opens the app here.
+    AppLinks.instance.listen(_openLink);
   }
 
   @override
@@ -339,6 +349,41 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     });
   }
 
+  void _openLink(Uri link) {
+    final payment = PaymentReturn.fromLink(link);
+    if (payment == null) return;
+    if (!_isAuthenticated) {
+      _pendingPaymentReturn = payment;
+      return;
+    }
+    unawaited(_showPaymentReturn(payment));
+  }
+
+  /// The purchase was finished in a browser, outside the app's own checkout:
+  /// refresh the counselor and say how the payment ended, as the server
+  /// records it.
+  Future<void> _showPaymentReturn(PaymentReturn payment) async {
+    unawaited(
+      ActiveCounselorStore.instance.refresh(_consultantRepository, force: true),
+    );
+    final attemptID = payment.attemptID;
+    if (attemptID == null) return;
+    final String status;
+    try {
+      status = await _consultantRepository.fetchPaymentAttemptStatus(attemptID);
+    } catch (_) {
+      // Offline, or not this student's attempt: the refresh above still
+      // shows a new counselor.
+      return;
+    }
+    final notice = paymentReturnNotice(status);
+    final overlayContext = _rootNavigatorKey.currentState?.overlay?.context;
+    if (notice == null || overlayContext == null || !overlayContext.mounted) {
+      return;
+    }
+    showReToast(overlayContext, notice.message, notice.type);
+  }
+
   Future<void> _resolveCurrentUser() async {
     if (ActiveChatTracker.instance.currentUserID != null) return;
     try {
@@ -361,6 +406,9 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       // now that we're authenticated and can navigate.
       NotificationService.instance
           .consumePendingOpenChat(_openChatFromNotification);
+      final payment = _pendingPaymentReturn;
+      _pendingPaymentReturn = null;
+      if (payment != null) unawaited(_showPaymentReturn(payment));
       unawaited(
           _inboxClient.connect(force: state.action == AuthAction.refresh));
       return;

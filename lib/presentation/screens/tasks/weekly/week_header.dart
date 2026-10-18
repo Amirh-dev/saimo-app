@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui' show lerpDouble;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
@@ -9,6 +11,8 @@ import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/tasks_view_mode.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_controller.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/weekly_plan_view.dart'
+    show VisibleDays;
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -34,7 +38,7 @@ class TasksViewModeToggle extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Container(
         key: const ValueKey('tasks-view-mode-toggle'),
-        width: 196,
+        width: 172,
         height: 44,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
@@ -136,8 +140,12 @@ class TasksViewModeToggle extends StatelessWidget {
 /// selected date with a calendar button, and a week of day cards that follows
 /// the finger to earlier or later weeks. Each card shows with a ring how much
 /// of its day is done; the selected day sits under a black blob that flows
-/// from day to day, and today keeps a small dot. Cards also accept dropped
-/// tasks, so a task can move to any day without scrolling.
+/// from day to day, and today keeps a small dot.
+///
+/// When [compact] (weekly mode, where the board names each day and its
+/// date), the cards fold away into a single row of their rings, the blob
+/// shrinks to a dot on the selected day, and a soft window behind the rings
+/// follows the days the board shows ([visibleDays]).
 class WeekHeader extends StatefulWidget {
   const WeekHeader({
     super.key,
@@ -148,7 +156,12 @@ class WeekHeader extends StatefulWidget {
     required this.onPickDate,
     this.canShowWeek,
     this.onBlockedForward,
+    this.compact = false,
+    this.visibleDays,
   });
+
+  final bool compact;
+  final ValueListenable<VisibleDays>? visibleDays;
 
   /// Supplies today and, for the week it holds, each day's progress.
   final WeeklyPlanController controller;
@@ -168,13 +181,22 @@ class WeekHeader extends StatefulWidget {
   State<WeekHeader> createState() => _WeekHeaderState();
 }
 
-class _WeekHeaderState extends State<WeekHeader> {
+class _WeekHeaderState extends State<WeekHeader>
+    with SingleTickerProviderStateMixin {
   /// Page of the current week; pages to either side are other weeks.
   static const int _origin = 10000;
   static const double _stripHeight = 104;
+  static const double _compactHeight = 44;
 
   late final PageController _pages;
   late int _settledPage;
+
+  /// 0 with the full cards, 1 folded into the row of rings.
+  late final AnimationController _fold = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 760),
+    value: widget.compact ? 1 : 0,
+  );
 
   Jalali get _currentWeek => weekStartOf(widget.controller.today);
 
@@ -193,6 +215,14 @@ class _WeekHeaderState extends State<WeekHeader> {
   @override
   void didUpdateWidget(covariant WeekHeader oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.compact != widget.compact) {
+      final target = widget.compact ? 1.0 : 0.0;
+      if (reduceMotion(context)) {
+        _fold.value = target;
+      } else {
+        _fold.animateTo(target);
+      }
+    }
     // A date picked elsewhere (the calendar, a mode switch) brings its week.
     final target = _pageOf(widget.selectedDate);
     if (target != _settledPage) {
@@ -210,6 +240,7 @@ class _WeekHeaderState extends State<WeekHeader> {
   @override
   void dispose() {
     _pages.dispose();
+    _fold.dispose();
     super.dispose();
   }
 
@@ -263,35 +294,56 @@ class _WeekHeaderState extends State<WeekHeader> {
                 onPickDate: widget.onPickDate,
               ),
               const SizedBox(height: 12),
-              Container(
-                height: _stripHeight,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: AppColors.gray1,
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: _onScroll,
-                  child: PageView.builder(
-                    key: const ValueKey('week-strip'),
-                    controller: _pages,
-                    itemBuilder: (context, page) {
-                      final weekStart = _weekOf(page);
-                      final hasPlan = controller.hasData &&
-                          isSameJalaliDay(controller.weekStart, weekStart);
-                      return DepthOnSwipe(
-                        pages: _pages,
-                        page: page,
-                        child: _WeekPage(
-                          weekStart: weekStart,
-                          plan: hasPlan ? controller.plan : null,
-                          today: controller.today,
-                          selectedDate: widget.selectedDate,
-                          onSelectDay: widget.onSelectDay,
-                        ),
-                      );
-                    },
+              // Only the tray follows the fold: it closes around the middle
+              // of a week that keeps its full size, so the week is not laid
+              // out again on every frame of it, only repainted.
+              RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _fold,
+                  builder: (context, week) {
+                    final eased = Curves.easeInOutCubic.transform(_fold.value);
+                    return Container(
+                      key: const ValueKey('week-tray'),
+                      height: lerpDouble(_stripHeight, _compactHeight, eased),
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        // The tray melts into the panel as the cards fold.
+                        color:
+                            Color.lerp(AppColors.gray1, AppColors.white, eased),
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      child: week,
+                    );
+                  },
+                  child: OverflowBox(
+                    minHeight: _stripHeight,
+                    maxHeight: _stripHeight,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _onScroll,
+                      child: PageView.builder(
+                        key: const ValueKey('week-strip'),
+                        controller: _pages,
+                        itemBuilder: (context, page) {
+                          final weekStart = _weekOf(page);
+                          final hasPlan = controller.hasData &&
+                              isSameJalaliDay(controller.weekStart, weekStart);
+                          return DepthOnSwipe(
+                            pages: _pages,
+                            page: page,
+                            child: _WeekPage(
+                              weekStart: weekStart,
+                              plan: hasPlan ? controller.plan : null,
+                              today: controller.today,
+                              selectedDate: widget.selectedDate,
+                              onSelectDay: widget.onSelectDay,
+                              fold: _fold,
+                              visibleDays: hasPlan ? widget.visibleDays : null,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -474,10 +526,14 @@ class _SlidingWord extends StatelessWidget {
   }
 }
 
-/// One week of cards. Layers, bottom to top: the white cards, the cards'
-/// contents, and the selection blob, which carries a white copy of the
-/// contents clipped to its own shape, so whatever it passes over turns white
-/// exactly where it is.
+/// One week of cards. Layers, bottom to top: the white cards (painted in one
+/// pass, with the window of the days the board shows), the cards' contents,
+/// and the selection blob, which carries a white copy of the contents
+/// clipped to its own shape, so whatever it passes over turns white exactly
+/// where it is.
+///
+/// Everything [fold] moves is painted or transformed, never laid out again,
+/// so folding the strip costs a repaint per frame and no rebuilds.
 class _WeekPage extends StatelessWidget {
   const _WeekPage({
     required this.weekStart,
@@ -485,6 +541,8 @@ class _WeekPage extends StatelessWidget {
     required this.today,
     required this.selectedDate,
     required this.onSelectDay,
+    required this.fold,
+    required this.visibleDays,
   });
 
   final Jalali weekStart;
@@ -495,7 +553,47 @@ class _WeekPage extends StatelessWidget {
   final Jalali selectedDate;
   final ValueChanged<Jalali> onSelectDay;
 
+  /// 0 with full cards, 1 folded into a row of rings.
+  final Animation<double> fold;
+
+  /// The days the board shows, for the window behind the rings.
+  final ValueListenable<VisibleDays>? visibleDays;
+
   static const double _gap = 2.5;
+  static const double _dot = 30;
+
+  /// Each day folds a moment after its neighbour nearer the selected day, so
+  /// the fold ripples outward from it.
+  static const double _ripple = 0.06;
+
+  static Curve slotCurve(int slot, int anchor) {
+    final delay = (slot - anchor).abs() * _ripple;
+    return Interval(delay, delay + 1 - 6 * _ripple);
+  }
+
+  /// A card shrinks from its full slot to a dot behind its ring, a little
+  /// past it and back, as if on a spring.
+  static RRect cardShape(int slot, double slotWidth, double height, double t) {
+    final left = (6 - slot) * slotWidth;
+    final full = Rect.fromLTWH(left + _gap, 0, slotWidth - 2 * _gap, height);
+    final dot = Rect.fromCenter(
+      center: Offset(left + slotWidth / 2, height / 2),
+      width: _dot,
+      height: _dot,
+    );
+    return RRect.fromRectAndRadius(
+      Rect.lerp(full, dot, Curves.easeOutBack.transform(t))!,
+      Radius.circular(lerpDouble(26, _dot / 2, t)!),
+    );
+  }
+
+  int get _anchor {
+    final selected = daysBetween(weekStart, selectedDate);
+    return selected >= 0 && selected < 7 ? selected : 3;
+  }
+
+  Animation<double> _foldOf(int slot) =>
+      fold.drive(CurveTween(curve: slotCurve(slot, _anchor)));
 
   Widget _contents({required bool onBlob}) {
     final selectedSlot = daysBetween(weekStart, selectedDate);
@@ -510,6 +608,7 @@ class _WeekPage extends StatelessWidget {
               selected: index == selectedSlot,
               dark: onBlob ? 1 : 0,
               markToday: !onBlob,
+              fold: _foldOf(index),
             ),
           ),
       ],
@@ -521,78 +620,132 @@ class _WeekPage extends StatelessWidget {
     final selectedSlot = daysBetween(weekStart, selectedDate);
     return Padding(
       padding: const EdgeInsets.all(5),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final slotWidth = constraints.maxWidth / 7;
-          return Stack(
-            children: [
-              Row(
-                children: [
-                  for (var index = 0; index < 7; index++)
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: _gap),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(26),
-                        ),
-                      ),
-                    ),
-                ],
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _CardsPainter(
+                fold: fold,
+                anchor: _anchor,
+                visibleDays: visibleDays,
               ),
-              Row(
-                children: [
-                  for (var index = 0; index < 7; index++)
-                    Expanded(
-                      child: _DayCard(
-                        key: ValueKey('week-capsule-$index'),
-                        date: weekStart.addDays(index),
-                        day: plan?.days[index],
-                        today: today,
-                        selected: index == selectedSlot,
-                        onTap: () => onSelectDay(weekStart.addDays(index)),
-                      ),
-                    ),
-                ],
-              ),
-              if (selectedSlot >= 0 && selectedSlot < 7)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: ExcludeSemantics(
-                      child: _SelectionBlob(
-                        first: selectedSlot,
-                        last: selectedSlot,
-                        slotWidth: slotWidth,
-                        gap: _gap,
-                        contents: _contents(onBlob: true),
-                      ),
+            ),
+          ),
+          Positioned.fill(
+            child: Row(
+              children: [
+                for (var index = 0; index < 7; index++)
+                  Expanded(
+                    child: _DayCard(
+                      key: ValueKey('week-capsule-$index'),
+                      date: weekStart.addDays(index),
+                      day: plan?.days[index],
+                      today: today,
+                      selected: index == selectedSlot,
+                      fold: _foldOf(index),
+                      onTap: () => onSelectDay(weekStart.addDays(index)),
                     ),
                   ),
+              ],
+            ),
+          ),
+          if (selectedSlot >= 0 && selectedSlot < 7)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: ExcludeSemantics(
+                  child: _SelectionBlob(
+                    first: selectedSlot,
+                    last: selectedSlot,
+                    gap: _gap,
+                    fold: _foldOf(selectedSlot),
+                    dot: _dot,
+                    contents: _contents(onBlob: true),
+                  ),
                 ),
-            ],
-          );
-        },
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
+/// The white cards, fading as they shrink to dots, and under them the soft
+/// window behind the rings of the days the board shows. Repaints with the
+/// fold and the board's scroll; never rebuilds.
+class _CardsPainter extends CustomPainter {
+  _CardsPainter({
+    required this.fold,
+    required this.anchor,
+    required this.visibleDays,
+  }) : super(repaint: Listenable.merge([fold, visibleDays]));
+
+  final Animation<double> fold;
+  final int anchor;
+  final ValueListenable<VisibleDays>? visibleDays;
+
+  static const Interval _windowIn = Interval(0.55, 1, curve: Curves.easeOut);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final slotWidth = size.width / 7;
+    final value = fold.value;
+    final paint = Paint();
+
+    final visible = visibleDays?.value;
+    final shown = _windowIn.transform(value);
+    if (visible != null && shown > 0) {
+      // Days run right to left: Saturday's slot is the rightmost.
+      final right = ((7 - visible.first) * slotWidth).clamp(0.0, size.width);
+      final left = ((7 - visible.first - visible.count) * slotWidth)
+          .clamp(0.0, size.width);
+      const height = _WeekPage._dot + 4;
+      final top = (size.height - height) / 2;
+      paint.color = AppColors.gray1.withValues(alpha: shown);
+      canvas.drawRRect(
+        RRect.fromLTRBR(
+            left, top, right, top + height, const Radius.circular(height / 2)),
+        paint,
+      );
+    }
+
+    for (var slot = 0; slot < 7; slot++) {
+      final t = _WeekPage.slotCurve(slot, anchor).transform(value);
+      if (t >= 1) continue;
+      paint.color = AppColors.white.withValues(alpha: 1 - t);
+      canvas.drawRRect(
+          _WeekPage.cardShape(slot, slotWidth, size.height, t), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CardsPainter oldDelegate) =>
+      oldDelegate.fold != fold ||
+      oldDelegate.anchor != anchor ||
+      oldDelegate.visibleDays != visibleDays;
+}
+
 /// The black blob under the selected day. When it moves, the edge moving outward reaches first
 /// and the other follows, so it stretches and settles like a drop of ink.
+/// As the strip folds it shrinks to a dot behind the day's ring.
 class _SelectionBlob extends StatefulWidget {
   const _SelectionBlob({
     required this.first,
     required this.last,
-    required this.slotWidth,
     required this.gap,
     required this.contents,
+    this.fold = kAlwaysDismissedAnimation,
+    this.dot = 30,
   });
 
   /// The first and last selected slots; the same slot for a single day.
   final int first;
   final int last;
-  final double slotWidth;
   final double gap;
+
+  /// 0 covering the whole card, 1 shrunk to a [dot] behind the ring.
+  final Animation<double> fold;
+  final double dot;
 
   /// The week's contents drawn for a dark background, shown only inside the
   /// blob.
@@ -637,80 +790,119 @@ class _SelectionBlobState extends State<_SelectionBlob>
     super.dispose();
   }
 
-  /// Left edge of a slot; slots run right to left.
-  double _leftOf(int slot) => (6 - slot) * widget.slotWidth;
+  /// The blob's shape in a week [size] wide and tall.
+  RRect _shape(Size size) {
+    final slotWidth = size.width / 7;
+    double leftOf(int slot) => (6 - slot) * slotWidth; // right to left
+    final t = _glide.value;
+    // The range's left edge belongs to its last slot, the right edge to its
+    // first.
+    final fromLeft = leftOf(_from.$2);
+    final fromRight = leftOf(_from.$1) + slotWidth;
+    final toLeft = leftOf(widget.last);
+    final toRight = leftOf(widget.first) + slotWidth;
+    final leftT = (toLeft < fromLeft ? _lead : _trail).transform(t);
+    final rightT = (toRight > fromRight ? _lead : _trail).transform(t);
+    var left = fromLeft + (toLeft - fromLeft) * leftT + widget.gap;
+    var right = fromRight + (toRight - fromRight) * rightT - widget.gap;
+    final scale = 0.85 + 0.15 * Curves.easeOutBack.transform(_appear.value);
+    if (scale != 1) {
+      final inset = (right - left) * (1 - scale) / 2;
+      left += inset;
+      right -= inset;
+    }
+
+    final full = Rect.fromLTRB(left, 0, right, size.height);
+    final dot = Rect.fromCenter(
+      center: Offset(full.center.dx, size.height / 2),
+      width: widget.dot,
+      height: widget.dot,
+    );
+    final fold = widget.fold.value;
+    return RRect.fromRectAndRadius(
+      Rect.lerp(full, dot, Curves.easeOutBack.transform(fold))!,
+      Radius.circular(lerpDouble(_radius, widget.dot / 2, fold)!),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_glide, _appear]),
-      builder: (context, _) {
-        final t = _glide.value;
-        // The range's left edge belongs to its last slot, the right edge to
-        // its first.
-        final fromLeft = _leftOf(_from.$2);
-        final fromRight = _leftOf(_from.$1) + widget.slotWidth;
-        final toLeft = _leftOf(widget.last);
-        final toRight = _leftOf(widget.first) + widget.slotWidth;
-        final leftT = (toLeft < fromLeft ? _lead : _trail).transform(t);
-        final rightT = (toRight > fromRight ? _lead : _trail).transform(t);
-        var rect = Rect.fromLTRB(
-          fromLeft + (toLeft - fromLeft) * leftT + widget.gap,
-          0,
-          fromRight + (toRight - fromRight) * rightT - widget.gap,
-          double.infinity,
-        );
-        final scale = 0.85 + 0.15 * Curves.easeOutBack.transform(_appear.value);
-        if (scale != 1) {
-          final inset = rect.width * (1 - scale) / 2;
-          rect = Rect.fromLTRB(
-              rect.left + inset, 0, rect.right - inset, double.infinity);
-        }
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final shape = RRect.fromRectAndRadius(
-              Rect.fromLTRB(rect.left, 0, rect.right, constraints.maxHeight),
-              const Radius.circular(_radius),
-            );
-            return Stack(
-              children: [
-                Positioned.fromRect(
-                  rect: shape.outerRect,
-                  child: const DecoratedBox(
-                    key: ValueKey('week-selection'),
-                    decoration: BoxDecoration(
-                      color: AppColors.black1,
-                      borderRadius: BorderRadius.all(Radius.circular(_radius)),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: ClipRRect(
-                    clipper: _RRectClipper(shape),
-                    child: widget.contents,
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final motion = Listenable.merge([_glide, _appear, widget.fold]);
+    // Painted and clipped from the same shape, both following [motion]
+    // without rebuilding.
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _BlobPainter(motion: motion, shape: _shape),
+            child: ClipRRect(
+              clipper: _BlobClipper(motion: motion, shape: _shape),
+              child: widget.contents,
+            ),
+          ),
+        ),
+        // An empty box over the blob, so it can be found where it is.
+        Positioned.fill(
+          child: CustomSingleChildLayout(
+            delegate: _BlobLayout(motion: motion, shape: _shape),
+            child: const SizedBox.expand(key: ValueKey('week-selection')),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _RRectClipper extends CustomClipper<RRect> {
-  const _RRectClipper(this.shape);
+class _BlobLayout extends SingleChildLayoutDelegate {
+  _BlobLayout({required this.motion, required this.shape})
+      : super(relayout: motion);
 
-  final RRect shape;
+  final Listenable motion;
+  final RRect Function(Size size) shape;
 
   @override
-  RRect getClip(Size size) => shape;
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints.tight(shape(constraints.biggest).outerRect.size);
 
   @override
-  bool shouldReclip(covariant _RRectClipper oldClipper) =>
-      oldClipper.shape != shape;
+  Offset getPositionForChild(Size size, Size childSize) =>
+      shape(size).outerRect.topLeft;
+
+  @override
+  bool shouldRelayout(_BlobLayout oldDelegate) =>
+      oldDelegate.motion != motion || oldDelegate.shape != shape;
+}
+
+class _BlobPainter extends CustomPainter {
+  _BlobPainter({required this.motion, required this.shape})
+      : super(repaint: motion);
+
+  final Listenable motion;
+  final RRect Function(Size size) shape;
+
+  static final Paint _fill = Paint()..color = AppColors.black1;
+
+  @override
+  void paint(Canvas canvas, Size size) => canvas.drawRRect(shape(size), _fill);
+
+  @override
+  bool shouldRepaint(_BlobPainter oldDelegate) =>
+      oldDelegate.motion != motion || oldDelegate.shape != shape;
+}
+
+class _BlobClipper extends CustomClipper<RRect> {
+  _BlobClipper({required this.motion, required this.shape})
+      : super(reclip: motion);
+
+  final Listenable motion;
+  final RRect Function(Size size) shape;
+
+  @override
+  RRect getClip(Size size) => shape(size);
+
+  @override
+  bool shouldReclip(_BlobClipper oldClipper) =>
+      oldClipper.motion != motion || oldClipper.shape != shape;
 }
 
 /// A tappable day: selects the day.
@@ -722,6 +914,7 @@ class _DayCard extends StatefulWidget {
     required this.today,
     required this.selected,
     required this.onTap,
+    this.fold = kAlwaysDismissedAnimation,
   });
 
   final Jalali date;
@@ -731,6 +924,7 @@ class _DayCard extends StatefulWidget {
   final Jalali today;
   final bool selected;
   final VoidCallback onTap;
+  final Animation<double> fold;
 
   @override
   State<_DayCard> createState() => _DayCardState();
@@ -771,6 +965,7 @@ class _DayCardState extends State<_DayCard> {
               selected: widget.selected,
               dark: 0,
               markToday: true,
+              fold: widget.fold,
             ),
           ),
         ),
@@ -780,7 +975,9 @@ class _DayCardState extends State<_DayCard> {
 }
 
 /// A day's ring, number and name, drawn for a light ([dark] 0) or dark
-/// ([dark] 1) background.
+/// ([dark] 1) background. As [fold] runs, the number and name fade while
+/// the ring drops to the middle of the tray and shrinks a little; all of it
+/// by transform and fade, so the day is never laid out again.
 class _DayContent extends StatelessWidget {
   const _DayContent({
     required this.date,
@@ -789,6 +986,7 @@ class _DayContent extends StatelessWidget {
     required this.selected,
     required this.dark,
     required this.markToday,
+    this.fold = kAlwaysDismissedAnimation,
   });
 
   final Jalali date;
@@ -799,6 +997,20 @@ class _DayContent extends StatelessWidget {
 
   /// Whether this copy carries the today dot (the blob's copy does not).
   final bool markToday;
+
+  /// 0 in full; at 1 only the ring is left, a little smaller.
+  final Animation<double> fold;
+
+  /// The number, the name and the today dot under the ring. The ring sits
+  /// half of this above the middle, so moving it down by that much centres
+  /// it.
+  static const double _detailsHeight = 46;
+
+  static final Animatable<double> _fadeOut = Tween<double>(begin: 1, end: 0)
+      .chain(CurveTween(curve: const Interval(0, 0.45, curve: Curves.easeOut)));
+  static final Animatable<Offset> _sink =
+      Tween<Offset>(begin: Offset.zero, end: const Offset(0, 0.12))
+          .chain(CurveTween(curve: Curves.easeIn));
 
   @override
   Widget build(BuildContext context) {
@@ -812,7 +1024,45 @@ class _DayContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _ProgressRing(day: day, dark: dark, today: isToday),
+        AnimatedBuilder(
+          animation: fold,
+          child: _ProgressRing(day: day, dark: dark, today: isToday),
+          builder: (context, ring) {
+            final t = fold.value;
+            if (t == 0) return ring!;
+            final drop =
+                _detailsHeight / 2 * Curves.easeInOutCubic.transform(t);
+            final scale = lerpDouble(1, 0.82, Curves.easeOutBack.transform(t))!;
+            return Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.translationValues(0, drop, 0)
+                ..scaleByDouble(scale, scale, 1, 1),
+              child: ring,
+            );
+          },
+        ),
+        SizedBox(
+          height: _detailsHeight,
+          child: FadeTransition(
+            opacity: fold.drive(_fadeOut),
+            child: SlideTransition(
+              position: fold.drive(_sink),
+              child: OverflowBox(
+                maxHeight: double.infinity,
+                alignment: Alignment.topCenter,
+                child: _details(isToday, number, label),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _details(bool isToday, Color number, Color label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         const SizedBox(height: 8),
         ReText(
           '${date.day}',

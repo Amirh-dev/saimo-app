@@ -145,9 +145,19 @@ void main() {
       }
       expect(inColumn('week-day-column-4', 'تست فیزیک'), findsOneWidget);
       expect(inColumn('week-day-column-4', '۴۵ دقیقه'), findsOneWidget);
-      // The strip above has the dates; the headers name the days.
+      // The strip folds away in weekly mode, so each header carries its
+      // date beside the weekday.
       expect(inColumn('week-day-header-4', 'چهارشنبه'), findsOneWidget);
-      expect(inColumn('week-day-header-4', '۲۲'), findsNothing);
+      expect(inColumn('week-day-header-4', '۲۲'), findsOneWidget);
+    });
+
+    testWidgets('the first of a month names its month', (tester) async {
+      // The week of 26 Mehr 1405 ends on 1 Aban (Mehr has 30 days).
+      await _pumpWeek(tester,
+          size: const Size(1000, 1200), week: Jalali(1405, 7, 26));
+      expect(inColumn('week-day-header-6', '۱'), findsOneWidget);
+      expect(inColumn('week-day-header-6', 'آبان'), findsOneWidget);
+      expect(inColumn('week-day-header-5', 'مهر'), findsNothing);
     });
 
     testWidgets('a time box grows with the time it was given', (tester) async {

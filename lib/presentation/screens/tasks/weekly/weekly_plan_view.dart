@@ -16,15 +16,26 @@ import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
+/// The days in view on the board: the first (counted from Saturday,
+/// fractional while scrolling between days) and how many fit.
+typedef VisibleDays = ({double first, double count});
+
 /// All seven days fit side by side when each gets this much; narrower
 /// screens show about [_visibleColumns] days and scroll sideways.
-const double _fullColumnWidth = 100;
-const double _visibleColumns = 3.4;
-const double _minColumnWidth = 84;
+const double _fullColumnWidth = 132;
+const double _visibleColumns = 2.35;
+const double _minColumnWidth = 136;
 
-const double _columnPad = 4;
-const double _taskGap = 6;
-const double _chipHeight = 34;
+/// Half the gap between two day lanes, and a lane's inner padding.
+const double _columnPad = 5;
+const double _lanePad = 6;
+const double _laneRadius = 24;
+const double _taskGap = 8;
+const double _chipHeight = 40;
+const double _chipRadius = 22;
+
+/// The board's color; its sides fade into it.
+const Color _boardColor = AppColors.white;
 
 /// While a time box is dragged this close to the board's side, the days
 /// scroll that way.
@@ -68,9 +79,14 @@ class WeeklyPlanView extends StatefulWidget {
     required this.onMoveTasks,
     required this.onRefresh,
     this.onChangeWeek,
+    this.visibleDays,
   });
 
   final WeeklyPlanController controller;
+
+  /// Told which days are in view as the columns scroll: the first one (from
+  /// Saturday, fractional while between days) and how many fit.
+  final ValueNotifier<VisibleDays>? visibleDays;
 
   /// The days were pulled past their edge: -1 past Saturday (the right
   /// side) for the previous week, +1 past Friday (the left) for the next.
@@ -194,6 +210,18 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
     if (_columns.hasClients && _headers.hasClients) {
       _headers.jumpTo(_columns.offset);
     }
+    _reportVisibleDays();
+  }
+
+  void _reportVisibleDays() {
+    final notifier = widget.visibleDays;
+    if (notifier == null || !_columns.hasClients) return;
+    final position = _columns.position;
+    if (!position.hasViewportDimension || _columnWidth <= 0) return;
+    notifier.value = (
+      first: (position.pixels / _columnWidth).clamp(0.0, 7.0),
+      count: position.viewportDimension / _columnWidth,
+    );
   }
 
   int? _indexOf(Jalali? day) {
@@ -361,14 +389,10 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
     return Container(
       key: _boardKey,
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: const BoxDecoration(
-        color: AppColors.whiteSec,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
-          top: BorderSide(color: AppColors.gray2),
-          left: BorderSide(color: AppColors.gray2),
-          right: BorderSide(color: AppColors.gray2),
-        ),
+        color: _boardColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(
@@ -379,39 +403,41 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
               : math.max(_minColumnWidth, available / _visibleColumns);
           final width = _columnWidth * 7;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          return Stack(
             children: [
-              SingleChildScrollView(
-                controller: _headers,
-                scrollDirection: Axis.horizontal,
-                physics: const NeverScrollableScrollPhysics(),
-                child: Row(
-                  children: [
-                    for (var index = 0; index < 7; index++)
-                      SizedBox(
-                        width: _columnWidth,
-                        child: _DayHeader(
-                          key: ValueKey('week-day-header-$index'),
-                          day: plan.days[index],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, thickness: 1, color: AppColors.gray2),
-              Expanded(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _buildColumns(plan, weekKey, width, hintIndex),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SingleChildScrollView(
+                    controller: _headers,
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Row(
+                      children: [
+                        for (var index = 0; index < 7; index++)
+                          SizedBox(
+                            width: _columnWidth,
+                            child: _DayHeader(
+                              key: ValueKey('week-day-header-$index'),
+                              day: plan.days[index],
+                            ),
+                          ),
+                      ],
                     ),
-                    // Shown while the days are pulled past an edge.
-                    _WeekPullHint(pull: _pull, next: false),
-                    _WeekPullHint(pull: _pull, next: true),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: _buildColumns(plan, weekKey, width, hintIndex),
+                  ),
+                ],
               ),
+              // The days fade out at the board's sides when more lie beyond.
+              if (width > available) ...[
+                const _EdgeFade(start: true),
+                const _EdgeFade(start: false),
+              ],
+              // Shown while the days are pulled past an edge.
+              _WeekPullHint(pull: _pull, next: false),
+              _WeekPullHint(pull: _pull, next: true),
             ],
           );
         },
@@ -456,41 +482,34 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
                     maxWidth: width,
                     minHeight: viewport.maxHeight,
                   ),
-                  child: CustomPaint(
-                    painter: _ColumnsPainter(columnWidth: _columnWidth),
-                    child: Padding(
-                      // Clear of the undo bar and the timer banner.
-                      padding: const EdgeInsets.only(bottom: 110),
-                      // Every column as tall as the tallest, so a box
-                      // can be dropped anywhere in a day.
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var index = 0; index < 7; index++)
-                              _Entrance(
-                                order: index,
-                                child: _DayColumn(
-                                  key: ValueKey('week-day-column-$index'),
-                                  width: _columnWidth,
-                                  index: index,
-                                  day: plan.days[index],
-                                  today: _controller.today,
-                                  showHint: index == hintIndex,
-                                  onOpenTask: widget.onOpenTask,
-                                  onShowChecklists: () =>
-                                      _openChecklists(plan.days[index]),
-                                  onAdd: () =>
-                                      widget.onAddToDay(plan.days[index].date),
-                                  onMove: _move,
-                                  onDragStarted: _onDragStarted,
-                                  onDragMoved: (point) => _dragPoint = point,
-                                  onDragEnded: _onDragEnded,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                  // Every column as tall as the tallest, so a box can be
+                  // dropped anywhere in a day.
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var index = 0; index < 7; index++)
+                          _Entrance(
+                            order: index,
+                            child: _DayColumn(
+                              key: ValueKey('week-day-column-$index'),
+                              width: _columnWidth,
+                              index: index,
+                              day: plan.days[index],
+                              today: _controller.today,
+                              showHint: index == hintIndex,
+                              onOpenTask: widget.onOpenTask,
+                              onShowChecklists: () =>
+                                  _openChecklists(plan.days[index]),
+                              onAdd: () =>
+                                  widget.onAddToDay(plan.days[index].date),
+                              onMove: _move,
+                              onDragStarted: _onDragStarted,
+                              onDragMoved: (point) => _dragPoint = point,
+                              onDragEnded: _onDragEnded,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -590,6 +609,41 @@ class _WeekPullHint extends StatelessWidget {
   }
 }
 
+/// A soft fade at one side of the board, so the days scrolled out of view
+/// melt into it instead of being cut off.
+class _EdgeFade extends StatelessWidget {
+  const _EdgeFade({required this.start});
+
+  /// The start side (the right, Saturday's) or the end (the left).
+  final bool start;
+
+  @override
+  Widget build(BuildContext context) {
+    return PositionedDirectional(
+      top: 0,
+      bottom: 0,
+      start: start ? 0 : null,
+      end: start ? null : 0,
+      width: 10,
+      child: IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: start
+                  ? AlignmentDirectional.centerStart
+                  : AlignmentDirectional.centerEnd,
+              end: start
+                  ? AlignmentDirectional.centerEnd
+                  : AlignmentDirectional.centerStart,
+              colors: [_boardColor, _boardColor.withValues(alpha: 0)],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Entrance extends StatelessWidget {
   const _Entrance({required this.order, required this.child});
 
@@ -623,6 +677,35 @@ class _Entrance extends StatelessWidget {
 /// a thin bar of how much of the day's work is done (see
 /// [WeekDayPlan.workDoneRatio]); green once all of it is. An overloaded
 /// day's time takes the main color. Dates live in the strip above.
+/// The day's date in a small white circle at the start of its header, where
+/// the strip above showed it in daily mode.
+class _DateBadge extends StatelessWidget {
+  const _DateBadge({required this.day});
+
+  final WeekDayPlan day;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 28),
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.whiteSec,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: ReText(
+        convertToPersianNumbers('${day.date.day}'),
+        fontSize: 12.5,
+        fontWeight: FontWeight.w900,
+        color: day.isPast ? AppColors.gray : AppColors.black1,
+        maxLines: 1,
+      ),
+    );
+  }
+}
+
 class _DayHeader extends StatelessWidget {
   const _DayHeader({super.key, required this.day});
 
@@ -645,56 +728,92 @@ class _DayHeader extends StatelessWidget {
       ].join('، '),
       excludeSemantics: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+        padding: const EdgeInsets.fromLTRB(_columnPad, 12, _columnPad, 8),
         child: Column(
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 260),
-              height: 24,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.center,
+              height: 40,
+              padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 12, 0),
+              alignment: AlignmentDirectional.centerStart,
               decoration: BoxDecoration(
-                color: day.isToday ? AppColors.black1 : Colors.transparent,
+                color: day.isToday ? AppColors.black1 : AppColors.gray1,
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: ReText(
-                weekdayName(day.date),
-                fontSize: 11.5,
-                fontWeight: day.isToday ? FontWeight.w900 : FontWeight.w800,
-                color: day.isToday
-                    ? AppColors.white
-                    : day.isPast
-                        ? AppColors.dark5Color
-                        : AppColors.black1,
-                textAlign: TextAlign.center,
-                maxLines: 1,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DateBadge(day: day),
+                    const SizedBox(width: 7),
+                    ReText(
+                      weekdayName(day.date),
+                      fontSize: 12.5,
+                      fontWeight:
+                          day.isToday ? FontWeight.w900 : FontWeight.w800,
+                      color: day.isToday
+                          ? AppColors.white
+                          : day.isPast
+                              ? AppColors.gray
+                              : AppColors.black1,
+                      maxLines: 1,
+                    ),
+                    // Today is named; the first of a month names its month.
+                    if (day.isToday || day.date.day == 1) ...[
+                      const SizedBox(width: 6),
+                      ReText(
+                        day.isToday
+                            ? 'امروز'
+                            : kPersianMonths[day.date.month - 1],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: day.isToday
+                            ? AppColors.white.withValues(alpha: 0.5)
+                            : AppColors.gray,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 5),
-            SizedBox(
-              height: 16,
-              child: planned > 0
-                  ? ReText(
-                      formatClock(planned),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      color: over ? AppColors.primary : AppColors.gray,
-                      textAlign: TextAlign.center,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(end: done),
-                duration: const Duration(milliseconds: 600),
-                curve: AppMotion.settle,
-                builder: (context, value, _) => LinearProgressIndicator(
-                  value: value,
-                  minHeight: 3,
-                  backgroundColor: AppColors.gray2,
-                  color: accent,
+            const SizedBox(height: 8),
+            // How much of the day is done, with the time it has boxed.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: SizedBox(
+                height: 16,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(end: done),
+                          duration: const Duration(milliseconds: 600),
+                          curve: AppMotion.settle,
+                          builder: (context, value, _) =>
+                              LinearProgressIndicator(
+                            value: value,
+                            minHeight: 3,
+                            backgroundColor: AppColors.gray2,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (planned > 0) ...[
+                      const SizedBox(width: 6),
+                      ReText(
+                        formatClock(planned),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: over ? AppColors.primary : AppColors.gray,
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -703,27 +822,6 @@ class _DayHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The lines between days.
-class _ColumnsPainter extends CustomPainter {
-  _ColumnsPainter({required this.columnWidth});
-
-  final double columnWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final line = Paint()
-      ..color = AppColors.gray2
-      ..strokeWidth = 1;
-    for (var day = 1; day < 7; day++) {
-      final x = day * columnWidth;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), line);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ColumnsPainter old) => old.columnWidth != columnWidth;
 }
 
 /// One day: unfinished work left on a past day, the checklists pill, the
@@ -776,71 +874,81 @@ class _DayColumn extends StatelessWidget {
       builder: (context, candidates, _) {
         final incoming =
             candidates.whereType<Map<String, dynamic>>().firstOrNull;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+        return Container(
           width: width,
-          color: incoming == null
-              ? Colors.transparent
-              : AppColors.black1.withValues(alpha: 0.03),
-          padding: const EdgeInsets.fromLTRB(_columnPad, 8, _columnPad, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: _taskGap,
-            children: [
-              if (leftovers.isNotEmpty)
-                _LeftoverNote(
-                  key: ValueKey('week-leftover-$index'),
-                  count: leftovers.length,
-                  onMoveToToday: leftovers.any(_isMovable)
-                      ? () =>
-                          onMove(leftovers.where(_isMovable).toList(), today)
-                      : null,
-                ),
-              if (checklists.isNotEmpty)
-                ChecklistsPill(
-                  key: ValueKey('week-checklists-$index'),
-                  tasks: checklists,
-                  onTap: onShowChecklists,
-                ),
-              for (final task in day.tasks)
-                if (isTimedTask(task))
-                  _DraggableBox(
-                    task: task,
-                    width: width - _columnPad * 2,
-                    onTap: () => onOpenTask(task),
-                    onDragStarted: onDragStarted,
-                    onDragMoved: onDragMoved,
-                    onDragEnded: onDragEnded,
+          padding: const EdgeInsets.symmetric(horizontal: _columnPad),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: incoming == null ? AppColors.gray1 : AppColors.gray2,
+              borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(_laneRadius)),
+            ),
+            // Clear of the undo bar and the timer banner at the bottom.
+            padding:
+                const EdgeInsets.fromLTRB(_lanePad, _lanePad, _lanePad, 110),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: _taskGap,
+              children: [
+                if (leftovers.isNotEmpty)
+                  _LeftoverNote(
+                    key: ValueKey('week-leftover-$index'),
+                    count: leftovers.length,
+                    onMoveToToday: leftovers.any(_isMovable)
+                        ? () =>
+                            onMove(leftovers.where(_isMovable).toList(), today)
+                        : null,
                   ),
-              // Where the held box will land.
-              if (incoming != null)
-                Container(
-                  key: const ValueKey('week-drop-slot'),
-                  height: isTimedTask(incoming)
-                      ? _boxHeight(taskPlannedMinutes(incoming))
-                      : _chipHeight,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.dark5Color, width: 1.2),
+                if (checklists.isNotEmpty)
+                  ChecklistsPill(
+                    key: ValueKey('week-checklists-$index'),
+                    tasks: checklists,
+                    onTap: onShowChecklists,
+                    height: _chipHeight,
+                    fontSize: 11.5,
+                    color: AppColors.whiteSec,
                   ),
-                ),
-              if (showHint)
-                const Padding(
-                  key: ValueKey('week-empty-hint'),
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  child: ReText(
-                    'اولین زمان‌بندی هفته را بساز',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.gray,
-                    textAlign: TextAlign.center,
-                    lineHeight: 1.5,
+                for (final task in day.tasks)
+                  if (isTimedTask(task))
+                    _DraggableBox(
+                      task: task,
+                      width: width - (_columnPad + _lanePad) * 2,
+                      faded: day.isPast,
+                      onTap: () => onOpenTask(task),
+                      onDragStarted: onDragStarted,
+                      onDragMoved: onDragMoved,
+                      onDragEnded: onDragEnded,
+                    ),
+                // Where the held box will land.
+                if (incoming != null)
+                  DashedBorder(
+                    key: const ValueKey('week-drop-slot'),
+                    radius: _chipRadius,
+                    child: SizedBox(
+                      height: isTimedTask(incoming)
+                          ? _boxHeight(taskPlannedMinutes(incoming))
+                          : _chipHeight,
+                    ),
                   ),
-                ),
-              // A past day takes no new tasks.
-              if (!day.isPast)
-                _AddButton(key: ValueKey('week-add-$index'), onTap: onAdd),
-            ],
+                if (showHint)
+                  const Padding(
+                    key: ValueKey('week-empty-hint'),
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: ReText(
+                      'اولین زمان‌بندی هفته را بساز',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gray,
+                      textAlign: TextAlign.center,
+                      lineHeight: 1.5,
+                    ),
+                  ),
+                // A past day takes no new tasks.
+                if (!day.isPast)
+                  _AddButton(key: ValueKey('week-add-$index'), onTap: onAdd),
+              ],
+            ),
           ),
         );
       },
@@ -860,10 +968,10 @@ class _LeftoverNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+      padding: const EdgeInsets.fromLTRB(8, 9, 8, 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray2),
+        color: AppColors.whiteSec,
+        borderRadius: BorderRadius.circular(_chipRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -885,7 +993,7 @@ class _LeftoverNote extends StatelessWidget {
                 onTap: onMoveToToday,
                 child: Container(
                   key: const ValueKey('week-leftover-move'),
-                  height: 28,
+                  height: 30,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppColors.black1,
@@ -923,6 +1031,7 @@ class _DraggableBox extends StatelessWidget {
     required this.onDragStarted,
     required this.onDragMoved,
     required this.onDragEnded,
+    this.faded = false,
   });
 
   final Map<String, dynamic> task;
@@ -932,10 +1041,14 @@ class _DraggableBox extends StatelessWidget {
   final ValueChanged<Offset> onDragMoved;
   final VoidCallback onDragEnded;
 
+  /// A past day's box, which steps back.
+  final bool faded;
+
   @override
   Widget build(BuildContext context) {
     final height = _boxHeight(taskPlannedMinutes(task));
-    final box = _TaskBox(task: task, height: height, onTap: onTap);
+    final box =
+        _TaskBox(task: task, height: height, onTap: onTap, faded: faded);
     if (!_isMovable(task)) return box;
     return LongPressDraggable<Map<String, dynamic>>(
       data: task,
@@ -954,7 +1067,7 @@ class _DraggableBox extends StatelessWidget {
             child: Container(
               width: width,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_chipRadius),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.black1.withValues(alpha: 0.16),
@@ -990,23 +1103,23 @@ class _AddButton extends StatelessWidget {
         child: Container(
           height: _chipHeight,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.gray2, width: 1.2),
+            color: AppColors.whiteSec,
+            borderRadius: BorderRadius.circular(100),
           ),
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add_rounded, size: 16, color: AppColors.dark6Color),
-              SizedBox(width: 3),
               Flexible(
                 child: ReText(
                   'ثبت تسک',
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.gray,
+                  color: AppColors.black1,
                   maxLines: 1,
                 ),
               ),
+              SizedBox(width: 4),
+              Icon(Icons.add_rounded, size: 19, color: AppColors.primary),
             ],
           ),
         ),
@@ -1050,19 +1163,14 @@ Color? _stageColor(_Stage stage) => switch (stage) {
       _Stage.done => AppColors.done,
     };
 
-/// A task not started sits on soft gray; the others on a faint wash of
-/// their stage's color (opaque, so a box being dragged hides what is under
-/// it).
+/// Every task is a white chip on its day's lane; the stage shows in its
+/// badge, not its fill.
 BoxDecoration _taskDecoration({
-  required _Stage stage,
   required double radius,
   bool raised = false,
 }) {
-  final color = _stageColor(stage);
   return BoxDecoration(
-    color: color == null
-        ? kTaskFill
-        : Color.alphaBlend(color.withValues(alpha: 0.09), AppColors.whiteSec),
+    color: AppColors.whiteSec,
     borderRadius: BorderRadius.circular(radius),
     boxShadow: raised
         ? [
@@ -1098,22 +1206,25 @@ String _shortDuration(int minutes) {
   return formatClock(minutes);
 }
 
-/// A timed task: its title, its time box and, once started, how much of it
-/// has run. [raised] is the copy that follows the finger while it moves.
+/// A timed task as a white chip: its stage badge at the start, then its
+/// title over its time box. [raised] is the copy that follows the finger
+/// while it moves; [faded] a past day's, which steps back.
 class _TaskBox extends StatelessWidget {
   const _TaskBox({
     required this.task,
     required this.height,
     required this.onTap,
     this.raised = false,
+    this.faded = false,
   });
 
   final Map<String, dynamic> task;
   final double height;
   final VoidCallback onTap;
   final bool raised;
+  final bool faded;
 
-  static const double _pad = 7;
+  static const double _pad = 8;
   static const double _titleLine = 16;
 
   @override
@@ -1121,62 +1232,42 @@ class _TaskBox extends StatelessWidget {
     final stage = _stageOf(task);
     final color = _stageColor(stage);
     final progress = stage == _Stage.done ? null : _timerProgress(task);
-    // Two title lines when the box has room for them beside the rest.
-    final twoLines = height >= 2 * _pad + 2 * _titleLine + 2 + 15 + 9;
+    // Two title lines when the box has room for them above the time.
+    final twoLines = height >= 2 * _pad + 2 * _titleLine + 2 + 15;
 
     final content = AnimatedContainer(
       key: raised ? null : ValueKey('week-task-${task['id']}'),
       duration: const Duration(milliseconds: 260),
       height: height,
-      decoration: _taskDecoration(stage: stage, radius: 12, raised: raised),
+      decoration: _taskDecoration(radius: _chipRadius, raised: raised),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
+      padding: const EdgeInsetsDirectional.fromSTEB(7, _pad, 10, _pad),
+      child: Row(
         children: [
-          // The stage's color down the start side; none until started.
-          if (color != null)
-            PositionedDirectional(
-              start: 0,
-              top: 0,
-              bottom: 0,
-              width: 3,
-              child: ColoredBox(color: color.withValues(alpha: 0.85)),
-            ),
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(9, _pad, 6, _pad),
-            child: _content(stage, color, progress, twoLines),
-          ),
+          _StageBadge(stage: stage, color: color, progress: progress),
+          const SizedBox(width: 8),
+          Expanded(child: _text(stage, twoLines)),
         ],
       ),
     );
     return raised ? content : PressScale(onTap: onTap, child: content);
   }
 
-  Widget _content(_Stage stage, Color? color, double? progress, bool twoLines) {
+  Widget _text(_Stage stage, bool twoLines) {
     final done = stage == _Stage.done;
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ReText(
-                task['title'] as String? ?? '',
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                lineHeight: 1.35,
-                maxLines: twoLines ? 2 : 1,
-                color: done ? AppColors.gray : AppColors.black1,
-                decoration: done ? TextDecoration.lineThrough : null,
-                textAlign: TextAlign.start,
-              ),
-            ),
-            const SizedBox(width: 3),
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: TaskStatusMark(task: task, size: 14, accent: color),
-            ),
-          ],
+        ReText(
+          task['title'] as String? ?? '',
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          lineHeight: 1.35,
+          maxLines: twoLines ? 2 : 1,
+          color: done || faded ? AppColors.gray : AppColors.black1,
+          decoration: done ? TextDecoration.lineThrough : null,
+          textAlign: TextAlign.start,
         ),
         const SizedBox(height: 2),
         ReText(
@@ -1185,23 +1276,66 @@ class _TaskBox extends StatelessWidget {
           fontWeight: FontWeight.w600,
           lineHeight: 1.35,
           maxLines: 1,
-          color: AppColors.gray,
+          color: faded ? AppColors.dark5Color : AppColors.gray,
           textAlign: TextAlign.start,
         ),
-        const Spacer(),
-        if (progress != null)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(100),
-            // Orange while it runs, blue once paused part-way.
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 3,
-              backgroundColor:
-                  (color ?? AppColors.primary).withValues(alpha: 0.15),
-              color: color ?? AppColors.primary,
+      ],
+    );
+  }
+}
+
+/// Where a chip's task stands: a gray ring not started, an arc of the time
+/// run so far while under way (orange running, blue paused), a green check
+/// once done.
+class _StageBadge extends StatelessWidget {
+  const _StageBadge({
+    required this.stage,
+    required this.color,
+    required this.progress,
+  });
+
+  final _Stage stage;
+  final Color? color;
+  final double? progress;
+
+  static const double _size = 24;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = color;
+    return SizedBox.square(
+      dimension: _size,
+      child: switch (stage) {
+        _Stage.done => DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.done.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_rounded,
+                size: 17, color: AppColors.done),
+          ),
+        _ when accent == null => Center(
+            child: Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.dark4Color, width: 1.6),
+              ),
             ),
           ),
-      ],
+        _ => Padding(
+            padding: const EdgeInsets.all(3),
+            child: CircularProgressIndicator(
+              // Never indeterminate: a spinning ring would read as loading.
+              value: math.max(progress ?? 0, 0.04),
+              strokeWidth: 2.6,
+              strokeCap: StrokeCap.round,
+              color: accent,
+              backgroundColor: accent.withValues(alpha: 0.2),
+            ),
+          ),
+      },
     );
   }
 }
@@ -1295,13 +1429,13 @@ class _WeekPlanSkeletonState extends State<_WeekPlanSkeleton>
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           children: [
-            _block(height: 46, radius: 16),
+            _block(height: 40, radius: 100),
             const SizedBox(height: 14),
-            _block(height: 30, radius: 9),
-            SizedBox(height: 24.0 + seed * 18),
-            _block(height: 76),
-            const SizedBox(height: 10),
-            _block(height: 36),
+            _block(height: 40, radius: 100),
+            SizedBox(height: 8.0 + seed * 18),
+            _block(height: 76, radius: _chipRadius),
+            const SizedBox(height: 8),
+            _block(height: 40, radius: 100),
           ],
         ),
       ),
