@@ -32,6 +32,7 @@ import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
+import 'package:simo_learn/presentation/widgets/app_update_banner.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -102,6 +103,12 @@ class MyApp extends StatelessWidget {
                 ),
                 TaskReportPrompt(navigatorKey: _rootNavigatorKey),
                 SimoGuardNotice(navigatorKey: _rootNavigatorKey),
+                // Web only: a newer release is out and this tab is on the old
+                // one.
+                const Align(
+                  alignment: Alignment.topCenter,
+                  child: AppUpdateBanner(),
+                ),
               ],
             );
           },

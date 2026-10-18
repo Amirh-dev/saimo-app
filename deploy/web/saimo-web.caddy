@@ -8,15 +8,11 @@ web.saimo.app {
 		Cross-Origin-Embedder-Policy "require-corp"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# Flutter's build output keeps the same file names every release
+		# (main.dart.wasm, main.dart.mjs, assets/...), so nothing may be
+		# reused without asking first; an unchanged file is a cheap 304.
+		Cache-Control "no-cache"
 	}
-
-	# Entry points must always be revalidated so users pick up new releases.
-	@entry path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /version.json /manifest.json
-	header @entry Cache-Control "no-cache"
-
-	# Everything else (wasm, js, fonts, images) can be cached for a day.
-	@static not path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /version.json /manifest.json
-	header @static Cache-Control "public, max-age=86400"
 
 	try_files {path} /index.html
 	file_server

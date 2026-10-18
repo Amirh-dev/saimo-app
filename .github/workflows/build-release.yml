@@ -125,8 +125,16 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # The build number goes into version.json; APP_RELEASE tells the running
+      # app which release it is, so an open tab can notice a newer one
+      # (lib/data/app_update/).
       - name: Build web app
-        run: flutter build web --release --wasm --no-pub
+        run: |
+          VERSION="$(sed -n 's/^version: *\([^+ ]*\).*/\1/p' pubspec.yaml)"
+          BUILD="${{ github.run_number }}"
+          flutter build web --release --wasm --no-pub \
+            --build-number="$BUILD" \
+            --dart-define=APP_RELEASE="$VERSION+$BUILD"
 
       - name: Package web app
         run: tar -czf build/saimo-web-wasm.tar.gz -C build/web .
