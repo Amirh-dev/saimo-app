@@ -58,6 +58,11 @@ class ProfileScreen extends StatefulWidget {
 
   final ProfileContentSection initialSection;
 
+  /// A section to open from outside the tab, e.g. a friend-request
+  /// notification tap. The tab shows it and clears it.
+  static final ValueNotifier<ProfileContentSection?> requestedSection =
+      ValueNotifier(null);
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -96,8 +101,23 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
   @override
   void initState() {
     super.initState();
-    _section = widget.initialSection;
+    _section = ProfileScreen.requestedSection.value ?? widget.initialSection;
+    ProfileScreen.requestedSection.value = null;
+    ProfileScreen.requestedSection.addListener(_openRequestedSection);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfile());
+  }
+
+  @override
+  void dispose() {
+    ProfileScreen.requestedSection.removeListener(_openRequestedSection);
+    super.dispose();
+  }
+
+  void _openRequestedSection() {
+    final section = ProfileScreen.requestedSection.value;
+    if (section == null) return;
+    ProfileScreen.requestedSection.value = null;
+    _setSection(section);
   }
 
   @override

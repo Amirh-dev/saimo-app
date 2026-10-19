@@ -26,6 +26,7 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_repositor
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_return.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
+import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
@@ -272,8 +273,8 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     _chatRepository = ChatRepository(graphql);
     _deviceTokenRepository = DeviceTokenRepository(graphql);
     _consultantRepository = ConsultantRepository(graphql);
-    // Tapping a notification (from any app state) brings the user to chat.
-    NotificationService.instance.onOpenChat = _openChatFromNotification;
+    // Tapping a notification (from any app state) opens what it is about.
+    NotificationService.instance.onOpen = _openFromNotification;
     // Register this device's FCM token with the backend so the server can push
     // to it. Fires on first token fetch and on every refresh; registration only
     // succeeds once authenticated, so [_handleAuthState] also retries on login.
@@ -314,6 +315,12 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     )) {
       return;
     }
+    // In the background the server's FCM push shows this message; the socket
+    // only covers it when this device has no push.
+    if (!ActiveChatTracker.instance.appInForeground &&
+        NotificationService.instance.pushAvailable) {
+      return;
+    }
 
     final senderName =
         ActiveChatTracker.instance.displayNameFor(message.senderID);
@@ -323,15 +330,16 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
         body: message.content,
         senderID: message.senderID,
         chatID: message.chatID,
+        messageID: message.id,
       ),
     );
   }
 
-  void _openChatFromNotification(String? senderID) {
+  void _openFromNotification(Map<String, String> data) {
     // Only navigate once logged in; otherwise stash the tap and open it after
     // login (also covers a cold launch where the UI isn't mounted yet).
     if (!_isAuthenticated) {
-      NotificationService.instance.setPendingOpenChat(senderID);
+      NotificationService.instance.setPendingOpen(data);
       return;
     }
 
@@ -340,19 +348,33 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final navigator = _rootNavigatorKey.currentState;
       if (navigator == null) {
-        NotificationService.instance.setPendingOpenChat(senderID);
+        NotificationService.instance.setPendingOpen(data);
         return;
       }
-      // Push the inbox with an auto-open target. The conversation opens on top
-      // of the inbox, so back goes room, inbox, then home.
-      navigator.push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => ChatScreen(
-            initialChatUserID:
-                (senderID != null && senderID.isNotEmpty) ? senderID : null,
-          ),
-        ),
-      );
+      switch (data['type']) {
+        case kPushTypeFriendRequest:
+          ProfileScreen.requestedSection.value = ProfileContentSection.friends;
+          AppTabsShell.select(navigator.context, AppTabsShell.profile);
+        case kPushTypeCounselingPayment:
+          unawaited(
+            _showPaymentReturn(PaymentReturn(attemptID: data['attemptID'])),
+          );
+        case kPushTypeConsistencyAtRisk:
+          AppTabsShell.select(navigator.context, AppTabsShell.home);
+        default:
+          // A chat message. Push the inbox with an auto-open target. The
+          // conversation opens on top of the inbox, so back goes room, inbox,
+          // then home.
+          final senderID = data['senderID'];
+          navigator.push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => ChatScreen(
+                initialChatUserID:
+                    (senderID != null && senderID.isNotEmpty) ? senderID : null,
+              ),
+            ),
+          );
+      }
     });
   }
 
@@ -412,7 +434,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       // A notification tapped before login (or from a cold launch) is opened
       // now that we're authenticated and can navigate.
       NotificationService.instance
-          .consumePendingOpenChat(_openChatFromNotification);
+          .consumePendingOpen(_openFromNotification);
       final payment = _pendingPaymentReturn;
       _pendingPaymentReturn = null;
       if (payment != null) unawaited(_showPaymentReturn(payment));

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -42,6 +44,31 @@ const int _maxMessagesPerConversation = 8;
 /// Payload keys used to route a notification tap to the right conversation.
 const String _payloadSenderIDKey = 'senderID';
 const String _payloadChatIDKey = 'chatID';
+const String _payloadMessageIDKey = 'messageID';
+const String _payloadTypeKey = 'type';
+
+/// The `type` the server puts in each push's data. A push with no type is a
+/// chat message (older servers sent none).
+const String kPushTypeNewMessage = 'NEW_MESSAGE';
+const String kPushTypeFriendRequest = 'FRIEND_REQUEST';
+const String kPushTypeCounselingPayment = 'COUNSELING_PAYMENT';
+const String kPushTypeConsistencyAtRisk = 'CONSISTENCY_AT_RISK';
+
+/// Channel for everything that is not a chat message: friend requests,
+/// payment results and the evening multiplier reminder.
+const String _generalChannelId = 'general_channel';
+const String _generalChannelName = 'اعلان‌ها';
+const String _generalChannelDescription =
+    'درخواست‌های دوستی، نتیجه‌ی پرداخت و یادآوری ضریب روزانه';
+
+/// Upper bound for each Firebase step at startup. Google endpoints can be slow
+/// or unreachable on some networks; past this the app carries on without push
+/// instead of waiting on it.
+const Duration _firebaseStepTimeout = Duration(seconds: 15);
+
+/// How many recently shown message ids are remembered so the same message
+/// arriving over both the live socket and FCM is shown only once.
+const int _recentMessageIDsLimit = 64;
 
 /// Background/terminated FCM handler. Must be a top-level function annotated
 /// with `@pragma('vm:entry-point')` because it runs in its own isolate.
@@ -65,13 +92,20 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await plugin.initialize(
     const InitializationSettings(android: androidInit, iOS: darwinInit),
   );
-  // The channel usually already exists (created by the main isolate on a prior
-  // run), but recreate it here so a data-only push in a cold isolate still
+  // The channels usually already exist (created by the main isolate on a prior
+  // run), but recreate them here so a data-only push in a cold isolate still
   // lands in a high-importance channel.
-  await plugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(_messagesChannel());
+  await _createChannels(plugin);
+
+  if (!_isChatPush(data)) {
+    await _showGeneralNotification(
+      plugin,
+      title: title,
+      body: body,
+      data: data,
+    );
+    return;
+  }
 
   await _showGroupedMessageNotification(
     plugin,
@@ -102,29 +136,27 @@ class NotificationService {
   final ValueNotifier<String?> tokenNotifier = ValueNotifier<String?>(null);
   String? get currentToken => tokenNotifier.value;
 
-  /// Called when the user taps a notification. The app wires this to navigate
-  /// to the chat. Receives the sender's user id when known.
-  void Function(String? senderID)? onOpenChat;
+  /// Called when the user taps a push notification, with the push's data
+  /// (see the `kPushType…` constants for its `type`). The app wires this to
+  /// navigate to the matching screen.
+  void Function(Map<String, String> data)? onOpen;
 
-  bool _hasPendingOpenChat = false;
-  String? _pendingOpenChatSenderID;
+  Map<String, String>? _pendingOpen;
 
   /// Records a notification-tap intent that can't be handled immediately,
   /// e.g. tapped from a terminated state before the UI mounted, or before the
   /// user is authenticated. The app consumes it once it can navigate.
-  void setPendingOpenChat(String? senderID) {
-    _hasPendingOpenChat = true;
-    _pendingOpenChatSenderID = senderID;
+  void setPendingOpen(Map<String, String> data) {
+    _pendingOpen = data;
   }
 
-  /// If a tap intent is pending, hands its sender id to [onOpen] and clears it.
+  /// If a tap intent is pending, hands its data to [handler] and clears it.
   /// Returns whether anything was consumed.
-  bool consumePendingOpenChat(void Function(String? senderID) onOpen) {
-    if (!_hasPendingOpenChat) return false;
-    final senderID = _pendingOpenChatSenderID;
-    _hasPendingOpenChat = false;
-    _pendingOpenChatSenderID = null;
-    onOpen(senderID);
+  bool consumePendingOpen(void Function(Map<String, String> data) handler) {
+    final data = _pendingOpen;
+    if (data == null) return false;
+    _pendingOpen = null;
+    handler(data);
     return true;
   }
 
@@ -134,19 +166,63 @@ class NotificationService {
   /// can target this device. Registration is a no-op until authenticated.
   Future<void> Function(String token)? onToken;
 
-  /// Full setup. Call once, after `Firebase.initializeApp()` and before
-  /// `runApp`. Safe to call again; subsequent calls are ignored.
-  Future<void> initialize() async {
+  Future<bool>? _localReady;
+
+  /// Ids of messages already shown, oldest first. See [_recentMessageIDsLimit].
+  final LinkedHashSet<String> _shownMessageIDs = LinkedHashSet<String>();
+
+  /// Whether FCM is set up on this device, i.e. the server can reach it even
+  /// when the app is in the background.
+  bool get pushAvailable => currentToken != null;
+
+  /// Whether Firebase has options for the running platform. iOS has no
+  /// Firebase app registered yet.
+  static bool get firebaseSupported =>
+      kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+
+  /// Full setup: local notifications, permission prompt, Firebase and FCM.
+  /// Never throws and never blocks on the network for long, so `main` can run
+  /// it without awaiting. Safe to call again; subsequent calls are ignored.
+  Future<void> initialize({
+    required Future<FirebaseApp> Function() initializeFirebase,
+  }) async {
     if (_initialized) return;
     _initialized = true;
 
-    // flutter_local_notifications has no web support; on web the service
-    // worker (firebase-messaging-sw.js) renders notifications instead.
-    if (!kIsWeb) {
-      await _initLocalNotifications();
-    }
+    await ensureLocalNotificationsReady();
     await _requestPermissions();
-    await _configureFcm();
+
+    if (!firebaseSupported) return;
+    try {
+      await initializeFirebase().timeout(_firebaseStepTimeout);
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(
+          firebaseMessagingBackgroundHandler,
+        );
+      }
+      await _configureFcm();
+    } catch (error) {
+      _log('Firebase setup failed, push disabled: $error');
+    }
+  }
+
+  /// Initializes the local-notification plugin once for the whole app. The
+  /// plugin is a process-wide singleton and its tap callback is set by
+  /// `initialize`, so every feature (chat, task reminders) goes through here
+  /// instead of initializing it again and dropping that callback.
+  Future<bool> ensureLocalNotificationsReady() {
+    return _localReady ??= () async {
+      // flutter_local_notifications has no web support; on web the service
+      // worker (firebase-messaging-sw.js) renders notifications instead.
+      if (kIsWeb) return false;
+      try {
+        await _initLocalNotifications();
+        return true;
+      } catch (error) {
+        _log('local notifications init failed: $error');
+        return false;
+      }
+    }();
   }
 
   Future<void> _initLocalNotifications() async {
@@ -162,40 +238,42 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
-    // Create the Android channel up front so its importance is correct.
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_messagesChannel());
+    // Create the Android channels up front so their importance is correct.
+    await _createChannels(_localNotifications);
 
     final launchDetails =
         await _localNotifications.getNotificationAppLaunchDetails();
-    if (launchDetails?.didNotificationLaunchApp ?? false) {
-      final response = launchDetails?.notificationResponse;
-      if (response != null) {
-        _onNotificationResponse(response);
-      } else {
-        _dispatchOpenChat(null);
-      }
+    final response = launchDetails?.notificationResponse;
+    if ((launchDetails?.didNotificationLaunchApp ?? false) &&
+        response != null) {
+      _onNotificationResponse(response);
     }
   }
 
   Future<void> _requestPermissions() async {
-    // Android 13+ runtime notification permission.
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    // iOS / FCM permission prompt.
-    await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    if (kIsWeb) return;
+    try {
+      // Android 13+ runtime notification permission. Chat and task reminders
+      // both need it, with or without Firebase.
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    } catch (error) {
+      _log('permission request failed: $error');
+    }
   }
 
   Future<void> _configureFcm() async {
+    // Browser permission prompt on web; already covered above on mobile.
+    await _messaging
+        .requestPermission(alert: true, badge: true, sound: true)
+        .timeout(_firebaseStepTimeout);
+
     // Foreground presentation is handled by us via local notifications, so keep
     // the OS from also showing its own banner on iOS (avoids duplicates).
     await _messaging.setForegroundNotificationPresentationOptions(
@@ -215,9 +293,10 @@ class NotificationService {
 
     _messaging.onTokenRefresh.listen(_publishToken);
     try {
-      final token = kIsWeb
-          ? await _messaging.getToken(vapidKey: _webVapidKey)
-          : await _messaging.getToken();
+      final token = await (kIsWeb
+              ? _messaging.getToken(vapidKey: _webVapidKey)
+              : _messaging.getToken())
+          .timeout(_firebaseStepTimeout);
       if (token != null) await _publishToken(token);
     } catch (error) {
       _log('getToken failed: ${error.runtimeType}');
@@ -238,6 +317,21 @@ class NotificationService {
 
   void _onForegroundMessage(RemoteMessage message) {
     final data = message.data;
+    if (!_isChatPush(data)) {
+      final body = message.notification?.body ?? _bodyFromData(data);
+      if (body == null || kIsWeb) return;
+      unawaited(() async {
+        if (!await ensureLocalNotificationsReady()) return;
+        await _showGeneralNotification(
+          _localNotifications,
+          title: message.notification?.title ?? _titleFromData(data),
+          body: body,
+          data: data,
+        );
+      }());
+      return;
+    }
+
     final senderID = data[_payloadSenderIDKey]?.toString();
     if (senderID != null &&
         !ActiveChatTracker.instance.shouldNotifyForMessageFrom(senderID)) {
@@ -254,39 +348,58 @@ class NotificationService {
       body: body,
       senderID: senderID,
       chatID: data[_payloadChatIDKey]?.toString(),
+      messageID: data[_payloadMessageIDKey]?.toString(),
     );
   }
 
   void _onMessageOpenedApp(RemoteMessage message) {
-    _dispatchOpenChat(message.data[_payloadSenderIDKey]?.toString());
+    _dispatchOpen(_stringMap(message.data));
   }
 
   void _onNotificationResponse(NotificationResponse response) {
-    _dispatchOpenChat(_senderIDFromPayload(response.payload));
+    // Task reminders share this plugin; their payload is a bare task id, and
+    // tapping one just brings the app forward.
+    final data = _pushPayload(response.payload);
+    if (data == null) return;
+    _dispatchOpen(data);
   }
 
-  void _dispatchOpenChat(String? senderID) {
-    final handler = onOpenChat;
+  void _dispatchOpen(Map<String, String> data) {
+    final handler = onOpen;
     if (handler != null) {
-      handler(senderID);
+      handler(data);
       return;
     }
 
     // Cold launch from a terminated state: the UI isn't ready to navigate yet,
     // so stash the intent for the app to consume once it mounts.
-    setPendingOpenChat(senderID);
+    setPendingOpen(data);
   }
 
-  String? _senderIDFromPayload(String? payload) {
-    if (payload == null || payload.isEmpty) {
-      return null;
-    }
+  /// The decoded payload of a push-driven notification, or null for any other
+  /// notification (e.g. a task reminder).
+  Map<String, String>? _pushPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return null;
     try {
       final data = jsonDecode(payload);
-      return data is Map ? data[_payloadSenderIDKey]?.toString() : null;
+      if (data is! Map) return null;
+      final isPush = data.containsKey(_payloadTypeKey) ||
+          data.containsKey(_payloadSenderIDKey) ||
+          data.containsKey(_payloadChatIDKey);
+      return isPush ? _stringMap(data) : null;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Records [messageID] as shown. Returns false when it was already shown.
+  bool _markShown(String? messageID) {
+    if (messageID == null || messageID.isEmpty) return true;
+    if (!_shownMessageIDs.add(messageID)) return false;
+    if (_shownMessageIDs.length > _recentMessageIDsLimit) {
+      _shownMessageIDs.remove(_shownMessageIDs.first);
+    }
+    return true;
   }
 
   /// Displays a local notification for a new chat message. Used by both the
@@ -301,10 +414,14 @@ class NotificationService {
     required String body,
     String? senderID,
     String? chatID,
+    String? messageID,
   }) async {
     // No local-notification plugin on web; the browser/service worker handles
     // display there.
     if (kIsWeb) return;
+    // In the foreground a message can arrive over both the socket and FCM.
+    if (!_markShown(messageID)) return;
+    if (!await ensureLocalNotificationsReady()) return;
     final payload = jsonEncode({
       if (senderID != null) _payloadSenderIDKey: senderID,
       if (chatID != null) _payloadChatIDKey: chatID,
@@ -463,13 +580,71 @@ Future<void> _updateMessagesGroupSummary(
 /// The device owner, shown for MessagingStyle notifications as the "you" side.
 const Person _me = Person(name: 'شما');
 
-AndroidNotificationChannel _messagesChannel() =>
+Future<void> _createChannels(FlutterLocalNotificationsPlugin plugin) async {
+  final android = plugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>();
+  if (android == null) return;
+  await android.createNotificationChannel(
     const AndroidNotificationChannel(
       kMessagesChannelId,
       _messagesChannelName,
       description: _messagesChannelDescription,
       importance: Importance.high,
-    );
+    ),
+  );
+  await android.createNotificationChannel(
+    const AndroidNotificationChannel(
+      _generalChannelId,
+      _generalChannelName,
+      description: _generalChannelDescription,
+      importance: Importance.high,
+    ),
+  );
+}
+
+/// Whether a push carries a chat message rather than another kind of alert.
+bool _isChatPush(Map<String, dynamic> data) {
+  final type = data[_payloadTypeKey]?.toString();
+  return type == null || type.isEmpty || type == kPushTypeNewMessage;
+}
+
+Map<String, String> _stringMap(Map<dynamic, dynamic> data) => {
+      for (final entry in data.entries)
+        if (entry.value != null) entry.key.toString(): entry.value.toString(),
+    };
+
+/// Shows a non-chat push (friend request, payment result, multiplier
+/// reminder) as a plain notification. A newer push about the same thing
+/// replaces the older one instead of stacking.
+Future<void> _showGeneralNotification(
+  FlutterLocalNotificationsPlugin plugin, {
+  required String title,
+  required String body,
+  required Map<String, dynamic> data,
+}) async {
+  final type = data[_payloadTypeKey]?.toString() ?? '';
+  final subject = data['friendshipID'] ?? data['attemptID'] ?? '';
+  final id = '$type:$subject'.hashCode & 0x7fffffff;
+  await plugin.show(
+    id,
+    title,
+    body,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        _generalChannelId,
+        _generalChannelName,
+        channelDescription: _generalChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@drawable/ic_stat_notification',
+        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+        styleInformation: BigTextStyleInformation(body),
+      ),
+      iOS: const DarwinNotificationDetails(),
+    ),
+    payload: jsonEncode(_stringMap(data)),
+  );
+}
 
 String _titleFromData(Map<String, dynamic> data) {
   final title = data['title']?.toString();

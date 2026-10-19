@@ -52,6 +52,7 @@ class AppTabsShell extends StatefulWidget {
   final int initialIndex;
 
   static const int home = 0;
+  static const int profile = 4;
 
   /// The tab on screen; [AppTabRevisit] listens to it.
   static final ValueNotifier<int> selectedTab = ValueNotifier(home);

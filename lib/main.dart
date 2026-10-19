@@ -11,7 +11,6 @@ import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'firebase_options.dart';
 import 'data/auth/token_storage.dart';
@@ -36,15 +35,15 @@ import 'package:simo_learn/features/goals/goals_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
-  //
-  // FirebaseMessaging.onBackgroundMessage(
-  //   firebaseMessagingBackgroundHandler,
-  // );
-  //
-  // await NotificationService.instance.initialize();
+  // Push setup talks to Google, which can be slow or blocked on some
+  // networks, so it runs alongside the first screen instead of before it.
+  unawaited(
+    NotificationService.instance.initialize(
+      initializeFirebase: () => Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ),
+    ),
+  );
 
   final tokenStorage = await TokenStorage.create();
 

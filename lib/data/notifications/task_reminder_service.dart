@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'notification_service.dart';
+
 const String _channelId = 'task_reminders_channel';
 const String _channelName = 'یادآوری تسک‌ها';
 const String _channelDescription = 'یادآوری زمان انجام تسک‌ها';
@@ -22,8 +24,8 @@ const Map<String, int> _weekdayNumbers = {
   'SUN': DateTime.sunday,
 };
 
-/// Schedules and cancels local task reminders. Independent from the FCM
-/// [NotificationService] so reminders work without Firebase.
+/// Schedules and cancels local task reminders. Uses only the local half of
+/// [NotificationService], so reminders work without Firebase.
 ///
 /// Every task owns a block of 8 notification ids derived from its id: slot 0
 /// for a one-off (date) reminder and slots 1..7 for weekly reminders, so
@@ -44,16 +46,11 @@ class TaskReminderService {
       tzdata.initializeTimeZones();
       tz.setLocalLocation(_deviceLocation());
 
-      await _plugin.initialize(
-        const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/launcher_icon'),
-          iOS: DarwinInitializationSettings(
-            requestAlertPermission: false,
-            requestBadgePermission: false,
-            requestSoundPermission: false,
-          ),
-        ),
-      );
+      // The plugin is shared with chat notifications; initializing it again
+      // here would replace the tap handler chat relies on.
+      if (!await NotificationService.instance.ensureLocalNotificationsReady()) {
+        return false;
+      }
       await _plugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(

@@ -21,7 +21,7 @@ class ActiveChatTracker {
   String? _openConversationUserID;
 
   /// Whether the app is currently in the foreground.
-  bool _appInForeground = true;
+  bool appInForeground = true;
 
   /// The signed-in user's id, used to ignore self-sent messages.
   String? _currentUserID;
@@ -33,8 +33,6 @@ class ActiveChatTracker {
     if (value == null || value.isEmpty) return;
     _currentUserID = value;
   }
-
-  set appInForeground(bool value) => _appInForeground = value;
 
   /// Marks a conversation (identified by the other user's id) as open.
   void openConversation(String? otherUserID) {
@@ -63,7 +61,7 @@ class ActiveChatTracker {
     if (_currentUserID != null && senderID == _currentUserID) return false;
 
     // Suppress only when the user is actively reading that exact conversation.
-    final isViewingSender = _appInForeground &&
+    final isViewingSender = appInForeground &&
         _openConversationUserID != null &&
         _openConversationUserID == senderID;
     return !isViewingSender;
