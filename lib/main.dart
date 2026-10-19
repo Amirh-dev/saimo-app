@@ -1,10 +1,11 @@
 export 'package:simo_learn/app/app.dart';
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
 import 'package:simo_learn/data/app_update/app_update_check.dart';
-import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
@@ -76,14 +77,13 @@ Future<void> main() async {
         "${tokenStorage.currentAccessToken} <-",
   );
 
-  // Load public tags before the app starts so they are available
-  // as the fallback for title-based tag suggestions.
-  await globalDataRepository.loadParentTags();
-
-  final tags = GlobalData.instance.parentTags;
-
-  debugPrint(
-    "TAGS: $tags",
+  // Public tags are the fallback for title-based tag suggestions, read only
+  // once a task form opens. Load them alongside the first screen: awaiting a
+  // network call here kept the page blank until it answered.
+  unawaited(
+    globalDataRepository.loadParentTags().catchError((Object error) {
+      debugPrint('Failed loading parent tags: $error');
+    }),
   );
 
   // Web only: watch for a newer release while this tab stays open.
