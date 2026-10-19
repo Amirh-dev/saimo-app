@@ -95,22 +95,29 @@ class MyApp extends StatelessWidget {
           navigatorKey: _rootNavigatorKey,
           navigatorObservers: [TaskTimerBannerRouteObserver()],
           builder: (context, child) {
-            return Stack(
-              children: [
-                child ?? const SizedBox.shrink(),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: TaskTimerBanner(navigatorKey: _rootNavigatorKey),
-                ),
-                TaskReportPrompt(navigatorKey: _rootNavigatorKey),
-                SimoGuardNotice(navigatorKey: _rootNavigatorKey),
-                // Web only: a newer release is out and this tab is on the old
-                // one.
-                const Align(
-                  alignment: Alignment.topCenter,
-                  child: AppUpdateBanner(),
-                ),
-              ],
+            // Pin the direction: left alone it follows the browser/device
+            // language, and a Persian one mirrors every screen laid out by
+            // hand (the header put the counselor button on the right). RTL
+            // screens wrap themselves in their own Directionality.
+            return Directionality(
+              textDirection: TextDirection.ltr,
+              child: Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: TaskTimerBanner(navigatorKey: _rootNavigatorKey),
+                  ),
+                  TaskReportPrompt(navigatorKey: _rootNavigatorKey),
+                  SimoGuardNotice(navigatorKey: _rootNavigatorKey),
+                  // Web only: a newer release is out and this tab is on the old
+                  // one.
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: AppUpdateBanner(),
+                  ),
+                ],
+              ),
             );
           },
           title: AppStrings.appName,
@@ -433,8 +440,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       if (token != null) unawaited(_registerDeviceToken(token));
       // A notification tapped before login (or from a cold launch) is opened
       // now that we're authenticated and can navigate.
-      NotificationService.instance
-          .consumePendingOpen(_openFromNotification);
+      NotificationService.instance.consumePendingOpen(_openFromNotification);
       final payment = _pendingPaymentReturn;
       _pendingPaymentReturn = null;
       if (payment != null) unawaited(_showPaymentReturn(payment));
