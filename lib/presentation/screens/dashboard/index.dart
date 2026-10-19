@@ -6,15 +6,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
+import 'package:simo_learn/presentation/screens/dashboard/live_tasks.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
@@ -31,8 +35,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen>
-    with AppTabRevisit {
+class _DashboardScreenState extends State<DashboardScreen> with AppTabRevisit {
   Timer? _consultantPopupTimer;
 
   @override
@@ -61,7 +64,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) => AppExitGuard(
-        child: BlocBuilder<DashboardCubit, DashboardState>(
+        child: BlocConsumer<DashboardCubit, DashboardState>(
+          listenWhen: (previous, current) =>
+              previous.tasksFetchedAt != current.tasksFetchedAt,
+          listener: (context, state) => _adoptServerTimer(state.tasks),
           builder: (context, state) {
             return Scaffold(
               backgroundColor: AppColors.gray1,
@@ -74,6 +80,30 @@ class _DashboardScreenState extends State<DashboardScreen>
           },
         ),
       );
+
+  /// A timer still running on the server (say, the app was closed while it
+  /// ran) becomes the app's live timer again, as the tasks tab does, so the
+  /// home, the banner and the timer screen all count the same seconds. Only
+  /// from a fresh server list: a cached one may be out of date.
+  void _adoptServerTimer(List<DashboardTaskItem>? tasks) {
+    final timer = TaskTimerService.instance;
+    if (tasks == null || timer.isRunning) return;
+    for (final task in tasks) {
+      final startedAt = task.timerStartedAt;
+      if (!task.isRunning || startedAt == null) continue;
+      timer.bindRepository(
+        TaskTimerRepository(context.read<GraphQLRepository>()),
+      );
+      timer.resumeRunning(
+        taskId: task.id,
+        totalSeconds: task.maxDuration * 60,
+        elapsedSeconds: task.elapsedSeconds,
+        startedAt: startedAt,
+        taskData: task.toMap(),
+      );
+      return;
+    }
+  }
 }
 
 class _DashboardContent extends StatelessWidget {
@@ -110,7 +140,19 @@ class _DashboardContent extends StatelessWidget {
                     ready: state.profile != null,
                     skeleton: const _SkeletonUserInfo(),
                     onRetry: cubit.retry,
-                    builder: () => _ProfileCard(state: state),
+                    // The study box counts on while a timer runs.
+                    builder: () => ListenableBuilder(
+                      listenable: TaskTimerService.instance,
+                      builder: (context, _) => _ProfileCard(
+                        state: state,
+                        studiedSeconds: state.consistency == null
+                            ? null
+                            : liveStudiedSeconds(
+                                state.consistency!,
+                                TaskTimerService.instance,
+                              ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _goals(context),
@@ -120,15 +162,26 @@ class _DashboardContent extends StatelessWidget {
                     ready: tasks != null,
                     skeleton: const _SkeletonActivity(),
                     onRetry: cubit.retry,
-                    builder: () => TodayActivityWidget(
-                      date: JalaliText.fullDay(Jalali.now()),
-                      tasks: tasks!,
-                      consistency: state.consistency,
-                      onAllTasksTap: () => navigateToIndex(context, 1, 0),
-                      onAddTap: () => context.to(
-                        AddTimedTaskScreen(onBack: cubit.load),
+                    // Rebuilt by the app's live timer: a task started,
+                    // paused or finished anywhere shows here at once, and a
+                    // running one fills second by second.
+                    builder: () => ListenableBuilder(
+                      listenable: TaskTimerService.instance,
+                      builder: (context, _) => TodayActivityWidget(
+                        date: JalaliText.fullDay(Jalali.now()),
+                        tasks: liveTodayTasks(
+                          tasks!,
+                          TaskTimerService.instance,
+                        ),
+                        consistency: state.consistency,
+                        onAllTasksTap: () => navigateToIndex(context, 1, 0),
+                        onAddTap: () => context.to(
+                          AddTimedTaskScreen(onBack: cubit.load),
+                        ),
+                        onOpenTask: (task) => context.to<void>(
+                          TaskTimerScreen(task: task.toMap(), onPop: () {}),
+                        ),
                       ),
-                      onOpenTask: (task) => _openTask(context, task),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -139,13 +192,6 @@ class _DashboardContent extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// The task's timer; back on the home, its progress shows at once.
-  Future<void> _openTask(BuildContext context, DashboardTaskItem task) async {
-    final cubit = context.read<DashboardCubit>();
-    await context.to<void>(TaskTimerScreen(task: task.toMap(), onPop: () {}));
-    unawaited(cubit.load());
   }
 
   Widget _goals(BuildContext context) {
@@ -198,9 +244,12 @@ class _DashboardContent extends StatelessWidget {
 /// The user, their plan, and the two numbers that keep them going: today's
 /// study and the score multiplier.
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.state});
+  const _ProfileCard({required this.state, this.studiedSeconds});
 
   final DashboardState state;
+
+  /// Today's study up to this second; null until the server has answered.
+  final int? studiedSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -274,9 +323,9 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MetricCard(
-                    value: consistency == null
+                    value: studiedSeconds == null
                         ? '—'
-                        : _clock(consistency.studiedSeconds),
+                        : _clock(studiedSeconds!),
                     label: 'مطالعه‌ی امروز',
                     color: AppColors.secondary,
                     icon: const Icon(
@@ -326,7 +375,9 @@ class _ProfileCard extends StatelessWidget {
     if (consistency.countedToday) return 'امروز حساب شد';
     if (!consistency.hasPlan) return 'بدون برنامه';
     final minutes = consistency.remainingMinutes;
-    if (consistency.level >= consistency.maxLevel) return '$minutes دقیقه مانده';
+    if (consistency.level >= consistency.maxLevel) {
+      return '$minutes دقیقه مانده';
+    }
     return '$minutes دقیقه تا ${consistency.level + 1}×';
   }
 
@@ -939,8 +990,8 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
                   height: 50,
                   decoration: BoxDecoration(
                     color: const Color(0xFFE6E7EB).withAlpha(160),
-                    borderRadius:
-                        const BorderRadius.vertical(bottom: Radius.circular(50)),
+                    borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(50)),
                   ),
                 ),
               ),
@@ -1000,9 +1051,9 @@ class _GoalsCarouselWidgetState extends State<GoalsCarouselWidget> {
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(100),
                 ),
-                child: ReText(
-                  '${_currentPage + 1}/$count',
-                  fontSize: 11.5,
+                child: OutOfText(
+                  _currentPage + 1,
+                  count,
                   fontWeight: FontWeight.w900,
                 ),
               ),

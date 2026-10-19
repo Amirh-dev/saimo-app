@@ -73,7 +73,8 @@ void main() {
     expect(find.text('ادامه'), findsOneWidget);
     expect(find.text('۱۰۰ از ۱۲۰ دقیقه، ۲۰ دقیقه مانده'), findsOneWidget);
     // Minutes under a capsule always say they are minutes.
-    expect(find.text('۲۵/۶۰'), findsOneWidget);
+    expect(find.widgetWithText(OutOfText, '۲۵'), findsOneWidget);
+    expect(find.widgetWithText(OutOfText, '۶۰'), findsOneWidget);
     expect(find.text('دقیقه'), findsNWidgets(3));
 
     await tester.tap(find.text('ادامه'));

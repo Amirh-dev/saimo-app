@@ -64,8 +64,16 @@ class _FakePinnedStore implements PinnedGoalStore {
   Future<void> write(String? id) async => this.id = id;
 }
 
-DashboardCubit _cubit(_FakeRepository repository, {String? pinned}) =>
-    DashboardCubit(repository, pinnedStore: _FakePinnedStore(pinned));
+DashboardCubit _cubit(
+  _FakeRepository repository, {
+  String? pinned,
+  Duration settle = Duration.zero,
+}) =>
+    DashboardCubit(
+      repository,
+      pinnedStore: _FakePinnedStore(pinned),
+      settle: settle,
+    );
 
 class _FakeRepository implements DashboardRepository {
   DashboardCache cache = const DashboardCache();
@@ -74,7 +82,14 @@ class _FakeRepository implements DashboardRepository {
   Completer<List<DashboardTask>> tasks = Completer();
   Completer<DashboardConsistency> consistency = Completer();
   int fetches = 0;
+  int goalFetches = 0;
+  int taskFetches = 0;
+  int consistencyFetches = 0;
   bool cleared = false;
+  final changes = StreamController<String>.broadcast();
+
+  @override
+  Stream<String> get serverChanges => changes.stream;
 
   @override
   Future<DashboardCache> readCache() async => cache;
@@ -89,13 +104,22 @@ class _FakeRepository implements DashboardRepository {
   }
 
   @override
-  Future<List<DashboardGoal>> getGoals() => goals.future;
+  Future<List<DashboardGoal>> getGoals() {
+    goalFetches++;
+    return goals.future;
+  }
 
   @override
-  Future<List<DashboardTask>> getTasks() => tasks.future;
+  Future<List<DashboardTask>> getTasks() {
+    taskFetches++;
+    return tasks.future;
+  }
 
   @override
-  Future<DashboardConsistency> getConsistency() => consistency.future;
+  Future<DashboardConsistency> getConsistency() {
+    consistencyFetches++;
+    return consistency.future;
+  }
 
   void answerAll() {
     profile.complete(_profile);
@@ -301,5 +325,61 @@ void main() {
     expect(cubit.state.goals!.map((goal) => goal.title),
         ['far', 'near', 'none']);
     expect(cubit.state.pinnedGoalId, 'far');
+  });
+
+  test('a task written anywhere refreshes today and the multiplier, once',
+      () async {
+    final repository = _FakeRepository();
+    final cubit = _cubit(repository, settle: const Duration(milliseconds: 20));
+    addTearDown(cubit.close);
+    repository.answerAll();
+    await cubit.load();
+    expect(repository.taskFetches, 1);
+
+    repository.renew();
+    repository.answerAll();
+    // Switching timers is two writes: pausing one task and starting another.
+    repository.changes
+      ..add('PauseTimedTask')
+      ..add('StartTimedTask');
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+
+    expect(repository.taskFetches, 2);
+    expect(repository.consistencyFetches, 2);
+    expect(repository.goalFetches, 1);
+    expect(repository.fetches, 1);
+    expect(cubit.state.tasksFetchedAt, isNotNull);
+  });
+
+  test('a goal write refreshes the goals; others leave the home alone',
+      () async {
+    final repository = _FakeRepository();
+    final cubit = _cubit(repository);
+    addTearDown(cubit.close);
+    repository.answerAll();
+    await cubit.load();
+    repository.renew();
+    repository.answerAll();
+
+    repository.changes
+      ..add('UpdateGoal')
+      ..add('SendMessage');
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(repository.goalFetches, 2);
+    expect(repository.taskFetches, 1);
+    expect(repository.consistencyFetches, 1);
+  });
+
+  test('which sections a write touches, by its name', () {
+    expect(DashboardCubit.sectionsChangedBy('CompleteTimedTask'),
+        {DashboardSection.tasks, DashboardSection.consistency});
+    expect(DashboardCubit.sectionsChangedBy('SaveTaskReport'),
+        {DashboardSection.tasks, DashboardSection.consistency});
+    expect(DashboardCubit.sectionsChangedBy('DeleteGoal'),
+        {DashboardSection.goals});
+    expect(DashboardCubit.sectionsChangedBy('UpdateProfile'),
+        {DashboardSection.profile});
+    expect(DashboardCubit.sectionsChangedBy('RefreshToken'), isEmpty);
   });
 }

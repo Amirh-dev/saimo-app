@@ -15,8 +15,13 @@ class DashboardState extends Equatable {
     this.tasks,
     this.consistency,
     this.pinnedGoalId,
+    this.tasksFetchedAt,
     this.failed = const {},
   });
+
+  /// When [tasks] last came from the server rather than the disk cache;
+  /// only such a list may say which timer is running right now.
+  final DateTime? tasksFetchedAt;
 
   final ProfileUser? profile;
 
@@ -40,6 +45,7 @@ class DashboardState extends Equatable {
     DashboardConsistency? consistency,
     String? pinnedGoalId,
     bool clearPinnedGoal = false,
+    DateTime? tasksFetchedAt,
     Set<DashboardSection>? failed,
   }) {
     return DashboardState(
@@ -49,11 +55,19 @@ class DashboardState extends Equatable {
       consistency: consistency ?? this.consistency,
       pinnedGoalId:
           clearPinnedGoal ? null : pinnedGoalId ?? this.pinnedGoalId,
+      tasksFetchedAt: tasksFetchedAt ?? this.tasksFetchedAt,
       failed: failed ?? this.failed,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [profile, goals, tasks, consistency, pinnedGoalId, failed];
+  List<Object?> get props => [
+        profile,
+        goals,
+        tasks,
+        consistency,
+        pinnedGoalId,
+        tasksFetchedAt,
+        failed,
+      ];
 }

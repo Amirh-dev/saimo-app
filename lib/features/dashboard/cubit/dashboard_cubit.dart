@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
@@ -10,11 +12,56 @@ class DashboardCubit extends Cubit<DashboardState> {
   DashboardCubit(
     this._repository, {
     PinnedGoalStore pinnedStore = const PinnedGoalStore(),
+    Duration settle = const Duration(milliseconds: 600),
   })  : _pinnedStore = pinnedStore,
-        super(const DashboardState());
+        _settle = settle,
+        super(const DashboardState()) {
+    _changes = _repository.serverChanges.listen(_onServerChange);
+  }
 
   final DashboardRepository _repository;
   final PinnedGoalStore _pinnedStore;
+
+  /// How long writes may keep coming before the home refreshes for them, so
+  /// a burst (pausing one timer and starting another) is fetched once.
+  final Duration _settle;
+  late final StreamSubscription<String> _changes;
+  final Set<DashboardSection> _changed = {};
+  Timer? _settleTimer;
+
+  /// The home sections a write changes, by its mutation's name: any task
+  /// write moves today's tasks and the multiplier; a goal write, the goals;
+  /// a profile write, the profile.
+  static Set<DashboardSection> sectionsChangedBy(String mutation) => {
+        if (mutation.contains('Task')) ...const [
+          DashboardSection.tasks,
+          DashboardSection.consistency,
+        ],
+        if (mutation.contains('Goal')) DashboardSection.goals,
+        if (mutation.contains('Profile')) DashboardSection.profile,
+      };
+
+  void _onServerChange(String mutation) {
+    final sections = sectionsChangedBy(mutation);
+    if (sections.isEmpty || isClosed) return;
+    _changed.addAll(sections);
+    _settleTimer?.cancel();
+    _settleTimer = Timer(_settle, () {
+      final changed = {..._changed};
+      _changed.clear();
+      final session = _session;
+      unawaited(Future.wait([
+        for (final section in changed) _refreshSection(session, section),
+      ]));
+    });
+  }
+
+  @override
+  Future<void> close() async {
+    _settleTimer?.cancel();
+    await _changes.cancel();
+    return super.close();
+  }
 
   bool _cacheRestored = false;
   Future<void>? _loading;
@@ -47,6 +94,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     _session++;
     _loading = null;
     _cacheRestored = false;
+    _settleTimer?.cancel();
+    _changed.clear();
     if (!isClosed) emit(const DashboardState());
     try {
       await _repository.clearCache();
@@ -63,49 +112,58 @@ class DashboardCubit extends Cubit<DashboardState> {
       await _restoreCache(session);
     }
     await Future.wait([
-      _refresh(
-        session,
-        DashboardSection.profile,
-        hasData: () => state.profile != null,
-        fetch: () async {
-          final profile = await _repository.getProfile();
-          return state.copyWith(profile: profile);
-        },
-      ),
-      _refresh(
-        session,
-        DashboardSection.goals,
-        hasData: () => state.goals != null,
-        fetch: () async {
-          final goals = await _repository.getGoals();
-          final pinned = await _pinnedStore.read();
-          return state.copyWith(
-            goals: _homeGoals(goals, pinned),
-            pinnedGoalId: pinned,
-            clearPinnedGoal: pinned == null,
-          );
-        },
-      ),
-      _refresh(
-        session,
-        DashboardSection.tasks,
-        hasData: () => state.tasks != null,
-        fetch: () async {
-          final tasks = await _repository.getTasks();
-          return state.copyWith(tasks: _todayTasks(tasks));
-        },
-      ),
-      _refresh(
-        session,
-        DashboardSection.consistency,
-        hasData: () => state.consistency != null,
-        fetch: () async {
-          final consistency = await _repository.getConsistency();
-          return state.copyWith(consistency: consistency);
-        },
-      ),
+      for (final section in DashboardSection.values)
+        _refreshSection(session, section),
     ]);
   }
+
+  Future<void> _refreshSection(int session, DashboardSection section) =>
+      switch (section) {
+        DashboardSection.profile => _refresh(
+            session,
+            section,
+            hasData: () => state.profile != null,
+            fetch: () async {
+              final profile = await _repository.getProfile();
+              return state.copyWith(profile: profile);
+            },
+          ),
+        DashboardSection.goals => _refresh(
+            session,
+            section,
+            hasData: () => state.goals != null,
+            fetch: () async {
+              final goals = await _repository.getGoals();
+              final pinned = await _pinnedStore.read();
+              return state.copyWith(
+                goals: _homeGoals(goals, pinned),
+                pinnedGoalId: pinned,
+                clearPinnedGoal: pinned == null,
+              );
+            },
+          ),
+        DashboardSection.tasks => _refresh(
+            session,
+            section,
+            hasData: () => state.tasks != null,
+            fetch: () async {
+              final tasks = await _repository.getTasks();
+              return state.copyWith(
+                tasks: _todayTasks(tasks),
+                tasksFetchedAt: DateTime.now(),
+              );
+            },
+          ),
+        DashboardSection.consistency => _refresh(
+            session,
+            section,
+            hasData: () => state.consistency != null,
+            fetch: () async {
+              final consistency = await _repository.getConsistency();
+              return state.copyWith(consistency: consistency);
+            },
+          ),
+      };
 
   /// Fills sections the screen has nothing for yet from the last session.
   Future<void> _restoreCache(int session) async {
@@ -205,6 +263,7 @@ class DashboardCubit extends Cubit<DashboardState> {
       elapsedSeconds: task.elapsedSeconds.clamp(0, maxSeconds),
       isDone: isDone,
       isRunning: isRunning,
+      timerStartedAt: isRunning ? task.timerStartedAt!.toLocal() : null,
       doneDuration: (elapsedSeconds / 60).floor(),
       maxDuration: maxDuration,
       durationText: maxDuration > 0 ? '$maxDuration' : '--',

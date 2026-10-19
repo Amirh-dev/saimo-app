@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ferry/ferry.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gql/ast.dart';
 import 'package:gql_http_link/gql_http_link.dart';
 import 'package:http/http.dart' as http;
 import 'package:simo_learn/data/auth/token_storage.dart';
@@ -50,8 +51,43 @@ class GraphQLRepository {
   Future<String?>? _refreshFuture;
   int _authSessionRevision = 0;
   final _sessionExpiredController = StreamController<void>.broadcast();
+  final _completedMutations = StreamController<String>.broadcast();
 
   Stream<void> get sessionExpired => _sessionExpiredController.stream;
+
+  /// The name of every mutation the server accepts, from any screen, as in
+  /// `mutation StartTimedTask`. A screen showing data that some write may
+  /// change listens here, so writers never have to know who to tell.
+  Stream<String> get completedMutations => _completedMutations.stream;
+
+  /// The operation name when [query] is a mutation («» when unnamed), null
+  /// for anything else.
+  @visibleForTesting
+  static String? mutationNameOf(String query) {
+    final source = query.replaceAll(RegExp(r'#[^\n]*'), '');
+    final match = RegExp(r'^\s*mutation\b\s*([A-Za-z_]\w*)?').firstMatch(source);
+    if (match == null) return null;
+    return match.group(1) ?? '';
+  }
+
+  void _reportMutation(String name) {
+    if (!_completedMutations.isClosed) _completedMutations.add(name);
+  }
+
+  /// A mutation's answer from the server itself, with data and no errors.
+  static bool _isAcceptedMutation<TData, TVars>(
+    OperationRequest<TData, TVars> request,
+    OperationResponse<TData, TVars> response,
+  ) {
+    if (response.dataSource != DataSource.Link ||
+        response.hasErrors ||
+        response.data == null) {
+      return false;
+    }
+    return request.operation.document.definitions
+        .whereType<OperationDefinitionNode>()
+        .any((definition) => definition.type == OperationType.mutation);
+  }
 
   Stream<OperationResponse<TData, TVars>> request<TData, TVars>(
     OperationRequest<TData, TVars> request, {
@@ -207,6 +243,9 @@ class GraphQLRepository {
       if (errors is List && errors.isNotEmpty) {
         throw GraphQLRawException(graphQLRawErrorMessage(decoded));
       }
+
+      final mutation = mutationNameOf(query);
+      if (mutation != null) _reportMutation(mutation);
 
       final data = decoded['data'];
       if (data is Map<String, dynamic>) return data;
@@ -376,6 +415,9 @@ class GraphQLRepository {
         responseIndex += 1;
         _logGetChatMessagesResponse(request, response, responseIndex);
         _logger.logResponse(request, response);
+        if (_isAcceptedMutation(request, response)) {
+          _reportMutation(request.operation.operationName ?? '');
+        }
         yield response;
       }
     } catch (error, stackTrace) {

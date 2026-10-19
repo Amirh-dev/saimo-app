@@ -51,6 +51,7 @@ dependencies:
   ferry: 0.16.1+2
   gql_http_link: 1.1.0
   gql_link: 1.0.0+1
+  gql: 1.0.1
   built_value: 8.10.1
   built_collection: 5.1.1
   gql_code_builder_serializers: 0.1.0

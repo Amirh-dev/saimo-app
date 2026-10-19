@@ -14,6 +14,8 @@ class _Tab extends StatefulWidget {
 }
 
 class _TabState extends State<_Tab> with AppTabRevisit {
+  static final Map<int, _TabState> live = {};
+
   int _taps = 0;
 
   @override
@@ -22,6 +24,7 @@ class _TabState extends State<_Tab> with AppTabRevisit {
   @override
   void initState() {
     super.initState();
+    live[widget.index] = this;
     widget.log.add('load ${widget.index}');
   }
 
@@ -115,6 +118,28 @@ void main() {
     await tester.tap(find.text('go 0->1'));
     await tester.pumpAndSettle();
     expect(log.last, 'refresh 1');
+  });
+
+  testWidgets('a tab whose data changed elsewhere refreshes on return at once',
+      (tester) async {
+    final log = await _pumpShell(tester);
+    await tester.tap(find.text('go 0->1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('go 1->0'));
+    await tester.pumpAndSettle();
+
+    // Say a task was written from the home while the tasks tab was away.
+    _TabState.live[1]!.markStale();
+    await tester.tap(find.text('go 0->1'));
+    await tester.pumpAndSettle();
+    expect(log.last, 'refresh 1');
+
+    // Once refreshed, the gap applies again.
+    await tester.tap(find.text('go 1->0'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('go 0->1'));
+    await tester.pumpAndSettle();
+    expect(log.where((entry) => entry == 'refresh 1'), hasLength(1));
   });
 
   testWidgets('back on another tab goes home first', (tester) async {

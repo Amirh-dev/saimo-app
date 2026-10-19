@@ -322,6 +322,11 @@ mixin AppTabRevisit<T extends StatefulWidget> on State<T> {
 
   DateTime _lastRefresh = DateTime.now();
   bool _isSelected = false;
+  bool _stale = false;
+
+  /// What the tab shows changed somewhere else; the next return to it
+  /// refreshes even within [revisitGap].
+  void markStale() => _stale = true;
 
   @override
   void initState() {
@@ -348,7 +353,8 @@ mixin AppTabRevisit<T extends StatefulWidget> on State<T> {
       return;
     }
     final now = DateTime.now();
-    if (now.difference(_lastRefresh) < revisitGap) return;
+    if (!_stale && now.difference(_lastRefresh) < revisitGap) return;
+    _stale = false;
     _lastRefresh = now;
     onTabRevisited();
   }

@@ -93,6 +93,7 @@ class _TasksScreenState extends State<TasksScreen>
   List<Map<String, dynamic>> _timedTasks = [];
   bool _isLoadingTasks = false;
   final TaskTimerService _timer = TaskTimerService.instance;
+  StreamSubscription<String>? _taskWrites;
   final ScrollController _timedListController = ScrollController();
 
   /// Tasks created a moment ago; their rows animate in once.
@@ -136,6 +137,16 @@ class _TasksScreenState extends State<TasksScreen>
     _timer.addListener(_onGlobalTimerChanged);
     WidgetsBinding.instance.addObserver(this);
 
+    // A task written somewhere else (the home, a timer, another tab) while
+    // this tab is out of sight: reload on the way back, however soon.
+    _taskWrites = context
+        .read<GraphQLRepository>()
+        .completedMutations
+        .where((mutation) => mutation.contains('Task'))
+        .listen((_) {
+      if (AppTabsShell.selectedTab.value != tabIndex) markStale();
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _timer.bindRepository(
           TaskTimerRepository(context.read<GraphQLRepository>()));
@@ -145,6 +156,7 @@ class _TasksScreenState extends State<TasksScreen>
 
   @override
   void dispose() {
+    _taskWrites?.cancel();
     _undoTimer?.cancel();
     _week
       ..removeListener(_onWeekChanged)

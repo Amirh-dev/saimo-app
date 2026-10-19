@@ -73,9 +73,11 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     }
   }
 
-  static String _signature(List<DashboardTaskItem> tasks) => [
-        for (final task in tasks) '${task.id}:${task.percentage.round()}',
-      ].join('|');
+  /// Which tasks the day has. Progress is left out on purpose: a running
+  /// timer moves it every second, and that should fill the capsule, not
+  /// replay the whole entrance.
+  static String _signature(List<DashboardTaskItem> tasks) =>
+      [for (final task in tasks) task.id].join('|');
 
   /// Column [index]'s share of the intro: when it appears, then when it
   /// fills.
@@ -295,20 +297,11 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
   double? _notchCenter(List<TodaySlot> slots, int? suggested, double width) {
     final target = widget.tasks.isEmpty
         ? slots.indexWhere((slot) => slot.kind == TodaySlotKind.add)
-        : slots.indexWhere((slot) => slot.index == suggested && suggested != null);
+        : slots
+            .indexWhere((slot) => slot.index == suggested && suggested != null);
     if (target < 0) return null;
-    var before = 0;
-    var total = 0;
-    for (var i = 0; i < slots.length; i++) {
-      final flex = _flexOf(slots[i], suggested);
-      if (i < target) before += flex;
-      total += flex;
-    }
-    return (before + _flexOf(slots[target], suggested) / 2) / total * width;
+    return (target + 0.5) / slots.length * width;
   }
-
-  static int _flexOf(TodaySlot slot, int? suggested) =>
-      slot.kind == TodaySlotKind.task && slot.index == suggested ? 145 : 100;
 
   Widget _strip(int? suggested, {double? notchCenter}) {
     final tasks = widget.tasks;
@@ -335,8 +328,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
             color: AppColors.done.withValues(alpha: 0.14),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check_rounded,
-              color: AppColors.done, size: 20),
+          child:
+              const Icon(Icons.check_rounded, color: AppColors.done, size: 20),
         ),
         title: 'همه‌ی تسک‌های امروز انجام شد',
         subtitle: _allDoneLine(),
@@ -413,7 +406,6 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
             children: [
               for (var i = 0; i < slots.length; i++)
                 Expanded(
-                  flex: _flexOf(slots[i], suggested),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: _animatedSlot(slots[i], i, suggested),
@@ -554,14 +546,20 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
 }
 
 /// Sizes shared by the chart's columns, so every dot sits on the dashed
-/// line whatever the size of its capsule.
+/// line, the suggested task's larger one included.
 abstract final class _Chart {
   static const double capsule = 93;
-  static const double suggestedCapsule = 107;
-  static const double height = 190;
+  static const double height = 176;
 
-  /// The dot row's center: under the tallest capsule, a gap and half a dot.
-  static const double dotCenter = suggestedCapsule + 8 + 16;
+  static const double dot = 32;
+  static const double suggestedDot = 34;
+
+  /// The gap above and below the suggested dot, a pixel less than the
+  /// others' 8 so its center stays on the line.
+  static const double suggestedGap = 8 - (suggestedDot - dot) / 2;
+
+  /// The dot row's center: under the capsules, a gap and half a dot.
+  static const double dotCenter = capsule + 8 + dot / 2;
 }
 
 /// A task's place in the app's stage colors (orange running, blue partly
@@ -601,22 +599,19 @@ class _TaskColumn extends StatelessWidget {
 
   final DashboardTaskItem task;
 
-  /// The strip's task: wider, taller and lifted on a shadow of its color.
+  /// The strip's task: its dot turns into a solid button in its color.
   final bool suggested;
   final Animation<double> fill;
   final ValueChanged<DashboardTaskItem> onTap;
-  final void Function(BuildContext context, DashboardTaskItem task)
-      onLongPress;
+  final void Function(BuildContext context, DashboardTaskItem task) onLongPress;
 
   static const BorderRadius _capsule = BorderRadius.all(Radius.circular(100));
 
   @override
   Widget build(BuildContext context) {
     final stage = _Stage.of(task);
-    final height = suggested ? _Chart.suggestedCapsule : _Chart.capsule;
     final level = task.isDone ? 1.0 : (task.percentage / 100).clamp(0.0, 1.0);
-    final inProgress =
-        stage == _Stage.running || stage == _Stage.partial;
+    final inProgress = stage == _Stage.running || stage == _Stage.partial;
 
     return Semantics(
       button: true,
@@ -627,115 +622,120 @@ class _TaskColumn extends StatelessWidget {
         onLongPress: () => onLongPress(context, task),
         child: Column(
           children: [
-            SizedBox(
-              height: _Chart.suggestedCapsule,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  height: height,
-                  decoration: BoxDecoration(
-                    borderRadius: _capsule,
-                    color: Colors.white,
-                    boxShadow: suggested
-                        ? [
-                            BoxShadow(
-                              color: (stage == _Stage.idle
-                                      ? AppColors.black1
-                                      : stage.color)
-                                  .withValues(
-                                      alpha: stage == _Stage.idle ? 0.14 : 0.3),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+            Container(
+              height: _Chart.capsule,
+              decoration: const BoxDecoration(
+                borderRadius: _capsule,
+                color: Colors.white,
+              ),
+              // The fill is a plain level clipped by the capsule, so the
+              // bottom stays round however full it gets.
+              child: ClipRRect(
+                borderRadius: _capsule,
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    if (inProgress)
+                      Container(color: stage.color.withValues(alpha: 0.12)),
+                    if (stage != _Stage.idle)
+                      AnimatedBuilder(
+                        animation: fill,
+                        builder: (context, _) => FractionallySizedBox(
+                          heightFactor: level * fill.value,
+                          widthFactor: 1,
+                          child: ColoredBox(color: stage.color),
+                        ),
+                      ),
+                    if (stage == _Stage.idle)
+                      const RotatedBox(
+                        quarterTurns: 3,
+                        child: CustomPaint(
+                          painter: StripedPainter(color: Color(0xFFE5E7EB)),
+                          size: Size(double.infinity, double.infinity),
+                        ),
+                      ),
+                    Center(
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 7),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: stage.labelColor,
                             ),
-                          ]
-                        : null,
-                  ),
-                  // The fill is a plain level clipped by the capsule, so the
-                  // bottom stays round however full it gets.
-                  child: ClipRRect(
-                    borderRadius: _capsule,
-                    child: Stack(
-                      alignment: Alignment.bottomCenter,
-                      children: [
-                        if (inProgress)
-                          Container(
-                              color: stage.color.withValues(alpha: 0.12)),
-                        if (stage != _Stage.idle)
-                          AnimatedBuilder(
-                            animation: fill,
-                            builder: (context, _) => FractionallySizedBox(
-                              heightFactor: level * fill.value,
-                              widthFactor: 1,
-                              child: ColoredBox(color: stage.color),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
                             ),
-                          ),
-                        if (stage == _Stage.idle)
-                          const RotatedBox(
-                            quarterTurns: 3,
-                            child: CustomPaint(
-                              painter: StripedPainter(color: Color(0xFFE5E7EB)),
-                              size: Size(double.infinity, double.infinity),
-                            ),
-                          ),
-                        Center(
-                          child: RotatedBox(
-                            quarterTurns: 3,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 7),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(100),
-                                  color: stage.labelColor,
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: suggested ? 9 : 8,
-                                  vertical: 2,
-                                ),
-                                child: ReText(
-                                  task.title,
-                                  fontSize: suggested ? 10.5 : 10,
-                                  maxLines: 1,
-                                  color: stage == _Stage.idle
-                                      ? Colors.grey.shade600
-                                      : Colors.white,
-                                  fontWeight: suggested
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
+                            child: ReText(
+                              task.title,
+                              fontSize: 10,
+                              maxLines: 1,
+                              color: stage == _Stage.idle
+                                  ? Colors.grey.shade600
+                                  : Colors.white,
+                              fontWeight: FontWeight.w400,
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
-            SizedBox(height: suggested ? 6 : 8),
-            _Dot(
-              size: suggested ? 36 : 32,
-              background: stage == _Stage.idle
-                  ? AppColors.gray2
-                  : stage.color.withValues(alpha: 0.12),
-              child: Icon(
-                stage.icon,
-                // Play and pause point the same way in either direction.
-                textDirection: TextDirection.ltr,
-                size: suggested ? 16 : 14,
-                color: stage.color,
+            // Keeps every dot's center on the dashed line.
+            SizedBox(height: suggested ? _Chart.suggestedGap : 8),
+            if (suggested)
+              _Dot(
+                size: _Chart.suggestedDot,
+                ring: 2,
+                background: stage.color,
+                shadow: stage.color.withValues(alpha: 0.35),
+                child: Icon(
+                  stage.icon,
+                  textDirection: TextDirection.ltr,
+                  size: 15,
+                  color: Colors.white,
+                ),
+              )
+            else
+              _Dot(
+                size: _Chart.dot,
+                background: stage == _Stage.idle
+                    ? AppColors.gray2
+                    : stage.color.withValues(alpha: 0.12),
+                child: Icon(
+                  stage.icon,
+                  // Play and pause point the same way in either direction.
+                  textDirection: TextDirection.ltr,
+                  size: 14,
+                  color: stage.color,
+                ),
               ),
-            ),
-            SizedBox(height: suggested ? 6 : 8),
-            ReText(
-              _minutesLabel(task),
-              fontSize: suggested ? 12.5 : 11.5,
-              fontWeight: suggested ? FontWeight.w900 : FontWeight.w700,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              textAlign: TextAlign.center,
+            SizedBox(height: suggested ? _Chart.suggestedGap : 8),
+            // «۱۰۰ از ۱۲۰» is a little wide for a column; it shrinks rather
+            // than run into the next one.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: (task.isPaused || task.isRunning)
+                  ? OutOfText(
+                      task.doneDuration,
+                      task.maxDuration,
+                      fontWeight:
+                          suggested ? FontWeight.w900 : FontWeight.w700,
+                    )
+                  : ReText(
+                      '${task.maxDuration}',
+                      fontSize: 11.5,
+                      fontWeight:
+                          suggested ? FontWeight.w900 : FontWeight.w700,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.center,
+                    ),
             ),
             ReText(
               'دقیقه',
@@ -750,10 +750,11 @@ class _TaskColumn extends StatelessWidget {
     );
   }
 
-  /// Done/planned while under way, otherwise the planned minutes.
+  /// «۲۵ از ۶۰» while under way, otherwise the planned minutes. Never a
+  /// slash: in Persian «۲۵/۶۰» reads as a decimal.
   static String _minutesLabel(DashboardTaskItem task) =>
       (task.isPaused || task.isRunning)
-          ? '${task.doneDuration}/${task.maxDuration}'
+          ? '${task.doneDuration} از ${task.maxDuration}'
           : '${task.maxDuration}';
 }
 
@@ -769,7 +770,7 @@ class _EmptyColumn extends StatelessWidget {
     final column = Column(
       children: [
         SizedBox(
-          height: _Chart.suggestedCapsule,
+          height: _Chart.capsule,
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -826,7 +827,7 @@ class _MoreColumn extends StatelessWidget {
         child: Column(
           children: [
             SizedBox(
-              height: _Chart.suggestedCapsule,
+              height: _Chart.capsule,
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
@@ -877,13 +878,19 @@ class _Dot extends StatelessWidget {
   const _Dot({
     required this.size,
     required this.background,
+    this.ring = 4,
     this.border,
+    this.shadow,
     this.child,
   });
 
   final double size;
   final Color background;
+
+  /// The white ring around it, over the dashed line.
+  final double ring;
   final Color? border;
+  final Color? shadow;
   final Widget? child;
 
   @override
@@ -891,7 +898,7 @@ class _Dot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(ring),
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.white,
@@ -901,7 +908,17 @@ class _Dot extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: background,
-          border: border == null ? null : Border.all(color: border!, width: 1.5),
+          border:
+              border == null ? null : Border.all(color: border!, width: 1.5),
+          boxShadow: shadow == null
+              ? null
+              : [
+                  BoxShadow(
+                    color: shadow!,
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: child,
       ),
@@ -965,8 +982,10 @@ class _SuggestionStrip extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  if (leading != null) ...[leading!, const SizedBox(width: 10)]
-                  else
+                  if (leading != null) ...[
+                    leading!,
+                    const SizedBox(width: 10)
+                  ] else
                     const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -1163,6 +1182,44 @@ class _TargetMark extends StatelessWidget {
 }
 
 const Color _flameRed = Color(0xFFFF3040);
+
+/// «۲۵ از ۶۰»: two numbers with a quieter «از» between them and even gaps.
+/// Never written with a slash, which in Persian reads as a decimal.
+class OutOfText extends StatelessWidget {
+  const OutOfText(
+    this.part,
+    this.whole, {
+    super.key,
+    this.fontSize = 11.5,
+    this.fontWeight = FontWeight.w700,
+  });
+
+  final int part;
+  final int whole;
+  final double fontSize;
+  final FontWeight fontWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        ReText('$part', fontSize: fontSize, fontWeight: fontWeight),
+        const SizedBox(width: 3),
+        ReText(
+          'از',
+          fontSize: fontSize - 2,
+          fontWeight: FontWeight.w600,
+          color: AppColors.gray,
+        ),
+        const SizedBox(width: 3),
+        ReText('$whole', fontSize: fontSize, fontWeight: fontWeight),
+      ],
+    );
+  }
+}
 
 /// The home's small outlined link buttons («همه تسک‌ها», «همه اهداف»).
 class HomeOutlineButton extends StatelessWidget {

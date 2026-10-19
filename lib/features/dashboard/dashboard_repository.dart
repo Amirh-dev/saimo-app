@@ -28,6 +28,9 @@ class DashboardRepository {
   /// Bumped by [clearCache]; a fetch started before it does not write back.
   int _epoch = 0;
 
+  /// Names of writes the server just accepted, from anywhere in the app.
+  Stream<String> get serverChanges => _graphql.completedMutations;
+
   Future<ProfileUser> getProfile() async {
     final epoch = _epoch;
     final profile = await _profileRepository.getMe();
@@ -213,7 +216,12 @@ class DashboardConsistency {
     required this.targetPercentage,
     required this.remainingSeconds,
     required this.fraction,
+    this.fetchedAt,
   });
+
+  /// When the server worked these numbers out; a timer running since adds
+  /// to today's study on screen.
+  final DateTime? fetchedAt;
 
   /// The level now, already including today once today has counted.
   final int level;
@@ -241,12 +249,16 @@ class DashboardConsistency {
 
   int get remainingMinutes => (remainingSeconds / 60).ceil();
 
-  factory DashboardConsistency.fromJson(Map<String, dynamic> json) {
+  factory DashboardConsistency.fromJson(
+    Map<String, dynamic> json, {
+    DateTime? fetchedAt,
+  }) {
     int toInt(String key, [int fallback = 0]) =>
         (json[key] as num?)?.toInt() ?? fallback;
     double toDouble(String key, double fallback) =>
         (json[key] as num?)?.toDouble() ?? fallback;
     return DashboardConsistency(
+      fetchedAt: fetchedAt ?? DateTime.now(),
       level: toInt('level', 1),
       maxLevel: toInt('maxLevel', 5),
       countedToday: json['countedToday'] == true,
@@ -354,7 +366,40 @@ class DashboardTaskItem {
     required this.elapsedSeconds,
     required this.isDone,
     this.isRunning = false,
+    this.timerStartedAt,
   });
+
+  /// When the server last started its timer, while it runs.
+  final DateTime? timerStartedAt;
+
+  /// The work done so far, in seconds, as [percentage] of the plan.
+  int get progressSeconds =>
+      (percentage / 100 * maxDuration * 60).round().clamp(0, maxDuration * 60);
+
+  /// This task with [seconds] worked, its timer [running] or not, [done] or
+  /// not: how it stands now rather than when it was fetched.
+  DashboardTaskItem withProgress({
+    required int seconds,
+    required bool running,
+    required bool done,
+  }) {
+    final planned = maxDuration * 60;
+    final worked = done ? planned : seconds.clamp(0, planned);
+    return DashboardTaskItem(
+      id: id,
+      title: title,
+      percentage: planned > 0 ? worked * 100 / planned : 0,
+      doneDuration: worked ~/ 60,
+      maxDuration: maxDuration,
+      durationText: durationText,
+      // What the timer screen resumes from: it ignores this while the same
+      // task is ticking, so only a stopped task needs it exact.
+      elapsedSeconds: running ? elapsedSeconds : worked,
+      isDone: done,
+      isRunning: running && !done,
+      timerStartedAt: running && !done ? timerStartedAt : null,
+    );
+  }
 
   final String id;
   final String title;
