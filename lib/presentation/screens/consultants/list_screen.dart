@@ -197,11 +197,17 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
           // browser blocks it as a popup once the request below returns.
           if (kIsWeb) tab = openPaymentTab();
           try {
-            return await checkout.start(
+            final initiation = await checkout.start(
               counselorProfileID: consultant.id,
               durationMonths: duration.months,
               planType: plan.planType,
             );
+            // Send the tab to the bank right away. It has the focus now, so
+            // this tab is in the background, where the browser holds back
+            // frames and the next screen would not build until the student
+            // came back here.
+            tab?.navigate(initiation.redirectURL);
+            return initiation;
           } catch (_) {
             tab?.close();
             tab = null;

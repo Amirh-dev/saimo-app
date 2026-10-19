@@ -61,14 +61,15 @@ void main() {
     return result;
   }
 
-  testWidgets('sends the pre-opened tab to the gateway and waits for the bank',
+  testWidgets('leaves the caller\'s tab on the gateway and waits for the bank',
       (tester) async {
     final tab = _FakeTab();
     var status = 'PENDING';
     final result =
         await open(tester, tab: tab, checkStatus: () async => status);
 
-    expect(tab.visited, [_url]);
+    // The caller navigated it already; a second load would reuse the RefId.
+    expect(tab.visited, isEmpty);
     expect(find.text('در انتظار پرداخت…'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));

@@ -31,8 +31,9 @@ class PaymentTabScreen extends StatefulWidget {
   /// Returns the attempt's stored status (PENDING until the bank returns).
   final Future<String> Function() checkStatus;
 
-  /// A tab opened earlier, inside the confirm tap, so the browser did not
-  /// block it. When null or closed, the screen opens one itself.
+  /// A tab opened inside the confirm tap (so the browser did not block it)
+  /// and already sent to the gateway by the caller. When null, the screen
+  /// opens one itself.
   final PaymentTab? tab;
 
   final PaymentTab? Function([String url]) openTab;
@@ -53,11 +54,10 @@ class _PaymentTabScreenState extends State<PaymentTabScreen> {
   @override
   void initState() {
     super.initState();
-    final tab = widget.tab;
-    if (tab != null && !tab.isClosed) {
-      tab.navigate(widget.redirectURL);
-      _tab = tab;
-    } else {
+    // The caller already sent a given tab to the gateway. Sending it again
+    // would reload the bank page, and Mellat refuses a RefId posted twice.
+    _tab = widget.tab;
+    if (_tab == null) {
       // Outside a tap the browser usually blocks this; the button below then
       // opens it with a fresh tap.
       _tab = widget.openTab(widget.redirectURL);
@@ -66,6 +66,7 @@ class _PaymentTabScreenState extends State<PaymentTabScreen> {
     _timer = Timer.periodic(widget.pollInterval, (_) => _poll());
     // Coming back to this tab after paying: check right away.
     _lifecycle = AppLifecycleListener(onResume: _poll);
+    unawaited(_poll());
   }
 
   @override
