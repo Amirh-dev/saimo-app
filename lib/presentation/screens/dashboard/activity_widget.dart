@@ -775,6 +775,7 @@ class _EmptyColumn extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               height: _Chart.capsule,
+              width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(100),
                 color: add ? Colors.white : const Color(0xFFFAFAFB),
