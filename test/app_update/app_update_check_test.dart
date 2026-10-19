@@ -92,14 +92,20 @@ void main() {
   group('AppUpdateBanner', () {
     Future<AppUpdateCheck> pump(WidgetTester tester, _Server server) async {
       final check = _check(server, running: '1.0.18+40');
+      // Mounted as app.dart does: in MaterialApp.builder, above the
+      // navigator and its Overlay.
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.topCenter,
-              child: AppUpdateBanner(check: check),
-            ),
+          builder: (context, child) => Stack(
+            children: [
+              child!,
+              Align(
+                alignment: Alignment.topCenter,
+                child: AppUpdateBanner(check: check),
+              ),
+            ],
           ),
+          home: const Scaffold(body: SizedBox.expand()),
         ),
       );
       return check;

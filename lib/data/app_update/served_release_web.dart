@@ -47,5 +47,40 @@ Future<void> reloadToLatestRelease() async {
   } catch (_) {
     // No Cache Storage here; nothing to clear.
   }
+  await _refetchAppFiles();
   web.window.location.reload();
+}
+
+/// The files that decide which build starts. Their names stay the same every
+/// release, so the browser's HTTP cache (which no script can clear) may still
+/// hold the old ones; fetching them with `cache: 'reload'` puts the new ones
+/// in their place before the page reloads onto them.
+const _appFiles = [
+  '',
+  'index.html',
+  'flutter_bootstrap.js',
+  'main.dart.wasm',
+  'main.dart.mjs',
+  'main.dart.js',
+  'version.json',
+];
+
+Future<void> _refetchAppFiles() async {
+  final base = Uri.parse(web.document.baseURI);
+  await Future.wait([
+    for (final file in _appFiles) _refetch(base.resolve(file)),
+  ]).timeout(const Duration(seconds: 20), onTimeout: () => const []);
+}
+
+Future<void> _refetch(Uri url) async {
+  try {
+    final response = await web.window
+        .fetch(url.toString().toJS, web.RequestInit(cache: 'reload'))
+        .toDart;
+    // The cache keeps the file once its body has been read in full.
+    await response.arrayBuffer().toDart;
+  } catch (_) {
+    // A file this build does not have (e.g. main.dart.js) or a dropped
+    // connection must not keep the page from reloading.
+  }
 }

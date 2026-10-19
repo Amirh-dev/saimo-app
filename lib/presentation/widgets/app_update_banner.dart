@@ -122,12 +122,15 @@ class _Pill extends StatelessWidget {
                 IconButton(
                   key: const ValueKey('app-update-dismiss'),
                   onPressed: check.updating ? null : check.dismiss,
-                  tooltip: 'بعداً',
+                  // No tooltip: the banner sits above the navigator, where
+                  // there is no Overlay for one, and a tooltip there breaks
+                  // the banner's layout and with it every tap on it.
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(
                     Icons.close_rounded,
                     color: AppColors.gray,
                     size: 18,
+                    semanticLabel: 'بعداً',
                   ),
                 ),
               ],
