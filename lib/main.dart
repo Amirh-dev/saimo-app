@@ -1,6 +1,5 @@
 export 'package:simo_learn/app/app.dart';
 
-import 'package:ferry/ferry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
@@ -113,7 +112,7 @@ Future<void> main() async {
         ),
         RepositoryProvider(
           create: (context) => GoalsRepository(
-            context.read<Client>(),
+            context.read<GraphQLRepository>(),
           ),
         ),
       ],

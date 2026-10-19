@@ -1,8 +1,8 @@
 import 'package:ferry/ferry.dart';
+import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_goal.data.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_goal.req.gql.dart';
-import 'package:simo_learn/graphql/mutations/__generated__/delete_goal.data.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/delete_goal.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/update_goal.data.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/update_goal.req.gql.dart';
@@ -21,16 +21,18 @@ class GoalsFailure implements Exception {
 }
 
 class GoalsRepository {
-  const GoalsRepository(this._client);
+  /// Through [GraphQLRepository], like every other feature, so an expired
+  /// access token is refreshed instead of failing as unauthorized.
+  const GoalsRepository(this._graphql);
 
-  final Client _client;
+  final GraphQLRepository _graphql;
 
   Future<List<Goal>> getGoals() async {
     final request = GGetGoalsReq(
           (b) => b..fetchPolicy = FetchPolicy.NetworkOnly,
     );
 
-    final response = await _client.request(request).first;
+    final response = await _graphql.requestOnce(request);
 
     if (response.hasErrors) {
       throw GoalsFailure(_messageOf(response));
@@ -52,7 +54,7 @@ class GoalsRepository {
         targetDate?.toUtc().toIso8601String(),
     );
 
-    final response = await _client.request(request).first;
+    final response = await _graphql.requestOnce(request);
 
     if (response.hasErrors) {
       throw GoalsFailure(_messageOf(response));
@@ -82,7 +84,7 @@ class GoalsRepository {
         targetDate?.toUtc().toIso8601String(),
     );
 
-    final response = await _client.request(request).first;
+    final response = await _graphql.requestOnce(request);
 
     if (response.hasErrors) {
       throw GoalsFailure(_messageOf(response));
@@ -97,12 +99,38 @@ class GoalsRepository {
     return goal;
   }
 
+  /// Changes only the goal's status, e.g. to mark it reached.
+  Future<GUpdateGoalData_updateGoal> updateStatus({
+    required String id,
+    required GGoalStatus status,
+  }) async {
+    final request = GUpdateGoalReq(
+      (b) => b
+        ..vars.id = id
+        ..vars.input.status = status,
+    );
+
+    final response = await _graphql.requestOnce(request);
+
+    if (response.hasErrors) {
+      throw GoalsFailure(_messageOf(response));
+    }
+
+    final goal = response.data?.updateGoal;
+
+    if (goal == null) {
+      throw const GoalsFailure('وضعیت هدف تغییر نکرد.');
+    }
+
+    return goal;
+  }
+
   Future<bool> deleteGoal(String id) async {
     final request = GDeleteGoalReq(
           (b) => b.vars.id = id,
     );
 
-    final response = await _client.request(request).first;
+    final response = await _graphql.requestOnce(request);
 
     if (response.hasErrors) {
       throw GoalsFailure(_messageOf(response));

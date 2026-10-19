@@ -167,11 +167,16 @@ class DashboardGoal {
     required this.id,
     required this.title,
     this.targetDate,
+    this.status = 'IN_PROGRESS',
   });
 
   final String id;
   final String title;
   final DateTime? targetDate;
+  final String status;
+
+  /// Still being worked toward: not reached and not archived.
+  bool get isRunning => status != 'COMPLETED' && status != 'ARCHIVED';
 
   factory DashboardGoal.fromJson(
       Map<String, dynamic> json,
@@ -182,6 +187,7 @@ class DashboardGoal {
       targetDate: DateTime.tryParse(
         json['targetDate']?.toString() ?? '',
       ),
+      status: json['status']?.toString() ?? 'IN_PROGRESS',
     );
   }
 }

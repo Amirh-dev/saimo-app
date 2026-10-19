@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
-import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
 enum StatisticsPeriod {
   today,
   week,
   month,
+  custom,
 }
 
 enum StatisticsStatus {
@@ -15,193 +16,213 @@ enum StatisticsStatus {
   failure,
 }
 
+/// Today's date, without the time of day.
+Jalali jalaliToday() {
+  final now = Jalali.now();
+  return Jalali(now.year, now.month, now.day);
+}
+
+/// A span of whole days, [first] to [last] inclusive, and what it was picked
+/// as. Weeks start on Saturday.
 class StatisticsRange extends Equatable {
-  const StatisticsRange({
-    required this.start,
-    required this.end,
-    required this.previousStart,
-    required this.previousEnd,
-  });
+  const StatisticsRange._(this.period, this.first, this.last);
 
-  final DateTime start;
-  final DateTime end;
-  final DateTime previousStart;
-  final DateTime previousEnd;
-
+  /// The day, week or month around [anchor] (today by default).
   factory StatisticsRange.forPeriod(
-      StatisticsPeriod period, {
-        Jalali? anchor,
-      }) {
-    final today = anchor ?? Jalali.now();
-
+    StatisticsPeriod period, {
+    Jalali? anchor,
+  }) {
+    final day = _dateOnly(anchor ?? jalaliToday());
     switch (period) {
       case StatisticsPeriod.today:
-        return StatisticsRange._of(
-          today,
-          today.addDays(1),
-          today.addDays(-1),
-          today,
-        );
-
+      case StatisticsPeriod.custom:
+        return StatisticsRange._(period, day, day);
       case StatisticsPeriod.week:
-        final start = today.addDays(
-          -(today.weekDay - 1),
-        );
-
-        return StatisticsRange._of(
-          start,
-          start.addDays(7),
-          start.addDays(-7),
-          start,
-        );
-
+        final first = day.addDays(-(day.weekDay - 1));
+        return StatisticsRange._(period, first, first.addDays(6));
       case StatisticsPeriod.month:
-        final start = Jalali(
-          today.year,
-          today.month,
-          1,
-        );
-
-        return StatisticsRange._of(
-          start,
-          start.addMonths(1),
-          start.addMonths(-1),
-          start,
+        final first = Jalali(day.year, day.month, 1);
+        return StatisticsRange._(
+          period,
+          first,
+          Jalali(day.year, day.month, first.monthLength),
         );
     }
   }
 
-  factory StatisticsRange.custom(
-      Jalali start,
-      Jalali end,
-      ) {
-    final startDate = _midnight(start);
-    final endDate = _midnight(
-      end.addDays(1),
-    );
-
-    final duration = endDate.difference(startDate);
-
-    return StatisticsRange(
-      start: startDate,
-      end: endDate,
-      previousStart: startDate.subtract(duration),
-      previousEnd: startDate,
-    );
+  /// A range the user picked; the two ends may come in either order.
+  factory StatisticsRange.custom(Jalali start, Jalali end) {
+    var first = _dateOnly(start);
+    var last = _dateOnly(end);
+    if (last < first) (first, last) = (last, first);
+    return StatisticsRange._(StatisticsPeriod.custom, first, last);
   }
 
-  factory StatisticsRange._of(
-      Jalali start,
-      Jalali end,
-      Jalali previousStart,
-      Jalali previousEnd,
-      ) {
-    return StatisticsRange(
-      start: _midnight(start),
-      end: _midnight(end),
-      previousStart: _midnight(previousStart),
-      previousEnd: _midnight(previousEnd),
-    );
+  final StatisticsPeriod period;
+  final Jalali first;
+  final Jalali last;
+
+  int get dayCount => last.julianDayNumber - first.julianDayNumber + 1;
+
+  List<Jalali> get days => [
+        for (var i = 0; i < dayCount; i++) first.addDays(i),
+      ];
+
+  bool contains(Jalali day) =>
+      day.julianDayNumber >= first.julianDayNumber &&
+      day.julianDayNumber <= last.julianDayNumber;
+
+  /// Whether today falls in the range.
+  bool get isCurrent => contains(jalaliToday());
+
+  /// Whether the next range has started yet.
+  bool get canGoNext =>
+      last.julianDayNumber < jalaliToday().julianDayNumber;
+
+  /// The range of the same kind and length, [direction] steps away.
+  StatisticsRange shift(int direction) {
+    switch (period) {
+      case StatisticsPeriod.today:
+        final day = first.addDays(direction);
+        return StatisticsRange._(period, day, day);
+      case StatisticsPeriod.week:
+        final first = this.first.addDays(7 * direction);
+        return StatisticsRange._(period, first, first.addDays(6));
+      case StatisticsPeriod.month:
+        return StatisticsRange.forPeriod(
+          period,
+          anchor: Jalali(first.year, first.month, 1).addMonths(direction),
+        );
+      case StatisticsPeriod.custom:
+        final days = dayCount * direction;
+        return StatisticsRange._(
+          period,
+          first.addDays(days),
+          last.addDays(days),
+        );
+    }
   }
+
+  /// The range the day charts show: a single day is shown within its week.
+  StatisticsRange get chartRange => period == StatisticsPeriod.today
+      ? StatisticsRange.forPeriod(StatisticsPeriod.week, anchor: first)
+      : this;
+
+  /// The last day that has data: today while the range runs.
+  Jalali get lastElapsed {
+    final today = jalaliToday();
+    if (today < first || today > last) return last;
+    return today;
+  }
+
+  /// Whether some of the range is still ahead.
+  bool get isPartial => lastElapsed < last;
+
+  /// The days asked for: up to today while the range runs, so a running
+  /// week's numbers are not diluted by days that have not come yet.
+  DateTime get start => _midnight(first);
+
+  DateTime get end => _midnight(lastElapsed.addDays(1));
+
+  /// The range before; while this one runs, only as many of its first days
+  /// as have passed here, so a running week is set against the same weekdays
+  /// of the week before, not all of it.
+  DateTime get previousStart => _midnight(shift(-1).first);
+
+  DateTime get previousEnd {
+    final before = shift(-1);
+    if (!isPartial) return _midnight(before.last.addDays(1));
+    final elapsed = lastElapsed.julianDayNumber - first.julianDayNumber + 1;
+    final days = elapsed < before.dayCount ? elapsed : before.dayCount;
+    return _midnight(before.first.addDays(days));
+  }
+
+  static Jalali _dateOnly(Jalali date) =>
+      Jalali(date.year, date.month, date.day);
 
   static DateTime _midnight(Jalali date) {
     final gregorian = date.toGregorian();
-
-    return DateTime(
-      gregorian.year,
-      gregorian.month,
-      gregorian.day,
-    );
+    return DateTime(gregorian.year, gregorian.month, gregorian.day);
   }
 
   @override
   List<Object?> get props => [
-    start,
-    end,
-    previousStart,
-    previousEnd,
-  ];
+        period,
+        first.julianDayNumber,
+        last.julianDayNumber,
+      ];
 }
 
 class StatisticsState extends Equatable {
   const StatisticsState({
     required this.range,
     this.status = StatisticsStatus.initial,
-    this.period = StatisticsPeriod.week,
     this.dashboard,
-    this.weeklyDashboard,
+    this.chartDashboard,
+    this.loadedRange,
     this.errorMessage,
+    this.direction = 0,
   });
 
   final StatisticsStatus status;
 
-  /// Period selected by the user for the statistics grid.
-  final StatisticsPeriod period;
-
-  /// Range used by the statistics grid.
+  /// The range the user is looking at.
   final StatisticsRange range;
 
-  /// Data for the currently selected period.
+  /// Numbers for [loadedRange]. They stay while another range loads, so the
+  /// screen can move from one set of numbers to the next instead of blanking.
   final StatisticsDashboard? dashboard;
 
-  /// Data ALWAYS representing the current week.
-  ///
-  /// The charts use this data regardless of whether the user selects
-  /// Today / Week / Month in the grid.
-  final StatisticsDashboard? weeklyDashboard;
+  /// Day-by-day data for [loadedRange]'s [StatisticsRange.chartRange].
+  final StatisticsDashboard? chartDashboard;
+
+  /// The range [dashboard] belongs to.
+  final StatisticsRange? loadedRange;
 
   final String? errorMessage;
 
-  bool get isLoading =>
-      status == StatisticsStatus.loading;
+  /// -1 when the user last stepped back in time, 1 forward, 0 otherwise.
+  final int direction;
 
-  bool get isFailure =>
-      status == StatisticsStatus.failure;
+  bool get isLoading => status == StatisticsStatus.loading;
 
-  bool get hasDashboard =>
-      dashboard != null;
-
-  bool get hasWeeklyDashboard =>
-      weeklyDashboard != null;
+  bool get isFailure => status == StatisticsStatus.failure;
 
   bool get hasData =>
-      dashboard != null &&
-          weeklyDashboard != null;
+      dashboard != null && chartDashboard != null && loadedRange != null;
+
+  /// Whether what is shown belongs to another range than the one picked.
+  bool get isStale => hasData && loadedRange != range;
 
   StatisticsState copyWith({
     StatisticsStatus? status,
-    StatisticsPeriod? period,
     StatisticsRange? range,
     StatisticsDashboard? dashboard,
-    StatisticsDashboard? weeklyDashboard,
+    StatisticsDashboard? chartDashboard,
+    StatisticsRange? loadedRange,
     String? errorMessage,
-    bool clearDashboard = false,
-    bool clearWeeklyDashboard = false,
+    int? direction,
     bool clearError = false,
   }) {
     return StatisticsState(
       status: status ?? this.status,
-      period: period ?? this.period,
       range: range ?? this.range,
-      dashboard: clearDashboard
-          ? null
-          : dashboard ?? this.dashboard,
-      weeklyDashboard: clearWeeklyDashboard
-          ? null
-          : weeklyDashboard ?? this.weeklyDashboard,
-      errorMessage: clearError
-          ? null
-          : errorMessage ?? this.errorMessage,
+      dashboard: dashboard ?? this.dashboard,
+      chartDashboard: chartDashboard ?? this.chartDashboard,
+      loadedRange: loadedRange ?? this.loadedRange,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      direction: direction ?? this.direction,
     );
   }
 
   @override
   List<Object?> get props => [
-    status,
-    period,
-    range,
-    dashboard,
-    weeklyDashboard,
-    errorMessage,
-  ];
+        status,
+        range,
+        dashboard,
+        chartDashboard,
+        loadedRange,
+        errorMessage,
+        direction,
+      ];
 }

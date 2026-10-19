@@ -125,7 +125,7 @@ class DashboardCubit extends Cubit<DashboardState> {
   }
 
   List<DashboardGoal> _visibleGoals(List<DashboardGoal> goals) => goals
-      .where((goal) => goal.title.trim().isNotEmpty)
+      .where((goal) => goal.title.trim().isNotEmpty && goal.isRunning)
       .toList(growable: false);
 
   /// Today's timed tasks, most recent first, as the activity card shows them.

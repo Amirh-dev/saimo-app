@@ -16,11 +16,15 @@ class GoalsState extends Equatable {
     this.isCreating = false,
     this.isUpdating = false,
     this.isDeleting = false,
+    this.pinnedId,
   });
 
   final GoalsStatus status;
   final List<Goal> goals;
   final String? errorMessage;
+
+  /// The user's main goal, shown large at the top.
+  final String? pinnedId;
 
   final bool isCreating;
   final bool isUpdating;
@@ -42,6 +46,8 @@ class GoalsState extends Equatable {
     bool? isCreating,
     bool? isUpdating,
     bool? isDeleting,
+    String? pinnedId,
+    bool clearPinned = false,
   }) {
     return GoalsState(
       status: status ?? this.status,
@@ -52,6 +58,7 @@ class GoalsState extends Equatable {
       isCreating: isCreating ?? this.isCreating,
       isUpdating: isUpdating ?? this.isUpdating,
       isDeleting: isDeleting ?? this.isDeleting,
+      pinnedId: clearPinned ? null : pinnedId ?? this.pinnedId,
     );
   }
 
@@ -63,5 +70,6 @@ class GoalsState extends Equatable {
     isCreating,
     isUpdating,
     isDeleting,
+    pinnedId,
   ];
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:persian_datetime_picker/persian_datetime_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
@@ -9,259 +9,96 @@ import 'statistics_state.dart';
 class StatisticsCubit extends Cubit<StatisticsState> {
   StatisticsCubit(this._repository)
       : super(
-    StatisticsState(
-      range: StatisticsRange.forPeriod(
-        StatisticsPeriod.week,
-      ),
-    ),
-  );
+          StatisticsState(
+            range: StatisticsRange.forPeriod(StatisticsPeriod.week),
+          ),
+        );
 
   final StatisticsRepository _repository;
 
-  Future<void> load() async {
-    if (isClosed) return;
+  /// Bumped by every fetch; an answer for an older one is dropped, so quick
+  /// taps through the weeks never end on the wrong week's numbers.
+  int _request = 0;
 
-    debugPrint('[StatisticsCubit] load()');
+  /// First open of the screen. Numbers already on screen are only refreshed.
+  Future<void> load() =>
+      state.hasData ? refresh(quiet: true) : _fetch(state.range);
 
-    final weekRange = StatisticsRange.forPeriod(
-      StatisticsPeriod.week,
-    );
+  Future<void> selectPeriod(StatisticsPeriod period) =>
+      _show(StatisticsRange.forPeriod(period));
 
-    emit(
-      state.copyWith(
-        status: StatisticsStatus.loading,
-        period: StatisticsPeriod.week,
-        range: weekRange,
-        clearDashboard: true,
-        clearWeeklyDashboard: true,
-        clearError: true,
-      ),
-    );
+  Future<void> selectDateRange(Jalali start, Jalali end) =>
+      _show(StatisticsRange.custom(start, end));
 
-    try {
-      /*
-       * IMPORTANT:
-       *
-       * Initial screen state is "This Week".
-       *
-       * Previously we made TWO identical requests here:
-       *
-       *   _subscribeWeekly()
-       *   _subscribe(...)
-       *
-       * That caused two simultaneous StatisticsDashboard requests.
-       *
-       * We now make ONE request and use its result for BOTH:
-       *
-       *   dashboard
-       *   weeklyDashboard
-       */
-      final dashboard = await _repository.fetchDashboard(
-        start: weekRange.start,
-        end: weekRange.end,
-        previousStart: weekRange.previousStart,
-        previousEnd: weekRange.previousEnd,
-      );
-
-      if (isClosed) return;
-
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.success,
-          dashboard: dashboard,
-          weeklyDashboard: dashboard,
-          clearError: true,
-        ),
-      );
-
-      debugPrint(
-        '[StatisticsCubit] initial weekly request succeeded',
-      );
-    } catch (error, stackTrace) {
-      if (isClosed) return;
-
-      debugPrint(
-        '[StatisticsCubit] initial request failed: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.failure,
-          errorMessage: _friendlyError(error),
-        ),
-      );
-    }
+  /// One day, week, month or custom length back (-1) or forward (1).
+  Future<void> shift(int direction) {
+    if (direction > 0 && !state.range.canGoNext) return Future.value();
+    return _show(state.range.shift(direction), direction: direction.sign);
   }
 
-  Future<void> changePeriod(
-      StatisticsPeriod period,
-      ) async {
-    if (isClosed) return;
-
-    debugPrint(
-      '[StatisticsCubit] changePeriod(${period.name})',
-    );
-
-    final newRange = StatisticsRange.forPeriod(
-      period,
-    );
-
-    await _loadDynamicDashboard(
-      period: period,
-      range: newRange,
-    );
+  /// Back to the running day, week or month.
+  Future<void> goToCurrent() {
+    final period = state.range.period == StatisticsPeriod.custom
+        ? StatisticsPeriod.week
+        : state.range.period;
+    return _show(StatisticsRange.forPeriod(period), direction: 1);
   }
 
-  Future<void> selectDay(
-      Jalali day,
-      ) async {
-    if (isClosed) return;
+  /// Fetches the shown range again after it failed to load.
+  Future<void> retry() => _fetch(state.range);
 
-    final range = StatisticsRange.forPeriod(
-      state.period,
-      anchor: day,
-    );
-
-    await _loadDynamicDashboard(
-      period: state.period,
-      range: range,
-    );
-  }
-
-  Future<void> selectDateRange(
-      Jalali start,
-      Jalali end,
-      ) async {
-    if (isClosed) return;
-
-    try {
-      final range = StatisticsRange.custom(
-        start,
-        end,
-      );
-
-      await _loadDynamicDashboard(
-        period: state.period,
-        range: range,
-      );
-    } catch (error, stackTrace) {
-      if (isClosed) return;
-
-      debugPrint(
-        '[StatisticsCubit] selectDateRange failed: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.failure,
-          errorMessage: _friendlyError(error),
-        ),
-      );
-    }
-  }
-
-  /// Re-fetches the shown period, keeping it on screen meanwhile. [quiet]
+  /// Re-fetches the shown range, keeping it on screen meanwhile. [quiet]
   /// also keeps it when the fetch fails, for a refresh nobody asked for.
   Future<void> refresh({bool quiet = false}) async {
     if (isClosed) return;
     // Nothing shown yet, or a load already on its way: a quiet refresh has
     // nothing to keep fresh.
-    if (quiet &&
-        (state.dashboard == null || state.status == StatisticsStatus.loading)) {
-      return;
+    if (quiet && (!state.hasData || state.isLoading)) return;
+    await _fetch(state.range, quiet: quiet);
+  }
+
+  Future<void> _show(StatisticsRange range, {int direction = 0}) {
+    if (isClosed) return Future.value();
+    if (range == state.range && state.hasData && !state.isStale) {
+      return Future.value();
     }
+    emit(state.copyWith(range: range, direction: direction));
+    return _fetch(range);
+  }
 
-    debugPrint('[StatisticsCubit] refresh()');
-
-    /*
-     * Refresh the current dynamic period.
-     *
-     * If the current period is "week", this ONE response is also
-     * the weekly chart response.
-     */
-    final currentRange = state.range;
+  Future<void> _fetch(StatisticsRange range, {bool quiet = false}) async {
+    if (isClosed) return;
+    final request = ++_request;
+    emit(state.copyWith(status: StatisticsStatus.loading, clearError: true));
 
     try {
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.loading,
-          clearError: true,
-        ),
-      );
-
-      final dashboard = await _fetchWithRetry(
-        start: currentRange.start,
-        end: currentRange.end,
-        previousStart: currentRange.previousStart,
-        previousEnd: currentRange.previousEnd,
-      );
-
-      if (isClosed) return;
-
-      if (state.period == StatisticsPeriod.week) {
-        emit(
-          state.copyWith(
-            status: StatisticsStatus.success,
-            dashboard: dashboard,
-            weeklyDashboard: dashboard,
-            clearError: true,
-          ),
-        );
-
-        return;
-      }
-
-      /*
-       * For Today / Month:
-       *
-       * Dynamic grid = selected period
-       * Charts        = this week
-       */
-      final weekRange = StatisticsRange.forPeriod(
-        StatisticsPeriod.week,
-      );
-
-      final weeklyDashboard = await _fetchWithRetry(
-        start: weekRange.start,
-        end: weekRange.end,
-        previousStart: weekRange.previousStart,
-        previousEnd: weekRange.previousEnd,
-      );
-
-      if (isClosed) return;
+      final chartRange = range.chartRange;
+      final results = await Future.wait([
+        _fetchWithRetry(range),
+        // A single day is charted within its week, which needs its own ask.
+        if (chartRange != range) _fetchWithRetry(chartRange),
+      ]);
+      if (isClosed || request != _request) return;
 
       emit(
         state.copyWith(
           status: StatisticsStatus.success,
-          dashboard: dashboard,
-          weeklyDashboard: weeklyDashboard,
+          dashboard: results.first,
+          chartDashboard: results.last,
+          loadedRange: range,
           clearError: true,
         ),
       );
     } catch (error, stackTrace) {
-      if (isClosed) return;
+      if (isClosed || request != _request) return;
 
-      debugPrint(
-        '[StatisticsCubit] refresh failed: $error',
-      );
+      debugPrint('[StatisticsCubit] fetch failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
 
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      if (quiet) {
+      if (quiet && state.hasData) {
         emit(state.copyWith(status: StatisticsStatus.success));
         return;
       }
-
       emit(
         state.copyWith(
           status: StatisticsStatus.failure,
@@ -271,111 +108,22 @@ class StatisticsCubit extends Cubit<StatisticsState> {
     }
   }
 
-  Future<void> _loadDynamicDashboard({
-    required StatisticsPeriod period,
-    required StatisticsRange range,
-  }) async {
-    if (isClosed) return;
-
-    emit(
-      state.copyWith(
-        status: StatisticsStatus.loading,
-        period: period,
-        range: range,
-        clearDashboard: true,
-        clearError: true,
-
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT clear weeklyDashboard.
-         *
-         * The charts always represent the current week.
-         */
-        clearWeeklyDashboard: false,
-      ),
-    );
-
+  Future<StatisticsDashboard> _fetchWithRetry(StatisticsRange range) async {
+    Future<StatisticsDashboard> fetch() => _repository.fetchDashboard(
+          start: range.start,
+          end: range.end,
+          previousStart: range.previousStart,
+          previousEnd: range.previousEnd,
+        );
     try {
-      final dashboard = await _fetchWithRetry(
-        start: range.start,
-        end: range.end,
-        previousStart: range.previousStart,
-        previousEnd: range.previousEnd,
-      );
-
-      if (isClosed) return;
-
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.success,
-          dashboard: dashboard,
-          clearError: true,
-        ),
-      );
-
-      debugPrint(
-        '[StatisticsCubit] dynamic request succeeded',
-      );
-    } catch (error, stackTrace) {
-      if (isClosed) return;
-
-      debugPrint(
-        '[StatisticsCubit] dynamic request failed: $error',
-      );
-
-      debugPrintStack(
-        stackTrace: stackTrace,
-      );
-
-      emit(
-        state.copyWith(
-          status: StatisticsStatus.failure,
-          errorMessage: _friendlyError(error),
-        ),
-      );
-    }
-  }
-
-  Future<StatisticsDashboard> _fetchWithRetry({
-    required DateTime start,
-    required DateTime end,
-    required DateTime previousStart,
-    required DateTime previousEnd,
-  }) async {
-    try {
-      return await _repository.fetchDashboard(
-        start: start,
-        end: end,
-        previousStart: previousStart,
-        previousEnd: previousEnd,
-      );
+      return await fetch();
     } catch (error) {
-      /*
-       * "internal system error" is a server-side GraphQL error.
-       *
-       * A single retry is useful for transient backend failures.
-       *
-       * We deliberately do NOT retry indefinitely.
-       */
-      if (!_isRetryableServerError(error)) {
-        rethrow;
-      }
-
-      debugPrint(
-        '[StatisticsCubit] transient server error, retrying once...',
-      );
-
-      await Future<void>.delayed(
-        const Duration(milliseconds: 500),
-      );
-
-      return _repository.fetchDashboard(
-        start: start,
-        end: end,
-        previousStart: previousStart,
-        previousEnd: previousEnd,
-      );
+      // "internal system error" is a server-side GraphQL error; one retry
+      // covers a transient backend failure. Never retry indefinitely.
+      if (!_isRetryableServerError(error)) rethrow;
+      debugPrint('[StatisticsCubit] transient server error, retrying once...');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      return fetch();
     }
   }
 
@@ -412,10 +160,5 @@ class StatisticsCubit extends Cubit<StatisticsState> {
     }
 
     return 'دریافت اطلاعات آمار با مشکل مواجه شد.';
-  }
-
-  @override
-  Future<void> close() {
-    return super.close();
   }
 }
