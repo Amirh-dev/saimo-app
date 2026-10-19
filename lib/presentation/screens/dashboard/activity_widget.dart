@@ -1,28 +1,39 @@
 import 'dart:async';
-import 'dart:ui';
-import 'package:ferry/typed_links.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:iconsax_plus/iconsax_plus.dart';
-import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
+import 'package:simo_learn/features/dashboard/home_layout.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
-import 'package:solar_icons/solar_icons.dart';
 
+/// The home's day card: a strip naming the suggested task with the one main
+/// action, the day's tasks as capsules (the suggested one larger), and the
+/// day's progress with a flame where the day starts to count.
 class TodayActivityWidget extends StatefulWidget {
-  final List<Map<String, dynamic>> tasks;
-  final String date;
-  final VoidCallback onAllTasksTap;
-  final VoidCallback onAddTap; // Fix 3: Added callback for empty items
-
   const TodayActivityWidget({
-    Key? key,
+    super.key,
     required this.tasks,
     required this.date,
     required this.onAllTasksTap,
     required this.onAddTap,
-  }) : super(key: key);
+    required this.onOpenTask,
+    this.consistency,
+  });
+
+  final List<DashboardTaskItem> tasks;
+
+  /// Today, as the header shows it.
+  final String date;
+  final VoidCallback onAllTasksTap;
+  final VoidCallback onAddTap;
+
+  /// Opens a task's timer.
+  final ValueChanged<DashboardTaskItem> onOpenTask;
+
+  /// Places the flame on the progress bar; 70% while it is unknown.
+  final DashboardConsistency? consistency;
 
   @override
   State<TodayActivityWidget> createState() => _TodayActivityWidgetState();
@@ -40,10 +51,6 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     vsync: this,
     duration: const Duration(milliseconds: 1300),
   );
-
-  /// Every capsule's shape, whatever its state, so a filling one keeps the
-  /// same round ends as the rest.
-  static const BorderRadius _capsule = BorderRadius.all(Radius.circular(100));
 
   @override
   void initState() {
@@ -66,11 +73,12 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     }
   }
 
-  static String _signature(List<Map<String, dynamic>> tasks) => [
-        for (final task in tasks) '${task['title']}:${task['percentage']}',
+  static String _signature(List<DashboardTaskItem> tasks) => [
+        for (final task in tasks) '${task.id}:${task.percentage.round()}',
       ].join('|');
 
-  /// Item [index]'s share of the intro: when it appears, then when it fills.
+  /// Column [index]'s share of the intro: when it appears, then when it
+  /// fills.
   Animation<double> _appear(int index) => CurvedAnimation(
         parent: _intro,
         curve: Interval(index * 0.06, index * 0.06 + 0.45,
@@ -88,134 +96,80 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     curve: const Interval(0.35, 1, curve: Curves.easeOutCubic),
   );
 
-  // Helper to convert digits to Persian
-  String _toPersianNumber(String input) {
-    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-
-    String result = input;
-
-    for (int i = 0; i < english.length; i++) {
-      result = result.replaceAll(english[i], persian[i]);
-    }
-
-    return result;
-  }
-
-  // Fix 2 & 4: Smart Overlay Popup to prevent overflow
-  void _showSmartPopup(
-    BuildContext context,
-    GlobalKey key,
-    String title,
-    int duration,
-    Color color,
-  ) {
+  /// A long press shows a capsule's full name and plan above it.
+  void _showTitle(BuildContext columnContext, DashboardTaskItem task) {
     _removePopup();
-
-    final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-
+    final renderBox = columnContext.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     final offset = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // Determine if the item is on the right or left half of the screen
     final isRightHalf = (offset.dx + (size.width / 2)) > (screenWidth / 2);
+    final color = _Stage.of(task).color;
 
     _overlayEntry = OverlayEntry(
-      builder: (context) {
-        return Stack(
-          children: [
-            // Invisible dismissible background
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _removePopup,
-                behavior: HitTestBehavior.opaque,
-                child: Container(color: Colors.transparent),
-              ),
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _removePopup,
+              behavior: HitTestBehavior.opaque,
             ),
-
-            // The Tooltip Popup
-            Positioned(
-              top: offset.dy - 55,
-              left: isRightHalf ? null : offset.dx,
-              right:
-                  isRightHalf ? (screenWidth - offset.dx - size.width) : null,
-              child: Material(
-                color: Colors.transparent,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: isRightHalf
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(100),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ReText(
-                            duration > 0
-                                ? '$title ${_toPersianNumber(duration.toString())} دقیقه'
-                                : '$title --',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(width: 6),
-                          SvgPicture.asset('assets/icons/timer.svg',
-                              color: AppColors.white, width: 12)
-                        ],
-                      ),
-                    ),
-
-                    // Tooltip tail precisely pointing to the capsule
-                    Container(
-                      margin: EdgeInsets.only(
-                        right: isRightHalf ? (size.width / 2) - 7 : 0,
-                        left: !isRightHalf ? (size.width / 2) - 7 : 0,
-                      ),
-                      child: ClipPath(
-                        clipper: TriangleClipper(),
-                        child: Container(
-                          color: color,
-                          width: 14,
-                          height: 7,
+          ),
+          Positioned(
+            top: offset.dy - 46,
+            left: isRightHalf ? null : offset.dx,
+            right: isRightHalf ? (screenWidth - offset.dx - size.width) : null,
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: isRightHalf
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                    child: ReText(
+                      '${task.title}، ${task.maxDuration} دقیقه',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Container(
+                    margin: EdgeInsets.only(
+                      right: isRightHalf ? (size.width / 2) - 7 : 0,
+                      left: !isRightHalf ? (size.width / 2) - 7 : 0,
+                    ),
+                    child: ClipPath(
+                      clipper: TriangleClipper(),
+                      child: Container(color: color, width: 14, height: 7),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
 
     Overlay.of(context).insert(_overlayEntry!);
-
-    // Auto dismiss after 2.5 seconds
-    _tooltipTimer = Timer(
-      const Duration(milliseconds: 2500),
-      _removePopup,
-    );
+    _tooltipTimer = Timer(const Duration(milliseconds: 2500), _removePopup);
   }
 
   void _removePopup() {
@@ -233,529 +187,815 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _HeaderOutlineButton(
-                title: 'همه تسک ها',
-                icon: Icons.arrow_back_ios_new,
-                onTap: widget.onAllTasksTap,
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const ReText(
-                    'خلاصه فعالیت امروز',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF24242C),
-                  ),
-                  const SizedBox(height: 2),
-                  ReText(
-                    _toPersianNumber(widget.date),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade500,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+    final tasks = widget.tasks;
+    final suggested = suggestedTaskIndex(tasks);
+    final slots = todaySlots(tasks.length, suggested: suggested);
 
-        const SizedBox(height: 16),
-
-        // Main Content Card
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: const Color(0xfffafafa),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.only(
-                    left: 8, right: 8, top: 8, bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Tasks Row layout
-                    SizedBox(
-                      height: widget.tasks.isEmpty ? 135 : 172,
-                      child: Stack(
-                        children: [
-                          // Fix 1: Mathematically centered Dashed Line
-                          Positioned(
-                            top: 115,
-                            left: 0,
-                            right: 0,
-                            child: CustomPaint(
-                              painter: DashedLinePainter(),
-                              size: const Size(double.infinity, 2),
-                            ),
-                          ),
-
-                          // Task Items
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: List.generate(7, (index) {
-                              final task = index < widget.tasks.length
-                                  ? widget.tasks[index]
-                                  : null;
-
-                              final appear = _appear(index);
-                              return Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 3.0),
-                                  child: AnimatedBuilder(
-                                    animation: appear,
-                                    builder: (context, child) => Opacity(
-                                      opacity: appear.value,
-                                      child: Transform.translate(
-                                        offset:
-                                            Offset(0, 14 * (1 - appear.value)),
-                                        child: child,
-                                      ),
-                                    ),
-                                    child: _buildTaskItem(task, _fill(index)),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-                    Divider(
-                      color: Colors.grey.shade200,
-                      height: 1,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Legend
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const SizedBox(width: 8),
-                        _buildStripedLegendItem('انجام نشده'),
-                        const SizedBox(width: 16),
-                        _buildLegendItem(
-                          'انجام شده',
-                          const Color(0xFF4263EB),
-                        ),
-                        const SizedBox(width: 16),
-                        _buildLegendItem(
-                          'درحال انجام',
-                          const Color(0xFFF14922),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Progress Bar
-              _buildProgressBar(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTaskItem(Map<String, dynamic>? task, Animation<double> fill) {
-    bool isEmpty = task == null || task.isEmpty;
-
-    double percentage = isEmpty ? 0 : (task['percentage'] ?? 0).toDouble();
-
-    bool isDone = percentage == 100;
-    bool isDoing = percentage > 0 && percentage < 100;
-    bool isNotStarted = percentage == 0 && !isEmpty;
-
-    String title = task?['title'] ?? '';
-    int duration = task?['maxDuration'] ?? 0;
-    Color color = task?['percentage'] == 100
-        ? const Color(0xFF4263EB)
-        : const Color(0xFFF14922);
-
-    // Unique key for tooltip anchor targeting
-    final GlobalKey itemKey = GlobalKey();
-
-    return GestureDetector(
-      key: itemKey,
-      onDoubleTap: isEmpty
-          ? widget.onAddTap
-          : () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (final _) => TaskTimerScreen(task: task, onPop: () {}))),
-      onTap: isEmpty
-          ? widget.onAddTap
-          : () => _showSmartPopup(
-                context,
-                itemKey,
-                title,
-                duration,
-                color,
-              ),
-      behavior: HitTestBehavior.opaque,
+    return Directionality(
+      textDirection: TextDirection.rtl,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // 1. Top Capsule (Height: 100)
-          Container(
-            height: 93,
-            decoration: BoxDecoration(
-              borderRadius: _capsule,
-              color: Colors.white,
-              border: isEmpty ? Border.all(color: AppColors.gray2) : null,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const ReText(
+                      'خلاصه فعالیت امروز',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF24242C),
+                    ),
+                    const SizedBox(height: 2),
+                    ReText(
+                      widget.date,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade500,
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                HomeOutlineButton(
+                  title: 'همه تسک‌ها',
+                  onTap: widget.onAllTasksTap,
+                ),
+              ],
             ),
-            // The fill is a plain level clipped by the capsule, so the
-            // bottom stays round however full it gets.
-            child: ClipRRect(
-              borderRadius: _capsule,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  if (isDoing)
-                    Container(
-                      color: const Color(0xFFF14922).withValues(alpha: 0.12),
-                    ),
-                  if (isDone || isDoing)
-                    AnimatedBuilder(
-                      animation: fill,
-                      builder: (context, _) => FractionallySizedBox(
-                        heightFactor:
-                            (isDone ? 1.0 : percentage / 100) * fill.value,
-                        widthFactor: 1,
-                        child: ColoredBox(
-                          color: isDone
-                              ? const Color(0xFF426fEB)
-                              : const Color(0xFFF14922),
-                        ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            decoration: BoxDecoration(
+              color: const Color(0xfffafafa),
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
                       ),
-                    ),
-                  if (isNotStarted)
-                    RotatedBox(
-                      quarterTurns: 3,
-                      child: CustomPaint(
-                        painter: StripedPainter(
-                          color: const Color(0xFFE5E7EB),
-                        ),
-                        size: const Size(
-                          double.infinity,
-                          double.infinity,
-                        ),
-                      ),
-                    ),
-                  if (isEmpty)
-                    const Center(
-                      child: Icon(
-                        Icons.add,
-                        color: Colors.grey,
-                        size: 20,
-                      ),
-                    )
-                  else
-                    Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: RotatedBox(
-                          quarterTurns: 3,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(100),
-                              color: isDoing
-                                  ? const Color(0xfff26d4d)
-                                  : isDone
-                                      ? const Color(0xff607bf5)
-                                      : AppColors.gray1,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0, vertical: 2),
-                              child: ReText(
-                                title,
-                                fontSize: 10,
-                                color: (isDone || isDoing)
-                                    ? Colors.white
-                                    : Colors.grey.shade600,
-                                fontWeight: FontWeight.w400,
-                                textAlign: TextAlign.center,
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) => Column(
+                          children: [
+                            _strip(
+                              suggested,
+                              notchCenter: _notchCenter(
+                                slots,
+                                suggested,
+                                constraints.maxWidth,
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            _chart(slots, suggested),
+                          ],
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          // 2. Exact Spacing (Height: 16)
-          const SizedBox(height: 8),
-
-          // 3. Timer Circle aligned perfectly over Y=131 line
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.white,
-            ),
-            child: Container(
-              margin: const EdgeInsets.all(4),
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isNotStarted
-                    ? AppColors.gray2
-                    : isEmpty
-                        ? AppColors.white
-                        : isDoing
-                            ? const Color(0xfffbeae6)
-                            : const Color(0xffe8ecfb),
-                border: isEmpty
-                    ? Border.all(
-                        color: const Color(0xFFE5E7EB),
-                        width: 1.5,
-                      )
-                    : null,
-                boxShadow: (isNotStarted || isEmpty)
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 6,
-                        ),
+                      if (tasks.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Divider(color: Colors.grey.shade200, height: 1),
+                        const SizedBox(height: 16),
+                        const _Legend(),
                       ],
-              ),
-              child: isEmpty
-                  ? const SizedBox.shrink()
-                  : Center(
-                      child: SvgPicture.asset(
-                        'assets/icons/stop_watch.svg',
-                        width: 11,
-                        color: isDone
-                            ? AppColors.secondary
-                            : isDoing
-                                ? AppColors.primary
-                                : AppColors.black1,
-                      ),
-                    ),
+                    ],
+                  ),
+                ),
+                if (tasks.isNotEmpty) _progressBar(),
+              ],
             ),
           ),
-
-          // 4. Texts Below
-          if (!isEmpty) ...[
-            const SizedBox(height: 8),
-            ReText(
-              task['durationText']?.toString() ??
-                  _toPersianNumber(duration.toString()),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              textAlign: TextAlign.center,
-            ),
-            if ((task['durationText']?.toString() ?? '') != '--')
-              ReText(
-                'دقیقه',
-                fontSize: 9,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.bold,
-                textAlign: TextAlign.center,
-              ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildLegendItem(String title, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ReText(
-          title,
-          fontSize: 11,
-          color: Colors.grey.shade600,
-          fontWeight: FontWeight.bold,
-        ),
-        const SizedBox(width: 6),
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
-    );
+  /// Where under the strip its pointer sits, from the start: over the
+  /// suggested capsule, or the add capsule on an empty day.
+  double? _notchCenter(List<TodaySlot> slots, int? suggested, double width) {
+    final target = widget.tasks.isEmpty
+        ? slots.indexWhere((slot) => slot.kind == TodaySlotKind.add)
+        : slots.indexWhere((slot) => slot.index == suggested && suggested != null);
+    if (target < 0) return null;
+    var before = 0;
+    var total = 0;
+    for (var i = 0; i < slots.length; i++) {
+      final flex = _flexOf(slots[i], suggested);
+      if (i < target) before += flex;
+      total += flex;
+    }
+    return (before + _flexOf(slots[target], suggested) / 2) / total * width;
   }
 
-  Widget _buildStripedLegendItem(String title) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.grey.shade300,
-            ),
-          ),
-          child: ClipOval(
-            child: CustomPaint(
-              painter: StripedPainter(
-                color: Colors.grey.shade400,
-                gap: 3,
-              ),
-            ),
-          ),
+  static int _flexOf(TodaySlot slot, int? suggested) =>
+      slot.kind == TodaySlotKind.task && slot.index == suggested ? 145 : 100;
+
+  Widget _strip(int? suggested, {double? notchCenter}) {
+    final tasks = widget.tasks;
+    if (tasks.isEmpty) {
+      return _SuggestionStrip(
+        notchCenter: notchCenter,
+        title: 'برای امروز تسکی ندارید',
+        subtitle: 'اولین تسک زمان‌دار را اضافه کنید.',
+        onTap: widget.onAddTap,
+        action: _StripButton(
+          label: 'افزودن',
+          icon: Icons.add_rounded,
+          onTap: widget.onAddTap,
         ),
-        const SizedBox(width: 6),
-        ReText(
-          title,
-          fontSize: 11,
-          color: Colors.grey.shade600,
-          fontWeight: FontWeight.bold,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressBar() {
-    int totalMax = 0;
-    int blueTotal = 0;
-    int orangeTotal = 0;
-
-    for (var task in widget.tasks) {
-      if (task.isEmpty) continue;
-
-      int maxDur = task['maxDuration'] ?? 0;
-      double pct = (task['percentage'] ?? 0).toDouble();
-
-      totalMax += maxDur;
-
-      if (pct == 100) {
-        blueTotal += maxDur;
-      } else if (pct > 0) {
-        orangeTotal += (maxDur * (pct / 100)).toInt();
-      }
+      );
     }
 
-    int totalDone = blueTotal + orangeTotal;
+    if (suggested == null) {
+      return _SuggestionStrip(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.done.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_rounded,
+              color: AppColors.done, size: 20),
+        ),
+        title: 'همه‌ی تسک‌های امروز انجام شد',
+        subtitle: _allDoneLine(),
+        action: _StripButton(
+          label: 'تسک',
+          icon: Icons.add_rounded,
+          onTap: widget.onAddTap,
+          style: _StripButtonStyle.quiet,
+        ),
+      );
+    }
 
-    int totalPercent =
-        totalMax > 0 ? ((totalDone / totalMax) * 100).toInt() : 0;
+    final task = tasks[suggested];
+    void open() => widget.onOpenTask(task);
+    if (task.isRunning) {
+      return _SuggestionStrip(
+        notchCenter: notchCenter,
+        title: task.title,
+        subtitle: 'در حال اجرا، ${task.remainingMinutes} دقیقه مانده',
+        onTap: open,
+        action: _StripButton(
+          label: 'تایمر',
+          icon: Icons.arrow_forward_ios_rounded,
+          iconSize: 13,
+          onTap: open,
+          style: _StripButtonStyle.dark,
+        ),
+      );
+    }
+    final started = task.isPaused;
+    return _SuggestionStrip(
+      notchCenter: notchCenter,
+      title: task.title,
+      subtitle: started
+          ? '${task.doneDuration} از ${task.maxDuration} دقیقه، ${task.remainingMinutes} دقیقه مانده'
+          : '${task.maxDuration} دقیقه',
+      onTap: open,
+      action: _StripButton(
+        label: started ? 'ادامه' : 'شروع',
+        icon: Icons.play_arrow_rounded,
+        textDirectionIcon: TextDirection.ltr,
+        onTap: open,
+      ),
+    );
+  }
 
-    int grayTotal = totalMax - totalDone;
+  String _allDoneLine() {
+    final consistency = widget.consistency;
+    if (consistency == null || !consistency.hasPlan) {
+      return 'آفرین، برنامه‌ی امروز تمام شد.';
+    }
+    if (consistency.countedToday) {
+      return 'امروز حساب شد؛ ضریب امتیاز ${consistency.level}×';
+    }
+    return '${consistency.remainingMinutes} دقیقه مطالعه‌ی دیگر تا حساب شدن امروز';
+  }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
+  Widget _chart(List<TodaySlot> slots, int? suggested) {
+    return SizedBox(
+      height: _Chart.height,
+      child: Stack(
         children: [
-          // Counts up with the capsules.
-          AnimatedBuilder(
-            animation: _bar,
-            builder: (context, _) => ReText(
-              '${_toPersianNumber((totalPercent * _bar.value).round().toString())}٪',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              textAlign: TextAlign.center,
+          const Positioned(
+            top: _Chart.dotCenter - 0.75,
+            left: 0,
+            right: 0,
+            child: CustomPaint(
+              painter: DashedLinePainter(),
+              size: Size(double.infinity, 2),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                // Drawn in from the start as the capsules fill.
-                child: AnimatedBuilder(
-                  animation: _bar,
-                  builder: (context, child) => Align(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: _bar.value,
-                    child: child,
-                  ),
-                  child: Row(
-                    children: [
-                      if (blueTotal > 0)
-                        Expanded(
-                          flex: blueTotal,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.horizontal(
-                                left: Radius.circular(50),
-                              ),
-                              color: Color(0xFF4263EB),
-                            ),
-                          ),
-                        ),
-                      if (orangeTotal > 0)
-                        Expanded(
-                          flex: orangeTotal,
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.horizontal(
-                                right: Radius.circular(50),
-                              ),
-                              color: Color(0xFFF14922),
-                            ),
-                          ),
-                        ),
-                      if (grayTotal > 0 || totalMax == 0)
-                        Expanded(
-                          flex: totalMax == 0 ? 1 : grayTotal,
-                          child: Container(
-                            height: 2,
-                            color: const Color(0xFFE5E7EB),
-                          ),
-                        ),
-                    ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < slots.length; i++)
+                Expanded(
+                  flex: _flexOf(slots[i], suggested),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: _animatedSlot(slots[i], i, suggested),
                   ),
                 ),
-              ),
-            ),
+            ],
           ),
-          const SizedBox(width: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _animatedSlot(TodaySlot slot, int position, int? suggested) {
+    final appear = _appear(position);
+    return AnimatedBuilder(
+      animation: appear,
+      builder: (context, child) => Opacity(
+        opacity: appear.value,
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - appear.value)),
+          child: child,
+        ),
+      ),
+      child: switch (slot.kind) {
+        TodaySlotKind.task => _TaskColumn(
+            task: widget.tasks[slot.index!],
+            suggested: slot.index == suggested,
+            fill: _fill(position),
+            onTap: widget.onOpenTask,
+            onLongPress: _showTitle,
+          ),
+        TodaySlotKind.add => _EmptyColumn(onTap: widget.onAddTap, add: true),
+        TodaySlotKind.ghost => const _EmptyColumn(),
+        TodaySlotKind.more =>
+          _MoreColumn(count: slot.more, onTap: widget.onAllTasksTap),
+        TodaySlotKind.blank => const SizedBox.shrink(),
+      },
+    );
+  }
+
+  Widget _progressBar() {
+    var planned = 0;
+    var done = 0;
+    var partial = 0;
+    var running = 0;
+    for (final task in widget.tasks) {
+      final max = task.maxDuration;
+      planned += max;
+      if (task.isDone) {
+        done += max;
+      } else if (task.isRunning) {
+        running += task.doneDuration;
+      } else {
+        partial += task.doneDuration;
+      }
+    }
+    final rest = (planned - done - partial - running).clamp(0, planned);
+    final percent =
+        planned > 0 ? ((done + partial + running) * 100 / planned).floor() : 0;
+    final target = (widget.consistency?.targetPercentage ?? 70) / 100;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+      child: Row(
+        children: [
           ReText(
             'پیشرفت امروز',
             fontSize: 11,
             color: Colors.grey.shade500,
             fontWeight: FontWeight.bold,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      // Drawn in from the start as the capsules fill.
+                      child: AnimatedBuilder(
+                        animation: _bar,
+                        builder: (context, child) => Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          widthFactor: _bar.value,
+                          child: child,
+                        ),
+                        child: SizedBox(
+                          height: 4,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (done > 0) _segment(done, AppColors.done),
+                              if (partial > 0)
+                                _segment(partial, AppColors.secondary),
+                              if (running > 0)
+                                _segment(running, AppColors.primary),
+                              if (rest > 0 || planned == 0)
+                                _segment(planned == 0 ? 1 : rest,
+                                    const Color(0xFFE5E7EB)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Where the day starts to count toward the multiplier.
+                    PositionedDirectional(
+                      start: width * target.clamp(0.0, 1.0) - 7,
+                      top: -16,
+                      child: const _TargetMark(),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Counts up with the capsules.
+          AnimatedBuilder(
+            animation: _bar,
+            builder: (context, _) => ReText(
+              '${(percent * _bar.value).round()}٪',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _segment(int flex, Color color) => Expanded(
+        flex: flex,
+        child: ColoredBox(color: color),
+      );
+}
+
+/// Sizes shared by the chart's columns, so every dot sits on the dashed
+/// line whatever the size of its capsule.
+abstract final class _Chart {
+  static const double capsule = 93;
+  static const double suggestedCapsule = 107;
+  static const double height = 190;
+
+  /// The dot row's center: under the tallest capsule, a gap and half a dot.
+  static const double dotCenter = suggestedCapsule + 8 + 16;
+}
+
+/// A task's place in the app's stage colors (orange running, blue partly
+/// done, green done, gray not started).
+enum _Stage {
+  running(AppColors.primary, Color(0xFFF26D4D), Icons.pause_rounded),
+  partial(AppColors.secondary, Color(0xFF6E86F2), Icons.play_arrow_rounded),
+  done(AppColors.done, Color(0xFF4CCF89), Icons.check_rounded),
+  idle(AppColors.black1, AppColors.gray1, Icons.play_arrow_rounded);
+
+  const _Stage(this.color, this.labelColor, this.icon);
+
+  final Color color;
+
+  /// The capsule's title pill, a lighter shade so it reads on the fill.
+  final Color labelColor;
+
+  /// The dot under the capsule: what tapping it does next.
+  final IconData icon;
+
+  static _Stage of(DashboardTaskItem task) {
+    if (task.isDone) return _Stage.done;
+    if (task.isRunning) return _Stage.running;
+    if (task.isPaused) return _Stage.partial;
+    return _Stage.idle;
+  }
+}
+
+class _TaskColumn extends StatelessWidget {
+  const _TaskColumn({
+    required this.task,
+    required this.suggested,
+    required this.fill,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final DashboardTaskItem task;
+
+  /// The strip's task: wider, taller and lifted on a shadow of its color.
+  final bool suggested;
+  final Animation<double> fill;
+  final ValueChanged<DashboardTaskItem> onTap;
+  final void Function(BuildContext context, DashboardTaskItem task)
+      onLongPress;
+
+  static const BorderRadius _capsule = BorderRadius.all(Radius.circular(100));
+
+  @override
+  Widget build(BuildContext context) {
+    final stage = _Stage.of(task);
+    final height = suggested ? _Chart.suggestedCapsule : _Chart.capsule;
+    final level = task.isDone ? 1.0 : (task.percentage / 100).clamp(0.0, 1.0);
+    final inProgress =
+        stage == _Stage.running || stage == _Stage.partial;
+
+    return Semantics(
+      button: true,
+      label: '${task.title}، ${_minutesLabel(task)} دقیقه',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onTap(task),
+        onLongPress: () => onLongPress(context, task),
+        child: Column(
+          children: [
+            SizedBox(
+              height: _Chart.suggestedCapsule,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  height: height,
+                  decoration: BoxDecoration(
+                    borderRadius: _capsule,
+                    color: Colors.white,
+                    boxShadow: suggested
+                        ? [
+                            BoxShadow(
+                              color: (stage == _Stage.idle
+                                      ? AppColors.black1
+                                      : stage.color)
+                                  .withValues(
+                                      alpha: stage == _Stage.idle ? 0.14 : 0.3),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  // The fill is a plain level clipped by the capsule, so the
+                  // bottom stays round however full it gets.
+                  child: ClipRRect(
+                    borderRadius: _capsule,
+                    child: Stack(
+                      alignment: Alignment.bottomCenter,
+                      children: [
+                        if (inProgress)
+                          Container(
+                              color: stage.color.withValues(alpha: 0.12)),
+                        if (stage != _Stage.idle)
+                          AnimatedBuilder(
+                            animation: fill,
+                            builder: (context, _) => FractionallySizedBox(
+                              heightFactor: level * fill.value,
+                              widthFactor: 1,
+                              child: ColoredBox(color: stage.color),
+                            ),
+                          ),
+                        if (stage == _Stage.idle)
+                          const RotatedBox(
+                            quarterTurns: 3,
+                            child: CustomPaint(
+                              painter: StripedPainter(color: Color(0xFFE5E7EB)),
+                              size: Size(double.infinity, double.infinity),
+                            ),
+                          ),
+                        Center(
+                          child: RotatedBox(
+                            quarterTurns: 3,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 7),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(100),
+                                  color: stage.labelColor,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: suggested ? 9 : 8,
+                                  vertical: 2,
+                                ),
+                                child: ReText(
+                                  task.title,
+                                  fontSize: suggested ? 10.5 : 10,
+                                  maxLines: 1,
+                                  color: stage == _Stage.idle
+                                      ? Colors.grey.shade600
+                                      : Colors.white,
+                                  fontWeight: suggested
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: suggested ? 6 : 8),
+            _Dot(
+              size: suggested ? 36 : 32,
+              background: stage == _Stage.idle
+                  ? AppColors.gray2
+                  : stage.color.withValues(alpha: 0.12),
+              child: Icon(
+                stage.icon,
+                // Play and pause point the same way in either direction.
+                textDirection: TextDirection.ltr,
+                size: suggested ? 16 : 14,
+                color: stage.color,
+              ),
+            ),
+            SizedBox(height: suggested ? 6 : 8),
+            ReText(
+              _minutesLabel(task),
+              fontSize: suggested ? 12.5 : 11.5,
+              fontWeight: suggested ? FontWeight.w900 : FontWeight.w700,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.center,
+            ),
+            ReText(
+              'دقیقه',
+              fontSize: 9.5,
+              color: suggested ? AppColors.black1 : Colors.grey.shade500,
+              fontWeight: FontWeight.bold,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Done/planned while under way, otherwise the planned minutes.
+  static String _minutesLabel(DashboardTaskItem task) =>
+      (task.isPaused || task.isRunning)
+          ? '${task.doneDuration}/${task.maxDuration}'
+          : '${task.maxDuration}';
+}
+
+/// An add column (the next task to plan), or a faint ghost on an empty day.
+class _EmptyColumn extends StatelessWidget {
+  const _EmptyColumn({this.onTap, this.add = false});
+
+  final VoidCallback? onTap;
+  final bool add;
+
+  @override
+  Widget build(BuildContext context) {
+    final column = Column(
+      children: [
+        SizedBox(
+          height: _Chart.suggestedCapsule,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: _Chart.capsule,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                color: add ? Colors.white : const Color(0xFFFAFAFB),
+                border: Border.all(
+                  color: add ? AppColors.gray2 : const Color(0xFFF0F1F4),
+                ),
+              ),
+              child: add
+                  ? const Icon(Icons.add, color: Colors.grey, size: 20)
+                  : null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const _Dot(
+          size: 32,
+          background: AppColors.white,
+          border: Color(0xFFE5E7EB),
+        ),
+      ],
+    );
+    if (!add) return column;
+    return Semantics(
+      button: true,
+      label: 'افزودن تسک',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: column,
+      ),
+    );
+  }
+}
+
+/// Stands for the tasks that did not fit; opens the tasks tab.
+class _MoreColumn extends StatelessWidget {
+  const _MoreColumn({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$count تسک دیگر',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          children: [
+            SizedBox(
+              height: _Chart.suggestedCapsule,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  height: _Chart.capsule,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(100),
+                    color: AppColors.gray1,
+                  ),
+                  child: ReText(
+                    '+$count',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const _Dot(
+              size: 32,
+              background: AppColors.gray2,
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 11,
+                color: AppColors.black1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final word in const ['تسک', 'دیگر'])
+              ReText(
+                word,
+                fontSize: 9.5,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.bold,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The round mark under a capsule, on the dashed line.
+class _Dot extends StatelessWidget {
+  const _Dot({
+    required this.size,
+    required this.background,
+    this.border,
+    this.child,
+  });
+
+  final double size;
+  final Color background;
+  final Color? border;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: const EdgeInsets.all(4),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.white,
+      ),
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: background,
+          border: border == null ? null : Border.all(color: border!, width: 1.5),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Names the suggested task above the capsules and holds the card's one main
+/// action; a small pointer under it marks the capsule it speaks for.
+class _SuggestionStrip extends StatelessWidget {
+  const _SuggestionStrip({
+    required this.title,
+    required this.subtitle,
+    required this.action,
+    this.leading,
+    this.onTap,
+    this.notchCenter,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget action;
+  final Widget? leading;
+  final VoidCallback? onTap;
+
+  /// The pointer's center from the strip's start; none when null.
+  final double? notchCenter;
+
+  @override
+  Widget build(BuildContext context) {
+    final notch = notchCenter;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (notch != null)
+            PositionedDirectional(
+              start: notch - 2 - 6,
+              bottom: -5,
+              child: Transform.rotate(
+                angle: 0.785398,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppColors.gray1,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.gray1,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                children: [
+                  if (leading != null) ...[leading!, const SizedBox(width: 10)]
+                  else
+                    const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ReText(
+                          title,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          maxLines: 1,
+                          textAlign: TextAlign.right,
+                        ),
+                        const SizedBox(height: 1),
+                        ReText(
+                          subtitle,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray,
+                          maxLines: 1,
+                          textAlign: TextAlign.right,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  action,
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -763,16 +1003,216 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
   }
 }
 
-// ----------------- Helper Painters & Widgets ----------------- //
+enum _StripButtonStyle { primary, dark, quiet }
+
+class _StripButton extends StatelessWidget {
+  const _StripButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.style = _StripButtonStyle.primary,
+    this.iconSize = 16,
+    this.textDirectionIcon,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final _StripButtonStyle style;
+  final double iconSize;
+
+  /// Pins the icon's direction (play stays pointing right in RTL).
+  final TextDirection? textDirectionIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Color background, Color foreground) = switch (style) {
+      _StripButtonStyle.primary => (AppColors.primary, Colors.white),
+      _StripButtonStyle.dark => (AppColors.black1, Colors.white),
+      _StripButtonStyle.quiet => (Colors.white, AppColors.black1),
+    };
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 14, 0),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(100),
+          border: style == _StripButtonStyle.quiet
+              ? Border.all(color: AppColors.gray2)
+              : null,
+          boxShadow: style == _StripButtonStyle.quiet
+              ? null
+              : [
+                  BoxShadow(
+                    color: background.withValues(alpha: 0.3),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReText(
+              label,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
+              color: foreground,
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              icon,
+              size: iconSize,
+              color: foreground,
+              textDirection: textDirectionIcon,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _item('در حال اجرا', dot: _dot(AppColors.primary)),
+        const SizedBox(width: 14),
+        _item('نیمه‌کاره', dot: _dot(AppColors.secondary)),
+        const SizedBox(width: 14),
+        _item('انجام شده', dot: _dot(AppColors.done)),
+        const SizedBox(width: 14),
+        _item(
+          'شروع نشده',
+          dot: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: ClipOval(
+              child: CustomPaint(
+                painter: StripedPainter(color: Colors.grey.shade400, gap: 3),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _dot(Color color) => Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
+
+  static Widget _item(String title, {required Widget dot}) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          dot,
+          const SizedBox(width: 6),
+          ReText(
+            title,
+            fontSize: 11,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.bold,
+          ),
+        ],
+      );
+}
+
+/// The flame over today's progress bar where the day starts to count.
+class _TargetMark extends StatelessWidget {
+  const _TargetMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 14,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/flame.svg',
+            width: 12,
+            height: 12,
+            colorFilter: const ColorFilter.mode(_flameRed, BlendMode.srcIn),
+          ),
+          const SizedBox(height: 1),
+          Container(
+            width: 2,
+            height: 9,
+            decoration: BoxDecoration(
+              color: _flameRed,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const Color _flameRed = Color(0xFFFF3040);
+
+/// The home's small outlined link buttons («همه تسک‌ها», «همه اهداف»).
+class HomeOutlineButton extends StatelessWidget {
+  const HomeOutlineButton({
+    super.key,
+    required this.title,
+    required this.onTap,
+  });
+
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReText(title, fontSize: 11.5, fontWeight: FontWeight.w700),
+              const SizedBox(width: 7),
+              // Forward: it points left in RTL.
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 12,
+                color: AppColors.gray,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------- Helper Painters ----------------- //
 
 class StripedPainter extends CustomPainter {
+  const StripedPainter({required this.color, this.gap = 6.0});
+
   final Color color;
   final double gap;
-
-  StripedPainter({
-    required this.color,
-    this.gap = 6.0,
-  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -791,18 +1231,17 @@ class StripedPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) =>
-      false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class DashedLinePainter extends CustomPainter {
+  const DashedLinePainter();
+
   @override
   void paint(Canvas canvas, Size size) {
-    double dashWidth = 1;
-    double dashSpace = 4;
-    double startX = 0;
+    const dashWidth = 1.0;
+    const dashSpace = 4.0;
+    var startX = 0.0;
 
     final paint = Paint()
       ..color = const Color(0xFFE5E7EB)
@@ -810,12 +1249,7 @@ class DashedLinePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
-
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }
@@ -827,61 +1261,12 @@ class DashedLinePainter extends CustomPainter {
 class TriangleClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    Path path = Path();
-
-    path.lineTo(size.width, 0);
-    path.lineTo(size.width / 2, size.height);
-    path.close();
-
-    return path;
+    return Path()
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
   }
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-}
-
-class _HeaderOutlineButton extends StatelessWidget {
-  const _HeaderOutlineButton({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 9,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: const Color(0xFFE5E7EB),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: const Color(0xFFF14922),
-            ),
-            const SizedBox(width: 7),
-            ReText(
-              title,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

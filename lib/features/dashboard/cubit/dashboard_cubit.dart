@@ -1,14 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
+import 'package:simo_learn/features/dashboard/home_layout.dart';
+import 'package:simo_learn/features/goals/pinned_goal_store.dart';
 
 import 'dashboard_state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
-  DashboardCubit(this._repository)
-      : super(const DashboardState());
+  DashboardCubit(
+    this._repository, {
+    PinnedGoalStore pinnedStore = const PinnedGoalStore(),
+  })  : _pinnedStore = pinnedStore,
+        super(const DashboardState());
 
   final DashboardRepository _repository;
+  final PinnedGoalStore _pinnedStore;
 
   bool _cacheRestored = false;
   Future<void>? _loading;
@@ -72,7 +78,12 @@ class DashboardCubit extends Cubit<DashboardState> {
         hasData: () => state.goals != null,
         fetch: () async {
           final goals = await _repository.getGoals();
-          return state.copyWith(goals: _visibleGoals(goals));
+          final pinned = await _pinnedStore.read();
+          return state.copyWith(
+            goals: _homeGoals(goals, pinned),
+            pinnedGoalId: pinned,
+            clearPinnedGoal: pinned == null,
+          );
         },
       ),
       _refresh(
@@ -84,12 +95,22 @@ class DashboardCubit extends Cubit<DashboardState> {
           return state.copyWith(tasks: _todayTasks(tasks));
         },
       ),
+      _refresh(
+        session,
+        DashboardSection.consistency,
+        hasData: () => state.consistency != null,
+        fetch: () async {
+          final consistency = await _repository.getConsistency();
+          return state.copyWith(consistency: consistency);
+        },
+      ),
     ]);
   }
 
   /// Fills sections the screen has nothing for yet from the last session.
   Future<void> _restoreCache(int session) async {
-    final cache = await _repository.readCache();
+    final (cache, pinned) =
+        await (_repository.readCache(), _pinnedStore.read()).wait;
     if (_isStale(session)) return;
     final cachedGoals = cache.goals;
     final cachedTasks = cache.tasks;
@@ -97,9 +118,11 @@ class DashboardCubit extends Cubit<DashboardState> {
       DashboardState(
         profile: state.profile ?? cache.profile,
         goals: state.goals ??
-            (cachedGoals == null ? null : _visibleGoals(cachedGoals)),
+            (cachedGoals == null ? null : _homeGoals(cachedGoals, pinned)),
         tasks: state.tasks ??
             (cachedTasks == null ? null : _todayTasks(cachedTasks)),
+        consistency: state.consistency ?? cache.consistency,
+        pinnedGoalId: state.pinnedGoalId ?? pinned,
         failed: state.failed,
       ),
     );
@@ -124,11 +147,15 @@ class DashboardCubit extends Cubit<DashboardState> {
     }
   }
 
-  List<DashboardGoal> _visibleGoals(List<DashboardGoal> goals) => goals
-      .where((goal) => goal.title.trim().isNotEmpty && goal.isRunning)
-      .toList(growable: false);
+  List<DashboardGoal> _homeGoals(List<DashboardGoal> goals, String? pinned) =>
+      orderHomeGoals(
+        goals
+            .where((goal) => goal.title.trim().isNotEmpty && goal.isRunning)
+            .toList(growable: false),
+        pinnedId: pinned,
+      );
 
-  /// Today's timed tasks, most recent first, as the activity card shows them.
+  /// Today's timed tasks in the order they were planned.
   List<DashboardTaskItem> _todayTasks(List<DashboardTask> all) {
     final today = _dateOnly(DateTime.now());
     final tasks = all.where((task) {
@@ -138,87 +165,33 @@ class DashboardCubit extends Cubit<DashboardState> {
           task.type == 'TIMED' &&
           task.status != 'CANCELED';
     }).toList()
-      ..sort((a, b) => _taskSortDate(b).compareTo(_taskSortDate(a)));
-    return tasks.take(7).map(_toDashboardTask).toList(growable: false);
+      ..sort((a, b) {
+        final byDate = a.date!.compareTo(b.date!);
+        if (byDate != 0) return byDate;
+        final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+        return (a.createdAt ?? epoch).compareTo(b.createdAt ?? epoch);
+      });
+    return tasks.map(_toDashboardTask).toList(growable: false);
   }
 
-  bool _isCreatedToday(
-      DashboardTask task,
-      DateTime today,
-      ) {
-    final createdAt = task.createdAt;
+  DashboardTaskItem _toDashboardTask(DashboardTask task) {
+    final isDone = task.status == 'COMPLETED' || task.completedAt != null;
 
-    return createdAt != null &&
-        _isSameDate(
-          createdAt.toLocal(),
-          today,
-        );
-  }
-
-  bool _isDoneToday(
-      DashboardTask task,
-      DateTime today,
-      ) {
-    final completedAt = task.completedAt;
-
-    return completedAt != null &&
-        _isSameDate(
-          completedAt.toLocal(),
-          today,
-        );
-  }
-
-  DateTime _taskSortDate(DashboardTask task) {
-    final completed = task.completedAt?.toLocal();
-    final created = task.createdAt?.toLocal();
-
-    return completed ??
-        created ??
-        DateTime.fromMillisecondsSinceEpoch(0);
-  }
-
-  DashboardTaskItem _toDashboardTask(
-      DashboardTask task,
-      ) {
-    final isDone =
-        task.status == 'COMPLETED' ||
-            task.completedAt != null;
-
-    final isTimed = task.type == 'TIMED';
-
-    // TIMED TASK
-    final maxDuration =
-    task.durationM > 0 ? task.durationM : 0;
-
+    final maxDuration = task.durationM > 0 ? task.durationM : 0;
     final maxSeconds = maxDuration * 60;
+    var elapsedSeconds = task.elapsedSeconds.clamp(0, maxSeconds);
 
-    var elapsedSeconds =
-    task.elapsedSeconds.clamp(
-      0,
-      maxSeconds,
-    );
-
-    // If the timer is currently running,
-    // include the current running interval.
-    if (!isDone && task.timerStartedAt != null) {
-      final runningSeconds = DateTime.now()
-          .difference(
-        task.timerStartedAt!.toLocal(),
-      )
-          .inSeconds;
-
-      elapsedSeconds = (
-          elapsedSeconds + runningSeconds
-      ).clamp(
-        0,
-        maxSeconds,
-      );
+    // If the timer is currently running, include the current running
+    // interval.
+    final isRunning = !isDone && task.timerStartedAt != null;
+    if (isRunning) {
+      final runningSeconds =
+          DateTime.now().difference(task.timerStartedAt!.toLocal()).inSeconds;
+      elapsedSeconds = (elapsedSeconds + runningSeconds).clamp(0, maxSeconds);
     }
 
     // Completed timed task = 100%.
-    if (isDone) {
-      elapsedSeconds = maxSeconds;
-    }
+    if (isDone) elapsedSeconds = maxSeconds;
 
     // From the live value above: includes a running interval, and a finished
     // task is 100% even if it was completed early.
@@ -231,30 +204,16 @@ class DashboardCubit extends Cubit<DashboardState> {
       percentage: percentage,
       elapsedSeconds: task.elapsedSeconds.clamp(0, maxSeconds),
       isDone: isDone,
-      doneDuration:
-      (elapsedSeconds / 60).floor(),
+      isRunning: isRunning,
+      doneDuration: (elapsedSeconds / 60).floor(),
       maxDuration: maxDuration,
-      durationText:
-      maxDuration > 0
-          ? '$maxDuration'
-          : '--',
+      durationText: maxDuration > 0 ? '$maxDuration' : '--',
     );
   }
 
-  DateTime _dateOnly(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    );
-  }
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
-  bool _isSameDate(
-      DateTime a,
-      DateTime b,
-      ) {
-    return a.year == b.year &&
-        a.month == b.month &&
-        a.day == b.day;
-  }
+  bool _isSameDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }

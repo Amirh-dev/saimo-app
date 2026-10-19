@@ -17,9 +17,13 @@ class DashboardRepository {
   static const _profileKey = 'dashboard_cache.profile';
   static const _goalsKey = 'dashboard_cache.goals';
   static const _tasksKey = 'dashboard_cache.tasks';
+  static const _consistencyKey = 'dashboard_cache.consistency';
 
   /// The day the cached tasks belong to; they are dropped on any other day.
   static const _tasksDayKey = 'dashboard_cache.tasks_day';
+
+  /// Likewise for the multiplier, which describes one day.
+  static const _consistencyDayKey = 'dashboard_cache.consistency_day';
 
   /// Bumped by [clearCache]; a fetch started before it does not write back.
   int _epoch = 0;
@@ -51,21 +55,43 @@ class DashboardRepository {
     return raw.map(DashboardTask.fromJson).toList(growable: false);
   }
 
+  /// The score multiplier and today's progress toward it. Asking also lets
+  /// the server apply the days that ended since the last ask.
+  Future<DashboardConsistency> getConsistency() async {
+    final epoch = _epoch;
+    final data = await _graphql.rawRequest(query: _consistencyQuery);
+    final value = data['consistencyStatus'];
+    if (value is! Map<String, dynamic>) {
+      throw const DashboardFailure('دریافت ضریب امتیاز ناموفق بود.');
+    }
+    _write(epoch, (prefs) async {
+      await prefs.setString(_consistencyKey, jsonEncode(value));
+      await prefs.setString(_consistencyDayKey, _dayKey(DateTime.now()));
+    });
+    return DashboardConsistency.fromJson(value);
+  }
+
   /// What the last fetches left on disk; a section is null when nothing
   /// usable is there.
   Future<DashboardCache> readCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final today = _dayKey(DateTime.now());
       final profile = _decodeMap(prefs.getString(_profileKey));
       final goals = _decodeList(prefs.getString(_goalsKey));
-      final tasksAreToday =
-          prefs.getString(_tasksDayKey) == _dayKey(DateTime.now());
+      final tasksAreToday = prefs.getString(_tasksDayKey) == today;
       final tasks =
           tasksAreToday ? _decodeList(prefs.getString(_tasksKey)) : null;
+      final consistency = prefs.getString(_consistencyDayKey) == today
+          ? _decodeMap(prefs.getString(_consistencyKey))
+          : null;
       return DashboardCache(
         profile: profile == null ? null : ProfileUser.fromJson(profile),
         goals: goals?.map(DashboardGoal.fromJson).toList(growable: false),
         tasks: tasks?.map(DashboardTask.fromJson).toList(growable: false),
+        consistency: consistency == null
+            ? null
+            : DashboardConsistency.fromJson(consistency),
       );
     } catch (error) {
       debugPrint('Dashboard cache unreadable: $error');
@@ -83,6 +109,8 @@ class DashboardRepository {
       prefs.remove(_goalsKey),
       prefs.remove(_tasksKey),
       prefs.remove(_tasksDayKey),
+      prefs.remove(_consistencyKey),
+      prefs.remove(_consistencyDayKey),
     ]);
   }
 
@@ -155,11 +183,82 @@ class DashboardRepository {
 }
 
 class DashboardCache {
-  const DashboardCache({this.profile, this.goals, this.tasks});
+  const DashboardCache({
+    this.profile,
+    this.goals,
+    this.tasks,
+    this.consistency,
+  });
 
   final ProfileUser? profile;
   final List<DashboardGoal>? goals;
   final List<DashboardTask>? tasks;
+  final DashboardConsistency? consistency;
+}
+
+/// The score multiplier: a level that each finished day with a timed plan
+/// moves one step, up when the day counted and down when it did not. A day
+/// counts once its plan progress reaches [targetPercentage] and at least
+/// [minStudySeconds] of study were timed. The server owns the rule; this is
+/// its answer for today.
+class DashboardConsistency {
+  const DashboardConsistency({
+    required this.level,
+    required this.maxLevel,
+    required this.countedToday,
+    required this.plannedSeconds,
+    required this.progressSeconds,
+    required this.studiedSeconds,
+    required this.minStudySeconds,
+    required this.targetPercentage,
+    required this.remainingSeconds,
+    required this.fraction,
+  });
+
+  /// The level now, already including today once today has counted.
+  final int level;
+  final int maxLevel;
+  final bool countedToday;
+
+  /// Today's timed plan and the part of it done.
+  final int plannedSeconds;
+  final int progressSeconds;
+
+  /// Study timed today, whatever the plan.
+  final int studiedSeconds;
+  final int minStudySeconds;
+
+  /// Where today's progress bar must reach, as a percentage of the plan.
+  final double targetPercentage;
+
+  /// Work still needed for today to count; zero once it has.
+  final int remainingSeconds;
+
+  /// How far today is toward counting, from 0 to 1.
+  final double fraction;
+
+  bool get hasPlan => plannedSeconds > 0;
+
+  int get remainingMinutes => (remainingSeconds / 60).ceil();
+
+  factory DashboardConsistency.fromJson(Map<String, dynamic> json) {
+    int toInt(String key, [int fallback = 0]) =>
+        (json[key] as num?)?.toInt() ?? fallback;
+    double toDouble(String key, double fallback) =>
+        (json[key] as num?)?.toDouble() ?? fallback;
+    return DashboardConsistency(
+      level: toInt('level', 1),
+      maxLevel: toInt('maxLevel', 5),
+      countedToday: json['countedToday'] == true,
+      plannedSeconds: toInt('plannedSeconds'),
+      progressSeconds: toInt('progressSeconds'),
+      studiedSeconds: toInt('studiedSeconds'),
+      minStudySeconds: toInt('minStudySeconds', 90 * 60),
+      targetPercentage: toDouble('targetPercentage', 70),
+      remainingSeconds: toInt('remainingSeconds'),
+      fraction: toDouble('fraction', 0).clamp(0.0, 1.0),
+    );
+  }
 }
 
 class DashboardGoal {
@@ -254,6 +353,7 @@ class DashboardTaskItem {
     required this.durationText,
     required this.elapsedSeconds,
     required this.isDone,
+    this.isRunning = false,
   });
 
   final String id;
@@ -267,6 +367,18 @@ class DashboardTaskItem {
   /// service expects it).
   final int elapsedSeconds;
   final bool isDone;
+
+  /// Its timer is on right now.
+  final bool isRunning;
+
+  /// Started and stopped before the end: some time done, the timer off.
+  bool get isPaused => !isDone && !isRunning && percentage > 0;
+
+  bool get isNotStarted => !isDone && !isRunning && percentage <= 0;
+
+  /// Minutes of the plan still ahead.
+  int get remainingMinutes =>
+      isDone ? 0 : (maxDuration - doneDuration).clamp(0, maxDuration);
 
   /// Also carries the keys [TaskTimerScreen] reads, so opening the timer
   /// from the dashboard uses the task's real duration and progress.
@@ -293,6 +405,23 @@ class DashboardFailure implements Exception {
   @override
   String toString() => message;
 }
+
+const _consistencyQuery = r'''
+query DashboardConsistency {
+  consistencyStatus {
+    level
+    maxLevel
+    countedToday
+    plannedSeconds
+    progressSeconds
+    studiedSeconds
+    minStudySeconds
+    targetPercentage
+    remainingSeconds
+    fraction
+  }
+}
+''';
 
 const _getGoalsQuery = r'''
 query GetDashboardGoals {

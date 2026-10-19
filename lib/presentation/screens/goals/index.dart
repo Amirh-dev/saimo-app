@@ -68,6 +68,10 @@ class _GoalScreenState extends State<GoalScreen> with AppTabRevisit {
 class GoalsView extends StatefulWidget {
   const GoalsView({super.key});
 
+  /// A goal another screen asked to open (the home's goal card). The tab
+  /// opens its details once that goal is loaded, then clears the request.
+  static final ValueNotifier<String?> pendingDetails = ValueNotifier(null);
+
   @override
   State<GoalsView> createState() => _GoalsViewState();
 }
@@ -83,12 +87,37 @@ class _GoalsViewState extends State<GoalsView>
   void initState() {
     super.initState();
     if (context.read<GoalsCubit>().state.goals.isNotEmpty) _reveal.value = 1;
+    GoalsView.pendingDetails.addListener(_schedulePending);
+    _schedulePending();
   }
 
   @override
   void dispose() {
+    GoalsView.pendingDetails.removeListener(_schedulePending);
     _reveal.dispose();
     super.dispose();
+  }
+
+  /// After the frame, so the tab is on screen before its sheet rises.
+  void _schedulePending() {
+    if (GoalsView.pendingDetails.value == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPending());
+  }
+
+  void _openPending() {
+    final id = GoalsView.pendingDetails.value;
+    if (id == null || !mounted) return;
+    final state = _cubit.state;
+    final goal = state.goals.where((goal) => goal.id == id).firstOrNull;
+    if (goal == null) {
+      // Still loading: the load brings it. Loaded without it: drop it.
+      if (state.status == GoalsStatus.success) {
+        GoalsView.pendingDetails.value = null;
+      }
+      return;
+    }
+    GoalsView.pendingDetails.value = null;
+    _open(goal);
   }
 
   GoalsCubit get _cubit => context.read<GoalsCubit>();
@@ -146,6 +175,16 @@ class _GoalsViewState extends State<GoalsView>
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<GoalsCubit, GoalsState>(
+      // A goal asked for from the home opens once it has loaded.
+      listenWhen: (previous, current) =>
+          previous.goals != current.goals || previous.status != current.status,
+      listener: (context, state) => _schedulePending(),
+      child: _layout(context),
+    );
+  }
+
+  Widget _layout(BuildContext context) {
     return Column(
       children: [
         Container(
