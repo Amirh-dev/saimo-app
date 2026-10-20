@@ -11,6 +11,7 @@ import 'package:simo_learn/presentation/screens/consultants/active_counselor_sto
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/presentation/screens/chat/advisor_widgets.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
@@ -38,7 +39,7 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-enum _AdvisorChatPhase { loading, error, noAdvisor, ready }
+enum _AdvisorChatPhase { loading, error, noAccess, noAdvisor, ready }
 
 class _ChatScreenState extends State<ChatScreen> {
   late final ChatRepository _chatRepository;
@@ -122,7 +123,9 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted || silent) return;
       setState(() {
         _error = _friendlyError(error);
-        _phase = _AdvisorChatPhase.error;
+        _phase = isCounselingAccessDenied(error)
+            ? _AdvisorChatPhase.noAccess
+            : _AdvisorChatPhase.error;
       });
     }
   }
@@ -206,6 +209,12 @@ class _ChatScreenState extends State<ChatScreen> {
           subtitle: _error ?? '',
           actionText: 'تلاش دوباره',
           onAction: _load,
+        );
+      case _AdvisorChatPhase.noAccess:
+        return const _ChatStateView(
+          icon: SolarIconsOutline.lockKeyhole,
+          title: kCounselingNoAccessTitle,
+          subtitle: kCounselingNoAccessMessage,
         );
       case _AdvisorChatPhase.noAdvisor:
         return AdvisorIntroView(onChoose: _browseAdvisors);

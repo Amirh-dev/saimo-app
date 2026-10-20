@@ -16,6 +16,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/avatar_uploader.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
@@ -26,6 +27,7 @@ import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.d
 import 'package:simo_learn/presentation/screens/chat/index.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
+import 'package:simo_learn/presentation/screens/dashboard/study_metrics.dart';
 import 'package:simo_learn/presentation/screens/premium/index.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
@@ -669,7 +671,9 @@ class _ProfileHomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loadedProfile = profile;
-    if (loadedProfile == null || isRefreshing) {
+    // A refresh keeps the profile on screen; only a first load shows the
+    // skeleton.
+    if (loadedProfile == null) {
       return _ProfileHomeShimmer(
         onSectionSelected: onSectionSelected,
       );
@@ -692,8 +696,6 @@ class _ProfileHomeContent extends StatelessWidget {
               onSectionSelected: onSectionSelected,
             ),
             _ProfileAccountMenu(
-              isRefreshing: isRefreshing,
-              onRefresh: onRefresh,
               // onPremium: () => context.to(const PremiumPlansScreen()),
               onPremium: () => showFreePremiumMessage(context),
               onAccountDetails: onOpenAccountDetails,
@@ -715,8 +717,6 @@ class _ProfileHomeContent extends StatelessWidget {
 
 class _ProfileAccountMenu extends StatelessWidget {
   const _ProfileAccountMenu({
-    required this.isRefreshing,
-    required this.onRefresh,
     required this.onPremium,
     required this.onAccountDetails,
     required this.onSettings,
@@ -724,8 +724,6 @@ class _ProfileAccountMenu extends StatelessWidget {
     required this.onLogout,
   });
 
-  final bool isRefreshing;
-  final Future<void> Function() onRefresh;
   final VoidCallback onPremium;
   final VoidCallback onAccountDetails;
   final VoidCallback onSettings;
@@ -738,29 +736,23 @@ class _ProfileAccountMenu extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 0),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _OutlinedProfileAction(
-                title: 'بروزرسانی',
-                icon: Icons.refresh_rounded,
-                onTap: isRefreshing ? () {} : onRefresh,
-              ),
-              const Flexible(
-                child: ReText(
-                  'حساب کاربری',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  maxLines: 1,
-                ),
-              ),
-            ],
+          // Pulling the page down refreshes it, so the title stands alone.
+          const Align(
+            alignment: Alignment.centerRight,
+            child: ReText(
+              'حساب کاربری',
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              maxLines: 1,
+            ),
           ),
           const SizedBox(height: 14),
           _ProfileAccountMenuTile(
             key: const ValueKey('open-premium-subscription'),
             title: 'اشتراک ویژه',
-            icon: SolarIconsOutline.user,
+            icon: SolarIconsOutline.crown,
+            iconColor: const Color(0xFFE0A21B),
+            iconBackground: const Color(0xFFFFF6E0),
             onTap: onPremium,
           ),
           const SizedBox(height: 10),
@@ -784,15 +776,17 @@ class _ProfileAccountMenu extends StatelessWidget {
                 child: _ProfileAccountCompactAction(
                   title: 'پشتیبانی',
                   icon: SolarIconsOutline.headphonesRound,
+                  isComingSoon: true,
                   onTap: onSupport,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _ProfileAccountCompactAction(
+                  key: const ValueKey('profile-logout'),
                   title: 'خروج',
                   icon: Icons.logout_rounded,
-                  iconColor: AppColors.primary,
+                  color: AppColors.errorColor,
                   onTap: onLogout,
                 ),
               ),
@@ -810,11 +804,15 @@ class _ProfileAccountMenuTile extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.onTap,
+    this.iconColor = AppColors.secondary,
+    this.iconBackground = const Color(0xFFEEF0FF),
   });
 
   final String title;
   final IconData icon;
   final VoidCallback onTap;
+  final Color iconColor;
+  final Color iconBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -846,10 +844,10 @@ class _ProfileAccountMenuTile extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: const Color(0xFFEEF0FF),
+                color: iconBackground,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 18, color: AppColors.secondary),
+              child: Icon(icon, size: 18, color: iconColor),
             ),
           ],
         ),
@@ -860,19 +858,28 @@ class _ProfileAccountMenuTile extends StatelessWidget {
 
 class _ProfileAccountCompactAction extends StatelessWidget {
   const _ProfileAccountCompactAction({
+    super.key,
     required this.title,
     required this.icon,
     required this.onTap,
-    this.iconColor = AppColors.black1,
+    this.color = AppColors.black1,
+    this.isComingSoon = false,
   });
 
   final String title;
   final IconData icon;
   final VoidCallback onTap;
-  final Color iconColor;
+
+  /// The title and icon color: red for logout, so it matches its dialog.
+  final Color color;
+
+  /// Greyed with a «به‌زودی» tag for what is not built yet.
+  final bool isComingSoon;
 
   @override
   Widget build(BuildContext context) {
+    final color = isComingSoon ? AppColors.gray : this.color;
+    // These two run an action in place, so no arrow points to a page.
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -884,30 +891,39 @@ class _ProfileAccountCompactAction extends StatelessWidget {
           borderRadius: BorderRadius.circular(35),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          textDirection: TextDirection.rtl,
           children: [
-            const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 13,
-              color: AppColors.black1,
-            ),
-            Expanded(
-              child: ReText(
-                title,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-              ),
-            ),
             Container(
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: iconColor == AppColors.primary ? const Color(0xFFFFECE8) : AppColors.gray1,
+                color: color == AppColors.errorColor ? AppColors.errorColor.withValues(alpha: 0.10) : AppColors.gray1,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 18, color: iconColor),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ReText(
+                    title,
+                    color: color,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    maxLines: 1,
+                  ),
+                  if (isComingSoon)
+                    const ReText(
+                      'به‌زودی',
+                      color: AppColors.gray,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1737,10 +1753,10 @@ class _ProfileSettingsContent extends StatefulWidget {
 }
 
 class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
-  static const _notificationsKey = 'profile_notifications_enabled';
+  // Notifications are not built yet; bring their switch back with them under
+  // 'profile_notifications_enabled'.
   static const _newsKey = 'profile_news_enabled';
 
-  bool _notificationsEnabled = true;
   bool _newsEnabled = false;
 
   @override
@@ -1753,24 +1769,16 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
     final preferences = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _notificationsEnabled = preferences.getBool(_notificationsKey) ?? true;
       _newsEnabled = preferences.getBool(_newsKey) ?? false;
     });
   }
 
-  void _reset() {
-    setState(() {
-      _notificationsEnabled = true;
-      _newsEnabled = false;
-    });
-  }
-
-  Future<void> _save() async {
+  /// A switch saves the moment it flips, so there is nothing to lose by
+  /// leaving the page.
+  Future<void> _setNews(bool value) async {
+    setState(() => _newsEnabled = value);
     final preferences = await SharedPreferences.getInstance();
-    await Future.wait([
-      preferences.setBool(_notificationsKey, _notificationsEnabled),
-      preferences.setBool(_newsKey, _newsEnabled),
-    ]);
+    await preferences.setBool(_newsKey, value);
     if (!mounted) return;
     showReToast(context, 'تنظیمات ذخیره شد', ReToastType.success);
   }
@@ -1786,56 +1794,7 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
             selectedSection: ProfileContentSection.settings,
             onSectionSelected: widget.onSectionSelected,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: _reset,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: AppColors.gray2),
-                        ),
-                        child: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.replay_rounded,
-                                size: 16,
-                                color: AppColors.gray,
-                              ),
-                              SizedBox(width: 7),
-                              ReText(
-                                'بازگشت به پیش فرض',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const ReText(
-                  'تنظیمات',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ],
-            ),
-          ),
+          _ProfileSubpageTitle(title: 'تنظیمات', onBack: widget.onBack),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 28),
             padding: const EdgeInsets.all(10),
@@ -1844,59 +1803,25 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.035),
+                  color: AppColors.black.withValues(alpha: 0.035),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),
               ],
             ),
-            child: Column(
-              children: [
-                // Notifications are not built yet; bring this switch back
-                // with them (it is still saved and reset below).
-                // _SettingsRow(
-                //   title: 'اعلان ها',
-                //   subtitle: 'نمایش یا عدم نمایش اعلان ها',
-                //   trailing: _SettingsToggle(
-                //     value: _notificationsEnabled,
-                //     onChanged: (value) => setState(() => _notificationsEnabled = value),
-                //   ),
-                // ),
-                // const SizedBox(height: 10),
-                _SettingsRow(
-                  title: 'اخبار ها',
-                  subtitle: 'نمایش یا عدم نمایش اعلان ها',
-                  trailing: _SettingsToggle(
-                    value: _newsEnabled,
-                    onChanged: (value) => setState(() => _newsEnabled = value),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                AppVersionWidget(),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _SettingsActionButton(
-                        title: 'ذخیره',
-                        icon: SolarIconsOutline.checkSquare,
-                        isPrimary: true,
-                        onTap: _save,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _SettingsActionButton(
-                        title: 'لغو تغییرات',
-                        icon: Icons.close_rounded,
-                        onTap: widget.onBack,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: _SettingsRow(
+              key: const ValueKey('settings-news'),
+              title: 'اخبار و اطلاع‌رسانی‌ها',
+              subtitle: 'دریافت خبرهای تازه سایمو',
+              icon: SolarIconsOutline.bell,
+              trailing: _SettingsToggle(
+                value: _newsEnabled,
+                onChanged: _setNews,
+              ),
             ),
           ),
+          const SizedBox(height: 18),
+          const AppVersionWidget(),
           const SizedBox(height: 24),
         ],
       ),
@@ -1904,6 +1829,8 @@ class _ProfileSettingsContentState extends State<_ProfileSettingsContent> {
   }
 }
 
+/// The app's version as a quiet line under the settings: information, not
+/// something to tap.
 class AppVersionWidget extends StatefulWidget {
   const AppVersionWidget({
     super.key,
@@ -1938,9 +1865,67 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
       return const SizedBox.shrink();
     }
 
-    return _SettingsRow(
-      title: 'نسخه $_version',
-      subtitle: 'نسخه اپلیکیشن',
+    return ReText(
+      'نسخه $_version',
+      color: AppColors.gray,
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      textAlign: TextAlign.center,
+    );
+  }
+}
+
+/// A sub-page's title with a way back beside it, under the profile card.
+class _ProfileSubpageTitle extends StatelessWidget {
+  const _ProfileSubpageTitle({
+    required this.title,
+    required this.onBack,
+    this.action,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 24, 28, 14),
+      child: Row(
+        textDirection: TextDirection.rtl,
+        children: [
+          Semantics(
+            button: true,
+            label: 'بازگشت',
+            child: GestureDetector(
+              onTap: onBack,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.black1,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ReText(
+              title,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          if (action != null) action!,
+        ],
+      ),
     );
   }
 }
@@ -1973,7 +1958,7 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
     if (profile == null) return;
     await showReModalBottomSheet<void>(
       context: context,
-      barrierColor: AppColors.white.withOpacity(0.56),
+      barrierColor: AppColors.black1.withValues(alpha: 0.32),
       builder: (sheetContext) => _ProfileEditSheet(
         profile: profile,
         onSave: widget.onSave,
@@ -1995,23 +1980,14 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
             selectedSection: ProfileContentSection.accountDetails,
             onSectionSelected: widget.onSectionSelected,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _OutlinedProfileAction(
-                  key: const ValueKey('open-profile-edit-sheet'),
-                  title: 'ویرایش',
-                  icon: IconsaxPlusLinear.edit,
-                  onTap: _showEditSheet,
-                ),
-                const ReText(
-                  'مشخصات حساب',
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                ),
-              ],
+          _ProfileSubpageTitle(
+            title: 'مشخصات حساب',
+            onBack: widget.onBack,
+            action: _OutlinedProfileAction(
+              key: const ValueKey('open-profile-edit-sheet'),
+              title: 'ویرایش',
+              icon: IconsaxPlusLinear.edit,
+              onTap: _showEditSheet,
             ),
           ),
           Container(
@@ -2201,9 +2177,10 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    // Tall enough to show every field and the save button without scrolling.
     final sheetHeight = math.min(
-      610.0,
-      math.max(480.0, screenHeight * 0.63 - keyboardHeight),
+      640.0,
+      math.max(500.0, screenHeight * 0.84 - keyboardHeight),
     );
 
     return AnimatedPadding(
@@ -2227,9 +2204,8 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
               Container(
                 width: 62,
                 height: 5,
-                margin: const EdgeInsets.only(top: 0),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: AppColors.gray2,
                   borderRadius: BorderRadius.circular(100),
                 ),
               ),
@@ -2237,112 +2213,102 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(28, 22, 28, 20),
-                  child: Column(
-                    children: [
-                      _ProfileEditSheetHeader(
-                        onClose: () => Navigator.of(context).pop(),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ReTextField(
-                              key: const ValueKey('profile-last-name-field'),
-                              controller: _lastNameController,
-                              placeholder: 'نام خانوادگی',
-                              maxLength: 40,
-                              height: 56,
-                              borderRadius: 100,
-                              backgroundColor: AppColors.gray1,
-                              showFocusShadow: false,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 18),
-                              onChanged: (_) => setState(() => _nameError = null),
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ProfileEditSheetHeader(
+                          onClose: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _ProfileEditLabeled(
+                                label: 'نام',
+                                child: ReTextField(
+                                  key: const ValueKey('profile-first-name-field'),
+                                  controller: _firstNameController,
+                                  placeholder: 'نام',
+                                  maxLength: 40,
+                                  height: 56,
+                                  borderRadius: 100,
+                                  backgroundColor: AppColors.gray1,
+                                  showFocusShadow: false,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+                                  onChanged: (_) => setState(() => _nameError = null),
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ReTextField(
-                              key: const ValueKey('profile-first-name-field'),
-                              controller: _firstNameController,
-                              placeholder: 'نام',
-                              maxLength: 40,
-                              height: 56,
-                              borderRadius: 100,
-                              backgroundColor: AppColors.gray1,
-                              showFocusShadow: false,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 18),
-                              onChanged: (_) => setState(() => _nameError = null),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _ProfileEditLabeled(
+                                label: 'نام خانوادگی',
+                                child: ReTextField(
+                                  key: const ValueKey('profile-last-name-field'),
+                                  controller: _lastNameController,
+                                  placeholder: 'نام خانوادگی',
+                                  maxLength: 40,
+                                  height: 56,
+                                  borderRadius: 100,
+                                  backgroundColor: AppColors.gray1,
+                                  showFocusShadow: false,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+                                  onChanged: (_) => setState(() => _nameError = null),
+                                ),
+                              ),
                             ),
+                          ],
+                        ),
+                        if (_nameError != null) _ProfileEditError(_nameError!),
+                        const SizedBox(height: 12),
+                        _ProfileEditLabeled(
+                          label: 'شماره تماس',
+                          child: _ProfileEditReadOnlyField(
+                            key: const ValueKey('profile-phone-number-field'),
+                            value: _profilePhoneLabel(widget.profile.phoneNumber),
                           ),
-                        ],
-                      ),
-                      if (_nameError != null)
-                        ReText(
-                          _nameError!,
-                          color: AppColors.errorColor,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                        ).tMargin(5),
-                      const SizedBox(height: 10),
-                      _ProfileEditReadOnlyField(
-                        key: const ValueKey('profile-phone-number-field'),
-                        label: 'شماره تماس',
-                        value: _profilePhoneLabel(widget.profile.phoneNumber),
-                      ),
-                      const SizedBox(height: 10),
-                      _ProfileEditSelector(
-                        key: const ValueKey('profile-major-field'),
-                        label: _major ?? 'انتخاب رشته، شغل و ...',
-                        onTap: _pickMajor,
-                      ),
-                      const SizedBox(height: 10),
-                      _ProfileBirthDateEditor(
-                        key: const ValueKey('profile-birth-date-field'),
-                        onTap: _pickBirthDate,
-                        currentDate: _birthDate ?? DateTime.now(),
-                      ),
-                      if (_birthDateError != null)
-                        ReText(
-                          _birthDateError!,
-                          color: AppColors.errorColor,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                        ).tMargin(5),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ReButton(
-                              key: const ValueKey('save-profile-edit'),
-                              text: 'افزودن',
-                              icon: Icons.add_rounded,
-                              reverseIconPosition: true,
-                              isLoading: _isSaving,
-                              onPressed: _save,
-                              height: 54,
-                              borderRadius: 100,
-                              background: AppColors.primary,
-                            ),
+                        ),
+                        const SizedBox(height: 12),
+                        _ProfileEditLabeled(
+                          label: 'رشته، شغل یا حوزه',
+                          child: _ProfileEditSelector(
+                            key: const ValueKey('profile-major-field'),
+                            value: _major ?? _nonEmpty(widget.profile.major),
+                            placeholder: 'انتخاب کنید',
+                            icon: Icons.keyboard_arrow_down_rounded,
+                            onTap: _pickMajor,
                           ),
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            width: 112,
-                            child: ReButton(
-                              text: 'لغو',
-                              icon: Icons.close_rounded,
-                              reverseIconPosition: true,
-                              onPressed: () => Navigator.of(context).pop(),
-                              height: 54,
-                              borderRadius: 100,
-                              isOutlined: true,
-                              background: AppColors.white,
-                              color: AppColors.gray2,
-                              textColor: AppColors.black1,
-                            ),
+                        ),
+                        const SizedBox(height: 12),
+                        _ProfileEditLabeled(
+                          label: 'تاریخ تولد',
+                          child: _ProfileEditSelector(
+                            key: const ValueKey('profile-birth-date-field'),
+                            value: _birthDate == null ? null : _profileBirthDateLabel(_birthDate),
+                            placeholder: 'انتخاب کنید',
+                            icon: SolarIconsOutline.calendar,
+                            hasError: _birthDateError != null,
+                            onTap: _pickBirthDate,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        if (_birthDateError != null) _ProfileEditError(_birthDateError!),
+                        const SizedBox(height: 22),
+                        ReButton(
+                          key: const ValueKey('save-profile-edit'),
+                          text: 'ذخیره تغییرات',
+                          icon: Icons.check_rounded,
+                          reverseIconPosition: true,
+                          isLoading: _isSaving,
+                          onPressed: _save,
+                          height: 54,
+                          borderRadius: 100,
+                          background: AppColors.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2361,67 +2327,104 @@ class _ProfileEditSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Stack(
-            alignment: Alignment.center,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ReText(
-                    'ویرایش مشخصات',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                  SizedBox(height: 4),
-                  ReText(
-                    'مشخصات حساب کاربری خود را ویرایش کنید.',
-                    color: AppColors.gray,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ],
+              ReText(
+                'ویرایش مشخصات',
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+              SizedBox(height: 4),
+              ReText(
+                'مشخصات حساب کاربری خود را ویرایش کنید.',
+                color: AppColors.gray,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ],
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
+        ),
+        const SizedBox(width: 8),
+        // The only way out besides dragging down; the save button is the
+        // sheet's single action.
+        Semantics(
+          button: true,
+          label: 'بستن',
+          child: GestureDetector(
             onTap: onClose,
             child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.white,
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                color: AppColors.gray1,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gray2),
               ),
               child: const Icon(
                 Icons.close_rounded,
-                color: AppColors.gray,
+                color: AppColors.black1,
                 size: 18,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+}
+
+/// A field with its name above it, so a filled field still says what it is.
+class _ProfileEditLabeled extends StatelessWidget {
+  const _ProfileEditLabeled({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ReText(
+          label,
+          color: AppColors.gray,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ).hMargin(14),
+        const SizedBox(height: 6),
+        child,
+      ],
+    );
+  }
+}
+
+class _ProfileEditError extends StatelessWidget {
+  const _ProfileEditError(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ReText(
+      message,
+      color: AppColors.errorColor,
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      textAlign: TextAlign.right,
+    ).hMargin(14).tMargin(6);
   }
 }
 
 class _ProfileEditReadOnlyField extends StatelessWidget {
   const _ProfileEditReadOnlyField({
     super.key,
-    required this.label,
     required this.value,
   });
 
-  final String label;
   final String value;
 
   @override
@@ -2437,16 +2440,16 @@ class _ProfileEditReadOnlyField extends StatelessWidget {
         children: [
           ReText(
             value,
-            isPersian: false,
+            color: AppColors.gray,
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
           const Spacer(),
-          ReText(
-            label,
+          // Not editable here: the number is the account's login.
+          const Icon(
+            SolarIconsOutline.lockKeyholeMinimalistic,
+            size: 17,
             color: AppColors.gray,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
           ),
         ],
       ),
@@ -2454,42 +2457,54 @@ class _ProfileEditReadOnlyField extends StatelessWidget {
   }
 }
 
+/// A field filled from a picker: the value in full color, or a grey
+/// placeholder while nothing is chosen.
 class _ProfileEditSelector extends StatelessWidget {
   const _ProfileEditSelector({
     super.key,
-    required this.label,
+    required this.value,
+    required this.placeholder,
+    required this.icon,
     required this.onTap,
+    this.hasError = false,
   });
 
-  final String label;
+  final String? value;
+  final String placeholder;
+  final IconData icon;
   final VoidCallback onTap;
+  final bool hasError;
 
   @override
   Widget build(BuildContext context) {
+    final value = this.value;
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: AppColors.gray2),
+          border: Border.all(
+            color: hasError ? AppColors.errorColor : AppColors.gray2,
+          ),
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 19,
-              color: AppColors.black1,
+            Expanded(
+              child: ReText(
+                value ?? placeholder,
+                color: value == null ? AppColors.gray : AppColors.black1,
+                fontSize: 13,
+                fontWeight: value == null ? FontWeight.w600 : FontWeight.w700,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              ),
             ),
-            const Spacer(),
-            ReText(
-              label,
-              color: AppColors.gray,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-            ),
+            Icon(icon, size: 19, color: value == null ? AppColors.gray : AppColors.black1),
           ],
         ),
       ),
@@ -2497,87 +2512,9 @@ class _ProfileEditSelector extends StatelessWidget {
   }
 }
 
-class _ProfileBirthDateEditor extends StatelessWidget {
-  const _ProfileBirthDateEditor({
-    super.key,
-    required this.onTap,
-    required this.currentDate,
-  });
-
-  final VoidCallback onTap;
-  final DateTime currentDate;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 112,
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: AppColors.gray2),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const ReText(
-              'تاریخ تولد',
-              color: AppColors.gray,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-            ).rMargin(8),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _ProfileDatePart(label: 'سال: ${Jalali.fromDateTime(currentDate).year}')),
-                const SizedBox(width: 8),
-                Expanded(child: _ProfileDatePart(label: 'ماه: ${Jalali.fromDateTime(currentDate).month}')),
-                const SizedBox(width: 8),
-                Expanded(child: _ProfileDatePart(label: 'روز: ${Jalali.fromDateTime(currentDate).day}')),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileDatePart extends StatelessWidget {
-  const _ProfileDatePart({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 18,
-            color: AppColors.black1,
-          ),
-          const Spacer(),
-          ReText(
-            label,
-            color: AppColors.gray,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w600,
-          ),
-        ],
-      ),
-    );
-  }
+String? _nonEmpty(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 class _ProfileMajorPicker extends StatelessWidget {
@@ -2705,29 +2642,36 @@ class _ProfileTopCard extends StatelessWidget {
 
 class _SettingsRow extends StatelessWidget {
   const _SettingsRow({
+    super.key,
     required this.title,
     required this.subtitle,
+    required this.icon,
     this.trailing,
   });
 
   final String title;
   final String subtitle;
+  final IconData icon;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.gray2),
-      ),
+    return SizedBox(
+      height: 72,
       child: Row(
+        textDirection: TextDirection.rtl,
         children: [
-          if (trailing != null) trailing!,
-          if (trailing != null) const SizedBox(width: 12),
+          const SizedBox(width: 4),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF0FF),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.secondary),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -2741,19 +2685,26 @@ class _SettingsRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 ReText(
                   subtitle,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   color: AppColors.gray,
                   fontWeight: FontWeight.w500,
                 ),
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing!,
+            const SizedBox(width: 6),
+          ],
         ],
       ),
     );
   }
 }
 
+/// On fills the track orange with the knob at the end, so the two states
+/// read apart at a glance.
 class _SettingsToggle extends StatelessWidget {
   const _SettingsToggle({required this.value, required this.onChanged});
 
@@ -2762,82 +2713,39 @@ class _SettingsToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: 50,
-        height: 30,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: AppColors.gray1,
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: AppColors.gray2),
-        ),
-        child: AnimatedAlign(
+    return Semantics(
+      toggled: value,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          alignment: value ? Alignment.centerLeft : Alignment.centerRight,
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: value ? AppColors.primary : AppColors.white,
-              shape: BoxShape.circle,
-              border: value ? null : Border.all(color: AppColors.gray),
-            ),
+          width: 50,
+          height: 30,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: value ? AppColors.primary : AppColors.gray2,
+            borderRadius: BorderRadius.circular(100),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsActionButton extends StatelessWidget {
-  const _SettingsActionButton({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    this.isPrimary = false,
-  });
-
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: isPrimary ? AppColors.primary.withOpacity(0.10) : AppColors.white,
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: isPrimary ? AppColors.primary.withOpacity(0.08) : AppColors.gray2,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isPrimary ? AppColors.primary : AppColors.gray,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: ReText(
-                title,
-                color: isPrimary ? AppColors.primary : AppColors.black1,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                maxLines: 1,
+          child: AnimatedAlign(
+            duration: const Duration(milliseconds: 180),
+            alignment: value ? Alignment.centerLeft : Alignment.centerRight,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -4843,8 +4751,12 @@ class _ProfileSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPremium = profile?.isPremium ?? false;
-    final simoCoins = profile?.simoCoins ?? 0;
-    final score = profile?.score ?? 0;
+    // Coins come in a later version; the card shows what the home shows.
+    // final simoCoins = profile?.simoCoins ?? 0;
+    // final score = profile?.score ?? 0;
+    final consistency = context.select(
+      (DashboardCubit cubit) => cubit.state.consistency,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16).copyWith(top: 15),
@@ -4880,21 +4792,39 @@ class _ProfileSummaryCard extends StatelessWidget {
                     },
                   );
                 },
-                child: Stack(
-                  children: [
-                    UserAvatar(
-                      imageUrl: profile?.avatarURL,
-                      name: profile?.fullName,
-                      size: 56,
-                      borderRadius: 12,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(color: AppColors.black1.withAlpha(100), borderRadius: BorderRadius.circular(10)),
-                      child: Icon(IconsaxPlusBroken.edit, size: 14,color: AppColors.gray2),
-                    ),
-                  ],
+                child: Semantics(
+                  button: true,
+                  label: 'تغییر تصویر پروفایل',
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      UserAvatar(
+                        imageUrl: profile?.avatarURL,
+                        name: profile?.fullName,
+                        size: 56,
+                        borderRadius: 12,
+                      ),
+                      // A clear camera badge says a tap changes the picture.
+                      Positioned(
+                        left: -5,
+                        bottom: -5,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.black1,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.gray1, width: 2.5),
+                          ),
+                          child: const Icon(
+                            SolarIconsOutline.camera,
+                            size: 12,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -4903,82 +4833,97 @@ class _ProfileSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     ReText(
-                      profile?.displayName ?? 'علیرضا یوسفی',
+                      profile?.displayName ?? 'کاربر سایمو',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                     const SizedBox(height: 7),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: ReText(
-                            isPremium ? '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه' : 'اشتراک ندارید',
-                            color: AppColors.gray,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 11,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.simoCoin,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ReText(
-                                isPremium ? 'کاربر ویژه' : 'کاربر عادی',
-                                fontSize: 11.5,
-                                color: AppColors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                SolarIconsOutline.stars,
-                                size: 14,
-                                color: AppColors.white,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    PlanBadge(
+                      isPremium: isPremium,
+                      onTap: isPremium
+                          ? null
+                          : () => showFreePremiumMessage(context),
                     ),
+                    // Subscription days come with paid plans in a later version.
+                    // Row(
+                      // mainAxisAlignment: MainAxisAlignment.end,
+                      // children: [
+                        // Expanded(
+                          // child: ReText(
+                            // isPremium ? '${isPremium ? 24 : 0} روز تا پایان اشتراک ویژه' : 'اشتراک ندارید',
+                            // color: AppColors.gray,
+                            // fontWeight: FontWeight.w500,
+                            // fontSize: 11,
+                            // maxLines: 1,
+                            // overflow: TextOverflow.ellipsis,
+                            // textAlign: TextAlign.right,
+                          // ),
+                        // ),
+                        // const SizedBox(width: 10),
+                        // Container(
+                          // padding: const EdgeInsets.symmetric(
+                            // horizontal: 11,
+                            // vertical: 5,
+                          // ),
+                          // decoration: BoxDecoration(
+                            // color: AppColors.simoCoin,
+                            // borderRadius: BorderRadius.circular(100),
+                          // ),
+                          // child: Row(
+                            // mainAxisSize: MainAxisSize.min,
+                            // children: [
+                              // ReText(
+                                // isPremium ? 'کاربر ویژه' : 'کاربر عادی',
+                                // fontSize: 11.5,
+                                // color: AppColors.white,
+                                // fontWeight: FontWeight.w700,
+                              // ),
+                              // const SizedBox(width: 4),
+                              // const Icon(
+                                // SolarIconsOutline.stars,
+                                // size: 14,
+                                // color: AppColors.white,
+                              // ),
+                            // ],
+                          // ),
+                        // ),
+                      // ],
+                    // ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _ProfileMetricCard(
-                  value: '$score×',
-                  label: 'ضریب امتیاز',
-                  color: Color(0xFFFF3040),
-                  icon: SvgPicture.asset('assets/icons/flame.svg'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ProfileMetricCard(
-                  value: '$simoCoins',
-                  label: 'سایموکوین',
-                  color: const Color(0xFFFFC94C),
-                  icon: SvgPicture.asset('assets/icons/simo_coin.svg', color: Color(0xffe56929)),
-                ),
-              ),
-            ],
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: StudyMetricsRow(
+              consistency: consistency,
+              currentTab: 4,
+            ),
           ),
+          // Coins and the old score box come back in a later version.
+          // Row(
+            // children: [
+              // Expanded(
+                // child: _ProfileMetricCard(
+                  // value: '$score×',
+                  // label: 'ضریب امتیاز',
+                  // color: Color(0xFFFF3040),
+                  // icon: SvgPicture.asset('assets/icons/flame.svg'),
+                // ),
+              // ),
+              // const SizedBox(width: 10),
+              // Expanded(
+                // child: _ProfileMetricCard(
+                  // value: '$simoCoins',
+                  // label: 'سایموکوین',
+                  // color: const Color(0xFFFFC94C),
+                  // icon: SvgPicture.asset('assets/icons/simo_coin.svg', color: Color(0xffe56929)),
+                // ),
+              // ),
+            // ],
+          // ),
         ],
       ),
     );

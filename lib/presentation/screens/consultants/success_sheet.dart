@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -9,24 +8,22 @@ import 'package:solar_icons/solar_icons.dart';
 
 /// Final screen of the consultants flow: success confirmation. Shown as a
 /// centered dialog after the counseling request is submitted. Static data
-/// driven by the chosen [duration] and [plan].
+/// driven by the student's [choice].
 Future<void> showConsultationSuccessSheet(
   BuildContext context, {
-  required ConsultationDurationOption duration,
-  required ConsultationPlan plan,
+  required ConsultationChoice choice,
 }) {
   return showDialog<void>(
     context: context,
     barrierColor: AppColors.white.withOpacity(0.52),
-    builder: (_) => _SuccessDialog(duration: duration, plan: plan),
+    builder: (_) => _SuccessDialog(choice: choice),
   );
 }
 
 class _SuccessDialog extends StatelessWidget {
-  const _SuccessDialog({required this.duration, required this.plan});
+  const _SuccessDialog({required this.choice});
 
-  final ConsultationDurationOption duration;
-  final ConsultationPlan plan;
+  final ConsultationChoice choice;
 
   static const double _dialogWidth = 328;
   static const double _artworkWidth = 390;
@@ -69,7 +66,7 @@ class _SuccessDialog extends StatelessWidget {
                 icon: SolarIconsOutline.alarm,
                 iconColor: AppColors.black1,
                 label: 'مدت زمان',
-                value: '${duration.label}ه',
+                value: durationAdjective(choice.months),
               ),
             ),
             const SizedBox(height: 9),
@@ -79,7 +76,7 @@ class _SuccessDialog extends StatelessWidget {
                 icon: SolarIconsBold.userSpeakRounded,
                 iconColor: AppColors.primary,
                 label: 'نوع',
-                value: 'مشاوره ${plan.subtitle}',
+                value: choice.plan.title,
               ),
             ),
             const SizedBox(height: 35),

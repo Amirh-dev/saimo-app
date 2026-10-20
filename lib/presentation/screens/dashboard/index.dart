@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
@@ -14,6 +12,7 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/screens/dashboard/live_tasks.dart';
+import 'package:simo_learn/presentation/screens/dashboard/study_metrics.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
@@ -26,7 +25,6 @@ import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/user_avatar.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:simo_learn/utils/jalali_text.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -140,19 +138,7 @@ class _DashboardContent extends StatelessWidget {
                     ready: state.profile != null,
                     skeleton: const _SkeletonUserInfo(),
                     onRetry: cubit.retry,
-                    // The study box counts on while a timer runs.
-                    builder: () => ListenableBuilder(
-                      listenable: TaskTimerService.instance,
-                      builder: (context, _) => _ProfileCard(
-                        state: state,
-                        studiedSeconds: state.consistency == null
-                            ? null
-                            : liveStudiedSeconds(
-                                state.consistency!,
-                                TaskTimerService.instance,
-                              ),
-                      ),
-                    ),
+                    builder: () => _ProfileCard(state: state),
                   ),
                   const SizedBox(height: 24),
                   _goals(context),
@@ -244,12 +230,9 @@ class _DashboardContent extends StatelessWidget {
 /// The user, their plan, and the two numbers that keep them going: today's
 /// study and the score multiplier.
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.state, this.studiedSeconds});
+  const _ProfileCard({required this.state});
 
   final DashboardState state;
-
-  /// Today's study up to this second; null until the server has answered.
-  final int? studiedSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +274,7 @@ class _ProfileCard extends StatelessWidget {
                         maxLines: 1,
                       ),
                       const SizedBox(height: 7),
-                      _PlanBadge(
+                      PlanBadge(
                         isPremium: isPremium,
                         onTap: isPremium
                             ? null
@@ -319,306 +302,15 @@ class _ProfileCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    value: studiedSeconds == null
-                        ? '—'
-                        : _clock(studiedSeconds!),
-                    label: 'مطالعه‌ی امروز',
-                    color: AppColors.secondary,
-                    icon: const Icon(
-                      SolarIconsOutline.clockCircle,
-                      color: AppColors.white,
-                      size: 17,
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 13,
-                      color: AppColors.black1,
-                    ),
-                    semanticsLabel: 'آمار',
-                    onTap: () => navigateToIndex(context, 3, 0),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _MetricCard(
-                    value: consistency == null ? '—' : '${consistency.level}×',
-                    label: _multiplierLine(consistency),
-                    color: _flameRed,
-                    ring: consistency?.fraction ?? 0,
-                    icon: SvgPicture.asset('assets/icons/flame.svg'),
-                    trailing: SvgPicture.asset('assets/icons/info_circle.svg'),
-                    semanticsLabel: 'درباره‌ی ضریب امتیاز',
-                    onTap: () => _openMultiplierInfo(context),
-                  ),
-                ),
-              ],
+            StudyMetricsRow(
+              consistency: consistency,
+              currentTab: 0,
             ),
           ],
         ),
       ),
     );
   }
-
-  /// «۳:۳۵»
-  static String _clock(int seconds) {
-    final minutes = seconds ~/ 60;
-    return '${minutes ~/ 60}:${(minutes % 60).toString().padLeft(2, '0')}';
-  }
-
-  /// What today still needs for the multiplier, in a few words.
-  static String _multiplierLine(DashboardConsistency? consistency) {
-    if (consistency == null) return 'ضریب امتیاز';
-    if (consistency.countedToday) return 'امروز حساب شد';
-    if (!consistency.hasPlan) return 'بدون برنامه';
-    final minutes = consistency.remainingMinutes;
-    if (consistency.level >= consistency.maxLevel) {
-      return '$minutes دقیقه مانده';
-    }
-    return '$minutes دقیقه تا ${consistency.level + 1}×';
-  }
-
-  void _openMultiplierInfo(BuildContext context) => openInfoModal(
-        context,
-        title: 'ضریب امتیاز',
-        iconAsset: 'assets/icons/flame.svg',
-        iconColor: _flameRed,
-        sections: const [
-          InfoSection(
-            'ضریب امتیاز چیست؟',
-            'ضریب امتیاز نشان می‌دهد چقدر منظم درس می‌خوانید؛ از ۱× تا ۵×.',
-          ),
-          InfoSection(
-            'چطور بیشتر می‌شود؟',
-            'هر روزی که دست‌کم ۷۰٪ برنامه‌ی زمان‌دار همان روز را انجام دهید و حداقل ۹۰ دقیقه با تایمر مطالعه کنید، ضریب یکی بیشتر می‌شود.',
-          ),
-          InfoSection(
-            'اگر روزی نشد؟',
-            'روزی که برنامه داشتید ولی به این حد نرسیدید، ضریب یکی کم می‌شود. روزی که برنامه‌ای نچیده باشید، ضریب تغییری نمی‌کند.',
-          ),
-        ],
-      );
-}
-
-const Color _flameRed = Color(0xFFFF3040);
-
-/// «ارتقا به ویژه» for a regular account, opening the premium offer;
-/// «کاربر ویژه» once premium.
-class _PlanBadge extends StatelessWidget {
-  const _PlanBadge({required this.isPremium, this.onTap});
-
-  final bool isPremium;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: onTap != null,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsetsDirectional.fromSTEB(9, 5, 11, 5),
-          decoration: BoxDecoration(
-            color: AppColors.simoCoin,
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(SolarIconsOutline.stars,
-                  size: 14, color: AppColors.white),
-              const SizedBox(width: 4),
-              ReText(
-                isPremium ? 'کاربر ویژه' : 'ارتقا به ویژه',
-                fontSize: 11.5,
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
-              if (!isPremium) ...[
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 10,
-                  color: AppColors.white,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.value,
-    required this.label,
-    required this.color,
-    required this.icon,
-    required this.trailing,
-    required this.semanticsLabel,
-    required this.onTap,
-    this.ring,
-  });
-
-  final String value;
-  final String label;
-  final Color color;
-  final Widget icon;
-  final Widget trailing;
-  final String semanticsLabel;
-  final VoidCallback onTap;
-
-  /// Progress drawn around the icon, from 0 to 1; none when null.
-  final double? ring;
-
-  @override
-  Widget build(BuildContext context) {
-    final ring = this.ring;
-    final badge = Container(
-      width: 32,
-      height: 32,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: icon,
-    );
-
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 62,
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.12),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // The ring hugs the icon without taking room from the text.
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  badge,
-                  if (ring != null)
-                    Positioned(
-                      left: -5,
-                      top: -5,
-                      right: -5,
-                      bottom: -5,
-                      child: CustomPaint(
-                        painter: _RingPainter(fraction: ring, color: color),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ReText(
-                      value,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      maxLines: 1,
-                    ),
-                    // Shrinks a little on narrow phones rather than cut.
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: AlignmentDirectional.centerStart,
-                      child: ReText(
-                        label,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gray,
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 28,
-                height: 28,
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.gray2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(child: trailing),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A thin track around the metric icon, filled clockwise from the top.
-class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.fraction, required this.color});
-
-  final double fraction;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 2.5;
-    final rect = Offset.zero & size;
-    final arc = rect.deflate(stroke / 2);
-    canvas.drawOval(
-      arc,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = color.withValues(alpha: 0.15),
-    );
-    if (fraction <= 0) return;
-    canvas.drawArc(
-      arc,
-      -math.pi / 2,
-      2 * math.pi * fraction.clamp(0.0, 1.0),
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round
-        ..color = color,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.fraction != fraction || old.color != color;
 }
 
 class _EmptyGoals extends StatelessWidget {

@@ -2,13 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
-import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
-/// Screen 5 of the consultants flow: "صورتحساب" — payment summary. Shown as a
+/// Step 2 of the purchase flow: "صورتحساب" — payment summary. Shown as a
 /// modal bottom sheet.
 ///
 /// "تایید و پرداخت" runs [onConfirm] (preparing the bank gateway) with the
@@ -19,8 +18,7 @@ import 'package:solar_icons/solar_icons.dart';
 /// [noticeIsError] tints it as an error.
 Future<T?> showInvoiceSheet<T>(
   BuildContext context, {
-  required ConsultationDurationOption duration,
-  required ConsultationPlan plan,
+  required ConsultationChoice choice,
   required Future<T> Function() onConfirm,
   String? notice,
   bool noticeIsError = false,
@@ -32,8 +30,7 @@ Future<T?> showInvoiceSheet<T>(
     enableDrag: false,
     backgroundColor: Colors.transparent,
     builder: (_) => _InvoiceSheet<T>(
-      duration: duration,
-      plan: plan,
+      choice: choice,
       onConfirm: onConfirm,
       notice: notice,
       noticeIsError: noticeIsError,
@@ -44,15 +41,13 @@ Future<T?> showInvoiceSheet<T>(
 class _InvoiceSheet<T> extends StatefulWidget {
   const _InvoiceSheet({
     super.key,
-    required this.duration,
-    required this.plan,
+    required this.choice,
     required this.onConfirm,
     this.notice,
     this.noticeIsError = false,
   });
 
-  final ConsultationDurationOption duration;
-  final ConsultationPlan plan;
+  final ConsultationChoice choice;
   final Future<T> Function() onConfirm;
   final String? notice;
   final bool noticeIsError;
@@ -66,8 +61,9 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
   late String? _message = widget.notice;
   late bool _messageIsError = widget.noticeIsError;
 
-  ConsultationDurationOption get duration => widget.duration;
-  ConsultationPlan get plan => widget.plan;
+  ConsultationChoice get choice => widget.choice;
+  ConsultationPlan get plan => widget.choice.plan;
+  PlanPrice get price => widget.choice.price;
 
   Future<void> _confirm() async {
     if (_busy) return;
@@ -114,6 +110,10 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
             _buildDurationRow(),
             const SizedBox(height: 12),
             _buildPlanRow(),
+            if (choice.hasGift) ...[
+              const SizedBox(height: 12),
+              _buildGiftRow(),
+            ],
             if (_message != null) ...[
               const SizedBox(height: 16),
               _buildMessage(_message!),
@@ -128,63 +128,57 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
     );
   }
 
+  /// Title on the right (start), step and close on the left (end).
   Widget _buildHeader(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      textDirection: TextDirection.rtl,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            ReText(
-              '۳/۳',
-              color: AppColors.black1.withOpacity(0.5),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ReText(
-                  'صورتحساب',
-                  color: AppColors.black1,
-                  fontSize: 18,
-                  fontWeight: 1000,
-                ),
-                SizedBox(height: 4),
-                ReText(
-                  'جزئیات پرداخت و هزینه مشاوره',
-                  color: AppColors.gray,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ],
-            ).rMargin(6),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _busy ? null : () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.gray2),
-                ),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 22,
-                  color: AppColors.black1.withOpacity(0.5),
-                ),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ReText(
+                'صورتحساب',
+                color: AppColors.black1,
+                fontSize: 18,
+                fontWeight: 1000,
               ),
+              SizedBox(height: 4),
+              ReText(
+                'جزئیات پرداخت و هزینه مشاوره',
+                color: AppColors.gray,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ],
+          ),
+        ),
+        ReText(
+          'مرحله ۲ از ۲',
+          color: AppColors.black1.withOpacity(0.5),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _busy ? null : () => Navigator.of(context).maybePop(),
+          child: Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.gray2),
             ),
-          ],
-        )
+            child: Icon(
+              Icons.close_rounded,
+              size: 22,
+              color: AppColors.black1.withOpacity(0.5),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -225,22 +219,8 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
               fontWeight: FontWeight.w700,
             ),
             const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ReText(
-                duration.discount,
-                color: AppColors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: 8),
             ReText(
-              duration.label,
+              durationLabel(price.months),
               color: AppColors.black1,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -269,28 +249,32 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
         textDirection: TextDirection.rtl,
         child: Row(
           children: [
-            PlanAvatar(color: plan.color),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ReText(
-                  plan.title,
-                  color: AppColors.black1,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-                const SizedBox(height: 2),
-                ReText(
-                  plan.subtitle,
-                  color: plan.color,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ],
+            PlanAvatar(color: plan.color, icon: plan.icon, size: 48),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ReText(
+                    plan.title,
+                    color: AppColors.black1,
+                    fontSize: 14,
+                    fontWeight: 900,
+                    textAlign: TextAlign.right,
+                  ),
+                  const SizedBox(height: 2),
+                  ReText(
+                    'قابل پرداخت',
+                    color: AppColors.black1.withOpacity(0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    textAlign: TextAlign.right,
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -301,35 +285,54 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _priceNumber(plan.price, plan.color),
+                      _priceNumber(formatToman(price.total)),
                       const SizedBox(width: 4),
                       ReText(
                         'تومــان',
-                        color: plan.color,
+                        color: AppColors.black1.withOpacity(0.6),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                ReText(
-                  plan.oldPrice,
-                  color: AppColors.black1.withOpacity(0.5),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.lineThrough,
-                ),
+                if (price.hasDiscount) ...[
+                  const SizedBox(height: 2),
+                  ReText(
+                    formatToman(price.baseTotal),
+                    color: AppColors.black1.withOpacity(0.5),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ],
               ],
             ),
+            if (price.hasDiscount) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ReText(
+                  '${price.discountPercent}٪',
+                  color: AppColors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  /// Renders the price with black digits and separators tinted [color].
-  Widget _priceNumber(String price, Color color) {
+  /// Renders the price in black, digit groups and separators as separate
+  /// runs so the separators stay bold.
+  Widget _priceNumber(String price) {
     final parts = price.split(',');
     final children = <Widget>[];
     for (var i = 0; i < parts.length; i++) {
@@ -358,6 +361,35 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
       mainAxisSize: MainAxisSize.min,
       textDirection: TextDirection.ltr,
       children: children,
+    );
+  }
+
+  Widget _buildGiftRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          children: [
+            Icon(SolarIconsBold.gift, size: 18, color: AppColors.primary),
+            SizedBox(width: 8),
+            Expanded(
+              child: ReText(
+                'هدیه: $kYearlyGift',
+                color: AppColors.black1,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                textAlign: TextAlign.right,
+                maxLines: 2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -424,8 +456,10 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
     );
   }
 
+  /// The main action on the right (start), cancel on the left.
   Widget _buildActions(BuildContext context) {
     return Row(
+      textDirection: TextDirection.rtl,
       children: [
         Expanded(
           child: ReButton(

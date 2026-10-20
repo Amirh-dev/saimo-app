@@ -1,5 +1,4 @@
-/// Static data model for the consultants flow (screens 1-7).
-/// No backend — hardcoded sample data for now.
+/// Data model for the consultants flow (screens 1-7).
 class ConsultantResumeItem {
   const ConsultantResumeItem({required this.title, this.count = 1});
 
@@ -27,59 +26,12 @@ class Consultant {
   final List<ConsultantResumeItem> resume;
 }
 
-const String _kSampleAvatar = 'Assets.profilePlaceholder';
+/// Shown when the server refuses the counseling section to this account
+/// (e.g. an admin account, which is not a student).
+const String kCounselingNoAccessTitle = 'شما به این بخش دسترسی ندارید';
+const String kCounselingNoAccessMessage =
+    'برای استفاده از بخش مشاوره، با پشتیبانی تماس بگیرید.';
 
-const List<Consultant> kSampleConsultants = [
-  Consultant(
-    id: 'c1',
-    name: 'علیرضا یوسفی',
-    specialty: 'فوق تخصص مشاوره تحصیلی',
-    rating: '۴',
-    maxRating: '۵',
-    avatar: _kSampleAvatar,
-    resume: [
-      ConsultantResumeItem(title: 'استاد دانشگاه دولتی یزد'),
-      ConsultantResumeItem(title: 'تندیس بهترین استاد سال ۱۴۰۳'),
-      ConsultantResumeItem(title: '۲۲ سال سابقه مشاوره تحصیلی'),
-    ],
-  ),
-  Consultant(
-    id: 'c2',
-    name: 'محمد علیزاده',
-    specialty: 'فوق تخصص مشاوره تحصیلی',
-    rating: '۴',
-    maxRating: '۵',
-    avatar: _kSampleAvatar,
-    resume: [
-      ConsultantResumeItem(title: 'استاد دانشگاه دولتی یزد'),
-      ConsultantResumeItem(title: 'تندیس بهترین استاد سال ۱۴۰۳'),
-      ConsultantResumeItem(title: '۲۲ سال سابقه مشاوره تحصیلی'),
-    ],
-  ),
-  Consultant(
-    id: 'c3',
-    name: 'علیرضا یوسفی',
-    specialty: 'فوق تخصص مشاوره تحصیلی',
-    rating: '۴',
-    maxRating: '۵',
-    avatar: _kSampleAvatar,
-    resume: [
-      ConsultantResumeItem(title: 'استاد دانشگاه دولتی یزد'),
-      ConsultantResumeItem(title: 'تندیس بهترین استاد سال ۱۴۰۳'),
-      ConsultantResumeItem(title: '۲۲ سال سابقه مشاوره تحصیلی'),
-    ],
-  ),
-  Consultant(
-    id: 'c4',
-    name: 'علیرضا یوسفی',
-    specialty: 'فوق تخصص مشاوره تحصیلی',
-    rating: '۴',
-    maxRating: '۵',
-    avatar: _kSampleAvatar,
-    resume: [
-      ConsultantResumeItem(title: 'استاد دانشگاه دولتی یزد'),
-      ConsultantResumeItem(title: 'تندیس بهترین استاد سال ۱۴۰۳'),
-      ConsultantResumeItem(title: '۲۲ سال سابقه مشاوره تحصیلی'),
-    ],
-  ),
-];
+/// Whether [error] is the server's role check rejecting this account.
+bool isCounselingAccessDenied(Object error) =>
+    error.toString().toLowerCase().contains('forbidden');

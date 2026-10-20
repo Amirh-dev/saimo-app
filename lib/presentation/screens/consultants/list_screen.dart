@@ -10,7 +10,6 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
-import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_tab.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_tab_screen.dart';
@@ -22,8 +21,8 @@ import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// Screen 2 of the consultants flow: the consultants list with expandable
-/// (accordion) cards. Loads counselors from the API, falls back to sample data
-/// when the request fails (e.g. offline or not signed in).
+/// (accordion) cards. Loads counselors from the API; when that fails it says
+/// why (no access for this account, or a connection problem) instead.
 class ConsultantListScreen extends StatefulWidget {
   const ConsultantListScreen({super.key, this.onSelect});
 
@@ -37,9 +36,11 @@ class ConsultantListScreen extends StatefulWidget {
 
 class _ConsultantListScreenState extends State<ConsultantListScreen> {
   ConsultantRepository? _repository;
-  List<Consultant> _consultants = kSampleConsultants;
+  List<Consultant> _consultants = const [];
   bool _loading = true;
-  bool _fromApi = false;
+
+  /// Set when the list could not be loaded.
+  _LoadFailure? _failure;
 
   /// True while the payment result is read back after the gateway closes;
   /// blocks the screen so a second purchase can't start mid-flow.
@@ -55,33 +56,49 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   }
 
   Future<void> _loadConsultants() async {
-    ConsultantRepository? repo;
-    try {
-      repo = ConsultantRepository(context.read<GraphQLRepository>());
-    } catch (_) {
-      // No repository available (e.g. widget used outside the app shell).
-      repo = null;
+    ConsultantRepository? repo = _repository;
+    if (repo == null) {
+      try {
+        repo = ConsultantRepository(context.read<GraphQLRepository>());
+      } catch (_) {
+        // No repository available (e.g. widget used outside the app shell).
+        repo = null;
+      }
+      _repository = repo;
     }
-    _repository = repo;
 
     if (repo == null) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _failure = _LoadFailure.network;
+          _loading = false;
+        });
+      }
       return;
+    }
+
+    if (_failure != null) {
+      setState(() {
+        _failure = null;
+        _loading = true;
+      });
     }
 
     try {
       final counselors = await repo.fetchCounselors();
       if (!mounted) return;
       setState(() {
-        if (counselors.isNotEmpty) {
-          _consultants = counselors;
-          _fromApi = true;
-        }
+        _consultants = counselors;
         _loading = false;
       });
-    } catch (_) {
-      // Keep sample data as a graceful fallback.
-      if (mounted) setState(() => _loading = false);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _failure = isCounselingAccessDenied(error)
+            ? _LoadFailure.noAccess
+            : _LoadFailure.network;
+        _loading = false;
+      });
     }
   }
 
@@ -91,7 +108,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     });
   }
 
-  // Screen 3 (duration) → 4 (plans) → 5 (invoice) → request + online payment.
+  // Plan + duration → invoice → request + online payment.
   Future<void> _startConsultationFlow(
     BuildContext context,
     Consultant consultant,
@@ -102,23 +119,19 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     final offers = await _loadOffers(consultant);
     if (!context.mounted) return;
 
-    final duration = await showConsultationDetailsSheet(context);
-    if (duration == null || !context.mounted) return;
-
-    final plans = _plansForDuration(offers, duration.months);
-    final plan = await showPlansSheet(
+    final choice = await showPlansSheet(
       context,
-      title: duration.planTitle,
-      plans: plans,
+      counselorName: consultant.name,
+      plans: _plansFromOffers(offers),
     );
-    if (plan == null || !context.mounted) return;
+    if (choice == null || !context.mounted) return;
 
-    await _payFromInvoice(context, consultant, duration, plan);
+    await _payFromInvoice(context, consultant, choice);
   }
 
   Future<List<CounselingOffer>> _loadOffers(Consultant consultant) async {
     final repo = _repository;
-    if (repo == null || !_fromApi || consultant.id.isEmpty) return const [];
+    if (repo == null || consultant.id.isEmpty) return const [];
     try {
       return await repo.fetchOffers(consultant.id);
     } catch (_) {
@@ -126,33 +139,26 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     }
   }
 
-  /// Overlays real offer prices onto the static plan cards for [months].
-  /// Any plan without a matching offer keeps its static price.
-  List<ConsultationPlan> _plansForDuration(
-    List<CounselingOffer> offers,
-    int months,
-  ) {
+  /// Replaces the static price list with the server's offers, so the sheet
+  /// shows exactly the plans and durations that can be bought. Plans without
+  /// any offer are left out.
+  List<ConsultationPlan> _plansFromOffers(List<CounselingOffer> offers) {
     if (offers.isEmpty) return kPlans;
-    return kPlans.map((plan) {
-      CounselingOffer? match;
-      for (final offer in offers) {
-        if (offer.planType == plan.planType && offer.durationMonths == months) {
-          match = offer;
-          break;
-        }
-      }
-      if (match == null) return plan;
-      return plan.copyWith(
-        price: convertToPersianNumbers(
-          match.totalPrice.toString(),
-          addSeparator: true,
-        ),
-        oldPrice: convertToPersianNumbers(
-          match.baseTotalPrice.toString(),
-          addSeparator: true,
-        ),
-      );
-    }).toList();
+    final plans = <ConsultationPlan>[];
+    for (final plan in kPlans) {
+      final prices = {
+        for (final offer in offers)
+          if (offer.planType == plan.planType && offer.durationMonths > 0)
+            offer.durationMonths: PlanPrice(
+              months: offer.durationMonths,
+              total: offer.totalPrice,
+              baseTotal: offer.baseTotalPrice,
+              discountPercent: offer.discountPercent,
+            ),
+      };
+      if (prices.isNotEmpty) plans.add(plan.withPrices(prices));
+    }
+    return plans.isEmpty ? kPlans : plans;
   }
 
   /// Shows the invoice, and on "تایید و پرداخت" reserves the request and opens
@@ -164,15 +170,13 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   Future<void> _payFromInvoice(
     BuildContext context,
     Consultant consultant,
-    ConsultationDurationOption duration,
-    ConsultationPlan plan,
+    ConsultationChoice choice,
   ) async {
     final repo = _repository;
     final messenger = ScaffoldMessenger.of(context);
 
-    // Sample consultants (API unavailable) can't be purchased, and nothing may
-    // be granted without a verified payment.
-    if (repo == null || !_fromApi || consultant.id.isEmpty) {
+    // Nothing may be granted without a verified payment.
+    if (repo == null || consultant.id.isEmpty) {
       messenger.showSnackBar(
         _snack('در حال حاضر امکان پرداخت وجود ندارد. لطفاً دوباره تلاش کنید.',
             error: true),
@@ -188,8 +192,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
       PaymentTab? tab;
       final initiation = await showInvoiceSheet<PaymentInitiation>(
         context,
-        duration: duration,
-        plan: plan,
+        choice: choice,
         notice: notice,
         noticeIsError: noticeIsError,
         onConfirm: () async {
@@ -199,8 +202,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
           try {
             final initiation = await checkout.start(
               counselorProfileID: consultant.id,
-              durationMonths: duration.months,
-              planType: plan.planType,
+              durationMonths: choice.months,
+              planType: choice.plan.planType,
             );
             // Send the tab to the bank right away. It has the focus now, so
             // this tab is in the background, where the browser holds back
@@ -249,11 +252,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
       switch (outcome.kind) {
         case CheckoutOutcomeKind.succeeded:
           unawaited(ActiveCounselorStore.instance.refresh(repo, force: true));
-          await showConsultationSuccessSheet(
-            context,
-            duration: duration,
-            plan: plan,
-          );
+          await showConsultationSuccessSheet(context, choice: choice);
           return;
         case CheckoutOutcomeKind.pending:
         case CheckoutOutcomeKind.unknown:
@@ -338,31 +337,137 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
             ),
           ),
         ),
-        Expanded(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator.adaptive())
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
-                  itemCount: _consultants.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final consultant = _consultants[index];
-                    return _ConsultantCard(
-                      consultant: consultant,
-                      expanded: index == _expandedIndex,
-                      onToggle: () => _toggle(index),
-                      onSelect: () {
-                        if (widget.onSelect != null) {
-                          widget.onSelect!(consultant);
-                        } else {
-                          _startConsultationFlow(context, consultant);
-                        }
-                      },
-                    );
-                  },
-                ),
-        ),
+        Expanded(child: _buildList()),
       ],
+    );
+  }
+
+  Widget _buildList() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    switch (_failure) {
+      case _LoadFailure.noAccess:
+        return const _ListMessage(
+          icon: SolarIconsOutline.lockKeyhole,
+          title: kCounselingNoAccessTitle,
+          message: kCounselingNoAccessMessage,
+        );
+      case _LoadFailure.network:
+        return _ListMessage(
+          icon: SolarIconsOutline.dangerTriangle,
+          title: 'دریافت فهرست مشاوران ممکن نشد',
+          message: 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.',
+          onRetry: _loadConsultants,
+        );
+      case null:
+        break;
+    }
+    if (_consultants.isEmpty) {
+      return const _ListMessage(
+        icon: SolarIconsOutline.usersGroupRounded,
+        title: 'فعلاً مشاوری در دسترس نیست',
+        message: 'به‌زودی مشاوران جدید به این فهرست اضافه می‌شوند.',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+      itemCount: _consultants.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final consultant = _consultants[index];
+        return _ConsultantCard(
+          consultant: consultant,
+          expanded: index == _expandedIndex,
+          onToggle: () => _toggle(index),
+          onSelect: () {
+            if (widget.onSelect != null) {
+              widget.onSelect!(consultant);
+            } else {
+              _startConsultationFlow(context, consultant);
+            }
+          },
+        );
+      },
+    );
+  }
+}
+
+enum _LoadFailure { noAccess, network }
+
+/// Takes the list's place when there is nothing to choose from.
+class _ListMessage extends StatelessWidget {
+  const _ListMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.onRetry,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(icon, size: 30, color: AppColors.secondary),
+            ),
+            const SizedBox(height: 18),
+            ReText(
+              title,
+              color: AppColors.black1,
+              fontSize: 16,
+              fontWeight: 900,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            ReText(
+              message,
+              color: AppColors.gray,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              textAlign: TextAlign.center,
+              lineHeight: 1.7,
+              maxLines: 3,
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 18),
+              SizedBox(
+                width: 160,
+                child: ReButton(
+                  text: 'تلاش دوباره',
+                  background: AppColors.secondary,
+                  borderRadius: 40,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  onPressed: onRetry,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

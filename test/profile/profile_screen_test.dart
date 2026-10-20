@@ -7,10 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 // gql_exec is exposed by Ferry for the in-memory test link.
 // ignore: depend_on_referenced_packages
 import 'package:gql_exec/gql_exec.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
+import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
@@ -123,6 +126,13 @@ void main() {
 
   testWidgets('settings item opens the reference settings panel',
       (tester) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'سایمو',
+      packageName: 'simo.learn',
+      version: '1.0.1',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     SharedPreferences.setMockInitialValues({});
@@ -140,12 +150,20 @@ void main() {
     await tester.tap(settings);
     await tester.pumpAndSettle();
 
-    expect(find.text('بازگشت به پیش فرض'), findsOneWidget);
-    expect(find.text('اعلان ها'), findsOneWidget);
-    expect(find.text('اخبار ها'), findsOneWidget);
+    expect(find.text('اخبار و اطلاع‌رسانی‌ها'), findsOneWidget);
     expect(find.text('نسخه ۱.۰.۱'), findsOneWidget);
-    expect(find.text('ذخیره'), findsOneWidget);
-    expect(find.text('لغو تغییرات'), findsOneWidget);
+    expect(find.text('ذخیره'), findsNothing);
+
+    // The switch saves the moment it flips.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('settings-news')),
+        matching: find.byType(GestureDetector),
+      ).last,
+    );
+    await tester.pumpAndSettle();
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getBool('profile_news_enabled'), isTrue);
   });
 
   testWidgets('premium account row opens the plans screen', (tester) async {
@@ -185,8 +203,13 @@ void main() {
     Widget buildApp(Widget home) {
       return RepositoryProvider<GraphQLRepository>.value(
         value: repository,
-        child: BlocProvider<ProfileCubit>.value(
-          value: profileCubit,
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<ProfileCubit>.value(value: profileCubit),
+            BlocProvider(
+              create: (_) => DashboardCubit(DashboardRepository(repository)),
+            ),
+          ],
           child: MaterialApp(home: home),
         ),
       );
@@ -234,10 +257,12 @@ void main() {
     await tester.pump();
 
     expect(repository.getProfileRequestCount, 2);
+    // A refresh keeps the loaded profile on screen.
     expect(
       find.byKey(const ValueKey('profile-loading-shimmer')),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('علی رضایی'), findsOneWidget);
 
     repository.completeNextProfile();
     await tester.pumpAndSettle();
@@ -329,10 +354,12 @@ void main() {
     await tester.pump();
 
     expect(repository.getProfileRequestCount, 2);
+    // A refresh keeps the loaded profile on screen.
     expect(
       find.byKey(const ValueKey('profile-loading-shimmer')),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('علی رضایی'), findsOneWidget);
 
     repository.completeNextProfile();
     await tester.pumpAndSettle();
@@ -381,8 +408,13 @@ Widget _profileTestApp(
 ) {
   return RepositoryProvider<GraphQLRepository>.value(
     value: repository,
-    child: BlocProvider(
-      create: (_) => ProfileCubit(repository),
+    child: MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ProfileCubit(repository)),
+        BlocProvider(
+          create: (_) => DashboardCubit(DashboardRepository(repository)),
+        ),
+      ],
       child: MaterialApp(home: home),
     ),
   );

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
-import 'package:simo_learn/presentation/screens/consultants/details_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_webview_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
@@ -79,8 +78,10 @@ void main() {
               body: TextButton(
                 onPressed: () => result = showInvoiceSheet<String>(
                   context,
-                  duration: kDurations.first,
-                  plan: kPlans[1],
+                  choice: ConsultationChoice(
+                    plan: kPlans[1],
+                    price: kPlans[1].prices[12]!,
+                  ),
                   notice: notice,
                   onConfirm: onConfirm,
                 ),
