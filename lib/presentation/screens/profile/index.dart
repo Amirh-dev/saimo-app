@@ -21,6 +21,7 @@ import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/avatar_uploader.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
+import 'package:simo_learn/features/support/support_link.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
 import 'package:simo_learn/presentation/screens/chat/inbox_subscription_client.dart';
@@ -700,11 +701,7 @@ class _ProfileHomeContent extends StatelessWidget {
               onPremium: () => showFreePremiumMessage(context),
               onAccountDetails: onOpenAccountDetails,
               onSettings: onOpenSettings,
-              onSupport: () => showReToast(
-                context,
-                'پشتیبانی به‌زودی در دسترس قرار می‌گیرد',
-                ReToastType.info,
-              ),
+              onSupport: () => openSupport(context),
               onLogout: () => _confirmProfileLogout(context),
             ),
             const SizedBox(height: 24),

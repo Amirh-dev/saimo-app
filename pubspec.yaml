@@ -78,6 +78,7 @@ dependencies:
   # no web implementation, and bank pages refuse to be framed). Kept at the
   # 0.5.x line webview_flutter already resolves.
   web: ^0.5.1
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
