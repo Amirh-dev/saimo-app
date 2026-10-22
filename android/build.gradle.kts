@@ -1,5 +1,9 @@
 allprojects {
     repositories {
+        // Google Maven (dl.google.com) answers 404 to requests from Iran, even through
+        // the proxy, so AndroidX comes from mirrors first. google() stays as a fallback.
+        maven { url = uri("https://maven.myket.ir") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
         google()
         mavenCentral()
     }

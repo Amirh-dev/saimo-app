@@ -20,6 +20,11 @@ import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/profile/friendship_models.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:solar_icons/solar_icons.dart';
+// url_launcher's platform interface, so launches can be recorded.
+// ignore: depend_on_referenced_packages
+import 'package:url_launcher_platform_interface/link.dart';
+// ignore: depend_on_referenced_packages
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 void main() {
   testWidgets('profile uses shape-matched shimmer until server data arrives',
@@ -164,6 +169,39 @@ void main() {
     await tester.pumpAndSettle();
     final preferences = await SharedPreferences.getInstance();
     expect(preferences.getBool('profile_news_enabled'), isTrue);
+  });
+
+  group('support button', () {
+    late _FakeUrlLauncher launcher;
+    setUp(() => UrlLauncherPlatform.instance = launcher = _FakeUrlLauncher());
+
+    Future<void> tapSupport(WidgetTester tester, String? serverLink) async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = await TokenStorage.create();
+      final repository = _ProfileGraphQLRepository(storage)
+        ..supportLink = serverLink;
+      await tester.pumpWidget(
+        _profileTestApp(repository, const ProfileScreen()),
+      );
+      await tester.pumpAndSettle();
+      final support = find.byKey(const ValueKey('profile-support'));
+      await tester.ensureVisible(support);
+      await tester.pumpAndSettle();
+      expect(find.text('به‌زودی'), findsNothing);
+      await tester.tap(support);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens the link the admin set', (tester) async {
+      await tapSupport(tester, 'https://wa.me/989121234567');
+      expect(launcher.launched, ['https://wa.me/989121234567']);
+    });
+
+    testWidgets('falls back to the Telegram account when none is set',
+        (tester) async {
+      await tapSupport(tester, null);
+      expect(launcher.launched, ['https://t.me/SaimoSupport']);
+    });
   });
 
   testWidgets('premium account row opens the plans screen', (tester) async {
@@ -402,6 +440,22 @@ void main() {
   });
 }
 
+class _FakeUrlLauncher extends UrlLauncherPlatform {
+  final launched = <String>[];
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> canLaunch(String url) async => true;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    launched.add(url);
+    return true;
+  }
+}
+
 Widget _profileTestApp(
   GraphQLRepository repository,
   Widget home,
@@ -436,6 +490,7 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
 
   int getProfileRequestCount = 0;
   String profileFullName = 'علی رضایی';
+  String? supportLink;
 
   Map<String, dynamic> get profileResponse {
     return {
@@ -483,6 +538,7 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
         },
       };
     }
+    if (query.contains('SupportLink')) return {'supportLink': supportLink};
     if (query.contains('GetMeForFriends')) {
       return {
         'getMe': {

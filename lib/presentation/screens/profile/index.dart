@@ -771,9 +771,9 @@ class _ProfileAccountMenu extends StatelessWidget {
             children: [
               Expanded(
                 child: _ProfileAccountCompactAction(
+                  key: const ValueKey('profile-support'),
                   title: 'پشتیبانی',
                   icon: SolarIconsOutline.headphonesRound,
-                  isComingSoon: true,
                   onTap: onSupport,
                 ),
               ),
@@ -860,7 +860,6 @@ class _ProfileAccountCompactAction extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.color = AppColors.black1,
-    this.isComingSoon = false,
   });
 
   final String title;
@@ -870,12 +869,8 @@ class _ProfileAccountCompactAction extends StatelessWidget {
   /// The title and icon color: red for logout, so it matches its dialog.
   final Color color;
 
-  /// Greyed with a «به‌زودی» tag for what is not built yet.
-  final bool isComingSoon;
-
   @override
   Widget build(BuildContext context) {
-    final color = isComingSoon ? AppColors.gray : this.color;
     // These two run an action in place, so no arrow points to a page.
     return GestureDetector(
       onTap: onTap,
@@ -912,13 +907,6 @@ class _ProfileAccountCompactAction extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     maxLines: 1,
                   ),
-                  if (isComingSoon)
-                    const ReText(
-                      'به‌زودی',
-                      color: AppColors.gray,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                    ),
                 ],
               ),
             ),
