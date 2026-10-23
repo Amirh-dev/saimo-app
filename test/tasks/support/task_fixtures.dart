@@ -45,9 +45,17 @@ Map<String, dynamic> buildTask(
     'timerStartedAt': null,
     'status': done ? 'COMPLETED' : 'TODO',
     'goal': null,
-    'tags': const [],
-    'subjectTag':
-        subject == null ? null : {'id': 's-$subject', 'name': subject},
+    'tags': subject == null
+            ? const []
+            : [
+                // The server groups a task under its approved tag's parent.
+                {
+                  'id': 't-$subject',
+                  'name': 'مبحث $subject',
+                  'moderationStatus': 'APPROVED',
+                  'parent': {'id': 's-$subject', 'name': subject},
+                },
+              ],
   });
 }
 

@@ -47,6 +47,11 @@ String taskFailureMessage(Object? error, {required String fallback}) {
         ? 'یکی از تگ‌ها قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.'
         : 'تگ «$tag» قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.';
   }
+  if (lower.contains('failed to process tags')) {
+    // The server rejects a tag name too long for it (more than 25 Persian
+    // letters, as its length check counts bytes).
+    return 'یکی از تگ‌ها ثبت نشد؛ نام کوتاه‌تری برایش بنویسید و دوباره ثبت کنید.';
+  }
   if (lower.contains('goal not found')) {
     return 'هدف این تسک پیدا نشد؛ شاید حذف شده باشد.';
   }

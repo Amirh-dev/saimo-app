@@ -1182,7 +1182,6 @@ abstract class GCreateTaskInput
   GRecurrenceInput? get recurrence;
   String? get goalID;
   BuiltList<String>? get tagNames;
-  String? get subjectTagID;
   static Serializer<GCreateTaskInput> get serializer =>
       _$gCreateTaskInputSerializer;
 
@@ -2220,8 +2219,6 @@ abstract class GTagWhereInput
   BuiltList<GTagWhereInput>? get hasParentWith;
   bool? get hasCreatedBy;
   BuiltList<GUserWhereInput>? get hasCreatedByWith;
-  bool? get hasSubjectTasks;
-  BuiltList<GTaskWhereInput>? get hasSubjectTasksWith;
   static Serializer<GTagWhereInput> get serializer =>
       _$gTagWhereInputSerializer;
 
@@ -2609,20 +2606,12 @@ abstract class GTaskWhereInput
   BuiltList<String>? get goalIDNotIn;
   bool? get goalIDIsNil;
   bool? get goalIDNotNil;
-  String? get subjectTagID;
-  String? get subjectTagIDNEQ;
-  BuiltList<String>? get subjectTagIDIn;
-  BuiltList<String>? get subjectTagIDNotIn;
-  bool? get subjectTagIDIsNil;
-  bool? get subjectTagIDNotNil;
   bool? get hasUser;
   BuiltList<GUserWhereInput>? get hasUserWith;
   bool? get hasGoal;
   BuiltList<GGoalWhereInput>? get hasGoalWith;
   bool? get hasTags;
   BuiltList<GTagWhereInput>? get hasTagsWith;
-  bool? get hasSubjectTag;
-  BuiltList<GTagWhereInput>? get hasSubjectTagWith;
   bool? get hasCompletionReport;
   BuiltList<GTaskCompletionReportWhereInput>? get hasCompletionReportWith;
   static Serializer<GTaskWhereInput> get serializer =>
@@ -2754,8 +2743,6 @@ abstract class GUpdateTaskInput
   GTaskStatus? get status;
   String? get goalID;
   BuiltList<String>? get tagNames;
-  String? get subjectTagID;
-  bool? get clearSubjectTag;
   static Serializer<GUpdateTaskInput> get serializer =>
       _$gUpdateTaskInputSerializer;
 

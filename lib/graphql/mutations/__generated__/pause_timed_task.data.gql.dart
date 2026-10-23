@@ -71,7 +71,6 @@ abstract class GPauseTimedTaskData_pauseTimedTask
   _i2.GTaskStatus get status;
   String get userID;
   String? get goalID;
-  String? get subjectTagID;
   static Serializer<GPauseTimedTaskData_pauseTimedTask> get serializer =>
       _$gPauseTimedTaskDataPauseTimedTaskSerializer;
 

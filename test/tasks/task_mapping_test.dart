@@ -34,9 +34,16 @@ Map<String, dynamic> _apiTask({
     'goal': null,
     'tags': [
       for (final (index, name) in tags.indexed)
-        {'id': 'tag-$index', 'name': name},
+        {'id': 'tag-$index', 'name': name, 'moderationStatus': 'PENDING'},
+      // The server groups a task under its approved tag's parent.
+      if (subject != null)
+        {
+          'id': 'subject-tag',
+          'name': 'مبحث $subject',
+          'moderationStatus': 'APPROVED',
+          'parent': {'id': 'subject-1', 'name': subject},
+        },
     ],
-    'subjectTag': subject == null ? null : {'id': 'subject-1', 'name': subject},
   };
 }
 
@@ -86,6 +93,49 @@ void main() {
       expect(task['subject'], 'ریاضی');
       expect(task['recurrenceId'], 'rec-1');
       expect(isTimedTask(task), isFalse);
+    });
+
+    test('takes the subject from the tag tree like tag statistics', () {
+      Map<String, dynamic> withTags(List<Map<String, dynamic>> tags) =>
+          {..._apiTask(), 'tags': tags};
+      // Own (pending) tags are "other"; a top-level approved tag is its own
+      // subject; a mapped one counts under its parent.
+      expect(
+        taskFromApi(withTags([
+          {'id': 'a', 'name': 'مرور', 'moderationStatus': 'PENDING'},
+        ]))['subject'],
+        isNull,
+      );
+      expect(
+        taskFromApi(withTags([
+          {'id': 'a', 'name': 'مرور', 'moderationStatus': 'PENDING'},
+          {'id': 'b', 'name': 'کنکور', 'moderationStatus': 'APPROVED'},
+        ]))['subject'],
+        'کنکور',
+      );
+      expect(
+        taskFromApi(withTags([
+          {
+            'id': 'c',
+            'name': 'حسابان',
+            'moderationStatus': 'APPROVED',
+            'parent': {'id': 'p', 'name': 'ریاضیات'},
+          },
+        ]))['subject'],
+        'ریاضیات',
+      );
+    });
+
+    test('lists tags blocked since they were added', () {
+      final task = taskFromApi({
+        ..._apiTask(),
+        'tags': [
+          {'id': 'a', 'name': 'اسپم', 'moderationStatus': 'BLOCKED'},
+          {'id': 'b', 'name': 'ریاضی', 'moderationStatus': 'APPROVED'},
+        ],
+      });
+      expect(task['tags'], ['اسپم', 'ریاضی']);
+      expect(task['blockedTags'], ['اسپم']);
     });
   });
 

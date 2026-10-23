@@ -9,6 +9,28 @@ import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/re_text_field.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
+/// Longest tag name the server accepts.
+const int kMaxTagNameLength = 50;
+
+const Map<String, String> _letterVariants = {
+  'ي': 'ی', 'ك': 'ک',
+  '٠': '۰', '١': '۱', '٢': '۲', '٣': '۳', '٤': '۴',
+  '٥': '۵', '٦': '۶', '٧': '۷', '٨': '۸', '٩': '۹',
+};
+
+/// A tag name as the server stores it (its canonicalizeTagName): Arabic
+/// letter and digit forms made Persian, lower case, single spaces. Names with
+/// the same form are one tag there, so they are one chip here.
+String canonicalTagName(String name) {
+  final persian = name.split('').map((char) => _letterVariants[char] ?? char);
+  return persian
+      .join()
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .join(' ');
+}
+
 /// A task's tags, as quick add and the full task forms pick them.
 ///
 /// There are none to show until the task has a title: then [suggest] asks
@@ -20,9 +42,13 @@ class TagSelection extends ChangeNotifier {
     this.suggest,
     this.catalog = const [],
     Iterable<String> initial = const [],
+    Iterable<String> initialOff = const [],
     String initialTitle = '',
   })  : _extra = _unique(initial),
-        _title = initialTitle.trim();
+        _title = initialTitle.trim() {
+    // Tags the task already has that can no longer be saved (blocked).
+    _off.addAll(_unique(initialOff));
+  }
 
   final Future<List<String>> Function(String title)? suggest;
 
@@ -53,7 +79,6 @@ class TagSelection extends ChangeNotifier {
   bool _disposed = false;
 
   bool get isLoading => _loading;
-  bool get hasSuggestions => _suggested.isNotEmpty;
 
   /// Whether there is anything to show; otherwise a hint stands in.
   bool get showsTags => _title.isNotEmpty || _extra.isNotEmpty;
@@ -65,7 +90,7 @@ class TagSelection extends ChangeNotifier {
 
   /// What the task is saved with.
   List<String> get selected {
-    final draft = _draft.trim();
+    final draft = canonicalTagName(_draft);
     return _unique([
       for (final tag in offered)
         if (isSelected(tag)) tag,
@@ -78,7 +103,7 @@ class TagSelection extends ChangeNotifier {
   /// Known tags containing [query] that are not picked yet, those starting
   /// with it first.
   List<String> matches(String query) {
-    final needle = query.trim().toLowerCase();
+    final needle = canonicalTagName(query);
     if (needle.isEmpty) return const [];
     final picked = {
       for (final tag in offered)
@@ -86,11 +111,11 @@ class TagSelection extends ChangeNotifier {
     };
     final found = [
       for (final tag in _unique(catalog))
-        if (!picked.contains(tag) && tag.toLowerCase().contains(needle)) tag,
+        if (!picked.contains(tag) && tag.contains(needle)) tag,
     ];
     found.sort((a, b) {
-      final aStarts = a.toLowerCase().startsWith(needle) ? 0 : 1;
-      final bStarts = b.toLowerCase().startsWith(needle) ? 0 : 1;
+      final aStarts = a.startsWith(needle) ? 0 : 1;
+      final bStarts = b.startsWith(needle) ? 0 : 1;
       return aStarts - bStarts;
     });
     return found.take(_maxMatches).toList();
@@ -145,7 +170,7 @@ class TagSelection extends ChangeNotifier {
   /// Adds a tag of the user's own, or turns a listed one back on.
   void add(String value) {
     _draft = '';
-    final tag = value.trim();
+    final tag = canonicalTagName(value);
     if (tag.isNotEmpty) {
       if (!offered.contains(tag)) _extra.add(tag);
       _off.remove(tag);
@@ -171,7 +196,7 @@ class TagSelection extends ChangeNotifier {
   static List<String> _unique(Iterable<String> names) {
     final seen = <String>{};
     return [
-      for (final name in names.map((name) => name.trim()))
+      for (final name in names.map(canonicalTagName))
         if (name.isNotEmpty && seen.add(name)) name,
     ];
   }
@@ -417,6 +442,9 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
               key: ValueKey('$prefix-tag-input'),
               controller: _input,
               focusNode: _inputFocus,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(kMaxTagNameLength),
+              ],
               textInputAction: TextInputAction.done,
               onChanged: (value) {
                 widget.selection.draftChanged(value);
@@ -604,7 +632,7 @@ class _PopInState extends State<_PopIn> with SingleTickerProviderStateMixin {
 }
 
 /// A quiet note beside the tags' heading: a breathing sparkle while the
-/// server is asked, then where the tags came from.
+/// server is asked, then how many of the tags are picked.
 class TagSuggestionStatus extends StatelessWidget {
   const TagSuggestionStatus({
     super.key,
@@ -643,17 +671,22 @@ class TagSuggestionStatus extends StatelessWidget {
               ),
             ],
           );
-        } else if (selection.hasSuggestions) {
-          note = const Row(
-            key: ValueKey('suggested'),
+        } else if (selection.offered.isNotEmpty) {
+          final offered = selection.offered;
+          final picked = offered.where(selection.isSelected).length;
+          note = Row(
+            key: ValueKey('$keyPrefix-tags-count'),
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
-              Icon(Icons.auto_awesome_rounded,
-                  size: 13, color: AppColors.primary),
-              SizedBox(width: 4),
               ReText(
-                'پیشنهاد از روی عنوان',
+                convertToPersianNumbers('$picked'),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: AppColors.black1,
+              ),
+              ReText(
+                convertToPersianNumbers(' از ${offered.length} انتخاب شده'),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray,
@@ -718,8 +751,10 @@ class _MatchChip extends StatelessWidget {
   }
 }
 
-/// A tag: `#name` while off, a black pill with a check once picked; the mark
-/// turns over and the pill settles with a small bounce.
+/// A tag with a check circle, like a check box: a raised white pill with a
+/// filled circle once picked, a flat gray one with an empty circle and gray
+/// name while off. The check pops in and the pill settles with a small
+/// bounce.
 class _TagChip extends StatelessWidget {
   const _TagChip({
     super.key,
@@ -734,7 +769,6 @@ class _TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = AppColors.black1;
     return Semantics(
       button: true,
       selected: selected,
@@ -758,56 +792,79 @@ class _TagChip extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             height: 34,
-            padding: const EdgeInsetsDirectional.only(start: 10, end: 13),
+            padding: const EdgeInsetsDirectional.only(start: 8, end: 13),
             decoration: BoxDecoration(
-              // Picked: a soft gray pill with a dark edge, light enough for a
-              // row of tags.
-              color: selected ? AppColors.gray1 : AppColors.white,
+              color: selected ? AppColors.whiteSec : AppColors.gray1,
               borderRadius: BorderRadius.circular(100),
+              // The same edge both ways, so the pill keeps its size.
               border: Border.all(
-                color: selected ? AppColors.black1 : AppColors.gray2,
-                width: selected ? 1.2 : 1,
+                color: selected ? AppColors.gray2 : AppColors.gray1,
               ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.black1.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : const [],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 14,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) => RotationTransition(
-                      turns: Tween(begin: 0.75, end: 1.0).animate(animation),
-                      child: ScaleTransition(scale: animation, child: child),
-                    ),
-                    child: selected
-                        ? const Icon(
-                            Icons.check_rounded,
-                            key: ValueKey('check'),
-                            size: 14,
-                            color: AppColors.black1,
-                          )
-                        : const ReText(
-                            '#',
-                            key: ValueKey('hash'),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.gray,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 4),
+                _CheckCircle(checked: selected),
+                const SizedBox(width: 6),
                 ReText(
                   text,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: foreground,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: selected ? AppColors.black1 : AppColors.gray,
                   maxLines: 1,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A tag chip's mark: a dark disc with a white check that pops in, or an
+/// empty ring.
+class _CheckCircle extends StatelessWidget {
+  const _CheckCircle({required this.checked});
+
+  final bool checked;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: checked ? AppColors.black1 : AppColors.whiteSec,
+        border: Border.all(
+          color: checked ? AppColors.black1 : AppColors.dark5Color,
+          width: 1.5,
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) =>
+            ScaleTransition(scale: animation, child: child),
+        child: checked
+            ? const Icon(
+                Icons.check_rounded,
+                key: ValueKey('check'),
+                size: 12,
+                color: AppColors.whiteSec,
+              )
+            : const SizedBox.shrink(key: ValueKey('empty')),
       ),
     );
   }

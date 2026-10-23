@@ -27,9 +27,9 @@ Serializer<GStatisticsDashboardData_statisticsDashboard_comparison_previous>
 Serializer<GStatisticsDashboardData_statisticsDashboard_dailyBuckets>
     _$gStatisticsDashboardDataStatisticsDashboardDailyBucketsSerializer =
     _$GStatisticsDashboardData_statisticsDashboard_dailyBucketsSerializer();
-Serializer<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
-    _$gStatisticsDashboardDataStatisticsDashboardSubjectBucketsSerializer =
-    _$GStatisticsDashboardData_statisticsDashboard_subjectBucketsSerializer();
+Serializer<GStatisticsDashboardData_statisticsDashboard_tagBuckets>
+    _$gStatisticsDashboardDataStatisticsDashboardTagBucketsSerializer =
+    _$GStatisticsDashboardData_statisticsDashboard_tagBucketsSerializer();
 
 class _$GStatisticsDashboardDataSerializer
     implements StructuredSerializer<GStatisticsDashboardData> {
@@ -116,11 +116,11 @@ class _$GStatisticsDashboardData_statisticsDashboardSerializer
             const FullType(
                 GStatisticsDashboardData_statisticsDashboard_dailyBuckets)
           ])),
-      'subjectBuckets',
-      serializers.serialize(object.subjectBuckets,
+      'tagBuckets',
+      serializers.serialize(object.tagBuckets,
           specifiedType: const FullType(BuiltList, const [
             const FullType(
-                GStatisticsDashboardData_statisticsDashboard_subjectBuckets)
+                GStatisticsDashboardData_statisticsDashboard_tagBuckets)
           ])),
     ];
 
@@ -156,11 +156,11 @@ class _$GStatisticsDashboardData_statisticsDashboardSerializer
                     GStatisticsDashboardData_statisticsDashboard_dailyBuckets)
               ]))! as BuiltList<Object?>);
           break;
-        case 'subjectBuckets':
-          result.subjectBuckets.replace(serializers.deserialize(value,
+        case 'tagBuckets':
+          result.tagBuckets.replace(serializers.deserialize(value,
               specifiedType: const FullType(BuiltList, const [
                 const FullType(
-                    GStatisticsDashboardData_statisticsDashboard_subjectBuckets)
+                    GStatisticsDashboardData_statisticsDashboard_tagBuckets)
               ]))! as BuiltList<Object?>);
           break;
       }
@@ -654,22 +654,22 @@ class _$GStatisticsDashboardData_statisticsDashboard_dailyBucketsSerializer
   }
 }
 
-class _$GStatisticsDashboardData_statisticsDashboard_subjectBucketsSerializer
+class _$GStatisticsDashboardData_statisticsDashboard_tagBucketsSerializer
     implements
         StructuredSerializer<
-            GStatisticsDashboardData_statisticsDashboard_subjectBuckets> {
+            GStatisticsDashboardData_statisticsDashboard_tagBuckets> {
   @override
   final Iterable<Type> types = const [
-    GStatisticsDashboardData_statisticsDashboard_subjectBuckets,
-    _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
+    GStatisticsDashboardData_statisticsDashboard_tagBuckets,
+    _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
   ];
   @override
   final String wireName =
-      'GStatisticsDashboardData_statisticsDashboard_subjectBuckets';
+      'GStatisticsDashboardData_statisticsDashboard_tagBuckets';
 
   @override
   Iterable<Object?> serialize(Serializers serializers,
-      GStatisticsDashboardData_statisticsDashboard_subjectBuckets object,
+      GStatisticsDashboardData_statisticsDashboard_tagBuckets object,
       {FullType specifiedType = FullType.unspecified}) {
     final result = <Object?>[
       '__typename',
@@ -716,11 +716,11 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBucketsSerializer
   }
 
   @override
-  GStatisticsDashboardData_statisticsDashboard_subjectBuckets deserialize(
+  GStatisticsDashboardData_statisticsDashboard_tagBuckets deserialize(
       Serializers serializers, Iterable<Object?> serialized,
       {FullType specifiedType = FullType.unspecified}) {
     final result =
-        GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder();
+        GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder();
 
     final iterator = serialized.iterator;
     while (iterator.moveNext()) {
@@ -903,8 +903,8 @@ class _$GStatisticsDashboardData_statisticsDashboard
   final BuiltList<GStatisticsDashboardData_statisticsDashboard_dailyBuckets>
       dailyBuckets;
   @override
-  final BuiltList<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
-      subjectBuckets;
+  final BuiltList<GStatisticsDashboardData_statisticsDashboard_tagBuckets>
+      tagBuckets;
 
   factory _$GStatisticsDashboardData_statisticsDashboard(
           [void Function(GStatisticsDashboardData_statisticsDashboardBuilder)?
@@ -916,7 +916,7 @@ class _$GStatisticsDashboardData_statisticsDashboard
       {required this.G__typename,
       required this.comparison,
       required this.dailyBuckets,
-      required this.subjectBuckets})
+      required this.tagBuckets})
       : super._();
   @override
   GStatisticsDashboardData_statisticsDashboard rebuild(
@@ -935,7 +935,7 @@ class _$GStatisticsDashboardData_statisticsDashboard
         G__typename == other.G__typename &&
         comparison == other.comparison &&
         dailyBuckets == other.dailyBuckets &&
-        subjectBuckets == other.subjectBuckets;
+        tagBuckets == other.tagBuckets;
   }
 
   @override
@@ -944,7 +944,7 @@ class _$GStatisticsDashboardData_statisticsDashboard
     _$hash = $jc(_$hash, G__typename.hashCode);
     _$hash = $jc(_$hash, comparison.hashCode);
     _$hash = $jc(_$hash, dailyBuckets.hashCode);
-    _$hash = $jc(_$hash, subjectBuckets.hashCode);
+    _$hash = $jc(_$hash, tagBuckets.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -956,7 +956,7 @@ class _$GStatisticsDashboardData_statisticsDashboard
           ..add('G__typename', G__typename)
           ..add('comparison', comparison)
           ..add('dailyBuckets', dailyBuckets)
-          ..add('subjectBuckets', subjectBuckets))
+          ..add('tagBuckets', tagBuckets))
         .toString();
   }
 }
@@ -991,16 +991,15 @@ class GStatisticsDashboardData_statisticsDashboardBuilder
               dailyBuckets) =>
       _$this._dailyBuckets = dailyBuckets;
 
-  ListBuilder<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>?
-      _subjectBuckets;
-  ListBuilder<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
-      get subjectBuckets => _$this._subjectBuckets ??= ListBuilder<
-          GStatisticsDashboardData_statisticsDashboard_subjectBuckets>();
-  set subjectBuckets(
-          ListBuilder<
-                  GStatisticsDashboardData_statisticsDashboard_subjectBuckets>?
-              subjectBuckets) =>
-      _$this._subjectBuckets = subjectBuckets;
+  ListBuilder<GStatisticsDashboardData_statisticsDashboard_tagBuckets>?
+      _tagBuckets;
+  ListBuilder<GStatisticsDashboardData_statisticsDashboard_tagBuckets>
+      get tagBuckets => _$this._tagBuckets ??= ListBuilder<
+          GStatisticsDashboardData_statisticsDashboard_tagBuckets>();
+  set tagBuckets(
+          ListBuilder<GStatisticsDashboardData_statisticsDashboard_tagBuckets>?
+              tagBuckets) =>
+      _$this._tagBuckets = tagBuckets;
 
   GStatisticsDashboardData_statisticsDashboardBuilder() {
     GStatisticsDashboardData_statisticsDashboard._initializeBuilder(this);
@@ -1012,7 +1011,7 @@ class GStatisticsDashboardData_statisticsDashboardBuilder
       _G__typename = $v.G__typename;
       _comparison = $v.comparison.toBuilder();
       _dailyBuckets = $v.dailyBuckets.toBuilder();
-      _subjectBuckets = $v.subjectBuckets.toBuilder();
+      _tagBuckets = $v.tagBuckets.toBuilder();
       _$v = null;
     }
     return this;
@@ -1042,7 +1041,7 @@ class GStatisticsDashboardData_statisticsDashboardBuilder
                 r'GStatisticsDashboardData_statisticsDashboard', 'G__typename'),
             comparison: comparison.build(),
             dailyBuckets: dailyBuckets.build(),
-            subjectBuckets: subjectBuckets.build(),
+            tagBuckets: tagBuckets.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -1051,8 +1050,8 @@ class GStatisticsDashboardData_statisticsDashboardBuilder
         comparison.build();
         _$failedField = 'dailyBuckets';
         dailyBuckets.build();
-        _$failedField = 'subjectBuckets';
-        subjectBuckets.build();
+        _$failedField = 'tagBuckets';
+        tagBuckets.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'GStatisticsDashboardData_statisticsDashboard',
@@ -2122,8 +2121,8 @@ class GStatisticsDashboardData_statisticsDashboard_dailyBucketsBuilder
   }
 }
 
-class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
-    extends GStatisticsDashboardData_statisticsDashboard_subjectBuckets {
+class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
+    extends GStatisticsDashboardData_statisticsDashboard_tagBuckets {
   @override
   final String G__typename;
   @override
@@ -2145,15 +2144,15 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   @override
   final double? averagePerformanceRating;
 
-  factory _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets(
+  factory _$GStatisticsDashboardData_statisticsDashboard_tagBuckets(
           [void Function(
-                  GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder)?
+                  GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder)?
               updates]) =>
-      (GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder()
+      (GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder()
             ..update(updates))
           ._build();
 
-  _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets._(
+  _$GStatisticsDashboardData_statisticsDashboard_tagBuckets._(
       {required this.G__typename,
       this.tagID,
       required this.tagName,
@@ -2166,23 +2165,21 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
       this.averagePerformanceRating})
       : super._();
   @override
-  GStatisticsDashboardData_statisticsDashboard_subjectBuckets rebuild(
+  GStatisticsDashboardData_statisticsDashboard_tagBuckets rebuild(
           void Function(
-                  GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder)
+                  GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder)
               updates) =>
       (toBuilder()..update(updates)).build();
 
   @override
-  GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
-      toBuilder() =>
-          GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder()
-            ..replace(this);
+  GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder toBuilder() =>
+      GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder()
+        ..replace(this);
 
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other
-            is GStatisticsDashboardData_statisticsDashboard_subjectBuckets &&
+    return other is GStatisticsDashboardData_statisticsDashboard_tagBuckets &&
         G__typename == other.G__typename &&
         tagID == other.tagID &&
         tagName == other.tagName &&
@@ -2215,7 +2212,7 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   @override
   String toString() {
     return (newBuiltValueToStringHelper(
-            r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets')
+            r'GStatisticsDashboardData_statisticsDashboard_tagBuckets')
           ..add('G__typename', G__typename)
           ..add('tagID', tagID)
           ..add('tagName', tagName)
@@ -2230,11 +2227,11 @@ class _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   }
 }
 
-class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
+class GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder
     implements
-        Builder<GStatisticsDashboardData_statisticsDashboard_subjectBuckets,
-            GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder> {
-  _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets? _$v;
+        Builder<GStatisticsDashboardData_statisticsDashboard_tagBuckets,
+            GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder> {
+  _$GStatisticsDashboardData_statisticsDashboard_tagBuckets? _$v;
 
   String? _G__typename;
   String? get G__typename => _$this._G__typename;
@@ -2282,13 +2279,12 @@ class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
   set averagePerformanceRating(double? averagePerformanceRating) =>
       _$this._averagePerformanceRating = averagePerformanceRating;
 
-  GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder() {
-    GStatisticsDashboardData_statisticsDashboard_subjectBuckets
-        ._initializeBuilder(this);
+  GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder() {
+    GStatisticsDashboardData_statisticsDashboard_tagBuckets._initializeBuilder(
+        this);
   }
 
-  GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
-      get _$this {
+  GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
       _G__typename = $v.G__typename;
@@ -2307,59 +2303,56 @@ class GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
   }
 
   @override
-  void replace(
-      GStatisticsDashboardData_statisticsDashboard_subjectBuckets other) {
-    _$v =
-        other as _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets;
+  void replace(GStatisticsDashboardData_statisticsDashboard_tagBuckets other) {
+    _$v = other as _$GStatisticsDashboardData_statisticsDashboard_tagBuckets;
   }
 
   @override
   void update(
       void Function(
-              GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder)?
+              GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder)?
           updates) {
     if (updates != null) updates(this);
   }
 
   @override
-  GStatisticsDashboardData_statisticsDashboard_subjectBuckets build() =>
-      _build();
+  GStatisticsDashboardData_statisticsDashboard_tagBuckets build() => _build();
 
-  _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets _build() {
+  _$GStatisticsDashboardData_statisticsDashboard_tagBuckets _build() {
     final _$result = _$v ??
-        _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets._(
+        _$GStatisticsDashboardData_statisticsDashboard_tagBuckets._(
           G__typename: BuiltValueNullFieldError.checkNotNull(
               G__typename,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'G__typename'),
           tagID: tagID,
           tagName: BuiltValueNullFieldError.checkNotNull(
               tagName,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'tagName'),
           isMiscellaneous: BuiltValueNullFieldError.checkNotNull(
               isMiscellaneous,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'isMiscellaneous'),
           studySeconds: BuiltValueNullFieldError.checkNotNull(
               studySeconds,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'studySeconds'),
           completedTasks: BuiltValueNullFieldError.checkNotNull(
               completedTasks,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'completedTasks'),
           totalQuestions: BuiltValueNullFieldError.checkNotNull(
               totalQuestions,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'totalQuestions'),
           correctAnswers: BuiltValueNullFieldError.checkNotNull(
               correctAnswers,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'correctAnswers'),
           incorrectAnswers: BuiltValueNullFieldError.checkNotNull(
               incorrectAnswers,
-              r'GStatisticsDashboardData_statisticsDashboard_subjectBuckets',
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'incorrectAnswers'),
           averagePerformanceRating: averagePerformanceRating,
         );

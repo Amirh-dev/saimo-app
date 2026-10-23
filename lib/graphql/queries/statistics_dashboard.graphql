@@ -38,7 +38,7 @@ query StatisticsDashboard($input: StatisticsDashboardInput!) {
       averagePerformanceRating
     }
 
-    subjectBuckets {
+    tagBuckets {
       tagID
       tagName
       isMiscellaneous

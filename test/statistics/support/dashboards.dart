@@ -5,7 +5,7 @@ import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.da
 
 typedef DayBucket = GStatisticsDashboardData_statisticsDashboard_dailyBuckets;
 typedef SubjectBucket
-    = GStatisticsDashboardData_statisticsDashboard_subjectBuckets;
+    = GStatisticsDashboardData_statisticsDashboard_tagBuckets;
 
 /// A bucket for [day], with its start written the way the server writes it:
 /// Tehran midnight with its offset.
@@ -84,7 +84,7 @@ StatisticsDashboard dashboard({
       ..comparison.adherenceChangePercentage = adherenceChange
       ..comparison.totalQuestionsChangePercentage = questionsChange
       ..dailyBuckets.addAll(days)
-      ..subjectBuckets.addAll(subjects));
+      ..tagBuckets.addAll(subjects));
 
 /// Answers each fetch with [respond], and remembers what was asked.
 class FakeStatisticsRepository implements StatisticsRepository {

@@ -239,7 +239,7 @@ class SubjectStatistics {
   /// The subjects with any activity, most studied first, "other" last.
   static List<SubjectStatistics> listOf(StatisticsDashboard dashboard) {
     final subjects = [
-      for (final bucket in dashboard.subjectBuckets)
+      for (final bucket in dashboard.tagBuckets)
         if (bucket.studySeconds > 0 ||
             bucket.totalQuestions > 0 ||
             bucket.averagePerformanceRating != null)

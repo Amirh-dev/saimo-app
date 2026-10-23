@@ -38,7 +38,6 @@ Map<String, dynamic> _apiTask(String id, String title, Jalali day) => {
       'status': 'TODO',
       'goal': null,
       'tags': const [],
-      'subjectTag': null,
     };
 
 /// Answers the tasks screen's raw queries from memory.

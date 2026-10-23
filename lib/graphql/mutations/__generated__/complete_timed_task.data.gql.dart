@@ -72,7 +72,6 @@ abstract class GCompleteTimedTaskData_completeTimedTask
   _i2.GTaskStatus get status;
   String get userID;
   String? get goalID;
-  String? get subjectTagID;
   static Serializer<GCompleteTimedTaskData_completeTimedTask> get serializer =>
       _$gCompleteTimedTaskDataCompleteTimedTaskSerializer;
 

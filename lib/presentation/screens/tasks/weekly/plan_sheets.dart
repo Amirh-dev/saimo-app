@@ -27,8 +27,8 @@ Future<T?> _showPlanSheet<T>(BuildContext context, Widget sheet) {
 
 /// A week of day chips, browsed with the arrows or by dragging the chips
 /// sideways. Nothing can be planned for a day that has passed, so past days
-/// are left out; their slots stay empty so every weekday keeps its column
-/// from week to week. Weeks beyond the planning horizon cannot be reached.
+/// stay in their columns faded and crossed out, and cannot be picked. Weeks
+/// beyond the planning horizon cannot be reached.
 class WeekDayPicker extends StatefulWidget {
   const WeekDayPicker({
     super.key,
@@ -102,7 +102,7 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
         for (var index = 0; index < 7; index++)
           Expanded(
             child: daysBetween(widget.today, weekStart.addDays(index)) < 0
-                ? const SizedBox.shrink()
+                ? _pastChip(index, weekStart.addDays(index), keyed: keyed)
                 : _chip(index, weekStart.addDays(index), keyed: keyed),
           ),
       ],
@@ -244,6 +244,71 @@ class _WeekDayPickerState extends State<WeekDayPicker> {
       ),
     );
   }
+
+  /// A day that has passed: faded, crossed out, and not tappable.
+  Widget _pastChip(int index, Jalali day, {bool keyed = true}) {
+    return Semantics(
+      button: true,
+      enabled: false,
+      label: dayLabel(day),
+      child: Container(
+        key: keyed ? ValueKey('week-day-past-$index') : null,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: AppColors.gray1.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: CustomPaint(
+          foregroundPainter: _CrossedOutPainter(
+            AppColors.errorColor.withValues(alpha: 0.45),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ReText(
+                  kPersianWeekdayInitials[index],
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.dark5Color,
+                ),
+                const SizedBox(height: 2),
+                ReText(
+                  '${day.day}',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.dark5Color,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One thin diagonal stroke across a past day's chip.
+class _CrossedOutPainter extends CustomPainter {
+  const _CrossedOutPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawLine(
+      Offset(size.width * 0.18, size.height * 0.84),
+      Offset(size.width * 0.82, size.height * 0.16),
+      Paint()
+        ..color = color
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CrossedOutPainter old) => old.color != color;
 }
 
 // ----------------------------------------------------------------- quick add

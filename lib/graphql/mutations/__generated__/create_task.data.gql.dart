@@ -69,7 +69,6 @@ abstract class GCreateTaskData_createTask
   _i2.GTaskStatus get status;
   String get userID;
   String? get goalID;
-  String? get subjectTagID;
   static Serializer<GCreateTaskData_createTask> get serializer =>
       _$gCreateTaskDataCreateTaskSerializer;
 

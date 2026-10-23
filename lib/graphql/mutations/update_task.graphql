@@ -18,6 +18,5 @@ mutation UpdateTask($id: ID!, $input: UpdateTaskInput!) {
     status
     userID
     goalID
-    subjectTagID
   }
 }

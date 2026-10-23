@@ -272,7 +272,7 @@ import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.da
         GStatisticsDashboardData_statisticsDashboard_comparison_current_planVsCompleted,
         GStatisticsDashboardData_statisticsDashboard_comparison_previous,
         GStatisticsDashboardData_statisticsDashboard_dailyBuckets,
-        GStatisticsDashboardData_statisticsDashboard_subjectBuckets;
+        GStatisticsDashboardData_statisticsDashboard_tagBuckets;
 import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.req.gql.dart'
     show GStatisticsDashboardReq;
 import 'package:simo_learn/graphql/queries/__generated__/statistics_dashboard.var.gql.dart'
@@ -439,7 +439,7 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GStatisticsDashboardData_statisticsDashboard_comparison_current_planVsCompleted,
   GStatisticsDashboardData_statisticsDashboard_comparison_previous,
   GStatisticsDashboardData_statisticsDashboard_dailyBuckets,
-  GStatisticsDashboardData_statisticsDashboard_subjectBuckets,
+  GStatisticsDashboardData_statisticsDashboard_tagBuckets,
   GStatisticsDashboardInput,
   GStatisticsDashboardReq,
   GStatisticsDashboardVars,

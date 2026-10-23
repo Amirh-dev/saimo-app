@@ -71,7 +71,6 @@ abstract class GStartTimedTaskData_startTimedTask
   _i2.GTaskStatus get status;
   String get userID;
   String? get goalID;
-  String? get subjectTagID;
   static Serializer<GStartTimedTaskData_startTimedTask> get serializer =>
       _$gStartTimedTaskDataStartTimedTaskSerializer;
 

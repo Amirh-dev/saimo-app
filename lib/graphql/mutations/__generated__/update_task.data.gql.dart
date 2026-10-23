@@ -69,7 +69,6 @@ abstract class GUpdateTaskData_updateTask
   _i2.GTaskStatus get status;
   String get userID;
   String? get goalID;
-  String? get subjectTagID;
   static Serializer<GUpdateTaskData_updateTask> get serializer =>
       _$gUpdateTaskDataUpdateTaskSerializer;
 

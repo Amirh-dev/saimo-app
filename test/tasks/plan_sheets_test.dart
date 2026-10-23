@@ -133,12 +133,15 @@ void main() {
       expect(drafts.map((draft) => draft.timedMinutes), [120, null]);
     });
 
-    testWidgets('needs a title and does not show past days', (tester) async {
+    testWidgets('needs a title and does not offer past days', (tester) async {
       await openQuickAdd(tester);
 
       await tester.tap(_key('quick-add-submit'));
-      // Saturday has passed, so it is not offered.
+      // Saturday has passed: it is shown crossed out, and tapping it does
+      // nothing.
       expect(_key('week-day-chip-0'), findsNothing);
+      expect(_key('week-day-past-0'), findsOneWidget);
+      await tester.tap(_key('week-day-past-0'));
       await tester.enterText(_key('quick-add-title'), 'مرور');
       await tester.pump();
       await tester.tap(_key('quick-add-submit'));
@@ -311,7 +314,7 @@ void main() {
     });
   });
 
-  testWidgets('move sheet returns the picked day and hides past ones',
+  testWidgets('move sheet returns the picked day and does not offer past ones',
       (tester) async {
     Jalali? picked;
     var closed = false;
@@ -323,6 +326,8 @@ void main() {
 
     expect(find.text('«جابه‌جایی»'), findsOneWidget);
     expect(_key('week-day-chip-0'), findsNothing);
+    await tester.tap(_key('week-day-past-0'));
+    await tester.pumpAndSettle();
     expect(closed, isFalse);
 
     await tester.tap(_key('week-day-chip-5'));

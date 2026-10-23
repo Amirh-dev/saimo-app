@@ -162,8 +162,7 @@ Serializers _$serializers = (Serializers().toBuilder()
           .serializer)
       ..add(
           GStatisticsDashboardData_statisticsDashboard_dailyBuckets.serializer)
-      ..add(GStatisticsDashboardData_statisticsDashboard_subjectBuckets
-          .serializer)
+      ..add(GStatisticsDashboardData_statisticsDashboard_tagBuckets.serializer)
       ..add(GStatisticsDashboardInput.serializer)
       ..add(GStatisticsDashboardReq.serializer)
       ..add(GStatisticsDashboardVars.serializer)
@@ -942,10 +941,10 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [
             const FullType(
-                GStatisticsDashboardData_statisticsDashboard_subjectBuckets)
+                GStatisticsDashboardData_statisticsDashboard_tagBuckets)
           ]),
           () => ListBuilder<
-              GStatisticsDashboardData_statisticsDashboard_subjectBuckets>())
+              GStatisticsDashboardData_statisticsDashboard_tagBuckets>())
       ..addBuilderFactory(
           const FullType(
               BuiltList, const [const FullType(GTagKeywordWhereInput)]),
@@ -1042,9 +1041,6 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(BuiltList, const [const FullType(GUserWhereInput)]),
           () => ListBuilder<GUserWhereInput>())
       ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(GTaskWhereInput)]),
-          () => ListBuilder<GTaskWhereInput>())
-      ..addBuilderFactory(
           const FullType(BuiltList,
               const [const FullType(GTaskCompletionReportWhereInput)]),
           () => ListBuilder<GTaskCompletionReportWhereInput>())
@@ -1193,12 +1189,6 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTaskStatus)]),
           () => ListBuilder<GTaskStatus>())
-      ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(String)]),
-          () => ListBuilder<String>())
-      ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(String)]),
-          () => ListBuilder<String>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
@@ -1217,9 +1207,6 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GGoalWhereInput)]),
           () => ListBuilder<GGoalWhereInput>())
-      ..addBuilderFactory(
-          const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
-          () => ListBuilder<GTagWhereInput>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(GTagWhereInput)]),
           () => ListBuilder<GTagWhereInput>())

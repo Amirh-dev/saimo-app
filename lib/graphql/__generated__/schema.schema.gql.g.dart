@@ -7870,13 +7870,6 @@ class _$GCreateTaskInputSerializer
             specifiedType:
                 const FullType(BuiltList, const [const FullType(String)])));
     }
-    value = object.subjectTagID;
-    if (value != null) {
-      result
-        ..add('subjectTagID')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
-    }
     return result;
   }
 
@@ -7938,10 +7931,6 @@ class _$GCreateTaskInputSerializer
                   specifiedType: const FullType(
                       BuiltList, const [const FullType(String)]))!
               as BuiltList<Object?>);
-          break;
-        case 'subjectTagID':
-          result.subjectTagID = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
           break;
       }
     }
@@ -13335,21 +13324,6 @@ class _$GTagWhereInputSerializer
             specifiedType: const FullType(
                 BuiltList, const [const FullType(GUserWhereInput)])));
     }
-    value = object.hasSubjectTasks;
-    if (value != null) {
-      result
-        ..add('hasSubjectTasks')
-        ..add(
-            serializers.serialize(value, specifiedType: const FullType(bool)));
-    }
-    value = object.hasSubjectTasksWith;
-    if (value != null) {
-      result
-        ..add('hasSubjectTasksWith')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(
-                BuiltList, const [const FullType(GTaskWhereInput)])));
-    }
     return result;
   }
 
@@ -13620,16 +13594,6 @@ class _$GTagWhereInputSerializer
           result.hasCreatedByWith.replace(serializers.deserialize(value,
                   specifiedType: const FullType(
                       BuiltList, const [const FullType(GUserWhereInput)]))!
-              as BuiltList<Object?>);
-          break;
-        case 'hasSubjectTasks':
-          result.hasSubjectTasks = serializers.deserialize(value,
-              specifiedType: const FullType(bool)) as bool?;
-          break;
-        case 'hasSubjectTasksWith':
-          result.hasSubjectTasksWith.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(
-                      BuiltList, const [const FullType(GTaskWhereInput)]))!
               as BuiltList<Object?>);
           break;
       }
@@ -15745,50 +15709,6 @@ class _$GTaskWhereInputSerializer
         ..add(
             serializers.serialize(value, specifiedType: const FullType(bool)));
     }
-    value = object.subjectTagID;
-    if (value != null) {
-      result
-        ..add('subjectTagID')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
-    }
-    value = object.subjectTagIDNEQ;
-    if (value != null) {
-      result
-        ..add('subjectTagIDNEQ')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
-    }
-    value = object.subjectTagIDIn;
-    if (value != null) {
-      result
-        ..add('subjectTagIDIn')
-        ..add(serializers.serialize(value,
-            specifiedType:
-                const FullType(BuiltList, const [const FullType(String)])));
-    }
-    value = object.subjectTagIDNotIn;
-    if (value != null) {
-      result
-        ..add('subjectTagIDNotIn')
-        ..add(serializers.serialize(value,
-            specifiedType:
-                const FullType(BuiltList, const [const FullType(String)])));
-    }
-    value = object.subjectTagIDIsNil;
-    if (value != null) {
-      result
-        ..add('subjectTagIDIsNil')
-        ..add(
-            serializers.serialize(value, specifiedType: const FullType(bool)));
-    }
-    value = object.subjectTagIDNotNil;
-    if (value != null) {
-      result
-        ..add('subjectTagIDNotNil')
-        ..add(
-            serializers.serialize(value, specifiedType: const FullType(bool)));
-    }
     value = object.hasUser;
     if (value != null) {
       result
@@ -15830,21 +15750,6 @@ class _$GTaskWhereInputSerializer
     if (value != null) {
       result
         ..add('hasTagsWith')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(
-                BuiltList, const [const FullType(GTagWhereInput)])));
-    }
-    value = object.hasSubjectTag;
-    if (value != null) {
-      result
-        ..add('hasSubjectTag')
-        ..add(
-            serializers.serialize(value, specifiedType: const FullType(bool)));
-    }
-    value = object.hasSubjectTagWith;
-    if (value != null) {
-      result
-        ..add('hasSubjectTagWith')
         ..add(serializers.serialize(value,
             specifiedType: const FullType(
                 BuiltList, const [const FullType(GTagWhereInput)])));
@@ -16596,34 +16501,6 @@ class _$GTaskWhereInputSerializer
           result.goalIDNotNil = serializers.deserialize(value,
               specifiedType: const FullType(bool)) as bool?;
           break;
-        case 'subjectTagID':
-          result.subjectTagID = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
-          break;
-        case 'subjectTagIDNEQ':
-          result.subjectTagIDNEQ = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
-          break;
-        case 'subjectTagIDIn':
-          result.subjectTagIDIn.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(
-                      BuiltList, const [const FullType(String)]))!
-              as BuiltList<Object?>);
-          break;
-        case 'subjectTagIDNotIn':
-          result.subjectTagIDNotIn.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(
-                      BuiltList, const [const FullType(String)]))!
-              as BuiltList<Object?>);
-          break;
-        case 'subjectTagIDIsNil':
-          result.subjectTagIDIsNil = serializers.deserialize(value,
-              specifiedType: const FullType(bool)) as bool?;
-          break;
-        case 'subjectTagIDNotNil':
-          result.subjectTagIDNotNil = serializers.deserialize(value,
-              specifiedType: const FullType(bool)) as bool?;
-          break;
         case 'hasUser':
           result.hasUser = serializers.deserialize(value,
               specifiedType: const FullType(bool)) as bool?;
@@ -16650,16 +16527,6 @@ class _$GTaskWhereInputSerializer
           break;
         case 'hasTagsWith':
           result.hasTagsWith.replace(serializers.deserialize(value,
-                  specifiedType: const FullType(
-                      BuiltList, const [const FullType(GTagWhereInput)]))!
-              as BuiltList<Object?>);
-          break;
-        case 'hasSubjectTag':
-          result.hasSubjectTag = serializers.deserialize(value,
-              specifiedType: const FullType(bool)) as bool?;
-          break;
-        case 'hasSubjectTagWith':
-          result.hasSubjectTagWith.replace(serializers.deserialize(value,
                   specifiedType: const FullType(
                       BuiltList, const [const FullType(GTagWhereInput)]))!
               as BuiltList<Object?>);
@@ -17033,20 +16900,6 @@ class _$GUpdateTaskInputSerializer
             specifiedType:
                 const FullType(BuiltList, const [const FullType(String)])));
     }
-    value = object.subjectTagID;
-    if (value != null) {
-      result
-        ..add('subjectTagID')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
-    }
-    value = object.clearSubjectTag;
-    if (value != null) {
-      result
-        ..add('clearSubjectTag')
-        ..add(
-            serializers.serialize(value, specifiedType: const FullType(bool)));
-    }
     return result;
   }
 
@@ -17112,14 +16965,6 @@ class _$GUpdateTaskInputSerializer
                   specifiedType: const FullType(
                       BuiltList, const [const FullType(String)]))!
               as BuiltList<Object?>);
-          break;
-        case 'subjectTagID':
-          result.subjectTagID = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
-          break;
-        case 'clearSubjectTag':
-          result.clearSubjectTag = serializers.deserialize(value,
-              specifiedType: const FullType(bool)) as bool?;
           break;
       }
     }
@@ -28117,8 +27962,6 @@ class _$GCreateTaskInput extends GCreateTaskInput {
   final String? goalID;
   @override
   final BuiltList<String>? tagNames;
-  @override
-  final String? subjectTagID;
 
   factory _$GCreateTaskInput(
           [void Function(GCreateTaskInputBuilder)? updates]) =>
@@ -28135,8 +27978,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
       this.reminderTime,
       this.recurrence,
       this.goalID,
-      this.tagNames,
-      this.subjectTagID})
+      this.tagNames})
       : super._();
   @override
   GCreateTaskInput rebuild(void Function(GCreateTaskInputBuilder) updates) =>
@@ -28160,8 +28002,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
         reminderTime == other.reminderTime &&
         recurrence == other.recurrence &&
         goalID == other.goalID &&
-        tagNames == other.tagNames &&
-        subjectTagID == other.subjectTagID;
+        tagNames == other.tagNames;
   }
 
   @override
@@ -28178,7 +28019,6 @@ class _$GCreateTaskInput extends GCreateTaskInput {
     _$hash = $jc(_$hash, recurrence.hashCode);
     _$hash = $jc(_$hash, goalID.hashCode);
     _$hash = $jc(_$hash, tagNames.hashCode);
-    _$hash = $jc(_$hash, subjectTagID.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -28196,8 +28036,7 @@ class _$GCreateTaskInput extends GCreateTaskInput {
           ..add('reminderTime', reminderTime)
           ..add('recurrence', recurrence)
           ..add('goalID', goalID)
-          ..add('tagNames', tagNames)
-          ..add('subjectTagID', subjectTagID))
+          ..add('tagNames', tagNames))
         .toString();
   }
 }
@@ -28255,10 +28094,6 @@ class GCreateTaskInputBuilder
       _$this._tagNames ??= ListBuilder<String>();
   set tagNames(ListBuilder<String>? tagNames) => _$this._tagNames = tagNames;
 
-  String? _subjectTagID;
-  String? get subjectTagID => _$this._subjectTagID;
-  set subjectTagID(String? subjectTagID) => _$this._subjectTagID = subjectTagID;
-
   GCreateTaskInputBuilder();
 
   GCreateTaskInputBuilder get _$this {
@@ -28275,7 +28110,6 @@ class GCreateTaskInputBuilder
       _recurrence = $v.recurrence?.toBuilder();
       _goalID = $v.goalID;
       _tagNames = $v.tagNames?.toBuilder();
-      _subjectTagID = $v.subjectTagID;
       _$v = null;
     }
     return this;
@@ -28311,7 +28145,6 @@ class GCreateTaskInputBuilder
             recurrence: _recurrence?.build(),
             goalID: goalID,
             tagNames: _tagNames?.build(),
-            subjectTagID: subjectTagID,
           );
     } catch (_) {
       late String _$failedField;
@@ -34787,10 +34620,6 @@ class _$GTagWhereInput extends GTagWhereInput {
   final bool? hasCreatedBy;
   @override
   final BuiltList<GUserWhereInput>? hasCreatedByWith;
-  @override
-  final bool? hasSubjectTasks;
-  @override
-  final BuiltList<GTaskWhereInput>? hasSubjectTasksWith;
 
   factory _$GTagWhereInput([void Function(GTagWhereInputBuilder)? updates]) =>
       (GTagWhereInputBuilder()..update(updates))._build();
@@ -34849,9 +34678,7 @@ class _$GTagWhereInput extends GTagWhereInput {
       this.hasParent,
       this.hasParentWith,
       this.hasCreatedBy,
-      this.hasCreatedByWith,
-      this.hasSubjectTasks,
-      this.hasSubjectTasksWith})
+      this.hasCreatedByWith})
       : super._();
   @override
   GTagWhereInput rebuild(void Function(GTagWhereInputBuilder) updates) =>
@@ -34917,9 +34744,7 @@ class _$GTagWhereInput extends GTagWhereInput {
         hasParent == other.hasParent &&
         hasParentWith == other.hasParentWith &&
         hasCreatedBy == other.hasCreatedBy &&
-        hasCreatedByWith == other.hasCreatedByWith &&
-        hasSubjectTasks == other.hasSubjectTasks &&
-        hasSubjectTasksWith == other.hasSubjectTasksWith;
+        hasCreatedByWith == other.hasCreatedByWith;
   }
 
   @override
@@ -34979,8 +34804,6 @@ class _$GTagWhereInput extends GTagWhereInput {
     _$hash = $jc(_$hash, hasParentWith.hashCode);
     _$hash = $jc(_$hash, hasCreatedBy.hashCode);
     _$hash = $jc(_$hash, hasCreatedByWith.hashCode);
-    _$hash = $jc(_$hash, hasSubjectTasks.hashCode);
-    _$hash = $jc(_$hash, hasSubjectTasksWith.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -35041,9 +34864,7 @@ class _$GTagWhereInput extends GTagWhereInput {
           ..add('hasParent', hasParent)
           ..add('hasParentWith', hasParentWith)
           ..add('hasCreatedBy', hasCreatedBy)
-          ..add('hasCreatedByWith', hasCreatedByWith)
-          ..add('hasSubjectTasks', hasSubjectTasks)
-          ..add('hasSubjectTasksWith', hasSubjectTasksWith))
+          ..add('hasCreatedByWith', hasCreatedByWith))
         .toString();
   }
 }
@@ -35310,17 +35131,6 @@ class GTagWhereInputBuilder
   set hasCreatedByWith(ListBuilder<GUserWhereInput>? hasCreatedByWith) =>
       _$this._hasCreatedByWith = hasCreatedByWith;
 
-  bool? _hasSubjectTasks;
-  bool? get hasSubjectTasks => _$this._hasSubjectTasks;
-  set hasSubjectTasks(bool? hasSubjectTasks) =>
-      _$this._hasSubjectTasks = hasSubjectTasks;
-
-  ListBuilder<GTaskWhereInput>? _hasSubjectTasksWith;
-  ListBuilder<GTaskWhereInput> get hasSubjectTasksWith =>
-      _$this._hasSubjectTasksWith ??= ListBuilder<GTaskWhereInput>();
-  set hasSubjectTasksWith(ListBuilder<GTaskWhereInput>? hasSubjectTasksWith) =>
-      _$this._hasSubjectTasksWith = hasSubjectTasksWith;
-
   GTagWhereInputBuilder();
 
   GTagWhereInputBuilder get _$this {
@@ -35380,8 +35190,6 @@ class GTagWhereInputBuilder
       _hasParentWith = $v.hasParentWith?.toBuilder();
       _hasCreatedBy = $v.hasCreatedBy;
       _hasCreatedByWith = $v.hasCreatedByWith?.toBuilder();
-      _hasSubjectTasks = $v.hasSubjectTasks;
-      _hasSubjectTasksWith = $v.hasSubjectTasksWith?.toBuilder();
       _$v = null;
     }
     return this;
@@ -35459,8 +35267,6 @@ class GTagWhereInputBuilder
             hasParentWith: _hasParentWith?.build(),
             hasCreatedBy: hasCreatedBy,
             hasCreatedByWith: _hasCreatedByWith?.build(),
-            hasSubjectTasks: hasSubjectTasks,
-            hasSubjectTasksWith: _hasSubjectTasksWith?.build(),
           );
     } catch (_) {
       late String _$failedField;
@@ -35516,9 +35322,6 @@ class GTagWhereInputBuilder
 
         _$failedField = 'hasCreatedByWith';
         _hasCreatedByWith?.build();
-
-        _$failedField = 'hasSubjectTasksWith';
-        _hasSubjectTasksWith?.build();
       } catch (e) {
         throw BuiltValueNestedFieldError(
             r'GTagWhereInput', _$failedField, e.toString());
@@ -37015,18 +36818,6 @@ class _$GTaskWhereInput extends GTaskWhereInput {
   @override
   final bool? goalIDNotNil;
   @override
-  final String? subjectTagID;
-  @override
-  final String? subjectTagIDNEQ;
-  @override
-  final BuiltList<String>? subjectTagIDIn;
-  @override
-  final BuiltList<String>? subjectTagIDNotIn;
-  @override
-  final bool? subjectTagIDIsNil;
-  @override
-  final bool? subjectTagIDNotNil;
-  @override
   final bool? hasUser;
   @override
   final BuiltList<GUserWhereInput>? hasUserWith;
@@ -37038,10 +36829,6 @@ class _$GTaskWhereInput extends GTaskWhereInput {
   final bool? hasTags;
   @override
   final BuiltList<GTagWhereInput>? hasTagsWith;
-  @override
-  final bool? hasSubjectTag;
-  @override
-  final BuiltList<GTagWhereInput>? hasSubjectTagWith;
   @override
   final bool? hasCompletionReport;
   @override
@@ -37212,20 +36999,12 @@ class _$GTaskWhereInput extends GTaskWhereInput {
       this.goalIDNotIn,
       this.goalIDIsNil,
       this.goalIDNotNil,
-      this.subjectTagID,
-      this.subjectTagIDNEQ,
-      this.subjectTagIDIn,
-      this.subjectTagIDNotIn,
-      this.subjectTagIDIsNil,
-      this.subjectTagIDNotNil,
       this.hasUser,
       this.hasUserWith,
       this.hasGoal,
       this.hasGoalWith,
       this.hasTags,
       this.hasTagsWith,
-      this.hasSubjectTag,
-      this.hasSubjectTagWith,
       this.hasCompletionReport,
       this.hasCompletionReportWith})
       : super._();
@@ -37401,20 +37180,12 @@ class _$GTaskWhereInput extends GTaskWhereInput {
         goalIDNotIn == other.goalIDNotIn &&
         goalIDIsNil == other.goalIDIsNil &&
         goalIDNotNil == other.goalIDNotNil &&
-        subjectTagID == other.subjectTagID &&
-        subjectTagIDNEQ == other.subjectTagIDNEQ &&
-        subjectTagIDIn == other.subjectTagIDIn &&
-        subjectTagIDNotIn == other.subjectTagIDNotIn &&
-        subjectTagIDIsNil == other.subjectTagIDIsNil &&
-        subjectTagIDNotNil == other.subjectTagIDNotNil &&
         hasUser == other.hasUser &&
         hasUserWith == other.hasUserWith &&
         hasGoal == other.hasGoal &&
         hasGoalWith == other.hasGoalWith &&
         hasTags == other.hasTags &&
         hasTagsWith == other.hasTagsWith &&
-        hasSubjectTag == other.hasSubjectTag &&
-        hasSubjectTagWith == other.hasSubjectTagWith &&
         hasCompletionReport == other.hasCompletionReport &&
         hasCompletionReportWith == other.hasCompletionReportWith;
   }
@@ -37583,20 +37354,12 @@ class _$GTaskWhereInput extends GTaskWhereInput {
     _$hash = $jc(_$hash, goalIDNotIn.hashCode);
     _$hash = $jc(_$hash, goalIDIsNil.hashCode);
     _$hash = $jc(_$hash, goalIDNotNil.hashCode);
-    _$hash = $jc(_$hash, subjectTagID.hashCode);
-    _$hash = $jc(_$hash, subjectTagIDNEQ.hashCode);
-    _$hash = $jc(_$hash, subjectTagIDIn.hashCode);
-    _$hash = $jc(_$hash, subjectTagIDNotIn.hashCode);
-    _$hash = $jc(_$hash, subjectTagIDIsNil.hashCode);
-    _$hash = $jc(_$hash, subjectTagIDNotNil.hashCode);
     _$hash = $jc(_$hash, hasUser.hashCode);
     _$hash = $jc(_$hash, hasUserWith.hashCode);
     _$hash = $jc(_$hash, hasGoal.hashCode);
     _$hash = $jc(_$hash, hasGoalWith.hashCode);
     _$hash = $jc(_$hash, hasTags.hashCode);
     _$hash = $jc(_$hash, hasTagsWith.hashCode);
-    _$hash = $jc(_$hash, hasSubjectTag.hashCode);
-    _$hash = $jc(_$hash, hasSubjectTagWith.hashCode);
     _$hash = $jc(_$hash, hasCompletionReport.hashCode);
     _$hash = $jc(_$hash, hasCompletionReportWith.hashCode);
     _$hash = $jf(_$hash);
@@ -37767,20 +37530,12 @@ class _$GTaskWhereInput extends GTaskWhereInput {
           ..add('goalIDNotIn', goalIDNotIn)
           ..add('goalIDIsNil', goalIDIsNil)
           ..add('goalIDNotNil', goalIDNotNil)
-          ..add('subjectTagID', subjectTagID)
-          ..add('subjectTagIDNEQ', subjectTagIDNEQ)
-          ..add('subjectTagIDIn', subjectTagIDIn)
-          ..add('subjectTagIDNotIn', subjectTagIDNotIn)
-          ..add('subjectTagIDIsNil', subjectTagIDIsNil)
-          ..add('subjectTagIDNotNil', subjectTagIDNotNil)
           ..add('hasUser', hasUser)
           ..add('hasUserWith', hasUserWith)
           ..add('hasGoal', hasGoal)
           ..add('hasGoalWith', hasGoalWith)
           ..add('hasTags', hasTags)
           ..add('hasTagsWith', hasTagsWith)
-          ..add('hasSubjectTag', hasSubjectTag)
-          ..add('hasSubjectTagWith', hasSubjectTagWith)
           ..add('hasCompletionReport', hasCompletionReport)
           ..add('hasCompletionReportWith', hasCompletionReportWith))
         .toString();
@@ -38578,37 +38333,6 @@ class GTaskWhereInputBuilder
   bool? get goalIDNotNil => _$this._goalIDNotNil;
   set goalIDNotNil(bool? goalIDNotNil) => _$this._goalIDNotNil = goalIDNotNil;
 
-  String? _subjectTagID;
-  String? get subjectTagID => _$this._subjectTagID;
-  set subjectTagID(String? subjectTagID) => _$this._subjectTagID = subjectTagID;
-
-  String? _subjectTagIDNEQ;
-  String? get subjectTagIDNEQ => _$this._subjectTagIDNEQ;
-  set subjectTagIDNEQ(String? subjectTagIDNEQ) =>
-      _$this._subjectTagIDNEQ = subjectTagIDNEQ;
-
-  ListBuilder<String>? _subjectTagIDIn;
-  ListBuilder<String> get subjectTagIDIn =>
-      _$this._subjectTagIDIn ??= ListBuilder<String>();
-  set subjectTagIDIn(ListBuilder<String>? subjectTagIDIn) =>
-      _$this._subjectTagIDIn = subjectTagIDIn;
-
-  ListBuilder<String>? _subjectTagIDNotIn;
-  ListBuilder<String> get subjectTagIDNotIn =>
-      _$this._subjectTagIDNotIn ??= ListBuilder<String>();
-  set subjectTagIDNotIn(ListBuilder<String>? subjectTagIDNotIn) =>
-      _$this._subjectTagIDNotIn = subjectTagIDNotIn;
-
-  bool? _subjectTagIDIsNil;
-  bool? get subjectTagIDIsNil => _$this._subjectTagIDIsNil;
-  set subjectTagIDIsNil(bool? subjectTagIDIsNil) =>
-      _$this._subjectTagIDIsNil = subjectTagIDIsNil;
-
-  bool? _subjectTagIDNotNil;
-  bool? get subjectTagIDNotNil => _$this._subjectTagIDNotNil;
-  set subjectTagIDNotNil(bool? subjectTagIDNotNil) =>
-      _$this._subjectTagIDNotNil = subjectTagIDNotNil;
-
   bool? _hasUser;
   bool? get hasUser => _$this._hasUser;
   set hasUser(bool? hasUser) => _$this._hasUser = hasUser;
@@ -38638,17 +38362,6 @@ class GTaskWhereInputBuilder
       _$this._hasTagsWith ??= ListBuilder<GTagWhereInput>();
   set hasTagsWith(ListBuilder<GTagWhereInput>? hasTagsWith) =>
       _$this._hasTagsWith = hasTagsWith;
-
-  bool? _hasSubjectTag;
-  bool? get hasSubjectTag => _$this._hasSubjectTag;
-  set hasSubjectTag(bool? hasSubjectTag) =>
-      _$this._hasSubjectTag = hasSubjectTag;
-
-  ListBuilder<GTagWhereInput>? _hasSubjectTagWith;
-  ListBuilder<GTagWhereInput> get hasSubjectTagWith =>
-      _$this._hasSubjectTagWith ??= ListBuilder<GTagWhereInput>();
-  set hasSubjectTagWith(ListBuilder<GTagWhereInput>? hasSubjectTagWith) =>
-      _$this._hasSubjectTagWith = hasSubjectTagWith;
 
   bool? _hasCompletionReport;
   bool? get hasCompletionReport => _$this._hasCompletionReport;
@@ -38830,20 +38543,12 @@ class GTaskWhereInputBuilder
       _goalIDNotIn = $v.goalIDNotIn?.toBuilder();
       _goalIDIsNil = $v.goalIDIsNil;
       _goalIDNotNil = $v.goalIDNotNil;
-      _subjectTagID = $v.subjectTagID;
-      _subjectTagIDNEQ = $v.subjectTagIDNEQ;
-      _subjectTagIDIn = $v.subjectTagIDIn?.toBuilder();
-      _subjectTagIDNotIn = $v.subjectTagIDNotIn?.toBuilder();
-      _subjectTagIDIsNil = $v.subjectTagIDIsNil;
-      _subjectTagIDNotNil = $v.subjectTagIDNotNil;
       _hasUser = $v.hasUser;
       _hasUserWith = $v.hasUserWith?.toBuilder();
       _hasGoal = $v.hasGoal;
       _hasGoalWith = $v.hasGoalWith?.toBuilder();
       _hasTags = $v.hasTags;
       _hasTagsWith = $v.hasTagsWith?.toBuilder();
-      _hasSubjectTag = $v.hasSubjectTag;
-      _hasSubjectTagWith = $v.hasSubjectTagWith?.toBuilder();
       _hasCompletionReport = $v.hasCompletionReport;
       _hasCompletionReportWith = $v.hasCompletionReportWith?.toBuilder();
       _$v = null;
@@ -39030,20 +38735,12 @@ class GTaskWhereInputBuilder
             goalIDNotIn: _goalIDNotIn?.build(),
             goalIDIsNil: goalIDIsNil,
             goalIDNotNil: goalIDNotNil,
-            subjectTagID: subjectTagID,
-            subjectTagIDNEQ: subjectTagIDNEQ,
-            subjectTagIDIn: _subjectTagIDIn?.build(),
-            subjectTagIDNotIn: _subjectTagIDNotIn?.build(),
-            subjectTagIDIsNil: subjectTagIDIsNil,
-            subjectTagIDNotNil: subjectTagIDNotNil,
             hasUser: hasUser,
             hasUserWith: _hasUserWith?.build(),
             hasGoal: hasGoal,
             hasGoalWith: _hasGoalWith?.build(),
             hasTags: hasTags,
             hasTagsWith: _hasTagsWith?.build(),
-            hasSubjectTag: hasSubjectTag,
-            hasSubjectTagWith: _hasSubjectTagWith?.build(),
             hasCompletionReport: hasCompletionReport,
             hasCompletionReportWith: _hasCompletionReportWith?.build(),
           );
@@ -39212,11 +38909,6 @@ class GTaskWhereInputBuilder
         _$failedField = 'goalIDNotIn';
         _goalIDNotIn?.build();
 
-        _$failedField = 'subjectTagIDIn';
-        _subjectTagIDIn?.build();
-        _$failedField = 'subjectTagIDNotIn';
-        _subjectTagIDNotIn?.build();
-
         _$failedField = 'hasUserWith';
         _hasUserWith?.build();
 
@@ -39225,9 +38917,6 @@ class GTaskWhereInputBuilder
 
         _$failedField = 'hasTagsWith';
         _hasTagsWith?.build();
-
-        _$failedField = 'hasSubjectTagWith';
-        _hasSubjectTagWith?.build();
 
         _$failedField = 'hasCompletionReportWith';
         _hasCompletionReportWith?.build();
@@ -39756,10 +39445,6 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
   final String? goalID;
   @override
   final BuiltList<String>? tagNames;
-  @override
-  final String? subjectTagID;
-  @override
-  final bool? clearSubjectTag;
 
   factory _$GUpdateTaskInput(
           [void Function(GUpdateTaskInputBuilder)? updates]) =>
@@ -39777,9 +39462,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
       this.recurrence,
       this.status,
       this.goalID,
-      this.tagNames,
-      this.subjectTagID,
-      this.clearSubjectTag})
+      this.tagNames})
       : super._();
   @override
   GUpdateTaskInput rebuild(void Function(GUpdateTaskInputBuilder) updates) =>
@@ -39804,9 +39487,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
         recurrence == other.recurrence &&
         status == other.status &&
         goalID == other.goalID &&
-        tagNames == other.tagNames &&
-        subjectTagID == other.subjectTagID &&
-        clearSubjectTag == other.clearSubjectTag;
+        tagNames == other.tagNames;
   }
 
   @override
@@ -39824,8 +39505,6 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, goalID.hashCode);
     _$hash = $jc(_$hash, tagNames.hashCode);
-    _$hash = $jc(_$hash, subjectTagID.hashCode);
-    _$hash = $jc(_$hash, clearSubjectTag.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -39844,9 +39523,7 @@ class _$GUpdateTaskInput extends GUpdateTaskInput {
           ..add('recurrence', recurrence)
           ..add('status', status)
           ..add('goalID', goalID)
-          ..add('tagNames', tagNames)
-          ..add('subjectTagID', subjectTagID)
-          ..add('clearSubjectTag', clearSubjectTag))
+          ..add('tagNames', tagNames))
         .toString();
   }
 }
@@ -39908,15 +39585,6 @@ class GUpdateTaskInputBuilder
       _$this._tagNames ??= ListBuilder<String>();
   set tagNames(ListBuilder<String>? tagNames) => _$this._tagNames = tagNames;
 
-  String? _subjectTagID;
-  String? get subjectTagID => _$this._subjectTagID;
-  set subjectTagID(String? subjectTagID) => _$this._subjectTagID = subjectTagID;
-
-  bool? _clearSubjectTag;
-  bool? get clearSubjectTag => _$this._clearSubjectTag;
-  set clearSubjectTag(bool? clearSubjectTag) =>
-      _$this._clearSubjectTag = clearSubjectTag;
-
   GUpdateTaskInputBuilder();
 
   GUpdateTaskInputBuilder get _$this {
@@ -39934,8 +39602,6 @@ class GUpdateTaskInputBuilder
       _status = $v.status;
       _goalID = $v.goalID;
       _tagNames = $v.tagNames?.toBuilder();
-      _subjectTagID = $v.subjectTagID;
-      _clearSubjectTag = $v.clearSubjectTag;
       _$v = null;
     }
     return this;
@@ -39971,8 +39637,6 @@ class GUpdateTaskInputBuilder
             status: status,
             goalID: goalID,
             tagNames: _tagNames?.build(),
-            subjectTagID: subjectTagID,
-            clearSubjectTag: clearSubjectTag,
           );
     } catch (_) {
       late String _$failedField;

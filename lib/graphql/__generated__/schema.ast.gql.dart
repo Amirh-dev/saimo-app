@@ -6542,15 +6542,6 @@ const CreateTaskInput = _i1.InputObjectTypeDefinitionNode(
       ),
       defaultValue: null,
     ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagID'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'ID'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
   ],
 );
 const Cursor = _i1.ScalarTypeDefinitionNode(
@@ -12777,7 +12768,7 @@ const StatisticsDashboard = _i1.ObjectTypeDefinitionNode(
       ),
     ),
     _i1.FieldDefinitionNode(
-      name: _i1.NameNode(value: 'subjectBuckets'),
+      name: _i1.NameNode(value: 'tagBuckets'),
       directives: [],
       args: [],
       type: _i1.ListTypeNode(
@@ -13057,18 +13048,6 @@ const Tag = _i1.ObjectTypeDefinitionNode(
       args: [],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'User'),
-        isNonNull: false,
-      ),
-    ),
-    _i1.FieldDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTasks'),
-      directives: [],
-      args: [],
-      type: _i1.ListTypeNode(
-        type: _i1.NamedTypeNode(
-          name: _i1.NameNode(value: 'Task'),
-          isNonNull: true,
-        ),
         isNonNull: false,
       ),
     ),
@@ -13573,6 +13552,33 @@ const TagStatisticsBucket = _i1.ObjectTypeDefinitionNode(
       args: [],
       type: _i1.NamedTypeNode(
         name: _i1.NameNode(value: 'Boolean'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'isGeneral'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'Boolean'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'hasChildren'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'Boolean'),
+        isNonNull: true,
+      ),
+    ),
+    _i1.FieldDefinitionNode(
+      name: _i1.NameNode(value: 'usageCount'),
+      directives: [],
+      args: [],
+      type: _i1.NamedTypeNode(
+        name: _i1.NameNode(value: 'Int'),
         isNonNull: true,
       ),
     ),
@@ -14188,27 +14194,6 @@ const TagWhereInput = _i1.InputObjectTypeDefinitionNode(
       ),
       defaultValue: null,
     ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'hasSubjectTasks'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Boolean'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'hasSubjectTasksWith'),
-      directives: [],
-      type: _i1.ListTypeNode(
-        type: _i1.NamedTypeNode(
-          name: _i1.NameNode(value: 'TaskWhereInput'),
-          isNonNull: true,
-        ),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
   ],
 );
 const Task = _i1.ObjectTypeDefinitionNode(
@@ -14384,15 +14369,6 @@ const Task = _i1.ObjectTypeDefinitionNode(
       ),
     ),
     _i1.FieldDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagID'),
-      directives: [],
-      args: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'ID'),
-        isNonNull: false,
-      ),
-    ),
-    _i1.FieldDefinitionNode(
       name: _i1.NameNode(value: 'user'),
       directives: [],
       args: [],
@@ -14419,15 +14395,6 @@ const Task = _i1.ObjectTypeDefinitionNode(
           name: _i1.NameNode(value: 'Tag'),
           isNonNull: true,
         ),
-        isNonNull: false,
-      ),
-    ),
-    _i1.FieldDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTag'),
-      directives: [],
-      args: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Tag'),
         isNonNull: false,
       ),
     ),
@@ -16837,66 +16804,6 @@ const TaskWhereInput = _i1.InputObjectTypeDefinitionNode(
       defaultValue: null,
     ),
     _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagID'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'ID'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagIDNEQ'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'ID'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagIDIn'),
-      directives: [],
-      type: _i1.ListTypeNode(
-        type: _i1.NamedTypeNode(
-          name: _i1.NameNode(value: 'ID'),
-          isNonNull: true,
-        ),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagIDNotIn'),
-      directives: [],
-      type: _i1.ListTypeNode(
-        type: _i1.NamedTypeNode(
-          name: _i1.NameNode(value: 'ID'),
-          isNonNull: true,
-        ),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagIDIsNil'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Boolean'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagIDNotNil'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Boolean'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
       name: _i1.NameNode(value: 'hasUser'),
       directives: [],
       type: _i1.NamedTypeNode(
@@ -16949,27 +16856,6 @@ const TaskWhereInput = _i1.InputObjectTypeDefinitionNode(
     ),
     _i1.InputValueDefinitionNode(
       name: _i1.NameNode(value: 'hasTagsWith'),
-      directives: [],
-      type: _i1.ListTypeNode(
-        type: _i1.NamedTypeNode(
-          name: _i1.NameNode(value: 'TagWhereInput'),
-          isNonNull: true,
-        ),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'hasSubjectTag'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Boolean'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'hasSubjectTagWith'),
       directives: [],
       type: _i1.ListTypeNode(
         type: _i1.NamedTypeNode(
@@ -17308,24 +17194,6 @@ const UpdateTaskInput = _i1.InputObjectTypeDefinitionNode(
           name: _i1.NameNode(value: 'String'),
           isNonNull: true,
         ),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'subjectTagID'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'ID'),
-        isNonNull: false,
-      ),
-      defaultValue: null,
-    ),
-    _i1.InputValueDefinitionNode(
-      name: _i1.NameNode(value: 'clearSubjectTag'),
-      directives: [],
-      type: _i1.NamedTypeNode(
-        name: _i1.NameNode(value: 'Boolean'),
         isNonNull: false,
       ),
       defaultValue: null,

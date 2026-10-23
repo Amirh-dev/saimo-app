@@ -40,8 +40,7 @@ const String kTaskFields = r'''
     timerStartedAt
     status
     goal { id title }
-    tags { id name }
-    subjectTag { id name }
+    tags { id name moderationStatus parent { id name } }
     completionReport { performanceRating tookTest totalQuestions correctAnswers note }
 ''';
 
@@ -97,14 +96,30 @@ String taskStatusFromApi(String? status) {
 
 bool isTimedTask(Map<String, dynamic> task) => task['type'] == 'TIMED';
 
-List<String> _tagNames(Map<String, dynamic> task) {
+List<String> _tagNames(Map<String, dynamic> task, {String? status}) {
   final tags = task['tags'];
   if (tags is! List) return <String>[];
-  return tags
-      .whereType<Map>()
-      .map((tag) => tag['name'])
-      .whereType<String>()
-      .toList();
+  return [
+    for (final tag in tags.whereType<Map>())
+      if (tag['name'] is String &&
+          (status == null || tag['moderationStatus'] == status))
+        tag['name'] as String,
+  ];
+}
+
+/// The subject a task counts under, as the server's tag statistics group it:
+/// its first approved tag's parent, or that tag itself when it has none.
+/// Tags still pending review are the user's own and count as "other" (null).
+String? _subjectOf(Map<String, dynamic> task) {
+  final tags = task['tags'];
+  if (tags is! List) return null;
+  for (final tag in tags.whereType<Map>()) {
+    if (tag['moderationStatus'] != 'APPROVED') continue;
+    final parent = tag['parent'];
+    final name = parent is Map ? parent['name'] : tag['name'];
+    if (name is String && name.trim().isNotEmpty) return name;
+  }
+  return null;
 }
 
 String _taskSubtitle(Map<String, dynamic> task) {
@@ -124,7 +139,6 @@ Map<String, dynamic> taskFromApi(Map<String, dynamic> task) {
   final date = task['date'] as String? ?? '';
   final reminderTime = task['reminderTime'] as String? ?? '';
   final goal = task['goal'] as Map<String, dynamic>?;
-  final subject = task['subjectTag'] as Map<String, dynamic>?;
 
   return {
     'id': task['id'] as String?,
@@ -136,11 +150,13 @@ Map<String, dynamic> taskFromApi(Map<String, dynamic> task) {
     'date': jalaliFromIso(date),
     'goalId': goal?['id'] as String?,
     'goalTitle': goal?['title'] as String?,
-    'subject': subject?['name'] as String?,
+    'subject': _subjectOf(task),
     'reminder': task['hasReminder'] as bool? ?? false,
     'note': task['note'] as String?,
     'shortDescription': task['shortDescription'] as String?,
     'tags': _tagNames(task),
+    // Blocked since they were added: saving the task with them would fail.
+    'blockedTags': _tagNames(task, status: 'BLOCKED'),
     'recurringDays': task['recurringDays'] as String?,
     'recurrenceId': task['recurrenceID'] as String?,
     'dateTime': DateTime.tryParse(date)?.toLocal(),

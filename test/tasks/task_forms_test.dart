@@ -86,7 +86,6 @@ OperationResponse<GCreateTaskData, GCreateTaskVars> _created(
         'status': 'TODO',
         'userID': 'me',
         'goalID': null,
-        'subjectTagID': null,
       },
     }),
   );

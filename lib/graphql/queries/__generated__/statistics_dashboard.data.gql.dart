@@ -59,8 +59,8 @@ abstract class GStatisticsDashboardData_statisticsDashboard
   GStatisticsDashboardData_statisticsDashboard_comparison get comparison;
   BuiltList<GStatisticsDashboardData_statisticsDashboard_dailyBuckets>
       get dailyBuckets;
-  BuiltList<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
-      get subjectBuckets;
+  BuiltList<GStatisticsDashboardData_statisticsDashboard_tagBuckets>
+      get tagBuckets;
   static Serializer<GStatisticsDashboardData_statisticsDashboard>
       get serializer => _$gStatisticsDashboardDataStatisticsDashboardSerializer;
 
@@ -294,21 +294,19 @@ abstract class GStatisticsDashboardData_statisticsDashboard_dailyBuckets
       );
 }
 
-abstract class GStatisticsDashboardData_statisticsDashboard_subjectBuckets
+abstract class GStatisticsDashboardData_statisticsDashboard_tagBuckets
     implements
-        Built<GStatisticsDashboardData_statisticsDashboard_subjectBuckets,
-            GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder> {
-  GStatisticsDashboardData_statisticsDashboard_subjectBuckets._();
+        Built<GStatisticsDashboardData_statisticsDashboard_tagBuckets,
+            GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder> {
+  GStatisticsDashboardData_statisticsDashboard_tagBuckets._();
 
-  factory GStatisticsDashboardData_statisticsDashboard_subjectBuckets(
+  factory GStatisticsDashboardData_statisticsDashboard_tagBuckets(
       [void Function(
-              GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
-                  b)
-          updates]) = _$GStatisticsDashboardData_statisticsDashboard_subjectBuckets;
+              GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder b)
+          updates]) = _$GStatisticsDashboardData_statisticsDashboard_tagBuckets;
 
   static void _initializeBuilder(
-          GStatisticsDashboardData_statisticsDashboard_subjectBucketsBuilder
-              b) =>
+          GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder b) =>
       b..G__typename = 'TagStatisticsBucket';
 
   @BuiltValueField(wireName: '__typename')
@@ -322,19 +320,19 @@ abstract class GStatisticsDashboardData_statisticsDashboard_subjectBuckets
   int get correctAnswers;
   int get incorrectAnswers;
   double? get averagePerformanceRating;
-  static Serializer<GStatisticsDashboardData_statisticsDashboard_subjectBuckets>
+  static Serializer<GStatisticsDashboardData_statisticsDashboard_tagBuckets>
       get serializer =>
-          _$gStatisticsDashboardDataStatisticsDashboardSubjectBucketsSerializer;
+          _$gStatisticsDashboardDataStatisticsDashboardTagBucketsSerializer;
 
   Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
-        GStatisticsDashboardData_statisticsDashboard_subjectBuckets.serializer,
+        GStatisticsDashboardData_statisticsDashboard_tagBuckets.serializer,
         this,
       ) as Map<String, dynamic>);
 
-  static GStatisticsDashboardData_statisticsDashboard_subjectBuckets? fromJson(
+  static GStatisticsDashboardData_statisticsDashboard_tagBuckets? fromJson(
           Map<String, dynamic> json) =>
       _i1.serializers.deserializeWith(
-        GStatisticsDashboardData_statisticsDashboard_subjectBuckets.serializer,
+        GStatisticsDashboardData_statisticsDashboard_tagBuckets.serializer,
         json,
       );
 }

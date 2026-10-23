@@ -64,11 +64,14 @@ TagSelection _formTagSelection(
   final existing = editing != null
       ? (editing['tags'] as List?)?.cast<String>() ?? const <String>[]
       : initialTags;
+  GlobalData.instance.refreshParentTags();
   return TagSelection(
     suggest:
         TagSuggestionRepository(context.read<GraphQLRepository>()).suggestTags,
     catalog: [for (final tag in GlobalData.instance.parentTags) tag.name],
     initial: existing,
+    // A tag blocked since it was added would make saving fail; it starts off.
+    initialOff: (editing?['blockedTags'] as List?)?.cast<String>() ?? const [],
     initialTitle: editing != null || existing.isNotEmpty ? title : '',
   )..titleChanged(title);
 }

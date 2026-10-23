@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
 import 'package:simo_learn/data/app_update/app_update_check.dart';
+import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
@@ -84,6 +85,9 @@ Future<void> main() async {
       debugPrint('Failed loading parent tags: $error');
     }),
   );
+  // Admins rename and merge parent tags; reload them once the app is back.
+  GlobalData.instance.loadParentTags = globalDataRepository.loadParentTags;
+  AppLifecycleListener(onResume: GlobalData.instance.refreshParentTags);
 
   // Web only: watch for a newer release while this tab stays open.
   AppUpdateCheck.instance.start();

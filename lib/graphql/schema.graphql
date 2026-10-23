@@ -1020,7 +1020,6 @@ input CreateTaskInput {
   recurrence: RecurrenceInput
   goalID: ID
   tagNames: [String!]
-  subjectTagID: ID
 }
 
 """
@@ -1846,7 +1845,7 @@ type StatisticsComparison {
 type StatisticsDashboard {
   comparison: StatisticsComparison!
   dailyBuckets: [DailyStatisticsBucket!]!
-  subjectBuckets: [TagStatisticsBucket!]!
+  tagBuckets: [TagStatisticsBucket!]!
 }
 
 input StatisticsDashboardInput {
@@ -1893,7 +1892,6 @@ type Tag implements Node {
   children: [Tag!]
   parent: Tag
   createdBy: User
-  subjectTasks: [Task!]
 }
 
 type TagKeyword implements Node {
@@ -1982,6 +1980,9 @@ type TagStatisticsBucket {
   tagID: ID
   tagName: String!
   isMiscellaneous: Boolean!
+  isGeneral: Boolean!
+  hasChildren: Boolean!
+  usageCount: Int!
   studySeconds: Int!
   completedTasks: Int!
   totalQuestions: Int!
@@ -2073,9 +2074,6 @@ input TagWhereInput {
   hasCreatedBy: Boolean
   hasCreatedByWith: [UserWhereInput!]
 
-  """subject_tasks edge predicates"""
-  hasSubjectTasks: Boolean
-  hasSubjectTasksWith: [TaskWhereInput!]
 }
 
 type Task implements Node {
@@ -2125,11 +2123,9 @@ type Task implements Node {
   status: TaskStatus!
   userID: ID!
   goalID: ID
-  subjectTagID: ID
   user: User!
   goal: Goal
   tags: [Tag!]
-  subjectTag: Tag
   completionReport: TaskCompletionReport
 }
 
@@ -2489,13 +2485,6 @@ input TaskWhereInput {
   goalIDIsNil: Boolean
   goalIDNotNil: Boolean
 
-  """subject_tag_id field predicates"""
-  subjectTagID: ID
-  subjectTagIDNEQ: ID
-  subjectTagIDIn: [ID!]
-  subjectTagIDNotIn: [ID!]
-  subjectTagIDIsNil: Boolean
-  subjectTagIDNotNil: Boolean
 
   """user edge predicates"""
   hasUser: Boolean
@@ -2509,9 +2498,6 @@ input TaskWhereInput {
   hasTags: Boolean
   hasTagsWith: [TagWhereInput!]
 
-  """subject_tag edge predicates"""
-  hasSubjectTag: Boolean
-  hasSubjectTagWith: [TagWhereInput!]
 
   """completion_report edge predicates"""
   hasCompletionReport: Boolean
@@ -2564,8 +2550,6 @@ input UpdateTaskInput {
   status: TaskStatus
   goalID: ID
   tagNames: [String!]
-  subjectTagID: ID
-  clearSubjectTag: Boolean
 }
 
 type User implements Node {

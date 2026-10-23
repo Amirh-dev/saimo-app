@@ -255,7 +255,7 @@ const StatisticsDashboard = _i1.OperationDefinitionNode(
           ]),
         ),
         _i1.FieldNode(
-          name: _i1.NameNode(value: 'subjectBuckets'),
+          name: _i1.NameNode(value: 'tagBuckets'),
           alias: null,
           arguments: [],
           directives: [],

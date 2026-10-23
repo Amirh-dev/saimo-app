@@ -165,13 +165,6 @@ class _$GUpdateTaskData_updateTaskSerializer
         ..add(serializers.serialize(value,
             specifiedType: const FullType(String)));
     }
-    value = object.subjectTagID;
-    if (value != null) {
-      result
-        ..add('subjectTagID')
-        ..add(serializers.serialize(value,
-            specifiedType: const FullType(String)));
-    }
     return result;
   }
 
@@ -262,10 +255,6 @@ class _$GUpdateTaskData_updateTaskSerializer
           break;
         case 'goalID':
           result.goalID = serializers.deserialize(value,
-              specifiedType: const FullType(String)) as String?;
-          break;
-        case 'subjectTagID':
-          result.subjectTagID = serializers.deserialize(value,
               specifiedType: const FullType(String)) as String?;
           break;
       }
@@ -424,8 +413,6 @@ class _$GUpdateTaskData_updateTask extends GUpdateTaskData_updateTask {
   final String userID;
   @override
   final String? goalID;
-  @override
-  final String? subjectTagID;
 
   factory _$GUpdateTaskData_updateTask(
           [void Function(GUpdateTaskData_updateTaskBuilder)? updates]) =>
@@ -450,8 +437,7 @@ class _$GUpdateTaskData_updateTask extends GUpdateTaskData_updateTask {
       this.recurringDays,
       required this.status,
       required this.userID,
-      this.goalID,
-      this.subjectTagID})
+      this.goalID})
       : super._();
   @override
   GUpdateTaskData_updateTask rebuild(
@@ -484,8 +470,7 @@ class _$GUpdateTaskData_updateTask extends GUpdateTaskData_updateTask {
         recurringDays == other.recurringDays &&
         status == other.status &&
         userID == other.userID &&
-        goalID == other.goalID &&
-        subjectTagID == other.subjectTagID;
+        goalID == other.goalID;
   }
 
   @override
@@ -510,7 +495,6 @@ class _$GUpdateTaskData_updateTask extends GUpdateTaskData_updateTask {
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, userID.hashCode);
     _$hash = $jc(_$hash, goalID.hashCode);
-    _$hash = $jc(_$hash, subjectTagID.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -536,8 +520,7 @@ class _$GUpdateTaskData_updateTask extends GUpdateTaskData_updateTask {
           ..add('recurringDays', recurringDays)
           ..add('status', status)
           ..add('userID', userID)
-          ..add('goalID', goalID)
-          ..add('subjectTagID', subjectTagID))
+          ..add('goalID', goalID))
         .toString();
   }
 }
@@ -632,10 +615,6 @@ class GUpdateTaskData_updateTaskBuilder
   String? get goalID => _$this._goalID;
   set goalID(String? goalID) => _$this._goalID = goalID;
 
-  String? _subjectTagID;
-  String? get subjectTagID => _$this._subjectTagID;
-  set subjectTagID(String? subjectTagID) => _$this._subjectTagID = subjectTagID;
-
   GUpdateTaskData_updateTaskBuilder() {
     GUpdateTaskData_updateTask._initializeBuilder(this);
   }
@@ -662,7 +641,6 @@ class GUpdateTaskData_updateTaskBuilder
       _status = $v.status;
       _userID = $v.userID;
       _goalID = $v.goalID;
-      _subjectTagID = $v.subjectTagID;
       _$v = null;
     }
     return this;
@@ -715,7 +693,6 @@ class GUpdateTaskData_updateTaskBuilder
             userID: BuiltValueNullFieldError.checkNotNull(
                 userID, r'GUpdateTaskData_updateTask', 'userID'),
             goalID: goalID,
-            subjectTagID: subjectTagID,
           );
     } catch (_) {
       late String _$failedField;
