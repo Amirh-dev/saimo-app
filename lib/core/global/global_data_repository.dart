@@ -1,6 +1,7 @@
 import 'package:ferry/ferry.dart';
 import 'package:flutter/cupertino.dart';
 
+import '../../graphql/__generated__/schema.schema.gql.dart';
 import '../../graphql/queries/__generated__/parent_tags.req.gql.dart';
 import 'global_data.dart';
 import 'global_data_model.dart';
@@ -43,6 +44,14 @@ class GlobalDataRepository {
           name: tag.name,
           kind: tag.kind.name,
           moderationStatus: tag.moderationStatus.name,
+          aliases: [...?tag.aliases?.map((alias) => alias.name)],
+          // Others' tags waiting for review are theirs alone.
+          children: [
+            ...?tag.children
+                ?.where((child) =>
+                    child.moderationStatus == GTagModerationStatus.APPROVED)
+                .map((child) => child.name),
+          ],
         );
       },
     ).toList();

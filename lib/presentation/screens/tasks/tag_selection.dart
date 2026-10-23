@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -31,20 +33,77 @@ String canonicalTagName(String name) {
       .join(' ');
 }
 
+/// Common short words the server drops from a title before matching
+/// (persianStopwords), so they never make a tag look named.
+const Set<String> _stopwords = {
+  'از', 'به', 'با', 'در', 'را', 'که', 'این', 'آن', 'برای', 'هم', 'تا', 'یا',
+  'اگر', 'ولی', 'اما', 'است', 'بود', 'شد', 'شود', 'می', 'ها', 'های', 'و',
+  'یک', 'همه', 'روی', 'بین', 'چون', 'پس',
+};
+
+/// Grade words, shared by every subject's courses: a title naming only a
+/// grade says nothing about which course it is.
+const Set<String> _gradeWords = {'دهم', 'یازدهم', 'دوازدهم'};
+
+/// The shortest word that may match a longer one by its start ("ریاضی" for
+/// "ریاضیات"), as on the server.
+const int _minPrefixLength = 4;
+
+/// [text] in words, as the server's tokenizeForTagSuggestion splits it:
+/// Persian letter forms, a ZWNJ as a break, lower case, no one-letter words
+/// or stopwords.
+List<String> _words(String text) {
+  final persian = text
+      .split('')
+      .map((char) => _letterVariants[char] ?? char)
+      .join()
+      .replaceAll('‌', ' ')
+      .toLowerCase();
+  final seen = <String>{};
+  return [
+    for (final word in persian.split(RegExp(r'[\s\p{P}]+', unicode: true)))
+      if (word.runes.length >= 2 &&
+          !_stopwords.contains(word) &&
+          seen.add(word))
+        word,
+  ];
+}
+
+/// Whether two words are the same: equal, or one starts the other and is
+/// long enough to say so.
+bool _sameWord(String a, String b) {
+  if (a == b) return true;
+  final (shorter, longer) = a.runes.length <= b.runes.length ? (a, b) : (b, a);
+  return shorter.runes.length >= _minPrefixLength && longer.startsWith(shorter);
+}
+
 /// A task's tags, as quick add and the full task forms pick them.
 ///
 /// There are none to show until the task has a title: then [suggest] asks
-/// the server which tags fit it, once typing pauses, and those come already
-/// selected. Each new title asks again. The user can turn any tag off, and
-/// add tags of their own, which stay whatever the title becomes.
+/// the server which tags fit it, once typing pauses, and those and the
+/// [catalog] tags related to the title are offered, most related first.
+/// Only the ones the title names outright, by name or [aliases], come
+/// selected, and only when there are a few; the rest wait for a tap, and the
+/// form asks for a fuller title instead of guessing. Each new title asks
+/// again. The user can turn any tag on or off, and add tags of their own;
+/// those stay whatever the title becomes.
+///
+/// The known tags come from [readCatalog], read whenever they are needed:
+/// they may load after the form opens. Without it, [catalog], [aliases] and
+/// [children] stand in.
 class TagSelection extends ChangeNotifier {
   TagSelection({
     this.suggest,
-    this.catalog = const [],
+    List<String> catalog = const [],
+    Map<String, List<String>> aliases = const {},
+    Map<String, List<String>> children = const {},
+    TagCatalog Function()? readCatalog,
     Iterable<String> initial = const [],
     Iterable<String> initialOff = const [],
     String initialTitle = '',
-  })  : _extra = _unique(initial),
+  })  : _readCatalog = readCatalog ??
+            (() => (names: catalog, aliases: aliases, children: children)),
+        _extra = _unique(initial),
         _title = initialTitle.trim() {
     // Tags the task already has that can no longer be saved (blocked).
     _off.addAll(_unique(initialOff));
@@ -52,17 +111,34 @@ class TagSelection extends ChangeNotifier {
 
   final Future<List<String>> Function(String title)? suggest;
 
-  /// Every known tag, offered as the user types one of their own.
-  final List<String> catalog;
+  /// Every known tag, offered as the user types one of their own; the other
+  /// names of tags (a title or search naming one names the tag); and the
+  /// tags under each main tag ("ریاضی دهم" under "ریاضی"), offered when a
+  /// title names the main one.
+  final TagCatalog Function() _readCatalog;
 
   static const Duration _delay = Duration(milliseconds: 450);
-  static const int _maxSuggested = 8;
+  static const int _maxSuggested = 10;
   static const int _maxMatches = 6;
 
-  /// The server's tags for the current title.
+  /// Most tags a title gets selected by itself; one naming more is left to
+  /// the user.
+  static const int _maxNamed = 3;
+
+  /// The tags offered for the current title, most related first.
   List<String> _suggested = const [];
 
-  /// Tags not suggested for this title: typed in, or already on the task.
+  /// Offered tags the title names outright, selected by themselves.
+  Set<String> _named = const {};
+
+  /// Whether the title names a few tags outright (selected or not), few
+  /// enough to select.
+  bool _namesFew = false;
+
+  /// The grade the title names when it names no tag ("یازدهم" alone).
+  String? _bareGrade;
+
+  /// Tags the user picked or typed in, or already on the task.
   final List<String> _extra;
 
   /// Tags the user turned off.
@@ -86,7 +162,38 @@ class TagSelection extends ChangeNotifier {
   /// Suggested tags first, then the user's own.
   List<String> get offered => _unique([..._suggested, ..._extra]);
 
-  bool isSelected(String tag) => !_off.contains(tag);
+  bool isSelected(String tag) =>
+      !_off.contains(tag) && (_extra.contains(tag) || _named.contains(tag));
+
+  /// Whether the server's answer for the title as it is now is in.
+  bool get _settled => !_loading && !(_timer?.isActive ?? false);
+
+  /// A suggested tag within one the title selected, to show what a fuller
+  /// title looks like ("ریاضی دهم" for "ریاضی"); null when there is none,
+  /// or the user has picked something narrower already.
+  String? get fullerTitleExample {
+    if (!_settled) return null;
+    for (final tag in _suggested) {
+      if (isSelected(tag)) continue;
+      if (_named.any((named) => isSelected(named) && _isWithin(tag, named))) {
+        return tag;
+      }
+    }
+    return null;
+  }
+
+  /// Whether the title named no tag surely enough (or too many) to select
+  /// any, though tags were suggested or it names a grade, and nothing is
+  /// picked yet.
+  bool get needsClearerTitle =>
+      _settled &&
+      (_suggested.isNotEmpty || _bareGrade != null) &&
+      !_namesFew &&
+      !offered.any(isSelected);
+
+  /// The grade a title names without a lesson, for an example with one
+  /// ("فیزیک یازدهم"); null otherwise.
+  String? get bareGrade => needsClearerTitle ? _bareGrade : null;
 
   /// What the task is saved with.
   List<String> get selected {
@@ -100,23 +207,41 @@ class TagSelection extends ChangeNotifier {
 
   String get draft => _draft;
 
-  /// Known tags containing [query] that are not picked yet, those starting
-  /// with it first.
+  /// Known tags not picked yet whose name, or one of their other names,
+  /// contains [query] («خواندن» finds «مطالعه»), the closest first.
   List<String> matches(String query) {
     final needle = canonicalTagName(query);
     if (needle.isEmpty) return const [];
+    final catalog = _readCatalog();
     final picked = {
       for (final tag in offered)
         if (isSelected(tag)) tag,
     };
+    List<String> names(String tag) =>
+        [tag, ...?catalog.aliases[tag]?.map(canonicalTagName)];
     final found = [
-      for (final tag in _unique(catalog))
-        if (!picked.contains(tag) && tag.contains(needle)) tag,
+      for (final tag in _unique(catalog.names))
+        if (!picked.contains(tag) &&
+            names(tag).any((name) => name.contains(needle)))
+          tag,
     ];
+    // A whole word first, then a word it starts, then inside a word: «دهم»
+    // finds «فیزیک دهم» before «فیزیک یازدهم».
+    int rank(String tag) {
+      final all = names(tag);
+      final words = [for (final name in all) ...name.split(' ')];
+      if (all.any((name) => name.startsWith(needle)) ||
+          words.contains(needle)) {
+        return 0;
+      }
+      return words.any((word) => word.startsWith(needle)) ? 1 : 2;
+    }
+
+    // Catalog order among equals.
+    final order = {for (final (i, tag) in found.indexed) tag: i};
     found.sort((a, b) {
-      final aStarts = a.startsWith(needle) ? 0 : 1;
-      final bStarts = b.startsWith(needle) ? 0 : 1;
-      return aStarts - bStarts;
+      final byRank = rank(a) - rank(b);
+      return byRank != 0 ? byRank : order[a]! - order[b]!;
     });
     return found.take(_maxMatches).toList();
   }
@@ -129,6 +254,9 @@ class TagSelection extends ChangeNotifier {
     final request = ++_request;
     if (title.isEmpty || suggest == null) {
       _suggested = const [];
+      _named = const {};
+      _namesFew = false;
+      _bareGrade = null;
       _loading = false;
       notifyListeners();
       return;
@@ -138,7 +266,16 @@ class TagSelection extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _load(String title, int request) async {
+  /// Asks about the title the selection started with right away, as when a
+  /// form opens with one. With [select] false nothing is selected by itself:
+  /// the tags it started with are the user's choice already.
+  void suggestNow({bool select = true}) {
+    if (_title.isEmpty || suggest == null) return;
+    _timer?.cancel();
+    _load(_title, ++_request, select: select);
+  }
+
+  Future<void> _load(String title, int request, {bool select = true}) async {
     _loading = true;
     notifyListeners();
     List<String>? names;
@@ -149,33 +286,127 @@ class TagSelection extends ChangeNotifier {
     }
     // Disposed, or a newer title has been typed since.
     if (_disposed || request != _request) return;
-    final next = names == null
-        ? _suggested
-        : _unique(names).take(_maxSuggested).toList();
-    // A new title's tags all start selected; when the same tags come back
-    // (a typo fixed, say), what the user turned off stays off.
-    if (!listEquals(next, _suggested)) _off.removeAll(next);
-    _suggested = next;
+    if (names != null) {
+      final terms = _words(title);
+      final next = _related(terms, _unique(names));
+      final named = [
+        for (final tag in next)
+          if (_isNamed(tag, terms)) tag,
+      ];
+      // Only the narrowest named tags are selected: «ریاضی» saved beside
+      // «ریاضی دهم» would count the task twice under ریاضی. The broader one
+      // stays on offer.
+      final narrowest = [
+        for (final tag in named)
+          if (!named.any((other) => _isWithin(other, tag))) tag,
+      ];
+      final selected = select && narrowest.length <= _maxNamed
+          ? narrowest.toSet()
+          : const <String>{};
+      // A new title's tags start afresh; when the same ones come back (a
+      // typo fixed, say), what the user turned off stays off.
+      if (!listEquals(next, _suggested) || !setEquals(selected, _named)) {
+        _off.removeAll(next);
+      }
+      _suggested = next;
+      _named = selected;
+      _namesFew = narrowest.isNotEmpty && narrowest.length <= _maxNamed;
+      _bareGrade =
+          named.isEmpty ? terms.where(_gradeWords.contains).firstOrNull : null;
+    }
     _loading = false;
     notifyListeners();
   }
 
   void toggle(String tag) {
-    if (!_off.remove(tag)) _off.add(tag);
+    if (isSelected(tag)) {
+      _off.add(tag);
+    } else {
+      _pick(tag);
+    }
     notifyListeners();
   }
 
   void draftChanged(String value) => _draft = value;
 
-  /// Adds a tag of the user's own, or turns a listed one back on.
+  /// Adds a tag of the user's own, or turns a listed one on.
   void add(String value) {
     _draft = '';
     final tag = canonicalTagName(value);
-    if (tag.isNotEmpty) {
-      if (!offered.contains(tag)) _extra.add(tag);
-      _off.remove(tag);
-    }
+    if (tag.isNotEmpty) _pick(tag);
     notifyListeners();
+  }
+
+  /// Turns [tag] on as the user's own, so it stays whatever the title
+  /// becomes, and turns off the broader tags it stands within.
+  void _pick(String tag) {
+    _off.remove(tag);
+    if (!_extra.contains(tag)) _extra.add(tag);
+    for (final broader in offered) {
+      if (isSelected(broader) && _isWithin(tag, broader)) _off.add(broader);
+    }
+  }
+
+  /// Each name [tag] goes by, in words.
+  List<List<String>> _forms(String tag) => [
+        for (final name in [tag, ...?_readCatalog().aliases[tag]])
+          if (_words(name).isNotEmpty) _words(name),
+      ];
+
+  /// Whether [terms] hold every word of one of [tag]'s names.
+  bool _isNamed(String tag, List<String> terms) => _forms(tag).any((form) =>
+      form.every((word) => terms.any((term) => _sameWord(term, word))));
+
+  /// Whether [tag] has every word of one of [broader]'s names, and more
+  /// ("ریاضی دهم" within "ریاضی").
+  bool _isWithin(String tag, String broader) {
+    final words = _words(tag);
+    return tag != broader &&
+        _forms(broader).any((form) =>
+            form.length < words.length &&
+            form.every((word) => words.any((other) => _sameWord(other, word))));
+  }
+
+  /// The server's tags for a title of [terms] and the known tags related to
+  /// it, most related first, [_maxSuggested] at most: tags it names, then
+  /// ones sharing a word with it or under a tag it names (its grade's
+  /// before others'), then the server's guesses from past tasks, then ones
+  /// sharing only its grade. Nothing related is left out for being only a
+  /// little related; it just comes later.
+  List<String> _related(List<String> terms, List<String> fromServer) {
+    final grades = terms.where(_gradeWords.contains).toSet();
+    final catalog = _readCatalog();
+    final children = catalog.children;
+    final candidates = _unique([...fromServer, ...catalog.names]);
+    final named = {
+      for (final tag in candidates)
+        if (_isNamed(tag, terms)) tag,
+    };
+    int score(String tag) {
+      final words = {for (final form in _forms(tag)) ...form};
+      final shared =
+          words.where((word) => terms.any((term) => _sameWord(term, word)));
+      final tagGrades = words.where(_gradeWords.contains).toSet();
+      var score = fromServer.contains(tag) ? 8 : 0;
+      if (named.contains(tag)) score += 100;
+      if (shared.any((word) => !_gradeWords.contains(word))) score += 20;
+      if (named.any((main) => children[main]?.contains(tag) ?? false)) {
+        score += 15;
+      }
+      if (grades.isNotEmpty && tagGrades.isNotEmpty) {
+        score += tagGrades.any(grades.contains) ? 10 : -15;
+      }
+      return score;
+    }
+
+    final scored = [
+      for (var index = 0; index < candidates.length; index++)
+        (tag: candidates[index], score: score(candidates[index]), index: index),
+    ]..retainWhere((entry) => entry.score > 0);
+    // Server order, then the catalog's, among equals.
+    scored.sort(
+        (a, b) => a.score != b.score ? b.score - a.score : a.index - b.index);
+    return [for (final entry in scored.take(_maxSuggested)) entry.tag];
   }
 
   /// Back to no tags, for the next task.
@@ -255,7 +486,9 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
   void _start() {
     setState(() => _adding = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _inputFocus.requestFocus();
+      if (!mounted) return;
+      _inputFocus.requestFocus();
+      _dropdown.show();
     });
   }
 
@@ -276,7 +509,6 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
     final offered = selection.offered;
     final matches = _adding ? selection.matches(_input.text) : const <String>[];
     final waiting = selection.isLoading && offered.isEmpty;
-    _revealMatches(matches.isNotEmpty);
 
     final Widget body;
     if (!selection.showsTags) {
@@ -312,34 +544,11 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
               AnimatedSize(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
-                child: _adding ? _inputField(prefix) : _addChip(prefix),
+                child:
+                    _adding ? _inputField(prefix, matches) : _addChip(prefix),
               ),
             ],
           ),
-          // Laid out at once (the chips pop in on their own), so they can be
-          // scrolled into view right away.
-          if (matches.isNotEmpty)
-            Padding(
-              key: _matchesKey,
-              padding: const EdgeInsets.only(top: 10),
-              // Known tags matching what is typed, one tap to add.
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (var index = 0; index < matches.length; index++)
-                    _PopIn(
-                      key: ValueKey('$prefix-pop-match-${matches[index]}'),
-                      order: index,
-                      child: _MatchChip(
-                        key: ValueKey('$prefix-tag-match-${matches[index]}'),
-                        text: matches[index],
-                        onTap: () => _add(matches[index]),
-                      ),
-                    ),
-                ],
-              ),
-            ),
         ],
       );
     }
@@ -358,27 +567,53 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
     );
   }
 
-  final GlobalKey _matchesKey = GlobalKey();
-  bool _hadMatches = false;
+  final OverlayPortalController _dropdown = OverlayPortalController();
+  final LayerLink _fieldLink = LayerLink();
+  final GlobalKey _fieldKey = GlobalKey();
 
-  /// Matches open under the field being typed in, maybe below the fold or
-  /// behind a pinned footer; bring them into view when they first appear.
-  void _revealMatches(bool hasMatches) {
-    if (hasMatches && !_hadMatches) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final context = _matchesKey.currentContext;
-        if (context == null || !mounted) return;
-        Scrollable.ensureVisible(
-          context,
-          duration: reduceMotion(this.context)
-              ? Duration.zero
-              : const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-        );
-      });
+  /// Known tags matching what is typed, in a list hanging under the field,
+  /// or over it when the keyboard leaves no room below; one tap adds one.
+  Widget _dropdownFor(
+      BuildContext context, String prefix, List<String> matches) {
+    if (matches.isEmpty) return const SizedBox.shrink();
+    const width = 240.0;
+    const gap = 6.0;
+    final height = math.min(
+        matches.length * _MatchList.rowHeight + 12, _MatchList.maxHeight);
+    var above = false;
+    var alignRight = true;
+    final box = _fieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.attached && box.hasSize) {
+      final topLeft = box.localToGlobal(Offset.zero);
+      final media = MediaQuery.of(context);
+      final below = media.size.height -
+          media.viewInsets.bottom -
+          topLeft.dy -
+          box.size.height;
+      above = below < height + gap + 8 && topLeft.dy > below;
+      // The field's right edge is where the list starts (RTL), unless that
+      // would push it off the left of the screen.
+      alignRight = topLeft.dx + box.size.width >= width + 16;
     }
-    _hadMatches = hasMatches;
+    final x = alignRight ? 1.0 : -1.0;
+    return Positioned(
+      width: width,
+      child: CompositedTransformFollower(
+        link: _fieldLink,
+        showWhenUnlinked: false,
+        targetAnchor: Alignment(x, above ? -1 : 1),
+        followerAnchor: Alignment(x, above ? 1 : -1),
+        offset: Offset(0, above ? -gap : gap),
+        // Part of the field: a tap here must not close it and save the
+        // half-typed text.
+        child: TextFieldTapRegion(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: _MatchList(prefix: prefix, matches: matches, onTap: _add),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _addChip(String prefix) {
@@ -414,8 +649,20 @@ class _TagSelectionChipsState extends State<TagSelectionChips> {
     );
   }
 
-  Widget _inputField(String prefix) {
+  Widget _inputField(String prefix, List<String> matches) {
+    return OverlayPortal(
+      controller: _dropdown,
+      overlayChildBuilder: (context) => _dropdownFor(context, prefix, matches),
+      child: CompositedTransformTarget(
+        link: _fieldLink,
+        child: _fieldBox(prefix),
+      ),
+    );
+  }
+
+  Widget _fieldBox(String prefix) {
     return Container(
+      key: _fieldKey,
       width: 150,
       height: 34,
       padding: const EdgeInsetsDirectional.only(start: 10, end: 12),
@@ -496,7 +743,7 @@ class _Hint extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: ReText(
-              'با نوشتن عنوان، تگ‌های مناسب پیشنهاد و انتخاب می‌شوند.',
+              'با نوشتن عنوان، تگ‌های مرتبط پیشنهاد می‌شوند.',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.gray,
@@ -505,6 +752,83 @@ class _Hint extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A caution under the task's title when it is too vague for the tags to be
+/// selected by themselves: an example of a fuller title, or a nudge to name
+/// the lesson. A clearer title makes for truer statistics than a guess.
+/// Yellow, not red: nothing is wrong, and the task saves as it is.
+class TagTitleHint extends StatelessWidget {
+  const TagTitleHint({
+    super.key,
+    required this.selection,
+    required this.keyPrefix,
+  });
+
+  final TagSelection selection;
+  final String keyPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: selection,
+      builder: (context, _) {
+        final example = selection.fullerTitleExample;
+        final grade = selection.bareGrade;
+        final String? text;
+        if (example != null) {
+          text = 'برای آمار دقیق‌تر کامل‌تر بنویسید؛ مثلاً «$example».';
+        } else if (grade != null) {
+          text = 'نام درس را هم بنویسید؛ مثلاً «فیزیک $grade».';
+        } else if (selection.needsClearerTitle) {
+          text = 'نام درس را کامل بنویسید تا تگ خودش انتخاب شود.';
+        } else {
+          text = null;
+        }
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: text == null
+              ? const SizedBox.shrink()
+              : Directionality(
+                  key: ValueKey('$keyPrefix-tags-clarify'),
+                  textDirection: TextDirection.rtl,
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: AppColors.toastWarning.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 16,
+                          color: AppColors.toastWarning,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: ReText(
+                            text,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.black1,
+                            textAlign: TextAlign.start,
+                            maxLines: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        );
+      },
     );
   }
 }
@@ -671,22 +995,22 @@ class TagSuggestionStatus extends StatelessWidget {
               ),
             ],
           );
-        } else if (selection.offered.isNotEmpty) {
-          final offered = selection.offered;
-          final picked = offered.where(selection.isSelected).length;
+        } else if (selection.selected.isNotEmpty) {
+          // What will be saved; the suggestions on offer are not a count to
+          // work through.
           note = Row(
             key: ValueKey('$keyPrefix-tags-count'),
             mainAxisSize: MainAxisSize.min,
             textDirection: TextDirection.rtl,
             children: [
               ReText(
-                convertToPersianNumbers('$picked'),
+                convertToPersianNumbers('${selection.selected.length}'),
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 color: AppColors.black1,
               ),
-              ReText(
-                convertToPersianNumbers(' از ${offered.length} انتخاب شده'),
+              const ReText(
+                ' انتخاب شده',
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray,
@@ -705,47 +1029,81 @@ class TagSuggestionStatus extends StatelessWidget {
   }
 }
 
-/// A known tag offered while typing: lighter than a tag chip, with a plus.
-class _MatchChip extends StatelessWidget {
-  const _MatchChip({super.key, required this.text, required this.onTap});
+/// Known tags offered while typing, as a raised card of rows, each with a
+/// plus; it scrolls past [maxHeight].
+class _MatchList extends StatelessWidget {
+  const _MatchList({
+    required this.prefix,
+    required this.matches,
+    required this.onTap,
+  });
 
-  final String text;
-  final VoidCallback onTap;
+  static const double rowHeight = 42;
+  static const double maxHeight = 260;
+
+  final String prefix;
+  final List<String> matches;
+  final ValueChanged<String> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'افزودن تگ $text',
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: AppColors.gray1,
-            borderRadius: BorderRadius.circular(100),
+    return Container(
+      constraints: const BoxConstraints(maxHeight: maxHeight),
+      decoration: BoxDecoration(
+        color: AppColors.whiteSec,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.gray2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black1.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add_rounded, size: 14, color: AppColors.gray),
-              const SizedBox(width: 3),
-              ReText(
-                text,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black1,
-                maxLines: 1,
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        children: [
+          for (final text in matches)
+            Semantics(
+              button: true,
+              label: 'افزودن تگ $text',
+              excludeSemantics: true,
+              child: GestureDetector(
+                key: ValueKey('$prefix-tag-match-$text'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onTap(text);
+                },
+                child: SizedBox(
+                  height: rowHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add_rounded,
+                            size: 16, color: AppColors.gray),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ReText(
+                            text,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.black1,
+                            maxLines: 1,
+                            textAlign: TextAlign.start,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

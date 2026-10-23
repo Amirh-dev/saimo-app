@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/core/global/global_data_model.dart';
 import 'package:simo_learn/presentation/screens/tasks/tag_selection.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_form_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
@@ -313,15 +314,20 @@ class _CrossedOutPainter extends CustomPainter {
 
 // ----------------------------------------------------------------- quick add
 
+TagCatalog _noTags() => (names: const [], aliases: const {}, children: const {});
+
 /// Quick add: a title, a day, a type and tags, then the next task.
 /// [onSubmit] returns null when the task was created, otherwise the message
 /// to show. "Advanced settings" closes the sheet and hands everything chosen
 /// so far to [onMoreOptions], which opens the full form with it.
 ///
 /// There are no tags until a title is typed: then [suggestTags] asks the
-/// server which tags fit it, and those come already selected. Each new title
+/// server which tags fit it, and those and the [tagCatalog] tags related to
+/// it (sharing a word, or under a tag it names) are offered; the ones it
+/// names outright (by name or another name) come selected. Each new title
 /// asks again. While a tag is typed, [tagCatalog] entries matching it are
-/// offered.
+/// offered. [tagCatalog] is read whenever needed: tags may load after the
+/// sheet opens.
 Future<void> showQuickAddSheet(
   BuildContext context, {
   required Jalali initialDay,
@@ -329,7 +335,7 @@ Future<void> showQuickAddSheet(
   required Future<String?> Function(QuickTaskDraft draft) onSubmit,
   required ValueChanged<QuickTaskDraft> onMoreOptions,
   Future<List<String>> Function(String title)? suggestTags,
-  List<String> tagCatalog = const [],
+  TagCatalog Function() tagCatalog = _noTags,
   bool initialTimed = true,
 }) {
   return _showPlanSheet<void>(
@@ -360,7 +366,7 @@ class _QuickAddSheet extends StatefulWidget {
   final Jalali initialDay;
   final Jalali today;
   final Future<List<String>> Function(String title)? suggestTags;
-  final List<String> tagCatalog;
+  final TagCatalog Function() tagCatalog;
   final bool initialTimed;
   final Future<String?> Function(QuickTaskDraft draft) onSubmit;
   final ValueChanged<QuickTaskDraft> onMoreOptions;
@@ -384,7 +390,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   final FocusNode _titleFocus = FocusNode();
   late final TagSelection _tags = TagSelection(
     suggest: widget.suggestTags,
-    catalog: widget.tagCatalog,
+    readCatalog: widget.tagCatalog,
   );
 
   @override
@@ -479,16 +485,22 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           enter(
-            TaskTextField(
-              fieldKey: const ValueKey('quick-add-title'),
-              controller: _title,
-              focusNode: _titleFocus,
-              autofocus: true,
-              hint: 'عنوان تسک، مثلاً «حل تمرین فصل ۳»',
-              textInputAction: TextInputAction.done,
-              error: _titleError,
-              errorTick: _titleErrorTick,
-              onSubmitted: (_) => _submit(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TaskTextField(
+                  fieldKey: const ValueKey('quick-add-title'),
+                  controller: _title,
+                  focusNode: _titleFocus,
+                  autofocus: true,
+                  hint: 'عنوان تسک، مثلاً «حل تمرین فصل ۳»',
+                  textInputAction: TextInputAction.done,
+                  error: _titleError,
+                  errorTick: _titleErrorTick,
+                  onSubmitted: (_) => _submit(),
+                ),
+                TagTitleHint(selection: _tags, keyPrefix: 'quick-add'),
+              ],
             ),
           ),
           enter(

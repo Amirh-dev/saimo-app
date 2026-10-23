@@ -258,7 +258,11 @@ import 'package:simo_learn/graphql/queries/__generated__/get_tasks.req.gql.dart'
 import 'package:simo_learn/graphql/queries/__generated__/get_tasks.var.gql.dart'
     show GGetTasksVars;
 import 'package:simo_learn/graphql/queries/__generated__/parent_tags.data.gql.dart'
-    show GParentTagsData, GParentTagsData_parentTags;
+    show
+        GParentTagsData,
+        GParentTagsData_parentTags,
+        GParentTagsData_parentTags_aliases,
+        GParentTagsData_parentTags_children;
 import 'package:simo_learn/graphql/queries/__generated__/parent_tags.req.gql.dart'
     show GParentTagsReq;
 import 'package:simo_learn/graphql/queries/__generated__/parent_tags.var.gql.dart'
@@ -394,6 +398,8 @@ final SerializersBuilder _serializersBuilder = _$serializers.toBuilder()
   GOrderDirection,
   GParentTagsData,
   GParentTagsData_parentTags,
+  GParentTagsData_parentTags_aliases,
+  GParentTagsData_parentTags_children,
   GParentTagsReq,
   GParentTagsVars,
   GPauseTimedTaskData,

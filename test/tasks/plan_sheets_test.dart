@@ -65,7 +65,11 @@ void main() {
           today: testToday,
           initialTimed: timed,
           suggestTags: suggest ?? (_) async => const ['ریاضی', 'فیزیک'],
-          tagCatalog: const ['ریاضی', 'فیزیک', 'حسابان', 'حسابداری', 'زیست'],
+          tagCatalog: () => (
+            names: const ['ریاضی', 'فیزیک', 'حسابان', 'حسابداری', 'زیست'],
+            aliases: const {},
+            children: const {},
+          ),
           onSubmit: (draft) async {
             drafts.add(draft);
             return null;
@@ -83,8 +87,8 @@ void main() {
       await _waitForSuggestions(tester);
       await tester.tap(_key('quick-add-type-timed'));
       await tester.pumpAndSettle();
-      await tester.tap(_key('quick-add-minutes-60'));
-      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, on: turn off
+      await _tapInSheet(tester, 'quick-add-minutes-60');
+      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
       await tester.tap(_key('week-day-chip-4'));
       await tester.pump();
       await tester.tap(_key('quick-add-submit'));
@@ -94,7 +98,7 @@ void main() {
       expect(draft.title, 'تست فصل ۲');
       expect(ymd(draft.day), [1405, 7, 22]);
       expect(draft.timedMinutes, 60);
-      expect(draft.tags, ['فیزیک']);
+      expect(draft.tags, ['ریاضی']);
 
       expect(_key('quick-add-sheet'), findsOneWidget);
       expect(tester.widget<TextField>(_key('quick-add-title')).controller!.text,
@@ -198,8 +202,8 @@ void main() {
 
       await tester.enterText(_key('quick-add-title'), 'پروژه');
       await _waitForSuggestions(tester);
-      await tester.tap(_key('quick-add-minutes-90'));
-      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, on: turn off
+      await _tapInSheet(tester, 'quick-add-minutes-90');
+      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
       await tester.pump();
       await tester.tap(_key('quick-add-more'));
       await tester.pumpAndSettle();
@@ -209,7 +213,7 @@ void main() {
       expect(ymd(draft.day), [1405, 7, 23]);
       expect(draft.title, 'پروژه');
       expect(draft.timedMinutes, 90);
-      expect(draft.tags, ['فیزیک']);
+      expect(draft.tags, ['ریاضی']);
     });
 
     testWidgets('offers the server\'s tags for the title, and custom tags',
@@ -230,7 +234,8 @@ void main() {
       await _waitForSuggestions(tester);
       expect(asked, ['تمرین هندسه']); // once, after typing pauses
 
-      // Suggestions come selected; one is turned off, a custom one added.
+      // Only the tag the title names (هندسه) comes selected; another is
+      // picked by hand, and a custom one added.
       await _tapInSheet(tester, 'quick-add-tag-ریاضی');
       await _tapInSheet(tester, 'quick-add-tag-new');
       await tester.pumpAndSettle();
@@ -238,8 +243,8 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
-      // A new title asks again and selects its tags afresh; the custom tag
-      // stays.
+      // A new title asks again and selects what it names; the tags picked
+      // by hand stay.
       await tester.enterText(_key('quick-add-title'), 'تمرین فیزیک');
       await _waitForSuggestions(tester);
       expect(asked, ['تمرین هندسه', 'تمرین فیزیک']);
@@ -256,7 +261,7 @@ void main() {
     testWidgets('typing a tag offers the known tags that match',
         (tester) async {
       await openQuickAdd(tester);
-      await tester.enterText(_key('quick-add-title'), 'مرور');
+      await tester.enterText(_key('quick-add-title'), 'مرور ریاضی');
       await _waitForSuggestions(tester);
 
       await _tapInSheet(tester, 'quick-add-tag-new');
@@ -267,7 +272,7 @@ void main() {
       expect(_key('quick-add-tag-match-حسابان'), findsOneWidget);
       expect(_key('quick-add-tag-match-حسابداری'), findsOneWidget);
       expect(_key('quick-add-tag-match-زیست'), findsNothing);
-      // Already picked (suggested) tags are not offered again.
+      // Already picked tags (named by the title) are not offered again.
       await tester.enterText(_key('quick-add-tag-input'), 'ریا');
       await tester.pump();
       expect(_key('quick-add-tag-match-ریاضی'), findsNothing);
@@ -280,16 +285,39 @@ void main() {
 
       await tester.tap(_key('quick-add-submit'));
       await tester.pumpAndSettle();
-      expect(drafts.single.tags, ['ریاضی', 'فیزیک', 'حسابان']);
+      expect(drafts.single.tags, ['ریاضی', 'حسابان']);
     });
+    testWidgets('a vague title asks for a fuller one instead of guessing',
+        (tester) async {
+      await openQuickAdd(tester);
+
+      await tester.enterText(_key('quick-add-title'), 'تست فصل ۲');
+      await _waitForSuggestions(tester);
+      expect(_key('quick-add-tags-clarify'), findsOneWidget);
+
+      // Once the user picks a tag there is nothing to ask.
+      await _tapInSheet(tester, 'quick-add-tag-فیزیک');
+      await tester.pumpAndSettle();
+      expect(_key('quick-add-tags-clarify'), findsNothing);
+
+      // A title naming a tag selects it; nothing to ask either.
+      await tester.enterText(_key('quick-add-title'), 'تست ریاضی');
+      await _waitForSuggestions(tester);
+      expect(_key('quick-add-tags-clarify'), findsNothing);
+
+      await tester.tap(_key('quick-add-submit'));
+      await tester.pumpAndSettle();
+      expect(drafts.single.tags, ['ریاضی', 'فیزیک']);
+    });
+
     testWidgets('a fixed typo keeps the tags the user turned off',
         (tester) async {
       await openQuickAdd(tester);
 
-      await tester.enterText(_key('quick-add-title'), 'تمرن');
+      await tester.enterText(_key('quick-add-title'), 'تمرن ریاضی فیزیک');
       await _waitForSuggestions(tester);
       await _tapInSheet(tester, 'quick-add-tag-ریاضی');
-      await tester.enterText(_key('quick-add-title'), 'تمرین');
+      await tester.enterText(_key('quick-add-title'), 'تمرین ریاضی فیزیک');
       await _waitForSuggestions(tester); // same tags come back
 
       await tester.tap(_key('quick-add-submit'));

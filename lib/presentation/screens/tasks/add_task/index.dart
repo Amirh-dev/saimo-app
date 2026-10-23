@@ -52,9 +52,9 @@ Jalali _pickerMinDate(Jalali selected) {
 }
 
 /// The form's tags, picked as in quick add: the task's own when editing, or
-/// what quick add chose. Tags already chosen belong to the title they came
-/// with, so the server is asked only once the title changes; a title handed
-/// over without tags is asked about at once.
+/// what quick add chose. A title the form opens with is asked about at once,
+/// so the related tags are on offer as in quick add, but none is selected by
+/// itself: what the form was given is the user's choice.
 TagSelection _formTagSelection(
   BuildContext context, {
   required Map<String, dynamic>? editing,
@@ -68,12 +68,12 @@ TagSelection _formTagSelection(
   return TagSelection(
     suggest:
         TagSuggestionRepository(context.read<GraphQLRepository>()).suggestTags,
-    catalog: [for (final tag in GlobalData.instance.parentTags) tag.name],
+    readCatalog: () => GlobalData.instance.tagCatalog,
     initial: existing,
     // A tag blocked since it was added would make saving fail; it starts off.
     initialOff: (editing?['blockedTags'] as List?)?.cast<String>() ?? const [],
-    initialTitle: editing != null || existing.isNotEmpty ? title : '',
-  )..titleChanged(title);
+    initialTitle: title,
+  )..suggestNow(select: false);
 }
 
 Set<String> _weekdaysFromRecurring(String? raw) {
@@ -793,15 +793,21 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
               ),
               const SizedBox(height: 22),
               enter(
-                TaskTextField(
-                  fieldKey: const ValueKey('task-form-title'),
-                  controller: _titleController,
-                  focusNode: _titleFocusNode,
-                  hint: 'عنوان تسک، مثلاً «حل تمرین فصل ۳»',
-                  error: _titleError,
-                  errorTick: _titleErrorTick,
-                  textInputAction: TextInputAction.next,
-                  onChanged: _onTitleChanged,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TaskTextField(
+                      fieldKey: const ValueKey('task-form-title'),
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      hint: 'عنوان تسک، مثلاً «حل تمرین فصل ۳»',
+                      error: _titleError,
+                      errorTick: _titleErrorTick,
+                      textInputAction: TextInputAction.next,
+                      onChanged: _onTitleChanged,
+                    ),
+                    TagTitleHint(selection: _tags, keyPrefix: 'task-form'),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),
@@ -1301,15 +1307,21 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
             ),
             const SizedBox(height: 22),
             enter(
-              TaskTextField(
-                fieldKey: const ValueKey('task-form-title'),
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                hint: 'عنوان تسک، مثلاً «خرید کتاب تست»',
-                error: _titleError,
-                errorTick: _titleErrorTick,
-                textInputAction: TextInputAction.next,
-                onChanged: _onTitleChanged,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TaskTextField(
+                    fieldKey: const ValueKey('task-form-title'),
+                    controller: _titleController,
+                    focusNode: _titleFocusNode,
+                    hint: 'عنوان تسک، مثلاً «خرید کتاب تست»',
+                    error: _titleError,
+                    errorTick: _titleErrorTick,
+                    textInputAction: TextInputAction.next,
+                    onChanged: _onTitleChanged,
+                  ),
+                  TagTitleHint(selection: _tags, keyPrefix: 'task-form'),
+                ],
               ),
             ),
             const SizedBox(height: 10),

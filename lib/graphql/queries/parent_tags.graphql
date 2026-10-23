@@ -4,5 +4,12 @@ query ParentTags {
     name
     kind
     moderationStatus
+    aliases {
+      name
+    }
+    children {
+      name
+      moderationStatus
+    }
   }
 }

@@ -465,13 +465,16 @@ class _TasksScreenState extends State<TasksScreen>
     // user can see them.
     final created = <Map<String, dynamic>>[];
     var sheetOpen = true;
+    // The start-up load needs a signed-in user and may have failed; the
+    // sheet reads the tags whenever it needs them, so they can land late.
+    GlobalData.instance.refreshParentTags();
     await showQuickAddSheet(
       context,
       initialDay: day,
       today: _today,
       initialTimed: timed,
       suggestTags: _tagSuggestions.suggestTags,
-      tagCatalog: [for (final tag in GlobalData.instance.parentTags) tag.name],
+      tagCatalog: () => GlobalData.instance.tagCatalog,
       onSubmit: (draft) async {
         try {
           final task = await _tasksApi.createQuickTask(draft);

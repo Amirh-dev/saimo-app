@@ -112,6 +112,8 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(GOrderDirection.serializer)
       ..add(GParentTagsData.serializer)
       ..add(GParentTagsData_parentTags.serializer)
+      ..add(GParentTagsData_parentTags_aliases.serializer)
+      ..add(GParentTagsData_parentTags_children.serializer)
       ..add(GParentTagsReq.serializer)
       ..add(GParentTagsVars.serializer)
       ..add(GPauseTimedTaskData.serializer)
@@ -931,6 +933,14 @@ Serializers _$serializers = (Serializers().toBuilder()
           const FullType(
               BuiltList, const [const FullType(GParentTagsData_parentTags)]),
           () => ListBuilder<GParentTagsData_parentTags>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GParentTagsData_parentTags_aliases)]),
+          () => ListBuilder<GParentTagsData_parentTags_aliases>())
+      ..addBuilderFactory(
+          const FullType(BuiltList,
+              const [const FullType(GParentTagsData_parentTags_children)]),
+          () => ListBuilder<GParentTagsData_parentTags_children>())
       ..addBuilderFactory(
           const FullType(BuiltList, const [
             const FullType(

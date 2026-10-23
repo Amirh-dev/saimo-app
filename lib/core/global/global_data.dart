@@ -13,7 +13,14 @@ class GlobalData {
   /// asks again.
   static const Duration parentTagsMaxAge = Duration(minutes: 5);
 
+  static const TagCatalog _noTags = (names: [], aliases: {}, children: {});
+
   List<ParentTagModel> parentTags = [];
+
+  /// Every tag a user can pick from: [parentTags], the tags under them, and
+  /// their other names. Task forms read it whenever they need it, so tags
+  /// that load after a form opens are still offered.
+  TagCatalog tagCatalog = _noTags;
 
   /// Loads [parentTags] from the server; set once at start-up.
   Future<void> Function()? loadParentTags;
@@ -23,6 +30,19 @@ class GlobalData {
 
   void setParentTags(List<ParentTagModel> tags) {
     parentTags = tags;
+    tagCatalog = (
+      names: [
+        for (final tag in tags) ...[tag.name, ...tag.children],
+      ],
+      aliases: {
+        for (final tag in tags)
+          if (tag.aliases.isNotEmpty) tag.name: tag.aliases,
+      },
+      children: {
+        for (final tag in tags)
+          if (tag.children.isNotEmpty) tag.name: tag.children,
+      },
+    );
     _parentTagsLoadedAt = DateTime.now();
   }
 
@@ -44,6 +64,7 @@ class GlobalData {
 
   void clear() {
     parentTags.clear();
+    tagCatalog = _noTags;
     _parentTagsLoadedAt = null;
   }
 }

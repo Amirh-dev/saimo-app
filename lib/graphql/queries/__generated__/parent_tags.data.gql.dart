@@ -56,6 +56,8 @@ abstract class GParentTagsData_parentTags
   String get name;
   _i2.GTagKind get kind;
   _i2.GTagModerationStatus get moderationStatus;
+  BuiltList<GParentTagsData_parentTags_aliases>? get aliases;
+  BuiltList<GParentTagsData_parentTags_children>? get children;
   static Serializer<GParentTagsData_parentTags> get serializer =>
       _$gParentTagsDataParentTagsSerializer;
 
@@ -67,6 +69,72 @@ abstract class GParentTagsData_parentTags
   static GParentTagsData_parentTags? fromJson(Map<String, dynamic> json) =>
       _i1.serializers.deserializeWith(
         GParentTagsData_parentTags.serializer,
+        json,
+      );
+}
+
+abstract class GParentTagsData_parentTags_aliases
+    implements
+        Built<GParentTagsData_parentTags_aliases,
+            GParentTagsData_parentTags_aliasesBuilder> {
+  GParentTagsData_parentTags_aliases._();
+
+  factory GParentTagsData_parentTags_aliases(
+      [void Function(GParentTagsData_parentTags_aliasesBuilder b)
+          updates]) = _$GParentTagsData_parentTags_aliases;
+
+  static void _initializeBuilder(GParentTagsData_parentTags_aliasesBuilder b) =>
+      b..G__typename = 'Tag';
+
+  @BuiltValueField(wireName: '__typename')
+  String get G__typename;
+  String get name;
+  static Serializer<GParentTagsData_parentTags_aliases> get serializer =>
+      _$gParentTagsDataParentTagsAliasesSerializer;
+
+  Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
+        GParentTagsData_parentTags_aliases.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GParentTagsData_parentTags_aliases? fromJson(
+          Map<String, dynamic> json) =>
+      _i1.serializers.deserializeWith(
+        GParentTagsData_parentTags_aliases.serializer,
+        json,
+      );
+}
+
+abstract class GParentTagsData_parentTags_children
+    implements
+        Built<GParentTagsData_parentTags_children,
+            GParentTagsData_parentTags_childrenBuilder> {
+  GParentTagsData_parentTags_children._();
+
+  factory GParentTagsData_parentTags_children(
+      [void Function(GParentTagsData_parentTags_childrenBuilder b)
+          updates]) = _$GParentTagsData_parentTags_children;
+
+  static void _initializeBuilder(
+          GParentTagsData_parentTags_childrenBuilder b) =>
+      b..G__typename = 'Tag';
+
+  @BuiltValueField(wireName: '__typename')
+  String get G__typename;
+  String get name;
+  _i2.GTagModerationStatus get moderationStatus;
+  static Serializer<GParentTagsData_parentTags_children> get serializer =>
+      _$gParentTagsDataParentTagsChildrenSerializer;
+
+  Map<String, dynamic> toJson() => (_i1.serializers.serializeWith(
+        GParentTagsData_parentTags_children.serializer,
+        this,
+      ) as Map<String, dynamic>);
+
+  static GParentTagsData_parentTags_children? fromJson(
+          Map<String, dynamic> json) =>
+      _i1.serializers.deserializeWith(
+        GParentTagsData_parentTags_children.serializer,
         json,
       );
 }
