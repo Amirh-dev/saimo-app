@@ -322,14 +322,14 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     if (suggested == null) {
       return _SuggestionStrip(
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
-            color: AppColors.done.withValues(alpha: 0.14),
+            color: AppColors.done.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
           child:
-              const Icon(Icons.check_rounded, color: AppColors.done, size: 20),
+              const Icon(Icons.check_rounded, color: AppColors.done, size: 18),
         ),
         title: 'همه‌ی تسک‌های امروز انجام شد',
         subtitle: _allDoneLine(),
@@ -995,7 +995,7 @@ class _SuggestionStrip extends StatelessWidget {
                         ReText(
                           title,
                           fontSize: 13,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           maxLines: 1,
                           textAlign: TextAlign.right,
                         ),
@@ -1031,7 +1031,7 @@ class _StripButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.style = _StripButtonStyle.primary,
-    this.iconSize = 16,
+    this.iconSize = 15,
     this.textDirectionIcon,
   });
 
@@ -1046,42 +1046,41 @@ class _StripButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A light tint rather than a solid fill: the strip names the next step
+    // without outshouting the capsules under it.
     final (Color background, Color foreground) = switch (style) {
-      _StripButtonStyle.primary => (AppColors.primary, Colors.white),
-      _StripButtonStyle.dark => (AppColors.black1, Colors.white),
+      _StripButtonStyle.primary => (
+          AppColors.primary.withValues(alpha: 0.1),
+          AppColors.primary
+        ),
+      _StripButtonStyle.dark => (
+          AppColors.black1.withValues(alpha: 0.07),
+          AppColors.black1
+        ),
       _StripButtonStyle.quiet => (Colors.white, AppColors.black1),
     };
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 40,
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 14, 0),
+        height: 34,
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 12, 0),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(100),
           border: style == _StripButtonStyle.quiet
               ? Border.all(color: AppColors.gray2)
               : null,
-          boxShadow: style == _StripButtonStyle.quiet
-              ? null
-              : [
-                  BoxShadow(
-                    color: background.withValues(alpha: 0.3),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             ReText(
               label,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
               color: foreground,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
             Icon(
               icon,
               size: iconSize,
