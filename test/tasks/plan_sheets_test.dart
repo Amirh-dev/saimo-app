@@ -290,8 +290,13 @@ void main() {
     testWidgets('a vague title asks for a fuller one instead of guessing',
         (tester) async {
       await openQuickAdd(tester);
+      expect(_key('quick-add-tags-info'), findsNothing);
 
+      // From the first letter, a note on what tags are for.
       await tester.enterText(_key('quick-add-title'), 'تست فصل ۲');
+      await tester.pump();
+      expect(_key('quick-add-tags-about'), findsOneWidget);
+
       await _waitForSuggestions(tester);
       expect(_key('quick-add-tags-clarify'), findsOneWidget);
 

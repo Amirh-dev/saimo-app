@@ -34,6 +34,27 @@ void main() {
       expect(selection.matches('رياض'), ['ریاضیات']);
     });
 
+    test('asks the server about a tag being typed, as about a title',
+        () async {
+      final asked = <String>[];
+      final selection = TagSelection(
+        suggest: (text) async {
+          asked.add(text);
+          return text == 'انتگرال' ? ['حسابان یازدهم', 'ریاضی'] : const [];
+        },
+        catalog: ['ریاضی', 'حسابان یازدهم', 'انتگرال‌گیری'],
+      )..draftChanged('انتگ');
+      selection.draftChanged('انتگرال');
+      // The known tags at once; the server's once typing pauses.
+      expect(selection.matches('انتگرال'), ['انتگرال‌گیری']);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(asked, ['انتگرال']);
+      expect(selection.matches('انتگرال'),
+          ['انتگرال‌گیری', 'حسابان یازدهم', 'ریاضی']);
+      // Its answer is for that text only.
+      expect(selection.matches('انتگرا'), ['انتگرال‌گیری']);
+    });
+
     test('finds a tag by its other names', () {
       final selection = TagSelection(
         catalog: ['مطالعه', 'آزمون و تست', 'تست و مطالعه', 'ریاضی'],
@@ -205,6 +226,24 @@ void main() {
       );
       expect(selection.selected, ['زیست‌شناسی']);
       expect(selection.fullerTitleExample, 'زیست‌شناسی دهم');
+    });
+
+    test('a test tag is selected by the names it is given, the study one is '
+        'not', () async {
+      const catalog = ['آزمون و تست', 'تست و مطالعه', 'مطالعه', 'فیزیک'];
+      const aliases = {
+        'آزمون و تست': ['تست', 'آزمون'],
+      };
+      for (final title in ['تست فیزیک', 'آزمون آزمایشی']) {
+        final selection = await suggested(title, const [],
+            catalog: catalog, aliases: aliases);
+        expect(selection.selected, contains('آزمون و تست'), reason: title);
+        expect(selection.selected, isNot(contains('تست و مطالعه')),
+            reason: title);
+      }
+      // Without them, «تست» is only half of either name.
+      final unnamed = await suggested('تست', const [], catalog: catalog);
+      expect(unnamed.selected, isEmpty);
     });
 
     test('a title naming many tags selects none', () async {

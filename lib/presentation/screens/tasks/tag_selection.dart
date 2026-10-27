@@ -118,6 +118,17 @@ class TagSelection extends ChangeNotifier {
   final TagCatalog Function() _readCatalog;
 
   static const Duration _delay = Duration(milliseconds: 450);
+  static const Duration _searchDelay = Duration(milliseconds: 300);
+
+  /// Most of the server's tags added below the known ones that match a tag
+  /// being typed.
+  static const int _maxSearchResults = 3;
+
+  /// The server's tags for a tag being typed, and what was typed.
+  List<String> _searchResults = const [];
+  String _searchedFor = '';
+  Timer? _searchTimer;
+  int _searchRequest = 0;
   static const int _maxSuggested = 10;
   static const int _maxMatches = 6;
 
@@ -158,6 +169,9 @@ class TagSelection extends ChangeNotifier {
 
   /// Whether there is anything to show; otherwise a hint stands in.
   bool get showsTags => _title.isNotEmpty || _extra.isNotEmpty;
+
+  /// Whether a title has been typed.
+  bool get hasTitle => _title.isNotEmpty;
 
   /// Suggested tags first, then the user's own.
   List<String> get offered => _unique([..._suggested, ..._extra]);
@@ -208,7 +222,8 @@ class TagSelection extends ChangeNotifier {
   String get draft => _draft;
 
   /// Known tags not picked yet whose name, or one of their other names,
-  /// contains [query] («خواندن» finds «مطالعه»), the closest first.
+  /// contains [query] («خواندن» finds «مطالعه»), the closest first; then,
+  /// once the server has answered for [query], its tags not among them.
   List<String> matches(String query) {
     final needle = canonicalTagName(query);
     if (needle.isEmpty) return const [];
@@ -243,7 +258,14 @@ class TagSelection extends ChangeNotifier {
       final byRank = rank(a) - rank(b);
       return byRank != 0 ? byRank : order[a]! - order[b]!;
     });
-    return found.take(_maxMatches).toList();
+    final known = found.take(_maxMatches).toList();
+    final fromServer = _searchedFor == needle
+        ? [
+            for (final tag in _searchResults)
+              if (!picked.contains(tag) && !known.contains(tag)) tag,
+          ].take(_maxSearchResults)
+        : const <String>[];
+    return [...known, ...fromServer];
   }
 
   void titleChanged(String value) {
@@ -327,11 +349,35 @@ class TagSelection extends ChangeNotifier {
     notifyListeners();
   }
 
-  void draftChanged(String value) => _draft = value;
+  /// Notes the tag being typed and, once typing pauses, asks [suggest] about
+  /// it as about a title: the server knows tags by words it has learned go
+  /// with them («انتگرال» for «حسابان»), not only by name.
+  void draftChanged(String value) {
+    _draft = value;
+    _searchTimer?.cancel();
+    final query = canonicalTagName(value);
+    final request = ++_searchRequest;
+    if (query.isEmpty || suggest == null) return;
+    _searchTimer = Timer(_searchDelay, () async {
+      List<String>? names;
+      try {
+        names = await suggest!(query);
+      } catch (error) {
+        debugPrint('Tag search failed: $error');
+      }
+      // Disposed, or more has been typed since.
+      if (_disposed || request != _searchRequest || names == null) return;
+      _searchedFor = query;
+      _searchResults = _unique(names);
+      notifyListeners();
+    });
+  }
 
   /// Adds a tag of the user's own, or turns a listed one on.
   void add(String value) {
     _draft = '';
+    _searchTimer?.cancel();
+    _searchRequest++;
     final tag = canonicalTagName(value);
     if (tag.isNotEmpty) _pick(tag);
     notifyListeners();
@@ -414,6 +460,8 @@ class TagSelection extends ChangeNotifier {
     _extra.clear();
     _off.clear();
     _draft = '';
+    _searchTimer?.cancel();
+    _searchRequest++;
     notifyListeners();
   }
 
@@ -421,6 +469,7 @@ class TagSelection extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _timer?.cancel();
+    _searchTimer?.cancel();
     super.dispose();
   }
 
@@ -756,10 +805,10 @@ class _Hint extends StatelessWidget {
   }
 }
 
-/// A caution under the task's title when it is too vague for the tags to be
-/// selected by themselves: an example of a fuller title, or a nudge to name
-/// the lesson. A clearer title makes for truer statistics than a guess.
-/// Yellow, not red: nothing is wrong, and the task saves as it is.
+/// A note under the task's title, from the first letter typed, on how the
+/// title picks the tags that the statistics are built from. When the title
+/// is too vague for that it says what a fuller one does, with an example.
+/// Blue and informative: nothing is wrong, and the task saves as it is.
 class TagTitleHint extends StatelessWidget {
   const TagTitleHint({
     super.key,
@@ -777,50 +826,69 @@ class TagTitleHint extends StatelessWidget {
       builder: (context, _) {
         final example = selection.fullerTitleExample;
         final grade = selection.bareGrade;
-        final String? text;
+        // Set when the title could say more; the general note otherwise.
+        final String? clarify;
         if (example != null) {
-          text = 'برای آمار دقیق‌تر کامل‌تر بنویسید؛ مثلاً «$example».';
+          clarify = 'هرچه عنوان کامل‌تر باشد، آمار دقیق‌تر است؛ '
+              'مثلاً «$example».';
         } else if (grade != null) {
-          text = 'نام درس را هم بنویسید؛ مثلاً «فیزیک $grade».';
+          clarify = 'با نوشتن نام درس، مثلاً «فیزیک $grade»، '
+              'تگ آن خودکار انتخاب می‌شود و در آمار می‌آید.';
         } else if (selection.needsClearerTitle) {
-          text = 'نام درس را کامل بنویسید تا تگ خودش انتخاب شود.';
+          clarify = 'با نوشتن نام کامل درس، تگ آن خودکار انتخاب می‌شود '
+              'و آمار دقیق‌تر می‌شود.';
         } else {
-          text = null;
+          clarify = null;
         }
+        final text = clarify ??
+            'تگ‌ها از روی عنوان انتخاب می‌شوند و آمار درس‌ها را می‌سازند.';
         return AnimatedSize(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           alignment: Alignment.topCenter,
-          child: text == null
+          child: !selection.hasTitle
               ? const SizedBox.shrink()
               : Directionality(
-                  key: ValueKey('$keyPrefix-tags-clarify'),
+                  key: ValueKey('$keyPrefix-tags-info'),
                   textDirection: TextDirection.rtl,
                   child: Container(
                     margin: const EdgeInsets.only(top: 8),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
-                      color: AppColors.toastWarning.withValues(alpha: 0.14),
+                      color: AppColors.toastInfo.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
-                          Icons.warning_amber_rounded,
+                          Icons.info_outline_rounded,
                           size: 16,
-                          color: AppColors.toastWarning,
+                          color: AppColors.toastInfo,
                         ),
                         const SizedBox(width: 7),
                         Expanded(
-                          child: ReText(
-                            text,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black1,
-                            textAlign: TextAlign.start,
-                            maxLines: 2,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            layoutBuilder: (current, previous) => Stack(
+                              alignment: AlignmentDirectional.topStart,
+                              children: [
+                                ...previous,
+                                if (current != null) current,
+                              ],
+                            ),
+                            child: ReText(
+                              text,
+                              key: clarify != null
+                                  ? ValueKey('$keyPrefix-tags-clarify')
+                                  : ValueKey('$keyPrefix-tags-about'),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.black1,
+                              textAlign: TextAlign.start,
+                              maxLines: 2,
+                            ),
                           ),
                         ),
                       ],
