@@ -18,9 +18,9 @@ env:
 
 jobs:
   android:
-    name: Android (signed split APKs)
+    name: Android (signed split APKs and app bundle)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
@@ -98,11 +98,44 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release --split-per-abi --build-number=${{ github.run_number }} --no-pub
 
+      # Google Play takes an app bundle, not APKs.
+      - name: Build signed app bundle
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: flutter build appbundle --release --build-number=${{ github.run_number }} --no-pub
+
+      # Stores refuse debug-signed builds, and an update signed with a different
+      # key cannot install over the current app.
+      - name: Check release signatures
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            if "$apksigner" verify --print-certs "$apk" | grep -q "CN=Android Debug"; then
+              echo "$apk is signed with the debug key." >&2
+              exit 1
+            fi
+          done
+          if keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab | grep -q "CN=Android Debug"; then
+            echo "app-release.aab is signed with the debug key." >&2
+            exit 1
+          fi
+
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: saimo-android
           path: build/app/outputs/flutter-apk/app-*-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Android app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: saimo-android-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
 
@@ -169,4 +202,5 @@ jobs:
           generate_release_notes: true
           files: |
             release/saimo-android/*.apk
+            release/saimo-android-bundle/*.aab
             release/saimo-web/saimo-web-wasm.tar.gz
