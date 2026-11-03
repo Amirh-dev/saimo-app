@@ -15,6 +15,8 @@ concurrency:
 
 env:
   FLUTTER_VERSION: 3.44.8
+  BUNDLESIGNER_VERSION: 0.1.14
+  BUNDLESIGNER_SHA256: aef2c387f678558e3a4baddab9730fbdca64ef28a0e2e0245491e1088b4968f5
 
 jobs:
   android:
@@ -123,6 +125,35 @@ jobs:
             exit 1
           fi
 
+      # Bazaar builds device APKs from the bundle itself but never sees our
+      # key; it needs this signed digest (.bin) uploaded next to the .aab.
+      # No --lineage: the upload key has not been rotated.
+      - name: Sign app bundle for Bazaar
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          jar="$RUNNER_TEMP/bundlesigner.jar"
+          curl -fsSLo "$jar" "https://github.com/cafebazaar/bundle-signer/releases/download/v$BUNDLESIGNER_VERSION/bundlesigner-$BUNDLESIGNER_VERSION.jar"
+          echo "$BUNDLESIGNER_SHA256  $jar" | sha256sum -c -
+
+          out=build/bazaar-bin
+          mkdir -p "$out"
+          java -jar "$jar" genbin -v \
+            --bundle build/app/outputs/bundle/release/app-release.aab \
+            --bin "$out" \
+            --v2-signing-enabled true --v3-signing-enabled false \
+            --ks android/app/upload-keystore.jks \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD
+          ls -l "$out"
+          if [ -z "$(ls -A "$out")" ]; then
+            echo "bundlesigner wrote no .bin file." >&2
+            exit 1
+          fi
+
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -135,7 +166,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: saimo-android-bundle
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/bazaar-bin/
           if-no-files-found: error
           retention-days: 14
 
@@ -202,5 +235,6 @@ jobs:
           generate_release_notes: true
           files: |
             release/saimo-android/*.apk
-            release/saimo-android-bundle/*.aab
+            release/saimo-android-bundle/**/*.aab
+            release/saimo-android-bundle/bazaar-bin/*
             release/saimo-web/saimo-web-wasm.tar.gz
