@@ -1,4 +1,5 @@
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/utils/helpers.dart';
 
@@ -32,7 +33,17 @@ class ConsultantRepository {
           fullName
           username
           avatarURL
+          major
+          bio
         }
+      }
+    }
+  ''';
+
+  static const String _myMajorQuery = r'''
+    query MyMajor {
+      getMe {
+        major
       }
     }
   ''';
@@ -66,6 +77,19 @@ class ConsultantRepository {
         monthlyBasePrice
         displayMonthlyPrice
         totalPrice
+      }
+    }
+  ''';
+
+  static const String _previewDiscountQuery = r'''
+    query PreviewCounselingDiscount($input: PreviewCounselingDiscountInput!) {
+      previewCounselingDiscount(input: $input) {
+        status
+        code
+        listPrice
+        discountAmount
+        finalPrice
+        percentOff
       }
     }
   ''';
@@ -129,6 +153,7 @@ class ConsultantRepository {
         planType
         durationMonths
         pendingExpiresAt
+        discountCode
       }
     }
   ''';
@@ -165,6 +190,21 @@ class ConsultantRepository {
     if (raw is! List) return const [];
 
     return raw.whereType<Map<String, dynamic>>().map(_mapCounselor).toList();
+  }
+
+  /// The signed-in student's major, or null when none is set. The server does
+  /// the matching; this only labels the list, so a failure just drops the label.
+  Future<UserMajor?> fetchMyMajor() async {
+    try {
+      final data = await _rawRequest(
+        query: _myMajorQuery,
+        variables: const {},
+      );
+      final me = data['getMe'];
+      return me is Map<String, dynamic> ? UserMajor.fromApi(me['major']) : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Returns the student's current counselor, or null when there is none.
@@ -224,12 +264,38 @@ class ConsultantRepository {
         .toList();
   }
 
+  /// Asks what [code] would take off the selected offer. Reserves nothing; the
+  /// server checks the code again when the request is made.
+  Future<DiscountPreview> previewDiscount({
+    required String code,
+    required String planType,
+    required int durationMonths,
+  }) async {
+    final data = await _rawRequest(
+      query: _previewDiscountQuery,
+      variables: {
+        'input': {
+          'code': code,
+          'planType': planType,
+          'durationMonths': durationMonths,
+        },
+      },
+    );
+
+    final raw = data['previewCounselingDiscount'];
+    if (raw is! Map<String, dynamic>) {
+      throw const GraphQLRawException('بررسی کد تخفیف ناموفق بود');
+    }
+    return DiscountPreview.fromJson(raw);
+  }
+
   /// Sends a counseling request, creating a PENDING subscription. Returns its
-  /// id and the authoritative server-side cost.
+  /// id and the authoritative server-side cost, after [discountCode] if any.
   Future<CounselingRequest> requestCounseling({
     required String counselorProfileID,
     required int durationMonths,
     required String planType,
+    String? discountCode,
   }) async {
     final data = await _rawRequest(
       query: _requestCounselingMutation,
@@ -238,6 +304,7 @@ class ConsultantRepository {
           'counselorProfileID': counselorProfileID,
           'durationMonths': durationMonths,
           'planType': planType,
+          if (discountCode != null) 'discountCode': discountCode,
         },
       },
     );
@@ -344,6 +411,7 @@ class ConsultantRepository {
         planType: (item['planType'] as String?) ?? '',
         durationMonths: (item['durationMonths'] as num?)?.toInt() ?? 0,
         expiresAt: DateTime.tryParse(item['pendingExpiresAt'] as String? ?? ''),
+        discountCode: item['discountCode'] as String?,
       );
     }
     return null;
@@ -439,6 +507,9 @@ class ConsultantRepository {
           ? avatarUrl
           : _sampleAvatar,
       resume: resume,
+      ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
+      major: UserMajor.fromApi(userMap['major']),
+      bio: (userMap['bio'] as String?)?.trim() ?? '',
     );
   }
 }
@@ -545,6 +616,7 @@ class PendingCounselingSubscription {
     required this.planType,
     required this.durationMonths,
     this.expiresAt,
+    this.discountCode,
   });
 
   final String id;
@@ -555,17 +627,61 @@ class PendingCounselingSubscription {
   /// When the server cancels it for non-payment.
   final DateTime? expiresAt;
 
+  /// The code its price was discounted with, as the server normalized it.
+  final String? discountCode;
+
   bool isExpiredAt(DateTime now) =>
       expiresAt != null && !expiresAt!.isAfter(now);
 
+  /// Same counselor, plan and code: its reserved price is the one the
+  /// student is about to pay.
   bool matches({
     required String counselorProfileID,
     required int durationMonths,
     required String planType,
+    String? discountCode,
   }) =>
       this.counselorProfileID == counselorProfileID &&
       this.durationMonths == durationMonths &&
-      this.planType == planType;
+      this.planType == planType &&
+      (this.discountCode ?? '') == (discountCode ?? '');
+}
+
+/// What a discount code takes off one offer
+/// ([ConsultantRepository.previewDiscount]). Amounts are toman and stay 0
+/// unless [isValid].
+class DiscountPreview {
+  const DiscountPreview({
+    required this.status,
+    required this.code,
+    required this.listPrice,
+    required this.discountAmount,
+    required this.finalPrice,
+    this.percentOff,
+  });
+
+  /// VALID, or why the code cannot be used (see [discountStatusMessage]).
+  final String status;
+
+  /// The code as the server normalized it, e.g. "SAIMO20".
+  final String code;
+  final int listPrice;
+  final int discountAmount;
+  final int finalPrice;
+  final int? percentOff;
+
+  bool get isValid => status == 'VALID' && discountAmount > 0;
+
+  factory DiscountPreview.fromJson(Map<String, dynamic> json) {
+    return DiscountPreview(
+      status: (json['status'] as String?) ?? 'NOT_FOUND',
+      code: (json['code'] as String?) ?? '',
+      listPrice: (json['listPrice'] as num?)?.toInt() ?? 0,
+      discountAmount: (json['discountAmount'] as num?)?.toInt() ?? 0,
+      finalPrice: (json['finalPrice'] as num?)?.toInt() ?? 0,
+      percentOff: (json['percentOff'] as num?)?.toInt(),
+    );
+  }
 }
 
 /// One row of [ConsultantRepository.fetchPaymentAttempts].

@@ -6,6 +6,7 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 
 import 'avatar_uploader.dart';
 import 'profile_repository.dart';
+import 'user_major.dart';
 
 part 'profile_state.dart';
 
@@ -76,7 +77,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     required String fullName,
     required String username,
     required DateTime birthDate,
-    String? major,
+    UserMajor? major,
   }) async {
     final profile = await _repository.updateProfile(
       fullName: fullName,

@@ -1,13 +1,18 @@
+import 'dart:convert';
+
 import 'package:ferry/ferry.dart';
 import 'package:flutter_test/flutter_test.dart';
 // gql_exec is a transitive test fixture API exposed through Ferry's link stack.
 // ignore: depend_on_referenced_packages
 import 'package:gql_exec/gql_exec.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 
 const _phone = '09123456789';
@@ -68,6 +73,7 @@ void main() {
       username: 'ali_rezaei',
       birthDate: DateTime(2001, 2, 3),
       studyTime: GUserStudyTime.BETWEEN_4_AND_7,
+      major: UserMajor.science,
     );
 
     expect(harness.authCubit.state, isA<AuthAuthenticated>());
@@ -79,6 +85,72 @@ void main() {
       'studyTime': 'BETWEEN_4_AND_7',
     });
     expect(await harness.tokenStorage.getAccessToken(), 'access-token');
+  });
+
+  group('saving the major after the account is created', () {
+    Future<_AuthHarness> registeredHarness() => _createHarness(
+          Link.function((request, [forward]) async* {
+            if (request.operation.operationName == 'Register') {
+              yield _dataResponse({
+                '__typename': 'Mutation',
+                'register': {
+                  '__typename': 'AuthPayload',
+                  'accessToken': 'access-token',
+                  'refreshToken': 'refresh-token',
+                  'user': {'__typename': 'User', 'id': 'new-user'},
+                },
+              });
+            } else {
+              yield _verifyResponse();
+            }
+          }),
+        );
+
+    Future<void> register(_AuthHarness harness) async {
+      await harness.authCubit.verifyOtpForNextStep(
+        phoneNumber: _phone,
+        code: '12345',
+        isRegistered: false,
+      );
+      await harness.authCubit.register(
+        fullName: 'علی رضایی',
+        username: 'ali_rezaei',
+        birthDate: DateTime(2001, 2, 3),
+        studyTime: GUserStudyTime.BETWEEN_4_AND_7,
+        major: UserMajor.art,
+      );
+    }
+
+    test('sends the chosen major as its server value', () async {
+      final harness = await registeredHarness();
+      addTearDown(harness.authCubit.close);
+      Map<String, dynamic>? sent;
+
+      await http.runWithClient(
+        () => register(harness),
+        () => MockClient((request) async {
+          sent = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response('{"data":{"updateProfile":{"id":"new-user"}}}', 200);
+        }),
+      );
+
+      expect(sent?['variables'], {
+        'input': {'major': 'ART'},
+      });
+      expect(harness.authCubit.state, isA<AuthAuthenticated>());
+    });
+
+    test('a failed save does not fail the registration', () async {
+      final harness = await registeredHarness();
+      addTearDown(harness.authCubit.close);
+
+      await http.runWithClient(
+        () => register(harness),
+        () => MockClient((_) async => throw http.ClientException('offline')),
+      );
+
+      expect(harness.authCubit.state, isA<AuthAuthenticated>());
+    });
   });
 
   test('an expired registration token returns to phone entry', () async {
@@ -115,6 +187,7 @@ void main() {
       username: 'ali_rezaei',
       birthDate: DateTime(2001, 2, 3),
       studyTime: GUserStudyTime.BETWEEN_4_AND_7,
+      major: UserMajor.science,
     );
     await Future<void>.delayed(Duration.zero);
 
@@ -152,6 +225,7 @@ void main() {
       username: 'ali_rezaei',
       birthDate: DateTime(2001, 2, 3),
       studyTime: GUserStudyTime.BETWEEN_4_AND_7,
+      major: UserMajor.science,
     );
 
     expect(harness.authCubit.state, isA<AuthUnauthenticated>());

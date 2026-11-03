@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
@@ -16,10 +18,16 @@ import 'package:solar_icons/solar_icons.dart';
 /// [onConfirm]'s result, or null on cancel/dismiss. [notice] explains the
 /// previous try (e.g. "payment was not completed") when the sheet reopens;
 /// [noticeIsError] tints it as an error.
+///
+/// With [checkDiscount] the student can apply a discount code; [onConfirm]
+/// receives the applied one. [discount] restores a code applied before the
+/// sheet was reopened.
 Future<T?> showInvoiceSheet<T>(
   BuildContext context, {
   required ConsultationChoice choice,
-  required Future<T> Function() onConfirm,
+  required Future<T> Function(DiscountPreview? discount) onConfirm,
+  Future<DiscountPreview> Function(String code)? checkDiscount,
+  DiscountPreview? discount,
   String? notice,
   bool noticeIsError = false,
 }) {
@@ -32,10 +40,48 @@ Future<T?> showInvoiceSheet<T>(
     builder: (_) => _InvoiceSheet<T>(
       choice: choice,
       onConfirm: onConfirm,
+      checkDiscount: checkDiscount,
+      discount: discount,
       notice: notice,
       noticeIsError: noticeIsError,
     ),
   );
+}
+
+/// Upper-cases a typed code and keeps only what the server accepts: English
+/// letters, digits (Persian and Arabic ones converted), '-' and '_'.
+class DiscountCodeFormatter extends TextInputFormatter {
+  const DiscountCodeFormatter();
+
+  static const int maxLength = 32;
+
+  static String normalize(String text) {
+    final out = StringBuffer();
+    for (final rune in text.runes) {
+      var c = rune;
+      if (c >= 0x06F0 && c <= 0x06F9) c = 0x30 + c - 0x06F0;
+      if (c >= 0x0660 && c <= 0x0669) c = 0x30 + c - 0x0660;
+      if (c >= 0x61 && c <= 0x7A) c -= 0x20;
+      final keep = (c >= 0x41 && c <= 0x5A) ||
+          (c >= 0x30 && c <= 0x39) ||
+          c == 0x2D ||
+          c == 0x5F;
+      if (keep && out.length < maxLength) out.writeCharCode(c);
+    }
+    return out.toString();
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = normalize(newValue.text);
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
 }
 
 class _InvoiceSheet<T> extends StatefulWidget {
@@ -43,12 +89,16 @@ class _InvoiceSheet<T> extends StatefulWidget {
     super.key,
     required this.choice,
     required this.onConfirm,
+    this.checkDiscount,
+    this.discount,
     this.notice,
     this.noticeIsError = false,
   });
 
   final ConsultationChoice choice;
-  final Future<T> Function() onConfirm;
+  final Future<T> Function(DiscountPreview? discount) onConfirm;
+  final Future<DiscountPreview> Function(String code)? checkDiscount;
+  final DiscountPreview? discount;
   final String? notice;
   final bool noticeIsError;
 
@@ -61,27 +111,95 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
   late String? _message = widget.notice;
   late bool _messageIsError = widget.noticeIsError;
 
+  late DiscountPreview? _discount = widget.discount;
+  bool _codeOpen = false;
+  bool _checking = false;
+  String? _codeError;
+  final _codeController = TextEditingController();
+  final _codeFocus = FocusNode();
+
   ConsultationChoice get choice => widget.choice;
   ConsultationPlan get plan => widget.choice.plan;
   PlanPrice get price => widget.choice.price;
 
+  @override
+  void initState() {
+    super.initState();
+    _codeFocus.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _codeFocus.dispose();
+    super.dispose();
+  }
+
   Future<void> _confirm() async {
-    if (_busy) return;
+    if (_busy || _checking) return;
     setState(() {
       _busy = true;
       _message = null;
     });
     try {
-      final result = await widget.onConfirm();
+      final result = await widget.onConfirm(_discount);
       if (mounted) Navigator.of(context).pop(result);
     } catch (error) {
       if (!mounted) return;
+      // The code stopped being usable after it was applied: drop it and say
+      // why next to the field, so paying the full price is a choice.
+      final discountMessage = discountRejectionMessage(error);
       setState(() {
         _busy = false;
-        _message = checkoutErrorMessage(error);
-        _messageIsError = true;
+        if (discountMessage != null && _discount != null) {
+          _codeController.text = _discount!.code;
+          _discount = null;
+          _codeOpen = true;
+          _codeError = discountMessage;
+        } else {
+          _message = checkoutErrorMessage(error);
+          _messageIsError = true;
+        }
       });
     }
+  }
+
+  Future<void> _applyCode() async {
+    final code = DiscountCodeFormatter.normalize(_codeController.text);
+    final check = widget.checkDiscount;
+    if (code.isEmpty || check == null || _checking) return;
+    setState(() {
+      _checking = true;
+      _codeError = null;
+    });
+    try {
+      final preview = await check(code);
+      if (!mounted) return;
+      setState(() {
+        _checking = false;
+        if (preview.isValid) {
+          _discount = preview;
+          _codeOpen = false;
+          _codeFocus.unfocus();
+        } else {
+          _codeError = discountStatusMessage(preview.status);
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _checking = false;
+        _codeError = discountCheckErrorMessage(error);
+      });
+    }
+  }
+
+  void _removeCode() {
+    setState(() {
+      _discount = null;
+      _codeError = null;
+      _codeController.clear();
+    });
   }
 
   @override
@@ -98,7 +216,12 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
         color: AppColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        12 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: SafeArea(
         top: false,
         child: Column(
@@ -113,6 +236,23 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
             if (choice.hasGift) ...[
               const SizedBox(height: 12),
               _buildGiftRow(),
+            ],
+            if (widget.checkDiscount != null) ...[
+              const SizedBox(height: 12),
+              if (_discount != null)
+                _buildCodeApplied(_discount!)
+              else if (_codeOpen)
+                _buildCodeField()
+              else
+                _buildCodeCollapsed(),
+              if (_codeError != null && _discount == null) ...[
+                const SizedBox(height: 8),
+                _buildCodeError(_codeError!),
+              ],
+              if (_discount != null) ...[
+                const SizedBox(height: 12),
+                _buildBreakdown(_discount!),
+              ],
             ],
             if (_message != null) ...[
               const SizedBox(height: 16),
@@ -265,7 +405,8 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
                   ),
                   const SizedBox(height: 2),
                   ReText(
-                    'قابل پرداخت',
+                    // With a code, the amount to pay is in the breakdown.
+                    _discount == null ? 'قابل پرداخت' : 'قیمت پلن',
                     color: AppColors.black1.withOpacity(0.5),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -332,25 +473,26 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
 
   /// Renders the price in black, digit groups and separators as separate
   /// runs so the separators stay bold.
-  Widget _priceNumber(String price) {
+  Widget _priceNumber(String price,
+      {double fontSize = 16, Color color = AppColors.black1}) {
     final parts = price.split(',');
     final children = <Widget>[];
     for (var i = 0; i < parts.length; i++) {
       children.add(
         ReText(
           parts[i],
-          color: AppColors.black1,
-          fontSize: 16,
+          color: color,
+          fontSize: fontSize,
           fontWeight: FontWeight.w900,
           textDirection: TextDirection.ltr,
         ),
       );
       if (i != parts.length - 1) {
         children.add(
-          const ReText(
+          ReText(
             ',',
-            color: AppColors.black1,
-            fontSize: 16,
+            color: color,
+            fontSize: fontSize,
             fontWeight: 900,
             textDirection: TextDirection.ltr,
           ),
@@ -386,6 +528,343 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
                 textAlign: TextAlign.right,
                 maxLines: 2,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A quiet capsule; tapping it opens the code field.
+  Widget _buildCodeCollapsed() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _busy
+          ? null
+          : () {
+              setState(() => _codeOpen = true);
+              _codeFocus.requestFocus();
+            },
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: const Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            children: [
+              Icon(SolarIconsOutline.ticketSale,
+                  size: 20, color: AppColors.black1),
+              SizedBox(width: 8),
+              Expanded(
+                child: ReText(
+                  'کد تخفیف دارید؟',
+                  color: AppColors.black1,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              ReText(
+                'وارد کنید',
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+              SizedBox(width: 2),
+              Icon(SolarIconsOutline.altArrowLeft,
+                  size: 16, color: AppColors.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The code field with a dark «اعمال» pill inside it. Red after a rejected
+  /// code, primary while focused.
+  Widget _buildCodeField() {
+    final hasError = _codeError != null;
+    final focused = _codeFocus.hasFocus;
+    final canApply = _codeController.text.isNotEmpty && !_checking && !_busy;
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: hasError
+              ? AppColors.errorColor
+              : focused
+                  ? AppColors.primary
+                  : AppColors.gray2,
+          width: hasError || focused ? kFocusedFieldBorderWidth : 1,
+        ),
+        boxShadow: focused && !hasError ? kFocusedFieldShadow : null,
+      ),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          children: [
+            const Icon(SolarIconsOutline.ticketSale,
+                size: 20, color: AppColors.black1),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                key: const ValueKey('discount-code-field'),
+                controller: _codeController,
+                focusNode: _codeFocus,
+                enabled: !_busy,
+                textDirection: TextDirection.ltr,
+                textAlign: TextAlign.right,
+                keyboardType: TextInputType.visiblePassword,
+                textCapitalization: TextCapitalization.characters,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.done,
+                inputFormatters: const [DiscountCodeFormatter()],
+                onChanged: (_) => setState(() => _codeError = null),
+                onSubmitted: (_) => _applyCode(),
+                cursorColor: AppColors.primary,
+                style: const TextStyle(
+                  color: AppColors.black1,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  hintText: 'کد تخفیف',
+                  hintTextDirection: TextDirection.rtl,
+                  hintStyle: TextStyle(
+                    color: AppColors.black1.withOpacity(0.35),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: canApply ? _applyCode : null,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 150),
+                opacity: canApply || _checking ? 1 : 0.35,
+                child: Container(
+                  height: 40,
+                  width: 76,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.black1,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: _checking
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : const ReText(
+                          'اعمال',
+                          color: AppColors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCodeError(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(SolarIconsOutline.dangerCircle,
+                size: 16, color: AppColors.errorColor),
+            const SizedBox(width: 6),
+            Expanded(
+              child: ReText(
+                message,
+                color: AppColors.errorColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                textAlign: TextAlign.right,
+                maxLines: 3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The applied code as a green-tinted capsule with a remove action.
+  Widget _buildCodeApplied(DiscountPreview discount) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.fromLTRB(6, 6, 12, 6),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Row(
+          children: [
+            const Icon(SolarIconsBold.checkCircle,
+                size: 20, color: AppColors.success),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Row(
+                children: [
+                  const ReText(
+                    'کد',
+                    color: AppColors.black1,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: ReText(
+                      discount.code,
+                      isPersian: false,
+                      color: AppColors.black1,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      textDirection: TextDirection.ltr,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const ReText(
+                    'اعمال شد',
+                    color: AppColors.black1,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _busy ? null : _removeCode,
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(SolarIconsOutline.trashBinMinimalistic,
+                        size: 16, color: AppColors.black1.withOpacity(0.6)),
+                    const SizedBox(width: 4),
+                    ReText(
+                      'حذف',
+                      color: AppColors.black1.withOpacity(0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _breakdownLine(
+    String label,
+    Widget amount, {
+    bool strong = false,
+  }) {
+    return Row(
+      children: [
+        ReText(
+          label,
+          color: strong ? AppColors.black1 : AppColors.black1.withOpacity(0.55),
+          fontSize: strong ? 14 : 13,
+          fontWeight: strong ? FontWeight.w900 : FontWeight.w600,
+        ),
+        const Spacer(),
+        amount,
+        const SizedBox(width: 4),
+        ReText(
+          'تومان',
+          color: AppColors.black1.withOpacity(0.5),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ],
+    );
+  }
+
+  /// Plan price, the code's discount and the amount actually charged, all
+  /// from the server's preview.
+  Widget _buildBreakdown(DiscountPreview discount) {
+    final percent = discount.percentOff;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: AppColors.gray1,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(
+          children: [
+            _breakdownLine(
+              'قیمت پلن',
+              ReText(
+                formatToman(discount.listPrice),
+                color: AppColors.black1,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _breakdownLine(
+              percent == null
+                  ? 'کد تخفیف'
+                  : 'کد تخفیف ${convertToPersianNumbers('$percent')}٪',
+              ReText(
+                '${formatToman(discount.discountAmount)}-',
+                color: AppColors.success,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Container(height: 1, color: AppColors.gray2),
+            ),
+            _breakdownLine(
+              'مبلغ قابل پرداخت',
+              _priceNumber(formatToman(discount.finalPrice), fontSize: 17),
+              strong: true,
             ),
           ],
         ),

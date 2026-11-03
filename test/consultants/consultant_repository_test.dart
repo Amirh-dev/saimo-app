@@ -90,6 +90,30 @@ void main() {
       expect(request.status, 'PENDING');
     });
 
+    test('sends a discount code only when one is applied', () async {
+      Map<String, dynamic>? sentVariables;
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        sentVariables = variables;
+        return {
+          'requestCounseling': {'id': 'sub-1', 'cost': 15904000},
+        };
+      });
+
+      final request = await repository.requestCounseling(
+        counselorProfileID: 'counselor-1',
+        durationMonths: 12,
+        planType: 'ADVANCED',
+        discountCode: 'SAIMO20',
+      );
+
+      expect(sentVariables?['input']['discountCode'], 'SAIMO20');
+      expect(request.cost, 15904000);
+    });
+
     test('throws when the response omits the subscription id', () async {
       final repository = ConsultantRepository.withRawRequest(({
         required String query,
@@ -106,6 +130,59 @@ void main() {
         ),
         throwsA(isA<GraphQLRawException>()),
       );
+    });
+  });
+
+  group('previewDiscount', () {
+    test('sends the selection and maps the preview', () async {
+      Map<String, dynamic>? sentVariables;
+      final repository = ConsultantRepository.withRawRequest(({
+        required String query,
+        Map<String, dynamic> variables = const {},
+        bool requiresAuth = true,
+      }) async {
+        expect(query, contains('previewCounselingDiscount'));
+        sentVariables = variables;
+        return {
+          'previewCounselingDiscount': {
+            'status': 'VALID',
+            'code': 'SAIMO20',
+            'listPrice': 19880000,
+            'discountAmount': 3976000,
+            'finalPrice': 15904000,
+            'percentOff': 20,
+          },
+        };
+      });
+
+      final preview = await repository.previewDiscount(
+        code: 'SAIMO20',
+        planType: 'ADVANCED',
+        durationMonths: 12,
+      );
+
+      expect(sentVariables, {
+        'input': {
+          'code': 'SAIMO20',
+          'planType': 'ADVANCED',
+          'durationMonths': 12,
+        },
+      });
+      expect(preview.isValid, isTrue);
+      expect(preview.finalPrice, 15904000);
+      expect(preview.percentOff, 20);
+    });
+
+    test('an unusable code is not valid', () {
+      final preview = DiscountPreview.fromJson(const {
+        'status': 'EXPIRED',
+        'code': 'OLD',
+        'listPrice': 100,
+        'discountAmount': 0,
+        'finalPrice': 100,
+      });
+      expect(preview.isValid, isFalse);
+      expect(preview.percentOff, isNull);
     });
   });
 

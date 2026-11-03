@@ -55,6 +55,7 @@ Future<(WeeklyPlanController, _Calls)> _pumpWeek(
               onSelectDay: (day) => calls.add('select:${_day(day)}'),
               onChangeWeek: (delta) => calls.add('week:$delta'),
               onPickDate: () => calls.add('pick'),
+              onGoToToday: () => calls.add('today'),
               canShowWeek: (start) => isWeekWithinHorizon(start, testToday),
               onBlockedForward: () => calls.add('blocked'),
             ),
@@ -543,6 +544,38 @@ void main() {
       expect(find.text('انتخاب تاریخ'), findsOneWidget);
       await tester.tap(_key('week-pick-date'));
       expect(calls.log, contains('pick'));
+    });
+
+    testWidgets('offers no way back while today\'s week is showing',
+        (tester) async {
+      await _pumpWeek(tester, selected: Jalali(1405, 7, 23));
+      await tester.pumpAndSettle();
+
+      expect(_key('week-go-to-today'), findsNothing);
+      expect(find.text('انتخاب تاریخ'), findsOneWidget);
+    });
+
+    testWidgets('another week folds the calendar button and offers today',
+        (tester) async {
+      final (_, calls) = await _pumpWeek(tester, selected: Jalali(1405, 8, 26));
+      await tester.pumpAndSettle();
+
+      expect(find.text('انتخاب تاریخ'), findsNothing);
+      expect(tester.getSize(_key('week-pick-date')), const Size(44, 44));
+      expect(find.byIcon(Icons.east_rounded), findsOneWidget);
+
+      await tester.tap(_key('week-go-to-today'));
+      expect(calls.log, ['today']);
+
+      await tester.tap(_key('week-pick-date'));
+      expect(calls.log, ['today', 'pick']);
+    });
+
+    testWidgets('the arrow points left when today is ahead', (tester) async {
+      await _pumpWeek(tester, selected: Jalali(1405, 6, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.west_rounded), findsOneWidget);
     });
 
     testWidgets('names tomorrow and yesterday before the date, not other days',

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/register.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/send_otp.req.gql.dart';
@@ -225,6 +226,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String username,
     required DateTime birthDate,
     required dynamic studyTime,
+    required UserMajor major,
   }) async {
     final registration = _registration;
     if (registration == null || !clock().isBefore(registration.expiresAt)) {
@@ -274,6 +276,7 @@ class AuthCubit extends Cubit<AuthState> {
         issuedAt: DateTime.now().toUtc(),
       );
       _registration = null;
+      await _saveRegistrationMajor(major);
       emit(
         AuthAuthenticated(
           userId: payload.user.id,
@@ -288,6 +291,30 @@ class AuthCubit extends Cubit<AuthState> {
           action: AuthAction.register,
         ),
       );
+    }
+  }
+
+  /// RegisterInput has no major, so it is saved once the account exists. The
+  /// account is already usable and the major can be set from the profile, so
+  /// a failure here must not read as a failed registration.
+  Future<void> _saveRegistrationMajor(UserMajor major) async {
+    try {
+      await _graphql.rawRequest(
+        query: r'''
+mutation SaveRegistrationMajor($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    id
+  }
+}
+''',
+        variables: {
+          'input': {'major': major.apiValue},
+        },
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[Auth] saving major failed: ${error.runtimeType}');
+      }
     }
   }
 
@@ -313,6 +340,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String username,
     required DateTime birthDate,
     required dynamic studyTime,
+    required UserMajor major,
   }) async {
     emit(const AuthLoading(AuthAction.register));
 
@@ -332,6 +360,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
             'fullName': fullName,
             'birthDate': _dateOnlyUtc(birthDate).toIso8601String(),
             'studyTime': resolvedStudyTime.name,
+            'major': major.apiValue,
           },
         },
       );

@@ -154,6 +154,7 @@ class WeekHeader extends StatefulWidget {
     required this.onSelectDay,
     required this.onChangeWeek,
     required this.onPickDate,
+    this.onGoToToday,
     this.canShowWeek,
     this.onBlockedForward,
     this.compact = false,
@@ -171,6 +172,9 @@ class WeekHeader extends StatefulWidget {
   /// The user swiped to another week: +1 for the next, -1 for the previous.
   final ValueChanged<int> onChangeWeek;
   final VoidCallback onPickDate;
+
+  /// Returns to today; offered only while today's week is out of view.
+  final VoidCallback? onGoToToday;
 
   /// Whether a week may be shown; the strip springs back from one that may
   /// not. All weeks are allowed when null.
@@ -292,6 +296,7 @@ class _WeekHeaderState extends State<WeekHeader>
                 selectedDate: widget.selectedDate,
                 today: controller.today,
                 onPickDate: widget.onPickDate,
+                onGoToToday: widget.onGoToToday,
               ),
               const SizedBox(height: 12),
               // Only the tray follows the fold: it closes around the middle
@@ -355,20 +360,27 @@ class _WeekHeaderState extends State<WeekHeader>
   }
 }
 
-/// The selected date ("امروز، ۲۰ مهر ۱۴۰۵") and the calendar button.
+/// The selected date ("امروز، ۲۰ مهر ۱۴۰۵") and the calendar button. Away
+/// from today's week, the button folds to its icon to make room for a way
+/// back to today.
 class _SelectedDateBar extends StatelessWidget {
   const _SelectedDateBar({
     required this.selectedDate,
     required this.today,
     required this.onPickDate,
+    this.onGoToToday,
   });
 
   final Jalali selectedDate;
   final Jalali today;
   final VoidCallback onPickDate;
+  final VoidCallback? onGoToToday;
 
   @override
   Widget build(BuildContext context) {
+    final goToToday = onGoToToday;
+    final away = goToToday != null &&
+        !isSameJalaliDay(weekStartOf(selectedDate), weekStartOf(today));
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
@@ -389,34 +401,132 @@ class _SelectedDateBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            PressScale(
-              onTap: onPickDate,
-              child: Container(
-                key: const ValueKey('week-pick-date'),
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.gray2, width: 1.2),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(IconsaxPlusLinear.calendar,
-                        size: 20, color: AppColors.black1),
-                    SizedBox(width: 8),
-                    ReText(
-                      'انتخاب تاریخ',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.black1,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: AppMotion.settle,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (away) ...[
+                    _BackToTodayButton(
+                      selectedDate: selectedDate,
+                      today: today,
+                      onTap: goToToday,
                     ),
+                    const SizedBox(width: 8),
                   ],
-                ),
+                  Semantics(
+                    button: true,
+                    label: 'انتخاب تاریخ',
+                    excludeSemantics: true,
+                    child: PressScale(
+                      onTap: onPickDate,
+                      child: Container(
+                        key: const ValueKey('week-pick-date'),
+                        width: away ? 44 : null,
+                        height: 44,
+                        padding: away
+                            ? EdgeInsets.zero
+                            : const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(100),
+                          border:
+                              Border.all(color: AppColors.gray2, width: 1.2),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(IconsaxPlusLinear.calendar,
+                                size: 20, color: AppColors.black1),
+                            if (!away) ...const [
+                              SizedBox(width: 8),
+                              ReText(
+                                'انتخاب تاریخ',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.black1,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The way back to today: carries the strip's orange today dot, and an arrow
+/// toward today, to the right for an earlier day and to the left for a later
+/// one.
+class _BackToTodayButton extends StatelessWidget {
+  const _BackToTodayButton({
+    required this.selectedDate,
+    required this.today,
+    required this.onTap,
+  });
+
+  final Jalali selectedDate;
+  final Jalali today;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final todayIsEarlier = daysBetween(selectedDate, today) < 0;
+    return Semantics(
+      button: true,
+      label: 'برگشت به امروز',
+      excludeSemantics: true,
+      child: PressScale(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: Container(
+          key: const ValueKey('week-go-to-today'),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: AppColors.gray2, width: 1.2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const ReText(
+                'امروز',
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.black1,
+              ),
+              const SizedBox(width: 6),
+              // East and west do not mirror in RTL.
+              Icon(
+                todayIsEarlier ? Icons.east_rounded : Icons.west_rounded,
+                size: 16,
+                color: AppColors.black1,
+              ),
+            ],
+          ),
         ),
       ),
     );

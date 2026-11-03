@@ -21,6 +21,7 @@ import 'package:simo_learn/features/auth/username_repository.dart';
 import 'package:simo_learn/features/profile/avatar_uploader.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/features/support/support_link.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_models.dart';
 import 'package:simo_learn/presentation/screens/chat/chat_repository.dart';
@@ -152,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
     required String fullName,
     required String username,
     required DateTime birthDate,
-    String? major,
+    UserMajor? major,
   }) async {
     return context.read<ProfileCubit>().updateProfile(
           fullName: fullName,
@@ -1930,7 +1931,7 @@ class _AccountDetailsContent extends StatefulWidget {
     required String fullName,
     required String username,
     required DateTime birthDate,
-    String? major,
+    UserMajor? major,
   }) onSave;
 
   @override
@@ -1995,8 +1996,8 @@ class _AccountDetailsContentState extends State<_AccountDetailsContent> {
                 ),
                 const SizedBox(height: 8),
                 _ProfileDetailsRow(
-                  title: 'رشته، شغل، حوزه و ...',
-                  value: profile?.major?.trim().isNotEmpty == true ? profile!.major!.trim() : 'ثبت نشده',
+                  title: 'رشته تحصیلی',
+                  value: profile?.major?.label ?? 'ثبت نشده',
                 ),
                 const SizedBox(height: 8),
                 _ProfileDetailsRow(
@@ -2068,7 +2069,7 @@ class _ProfileEditSheet extends StatefulWidget {
     required String fullName,
     required String username,
     required DateTime birthDate,
-    String? major,
+    UserMajor? major,
   }) onSave;
 
   @override
@@ -2079,7 +2080,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   late final TextEditingController _firstNameController;
   late final TextEditingController _lastNameController;
   DateTime? _birthDate;
-  String? _major;
+  UserMajor? _major;
   String? _nameError;
   String? _birthDateError;
   bool _isSaving = false;
@@ -2101,7 +2102,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   }
 
   Future<void> _pickMajor() async {
-    final selected = await showReModalBottomSheet<String>(
+    final selected = await showReModalBottomSheet<UserMajor>(
       context: context,
       isScrollControlled: false,
       builder: (sheetContext) => _ProfileMajorPicker(
@@ -2258,10 +2259,10 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                         ),
                         const SizedBox(height: 12),
                         _ProfileEditLabeled(
-                          label: 'رشته، شغل یا حوزه',
+                          label: 'رشته تحصیلی',
                           child: _ProfileEditSelector(
                             key: const ValueKey('profile-major-field'),
-                            value: _major ?? _nonEmpty(widget.profile.major),
+                            value: (_major ?? widget.profile.major)?.label,
                             placeholder: 'انتخاب کنید',
                             icon: Icons.keyboard_arrow_down_rounded,
                             onTap: _pickMajor,
@@ -2497,24 +2498,10 @@ class _ProfileEditSelector extends StatelessWidget {
   }
 }
 
-String? _nonEmpty(String? value) {
-  final trimmed = value?.trim() ?? '';
-  return trimmed.isEmpty ? null : trimmed;
-}
-
 class _ProfileMajorPicker extends StatelessWidget {
   const _ProfileMajorPicker({required this.selected});
 
-  final String? selected;
-
-  static const _options = [
-    'ریاضی فیزیک',
-    'علوم تجربی',
-    'علوم انسانی',
-    'هنر',
-    'شاغل',
-    'سایر',
-  ];
+  final UserMajor? selected;
 
   @override
   Widget build(BuildContext context) {
@@ -2541,11 +2528,11 @@ class _ProfileMajorPicker extends StatelessWidget {
               ),
             ),
             const ReText(
-              'انتخاب رشته، شغل یا حوزه',
+              'انتخاب رشته تحصیلی',
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ).vMargin(18),
-            for (final option in _options)
+            for (final option in UserMajor.values)
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(option),
                 child: Container(
@@ -2560,7 +2547,7 @@ class _ProfileMajorPicker extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ReText(
-                        option,
+                        option.label,
                         color: option == selected ? AppColors.primary : AppColors.black1,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

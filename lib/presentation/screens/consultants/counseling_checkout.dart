@@ -77,17 +77,20 @@ class CounselingCheckout {
   final Duration pollInterval;
   final int maxVerifyTries;
 
-  /// Returns an open gateway for this selection. Throws [CheckoutException].
+  /// Returns an open gateway for this selection, priced with [discountCode]
+  /// when given (as the server normalized it). Throws [CheckoutException].
   Future<PaymentInitiation> start({
     required String counselorProfileID,
     required int durationMonths,
     required String planType,
+    String? discountCode,
   }) async {
     try {
       final subscriptionID = await _reserveSubscription(
         counselorProfileID: counselorProfileID,
         durationMonths: durationMonths,
         planType: planType,
+        discountCode: discountCode,
       );
       return await _openAttempt(subscriptionID);
     } on CheckoutException {
@@ -148,13 +151,16 @@ class CounselingCheckout {
     required String counselorProfileID,
     required int durationMonths,
     required String planType,
+    String? discountCode,
   }) async {
     final pending = await _repository.fetchPendingSubscription();
     if (pending != null && !pending.isExpiredAt(_now())) {
+      // A different code means a different price, so it is a new selection.
       if (pending.matches(
         counselorProfileID: counselorProfileID,
         durationMonths: durationMonths,
         planType: planType,
+        discountCode: discountCode,
       )) {
         return pending.id;
       }
@@ -165,6 +171,7 @@ class CounselingCheckout {
       counselorProfileID: counselorProfileID,
       durationMonths: durationMonths,
       planType: planType,
+      discountCode: discountCode,
     );
     return request.subscriptionID;
   }
@@ -281,6 +288,47 @@ class CounselingCheckout {
 bool _mentions(Object error, String text) =>
     error.toString().toLowerCase().contains(text);
 
+const String _kDiscountRejectedPrefix = 'discount code is not applicable: ';
+
+/// Why a discount code cannot be used, by the server's
+/// CounselingDiscountStatus.
+String discountStatusMessage(String status) => switch (status) {
+      'INACTIVE' => 'این کد تخفیف دیگر فعال نیست.',
+      'NOT_STARTED' => 'زمان استفاده از این کد تخفیف هنوز شروع نشده است.',
+      'EXPIRED' => 'مهلت استفاده از این کد تخفیف تمام شده است.',
+      'USAGE_LIMIT_REACHED' => 'ظرفیت استفاده از این کد تخفیف تکمیل شده است.',
+      'ALREADY_USED' => 'شما قبلاً از این کد تخفیف استفاده کرده‌اید.',
+      'PLAN_NOT_ELIGIBLE' => 'این کد تخفیف برای این پلن قابل استفاده نیست.',
+      _ => 'این کد تخفیف معتبر نیست.',
+    };
+
+/// The message for a purchase the server refused because of its discount
+/// code (the code changed after it was applied), or null for other errors.
+String? discountRejectionMessage(Object error) {
+  final text = error.toString();
+  final index = text.toLowerCase().indexOf(_kDiscountRejectedPrefix);
+  if (index < 0) return null;
+  final status = RegExp(r'^[A-Z_]+')
+          .firstMatch(text.substring(index + _kDiscountRejectedPrefix.length))
+          ?.group(0) ??
+      '';
+  return discountStatusMessage(status);
+}
+
+/// Message for a failed code check in the invoice.
+String discountCheckErrorMessage(Object error) {
+  if (_mentions(error, 'too many requests')) {
+    return 'تعداد تلاش‌ها زیاد بود. لطفاً چند دقیقه دیگر دوباره امتحان کنید.';
+  }
+  final message = checkoutErrorMessage(error);
+  return message == _kCheckoutGenericMessage
+      ? 'بررسی کد تخفیف ناموفق بود. لطفاً دوباره تلاش کنید.'
+      : message;
+}
+
+const String _kCheckoutGenericMessage =
+    'شروع پرداخت ناموفق بود. لطفاً دوباره تلاش کنید.';
+
 /// Turns an API or network error from the purchase flow into a short Persian
 /// message. Server errors arrive as English sentences, which the student
 /// should never see.
@@ -314,10 +362,12 @@ String checkoutErrorMessage(Object error) {
   if (_mentions(error, 'pending counseling subscription has expired')) {
     return 'مهلت پرداخت به پایان رسید. لطفاً دوباره تلاش کنید.';
   }
+  final discount = discountRejectionMessage(error);
+  if (discount != null) return discount;
   // The repository's own errors are already Persian.
   if (error is GraphQLRawException &&
       RegExp(r'[؀-ۿ]').hasMatch(error.message)) {
     return error.message;
   }
-  return 'شروع پرداخت ناموفق بود. لطفاً دوباره تلاش کنید.';
+  return _kCheckoutGenericMessage;
 }

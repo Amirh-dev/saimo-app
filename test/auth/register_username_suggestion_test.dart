@@ -138,11 +138,14 @@ void main() {
     expect(find.text('نام و نام خانوادگی را وارد کنید.'), findsOneWidget);
     expect(find.text('نام کاربری را وارد کنید.'), findsOneWidget);
     expect(find.text('تاریخ تولد را انتخاب کنید.'), findsOneWidget);
+    expect(find.text('رشته تحصیلی را انتخاب کنید.'), findsOneWidget);
     expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey('register-major-OTHER')));
     await tester.tap(find.byKey(const ValueKey('register-study-1')));
     await tester.pump();
 
+    expect(find.text('رشته تحصیلی را انتخاب کنید.'), findsNothing);
     expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsNothing);
   });
 }

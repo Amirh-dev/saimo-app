@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 
 void main() {
   test('getMe parses editable profile fields and statistics', () async {
@@ -64,6 +65,7 @@ void main() {
       fullName: '  علی رضایی  ',
       username: '  new_name  ',
       birthDate: DateTime(2001, 2, 3, 18, 30),
+      major: UserMajor.language,
     );
 
     expect(sentVariables, {
@@ -71,9 +73,22 @@ void main() {
         'fullName': 'علی رضایی',
         'username': 'new_name',
         'birthDate': '2001-02-03T00:00:00.000Z',
+        'major': 'LANGUAGE',
       },
     });
     expect(profile.username, 'new_name');
+  });
+
+  test('a major is read from its server value, and unknown text is dropped',
+      () {
+    Map<String, dynamic> json(Object? major) =>
+        {'id': '1', 'username': 'a', 'major': major};
+
+    final profile = ProfileUser.fromJson(json('HUMANITIES'));
+    expect(profile.major, UserMajor.humanities);
+    expect(ProfileUser.fromJson(profile.toJson()).major, UserMajor.humanities);
+    expect(ProfileUser.fromJson(json('ریاضی فیزیک')).major, isNull);
+    expect(ProfileUser.fromJson(json(null)).major, isNull);
   });
 
   test('getUserProfile loads public biography and interests by user id',

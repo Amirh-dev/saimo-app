@@ -52,6 +52,7 @@ _Handler _pending({
   String id = 'sub-1',
   String planType = 'PROFESSIONAL',
   String pendingExpiresAt = '2026-10-14T10:30:00Z',
+  String? discountCode,
 }) =>
     (_) async => {
           'myCounselingSubscriptions': [
@@ -61,6 +62,7 @@ _Handler _pending({
               'planType': planType,
               'durationMonths': 6,
               'pendingExpiresAt': pendingExpiresAt,
+              'discountCode': discountCode,
             },
           ],
         };
@@ -111,10 +113,12 @@ CounselingCheckout _checkout(_FakeApi api) => CounselingCheckout(
       pollInterval: Duration.zero,
     );
 
-Future<PaymentInitiation> _start(_FakeApi api) => _checkout(api).start(
+Future<PaymentInitiation> _start(_FakeApi api, {String? discountCode}) =>
+    _checkout(api).start(
       counselorProfileID: 'counselor-1',
       durationMonths: 6,
       planType: 'PROFESSIONAL',
+      discountCode: discountCode,
     );
 
 const _initiation = PaymentInitiation(
@@ -272,6 +276,66 @@ void main() {
       await expectLater(
         _start(api),
         _checkoutError(kCheckoutPreviousSucceededMessage),
+      );
+    });
+
+    test('sends the applied discount code with a new request', () async {
+      final api = _FakeApi({
+        'myCounselingSubscriptions': _noPending,
+        'requestCounseling': _requested('sub-9'),
+        'myCounselingPaymentAttempts': _attempts([]),
+        'beginCounselingPayment': (_) async => _begin('attempt-1'),
+      });
+
+      await _start(api, discountCode: 'SAIMO20');
+
+      expect(api.callsTo('requestCounseling').single['input']['discountCode'],
+          'SAIMO20');
+    });
+
+    test('resumes a leftover purchase only with the same code', () async {
+      final same = _FakeApi({
+        'myCounselingSubscriptions': _pending(discountCode: 'SAIMO20'),
+        'myCounselingPaymentAttempts': _attempts([]),
+        'beginCounselingPayment': (_) async => _begin('attempt-1'),
+      });
+      expect((await _start(same, discountCode: 'SAIMO20')).subscriptionID,
+          'sub-1');
+      expect(same.callsTo('requestCounseling'), isEmpty);
+
+      // Removing the code (or applying one) changes the price, so the old
+      // reservation is released and a new one made.
+      final removed = _FakeApi({
+        'myCounselingSubscriptions':
+            _pending(id: 'sub-old', discountCode: 'SAIMO20'),
+        'cancelPendingCounselingSubscription': _ok,
+        'requestCounseling': _requested('sub-new'),
+        'myCounselingPaymentAttempts': _attempts([]),
+        'beginCounselingPayment': (_) async => _begin('attempt-1'),
+      });
+      expect((await _start(removed)).subscriptionID, 'sub-new');
+      expect(removed.callsTo('cancelPendingCounselingSubscription').single,
+          {'subscriptionID': 'sub-old'});
+      expect(
+        removed
+            .callsTo('requestCounseling')
+            .single['input']
+            .containsKey('discountCode'),
+        isFalse,
+      );
+    });
+
+    test('explains a code the server refuses', () async {
+      final api = _FakeApi({
+        'myCounselingSubscriptions': _noPending,
+        'requestCounseling': (_) async => throw const GraphQLRawException(
+              'discount code is not applicable: EXPIRED',
+            ),
+      });
+
+      await expectLater(
+        _start(api, discountCode: 'OLD'),
+        _checkoutError('مهلت استفاده از این کد تخفیف تمام شده است.'),
       );
     });
 

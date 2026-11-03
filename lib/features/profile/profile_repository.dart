@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 
 typedef ProfileGraphQLRequest = Future<Map<String, dynamic>> Function({
   required String query,
@@ -30,7 +31,7 @@ class ProfileUser {
   final String? fullName;
   final DateTime? birthDate;
   final String? studyTime;
-  final String? major;
+  final UserMajor? major;
   final String? bio;
   final String? avatarURL;
   final List<String> interests;
@@ -52,7 +53,7 @@ class ProfileUser {
       fullName: json['fullName']?.toString(),
       birthDate: DateTime.tryParse(json['birthDate']?.toString() ?? ''),
       studyTime: json['studyTime']?.toString(),
-      major: json['major']?.toString(),
+      major: UserMajor.fromApi(json['major']),
       bio: json['bio']?.toString(),
       interests: (json['interests'] as List?)
               ?.whereType<Map<String, dynamic>>()
@@ -75,7 +76,7 @@ class ProfileUser {
         'fullName': fullName,
         'birthDate': birthDate?.toIso8601String(),
         'studyTime': studyTime,
-        'major': major,
+        'major': major?.apiValue,
         'bio': bio,
         'interests': [
           for (final name in interests) {'name': name},
@@ -112,7 +113,7 @@ class ProfileRepository {
     required String fullName,
     required String username,
     required DateTime birthDate,
-    String? major,
+    UserMajor? major,
   }) async {
     final dateOnly = DateTime.utc(
       birthDate.year,
@@ -126,7 +127,7 @@ class ProfileRepository {
           'fullName': fullName.trim(),
           'username': username.trim(),
           'birthDate': dateOnly.toIso8601String(),
-          if (major != null) 'major': major.trim(),
+          if (major != null) 'major': major.apiValue,
         },
       },
     );

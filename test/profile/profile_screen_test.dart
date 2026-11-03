@@ -88,7 +88,7 @@ void main() {
     expect(find.text('مشخصات حساب'), findsOneWidget);
     expect(find.text('علی رضایی'), findsWidgets);
     expect(find.text('۰۹۳۸۰۶۱۹۱۹۵'), findsOneWidget);
-    expect(find.text('ریاضی فیزیک'), findsOneWidget);
+    expect(find.text('ریاضی'), findsOneWidget);
 
     await tester.tap(
       find.byKey(const ValueKey('open-profile-edit-sheet')),
@@ -501,7 +501,7 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
         'fullName': profileFullName,
         'birthDate': '2001-02-03T00:00:00.000Z',
         'studyTime': 'BETWEEN_4_AND_7',
-        'major': 'ریاضی فیزیک',
+        'major': 'MATHEMATICS',
         'simoCoins': 36,
         'score': 3,
         'isPremium': true,
@@ -527,7 +527,7 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
           'fullName': 'علیرضا یوسفی',
           'birthDate': '2001-02-03T00:00:00.000Z',
           'studyTime': 'BETWEEN_4_AND_7',
-          'major': 'ریاضی',
+          'major': 'MATHEMATICS',
           'bio': 'دانش آموز رشته ریاضی',
           'simoCoins': 36,
           'score': 3,

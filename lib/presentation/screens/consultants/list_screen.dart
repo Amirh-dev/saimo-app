@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
@@ -46,8 +47,11 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   /// blocks the screen so a second purchase can't start mid-flow.
   bool _verifying = false;
 
-  // Second card expanded by default, matching the design.
-  int _expandedIndex = 1;
+  // The top match opens with its résumé and button showing.
+  int _expandedIndex = 0;
+
+  /// The student's major; null until known or when none is set.
+  UserMajor? _studentMajor;
 
   @override
   void initState() {
@@ -85,10 +89,13 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     }
 
     try {
+      final major = repo.fetchMyMajor();
       final counselors = await repo.fetchCounselors();
+      final studentMajor = await major;
       if (!mounted) return;
       setState(() {
         _consultants = counselors;
+        _studentMajor = studentMajor;
         _loading = false;
       });
     } catch (error) {
@@ -187,6 +194,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
 
     String? notice;
     var noticeIsError = false;
+    // Kept across retries so a reopened invoice still shows the code.
+    DiscountPreview? discount;
     while (true) {
       if (!context.mounted) return;
       PaymentTab? tab;
@@ -195,7 +204,14 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         choice: choice,
         notice: notice,
         noticeIsError: noticeIsError,
-        onConfirm: () async {
+        discount: discount,
+        checkDiscount: (code) => repo.previewDiscount(
+          code: code,
+          planType: choice.plan.planType,
+          durationMonths: choice.months,
+        ),
+        onConfirm: (applied) async {
+          discount = applied;
           // Web: open the tab now, while still inside the tap, or the
           // browser blocks it as a popup once the request below returns.
           if (kIsWeb) tab = openPaymentTab();
@@ -204,6 +220,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
               counselorProfileID: consultant.id,
               durationMonths: choice.months,
               planType: choice.plan.planType,
+              discountCode: applied?.code,
             );
             // Send the tab to the bank right away. It has the focus now, so
             // this tab is in the background, where the browser holds back
@@ -370,30 +387,110 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         message: 'به‌زودی مشاوران جدید به این فهرست اضافه می‌شوند.',
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
-      itemCount: _consultants.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
-      itemBuilder: (context, index) {
-        final consultant = _consultants[index];
-        return _ConsultantCard(
-          consultant: consultant,
-          expanded: index == _expandedIndex,
-          onToggle: () => _toggle(index),
-          onSelect: () {
-            if (widget.onSelect != null) {
-              widget.onSelect!(consultant);
-            } else {
-              _startConsultationFlow(context, consultant);
-            }
-          },
-        );
-      },
+    final matched = _studentMajor != null &&
+        _consultants.every((c) => c.major == _studentMajor);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        children: [
+          _MatchHeading(
+            major: _studentMajor,
+            count: _consultants.length,
+            matched: matched,
+          ),
+          const SizedBox(height: 16),
+          for (var index = 0; index < _consultants.length; index++) ...[
+            if (index > 0) const SizedBox(height: 14),
+            _ConsultantCard(
+              consultant: _consultants[index],
+              expanded: index == _expandedIndex,
+              showMajor: !matched,
+              onToggle: () => _toggle(index),
+              onSelect: () {
+                final consultant = _consultants[index];
+                if (widget.onSelect != null) {
+                  widget.onSelect!(consultant);
+                } else {
+                  _startConsultationFlow(context, consultant);
+                }
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
 enum _LoadFailure { noAccess, network }
+
+/// Says why these counselors are listed: the student's major, or a calm note
+/// when the list could not be narrowed down to it.
+class _MatchHeading extends StatelessWidget {
+  const _MatchHeading({
+    required this.major,
+    required this.count,
+    required this.matched,
+  });
+
+  final UserMajor? major;
+  final int count;
+  final bool matched;
+
+  @override
+  Widget build(BuildContext context) {
+    final major = this.major;
+    final title = matched ? 'مشاوران رشته ${major!.label}' : 'همه مشاوران';
+    final String? note;
+    if (matched) {
+      note = null;
+    } else if (major == null) {
+      note = 'برای دیدن مشاوران رشته خود، رشته‌تان را در پروفایل ثبت کنید.';
+    } else {
+      note = 'فعلاً مشاوری برای رشته ${major.label} نداریم.';
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ReText(
+                  title,
+                  color: AppColors.black1,
+                  fontSize: 16,
+                  fontWeight: 900,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              ReText(
+                '${convertToPersianNumbers(count.toString())} مشاور',
+                color: AppColors.gray,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ],
+          ),
+          if (note != null) ...[
+            const SizedBox(height: 4),
+            ReText(
+              note,
+              color: AppColors.gray,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              lineHeight: 1.6,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
 
 /// Takes the list's place when there is nothing to choose from.
 class _ListMessage extends StatelessWidget {
@@ -524,10 +621,12 @@ class _ConsultantCard extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onSelect,
+    required this.showMajor,
   });
 
   final Consultant consultant;
   final bool expanded;
+  final bool showMajor;
   final VoidCallback onToggle;
   final VoidCallback onSelect;
 
@@ -579,83 +678,124 @@ class _ConsultantCard extends StatelessWidget {
   }
 
   Widget _buildTopRow() {
-    return Row(
-      children: [
-        _ChevronButton(expanded: expanded, onTap: onToggle),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            _Avatar(path: consultant.avatar),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildNameRow(),
-                  const SizedBox(height: 2),
                   ReText(
-                    consultant.specialty,
-                    color: expanded
-                        ? AppColors.secondary
-                        : AppColors.black1.withOpacity(0.5),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+                    consultant.name,
+                    color: AppColors.black1,
+                    fontSize: 15,
+                    fontWeight: 900,
+                    textAlign: TextAlign.right,
                   ),
+                  if (consultant.specialty.isNotEmpty)
+                    ReText(
+                      consultant.specialty,
+                      color: AppColors.gray,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      textAlign: TextAlign.right,
+                    ),
+                  const SizedBox(height: 6),
+                  _buildSignals(),
                 ],
               ),
-              const SizedBox(width: 12),
-              _Avatar(path: consultant.avatar),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            _ChevronButton(expanded: expanded, onTap: onToggle),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildNameRow() {
+  /// The rating, and the counselor's major when the list is not one major.
+  Widget _buildSignals() {
+    final major = consultant.major;
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.star_rounded, size: 13, color: AppColors.simoCoin),
-        const SizedBox(width: 3),
-        ReText(
-          consultant.rating,
-          color: AppColors.black1,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          textDirection: TextDirection.ltr,
-        ),
-        ReText(
-          '/${consultant.maxRating}',
-          color: AppColors.black1.withOpacity(0.5),
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          textDirection: TextDirection.ltr,
-        ),
-        const SizedBox(width: 8),
-        ReText(
-          consultant.name,
-          color: AppColors.black1,
-          fontSize: 14,
-          fontWeight: 900,
-        ),
+        if (consultant.ratingCount > 0) ...[
+          const Icon(Icons.star_rounded, size: 16, color: AppColors.simoCoin),
+          const SizedBox(width: 3),
+          ReText(
+            consultant.rating,
+            color: AppColors.black1,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+          const SizedBox(width: 4),
+          ReText(
+            '${convertToPersianNumbers(consultant.ratingCount.toString())} نظر',
+            color: AppColors.gray,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ] else
+          const ReText(
+            'مشاور جدید',
+            color: AppColors.gray,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        if (showMajor && major != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.gray1,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: ReText(
+              major.label,
+              color: AppColors.black1,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildExpandedBody() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReText(
-            'رزومه مشاور',
-            color: AppColors.gray,
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            textAlign: TextAlign.right,
-          ),
-          const SizedBox(height: 8),
+          if (consultant.bio.isNotEmpty) ...[
+            ReText(
+              consultant.bio,
+              color: AppColors.black1,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              textAlign: TextAlign.right,
+              lineHeight: 1.7,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (consultant.resume.isNotEmpty) ...[
+            const ReText(
+              'رزومه مشاور',
+              color: AppColors.gray,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              textAlign: TextAlign.right,
+            ),
+            const SizedBox(height: 8),
+          ],
           for (var i = 0; i < consultant.resume.length; i++)
             _buildResumeItem(consultant.resume[i], i + 1),
           const SizedBox(height: 8),
@@ -728,8 +868,8 @@ class _ChevronButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -762,8 +902,8 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 48,
-      height: 48,
+      width: 60,
+      height: 60,
       decoration: BoxDecoration(
         color: AppColors.gray2,
         shape: BoxShape.circle,

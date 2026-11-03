@@ -7,6 +7,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/auth/username_repository.dart';
+import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/presentation/screens/authentication/register/widgets/birth_date_picker_bottom_sheet.dart';
 import 'package:simo_learn/presentation/screens/authentication/widgets/auth_header.dart';
@@ -46,6 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late UsernameRepository _usernameRepository;
   Timer? _usernameAvailabilityDebounce;
   Jalali? _birthDate;
+  UserMajor? _major;
   int? _selectedStudyIndex;
   UsernameAvailability? _usernameAvailability;
   String? _validatedUsername;
@@ -293,6 +295,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ? 'تاریخ تولد را انتخاب کنید.'
       : null;
 
+  String? get _majorMessage => _showMissingFields && _major == null
+      ? 'رشته تحصیلی را انتخاب کنید.'
+      : null;
+
   String? get _studyMessage =>
       _showMissingFields && _selectedStudyIndex == null
           ? 'میزان مطالعه روزانه را انتخاب کنید.'
@@ -529,36 +535,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildChoiceChip({
+    required Key key,
+    required String text,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: key,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.black1 : AppColors.gray1,
+          borderRadius: BorderRadius.circular(100),
+        ),
+        child: ReText(
+          text,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: isSelected ? AppColors.white : AppColors.black1,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMajorChips() {
+    const perRow = 3;
+    const majors = UserMajor.values;
+    return Column(
+      children: [
+        for (var start = 0; start < majors.length; start += perRow) ...[
+          if (start > 0) const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var index = start; index < start + perRow; index++) ...[
+                if (index > start) const SizedBox(width: 8),
+                Expanded(
+                  child: _buildChoiceChip(
+                    key: ValueKey('register-major-${majors[index].apiValue}'),
+                    text: majors[index].label,
+                    isSelected: _major == majors[index],
+                    onTap: () => setState(() => _major = majors[index]),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildStudyChips() {
     return Row(
       children: [
         for (var index = 0; index < _studyOptions.length; index++) ...[
           if (index > 0) const SizedBox(width: 8),
           Expanded(
-            child: GestureDetector(
+            child: _buildChoiceChip(
               key: ValueKey('register-study-$index'),
+              text: _studyOptions[index],
+              isSelected: _selectedStudyIndex == index,
               onTap: () => setState(() => _selectedStudyIndex = index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _selectedStudyIndex == index
-                      ? AppColors.black1
-                      : AppColors.gray1,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: ReText(
-                  _studyOptions[index],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _selectedStudyIndex == index
-                      ? AppColors.white
-                      : AppColors.black1,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                ),
-              ),
             ),
           ),
         ],
@@ -636,6 +679,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         if (_birthDateMessage != null)
                                           _error(_birthDateMessage!),
                                         const SizedBox(height: 14),
+                                        _label('رشته تحصیلی'),
+                                        _buildMajorChips(),
+                                        if (_majorMessage != null)
+                                          _error(_majorMessage!),
+                                        const SizedBox(height: 14),
                                         _label('میزان مطالعه روزانه'),
                                         _buildStudyChips(),
                                         if (_studyMessage != null)
@@ -679,6 +727,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _usernameAvailability?.available == true &&
         _validatedUsername != null &&
         _birthDate != null &&
+        _major != null &&
         _selectedStudyIndex != null;
   }
 
@@ -712,6 +761,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             username: _validatedUsername!,
             birthDate: registrationBirthDate,
             studyTime: _studyTime,
+            major: _major!,
           );
       return;
     }
@@ -721,6 +771,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           username: _validatedUsername!,
           birthDate: registrationBirthDate,
           studyTime: _studyTime,
+          major: _major!,
         );
   }
 

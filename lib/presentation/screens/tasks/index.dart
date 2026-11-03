@@ -299,6 +299,18 @@ class _TasksScreenState extends State<TasksScreen>
     if (mounted) await _weekViewKey.currentState?.scrollToDay(picked);
   }
 
+  /// The date bar's way back, in either mode.
+  Future<void> _goToToday() async {
+    final today = _today;
+    setState(() => _selectedDate = today);
+    if (!_isWeekMode) {
+      await _loadTasksForSelectedDate();
+      return;
+    }
+    await _week.showWeekOf(today);
+    if (mounted) await _weekViewKey.currentState?.scrollToDay(today);
+  }
+
   void _explainPlanningHorizon() {
     showReToast(
       context,
@@ -1350,6 +1362,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                       onSelectDay: _isWeekMode ? _selectWeekDay : _selectDay,
                       onChangeWeek: _isWeekMode ? _changeWeek : _changeDayWeek,
                       onPickDate: _isWeekMode ? _pickWeekDate : _pickDay,
+                      onGoToToday: _goToToday,
                       canShowWeek: _isWeekMode
                           ? (start) => isWeekWithinHorizon(start, _today)
                           : null,

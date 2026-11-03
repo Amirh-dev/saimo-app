@@ -135,6 +135,6 @@ Map<String, dynamic> _profileJson({
     'simoCoins': 36,
     'score': 3,
     'isPremium': true,
-    'major': 'ریاضی فیزیک',
+    'major': 'MATHEMATICS',
   };
 }

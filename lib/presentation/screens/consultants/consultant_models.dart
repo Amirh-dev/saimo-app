@@ -1,3 +1,5 @@
+import 'package:simo_learn/features/profile/user_major.dart';
+
 /// Data model for the consultants flow (screens 1-7).
 class ConsultantResumeItem {
   const ConsultantResumeItem({required this.title, this.count = 1});
@@ -15,6 +17,9 @@ class Consultant {
     required this.maxRating,
     required this.avatar,
     required this.resume,
+    this.ratingCount = 0,
+    this.major,
+    this.bio = '',
   });
 
   final String id;
@@ -24,6 +29,11 @@ class Consultant {
   final String maxRating;
   final String avatar;
   final List<ConsultantResumeItem> resume;
+
+  /// How many students rated this counselor; 0 means no rating to show yet.
+  final int ratingCount;
+  final UserMajor? major;
+  final String bio;
 }
 
 /// Shown when the server refuses the counseling section to this account

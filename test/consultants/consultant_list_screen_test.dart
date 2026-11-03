@@ -14,8 +14,12 @@ import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 
 /// Answers the counselors query with [answer], or throws [error].
 class _CounselorsGraphQLRepository extends GraphQLRepository {
-  _CounselorsGraphQLRepository(TokenStorage storage, {this.error, this.answer})
-      : super(
+  _CounselorsGraphQLRepository(
+    TokenStorage storage, {
+    this.error,
+    this.answer,
+    this.major,
+  }) : super(
           Client(
             link: Link.function(
               (request, [forward]) => const Stream<Response>.empty(),
@@ -28,6 +32,7 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
 
   Object? error;
   final List<Map<String, dynamic>>? answer;
+  final String? major;
 
   @override
   Future<Map<String, dynamic>> rawRequest({
@@ -37,7 +42,10 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
   }) async {
     final failure = error;
     if (failure != null) throw failure;
-    return {'counselors': answer ?? const []};
+    return {
+      'counselors': answer ?? const [],
+      'getMe': {'major': major},
+    };
   }
 }
 
@@ -45,12 +53,14 @@ Future<_CounselorsGraphQLRepository> _pumpList(
   WidgetTester tester, {
   Object? error,
   List<Map<String, dynamic>>? answer,
+  String? major,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final graphql = _CounselorsGraphQLRepository(
     await TokenStorage.create(),
     error: error,
     answer: answer,
+    major: major,
   );
   await tester.pumpWidget(
     RepositoryProvider<GraphQLRepository>.value(
@@ -107,4 +117,49 @@ void main() {
     expect(find.text('سارا احمدی'), findsOneWidget);
     expect(find.text(kCounselingNoAccessTitle), findsNothing);
   });
+
+  testWidgets('a list of the student\'s major names that major',
+      (tester) async {
+    await _pumpList(tester, major: 'MATHEMATICS', answer: [
+      _counselor('MATHEMATICS'),
+    ]);
+
+    expect(find.text('مشاوران رشته ریاضی'), findsOneWidget);
+    expect(find.text('انتخاب مشاور'), findsOneWidget);
+  });
+
+  testWidgets('a major with no counselors says so over the full list',
+      (tester) async {
+    await _pumpList(tester, major: 'ART', answer: [_counselor('SCIENCE')]);
+
+    expect(find.text('همه مشاوران'), findsOneWidget);
+    expect(find.text('فعلاً مشاوری برای رشته هنر نداریم.'), findsOneWidget);
+    expect(find.text('تجربی'), findsOneWidget);
+  });
+
+  testWidgets('a student without a major is asked to set one', (tester) async {
+    await _pumpList(tester, answer: [_counselor('SCIENCE')]);
+
+    expect(
+      find.text('برای دیدن مشاوران رشته خود، رشته‌تان را در پروفایل ثبت کنید.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('an unrated counselor is marked new, not rated zero',
+      (tester) async {
+    await _pumpList(tester, answer: [_counselor('SCIENCE')]);
+
+    expect(find.text('مشاور جدید'), findsOneWidget);
+    expect(find.byIcon(Icons.star_rounded), findsNothing);
+  });
 }
+
+Map<String, dynamic> _counselor(String major) => {
+      'id': 'profile-1',
+      'title': 'مشاور تحصیلی',
+      'ratingAverage': 0,
+      'ratingCount': 0,
+      'resumeItems': ['ده سال سابقه'],
+      'user': {'fullName': 'سارا احمدی', 'major': major},
+    };
