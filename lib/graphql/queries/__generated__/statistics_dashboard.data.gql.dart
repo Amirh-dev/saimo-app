@@ -314,6 +314,8 @@ abstract class GStatisticsDashboardData_statisticsDashboard_tagBuckets
   String? get tagID;
   String get tagName;
   bool get isMiscellaneous;
+  bool get isGeneral;
+  bool get hasChildren;
   int get studySeconds;
   int get completedTasks;
   int get totalQuestions;

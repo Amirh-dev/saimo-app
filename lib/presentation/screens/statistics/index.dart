@@ -354,7 +354,9 @@ class _Sections extends StatelessWidget {
         ],
         if (subjects.isNotEmpty) ...[
           const SizedBox(height: 26),
-          reveal(SubjectsSection(subjects: subjects)),
+          reveal(
+            SubjectsSection(subjects: subjects, loadParts: cubit.partsOf),
+          ),
         ],
         if (charted) ...[
           const SizedBox(height: 26),

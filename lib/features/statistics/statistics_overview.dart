@@ -218,16 +218,27 @@ class StatisticsDay {
 /// One subject (tag) in the range.
 class SubjectStatistics {
   const SubjectStatistics({
+    this.tagID,
     required this.name,
     required this.isMiscellaneous,
+    this.isGeneral = false,
+    this.hasChildren = false,
     required this.studySeconds,
     required this.totalQuestions,
     required this.correctAnswers,
     this.rating,
   });
 
+  final String? tagID;
   final String name;
   final bool isMiscellaneous;
+
+  /// A drill-down row for tasks tagged with the subject itself, not one of
+  /// the tags under it.
+  final bool isGeneral;
+
+  /// Whether tags are mapped under this subject, so it can be opened.
+  final bool hasChildren;
   final int studySeconds;
   final int totalQuestions;
   final int correctAnswers;
@@ -244,8 +255,10 @@ class SubjectStatistics {
             bucket.totalQuestions > 0 ||
             bucket.averagePerformanceRating != null)
           SubjectStatistics(
+            tagID: bucket.tagID,
             name: bucket.tagName,
             isMiscellaneous: bucket.isMiscellaneous,
+            hasChildren: bucket.hasChildren,
             studySeconds: bucket.studySeconds,
             totalQuestions: bucket.totalQuestions,
             correctAnswers: bucket.correctAnswers,
@@ -259,6 +272,32 @@ class SubjectStatistics {
       return b.studySeconds.compareTo(a.studySeconds);
     });
     return subjects;
+  }
+
+  /// The tags under one subject, from tagStatistics rows: those with any
+  /// activity, most studied first, the subject's own «عمومی» row last.
+  static List<SubjectStatistics> partsOf(List<Map<String, dynamic>> rows) {
+    final parts = [
+      for (final row in rows)
+        if ((row['studySeconds'] as num? ?? 0) > 0 ||
+            (row['totalQuestions'] as num? ?? 0) > 0 ||
+            row['averagePerformanceRating'] != null)
+          SubjectStatistics(
+            tagID: row['tagID'] as String?,
+            name: row['isGeneral'] == true ? 'عمومی' : row['tagName'] as String,
+            isMiscellaneous: false,
+            isGeneral: row['isGeneral'] == true,
+            studySeconds: (row['studySeconds'] as num? ?? 0).toInt(),
+            totalQuestions: (row['totalQuestions'] as num? ?? 0).toInt(),
+            correctAnswers: (row['correctAnswers'] as num? ?? 0).toInt(),
+            rating: (row['averagePerformanceRating'] as num?)?.toDouble(),
+          ),
+    ];
+    parts.sort((a, b) {
+      if (a.isGeneral != b.isGeneral) return a.isGeneral ? 1 : -1;
+      return b.studySeconds.compareTo(a.studySeconds);
+    });
+    return parts;
   }
 
   /// One plain sentence about the subjects worth acting on, or null.

@@ -58,6 +58,40 @@ class StatisticsRepository {
     return dashboard;
   }
 
+  /// The tagStatistics rows for the tags directly under [parentTagID], plus
+  /// its own «general» row. Raw, since the client schema file is stale.
+  Future<List<Map<String, dynamic>>> fetchSubjectParts({
+    required DateTime start,
+    required DateTime end,
+    required String parentTagID,
+  }) async {
+    final data = await _graphql.rawRequest(
+      query: r'''
+query StatisticsSubjectParts($start: Time!, $end: Time!, $parent: ID!) {
+  tagStatistics(start: $start, end: $end, parentTagID: $parent) {
+    tagID
+    tagName
+    isGeneral
+    studySeconds
+    totalQuestions
+    correctAnswers
+    averagePerformanceRating
+  }
+}
+''',
+      variables: {
+        'start': _time(start).value,
+        'end': _time(end).value,
+        'parent': parentTagID,
+      },
+    );
+    final rows = data['tagStatistics'];
+    if (rows is! List) {
+      throw const StatisticsFailure('اطلاعات آمار از سرور دریافت نشد.');
+    }
+    return rows.cast<Map<String, dynamic>>();
+  }
+
   String _messageOf(
       OperationResponse<dynamic, dynamic> response,
       ) {

@@ -299,6 +299,8 @@ String discountStatusMessage(String status) => switch (status) {
       'USAGE_LIMIT_REACHED' => 'ظرفیت استفاده از این کد تخفیف تکمیل شده است.',
       'ALREADY_USED' => 'شما قبلاً از این کد تخفیف استفاده کرده‌اید.',
       'PLAN_NOT_ELIGIBLE' => 'این کد تخفیف برای این پلن قابل استفاده نیست.',
+      'DURATION_NOT_ELIGIBLE' =>
+        'این کد تخفیف برای این مدت اشتراک قابل استفاده نیست.',
       _ => 'این کد تخفیف معتبر نیست.',
     };
 

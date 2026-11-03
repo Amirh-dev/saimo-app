@@ -42,6 +42,8 @@ query StatisticsDashboard($input: StatisticsDashboardInput!) {
       tagID
       tagName
       isMiscellaneous
+      isGeneral
+      hasChildren
       studySeconds
       completedTasks
       totalQuestions

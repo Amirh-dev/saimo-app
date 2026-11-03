@@ -53,10 +53,26 @@ class StudyChartSection extends StatelessWidget {
     final average = elapsed.isEmpty ? 0.0 : total / 60 / elapsed.length;
     // Under a minute it would read «۰:۰۰» and lie on the baseline.
     final showAverage = average >= 1 && elapsed.length > 1;
-    final highest = days.fold(0.0, (most, day) => math.max(most, day.studySeconds / 60));
+    final highest =
+        days.fold(0.0, (most, day) => math.max(most, day.studySeconds / 60));
     final ticks = niceTicks(
       math.max(highest, average),
-      const [15, 30, 60, 120, 180, 240, 360, 480, 600, 900, 1200, 1800, 2400, 3600],
+      const [
+        15,
+        30,
+        60,
+        120,
+        180,
+        240,
+        360,
+        480,
+        600,
+        900,
+        1200,
+        1800,
+        2400,
+        3600
+      ],
     );
     final compact = days.length <= 7;
 
@@ -84,8 +100,8 @@ class StudyChartSection extends StatelessWidget {
                 tickLabel: (minutes) => minutes == 0
                     ? '0'
                     : minutes < 60
-                    ? '${minutes.round()}د'
-                    : '${StatsFormat.decimal(minutes / 60)}س',
+                        ? '${minutes.round()}د'
+                        : '${StatsFormat.decimal(minutes / 60)}س',
                 reference: showAverage ? average : null,
                 referenceLabel: showAverage
                     ? 'میانگین ${StatsFormat.clock((average * 60).round())}'
@@ -162,7 +178,8 @@ class TestsChartSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = days.fold(0, (sum, day) => sum + day.totalQuestions);
     final correct = days.fold(0, (sum, day) => sum + day.correctAnswers);
-    final highest = days.fold(0, (most, day) => math.max(most, day.totalQuestions));
+    final highest =
+        days.fold(0, (most, day) => math.max(most, day.totalQuestions));
     final ticks = niceTicks(
       highest.toDouble(),
       const [5, 10, 20, 25, 50, 100, 150, 200, 250, 500, 1000],
@@ -245,11 +262,16 @@ class TestsChartSection extends StatelessWidget {
   }
 }
 
-/// Study time and test accuracy per subject, most studied first.
+/// Study time and test accuracy per subject, most studied first. A subject
+/// with tags under it opens in place to show them, one at a time.
 class SubjectsSection extends StatefulWidget {
-  const SubjectsSection({super.key, required this.subjects});
+  const SubjectsSection({super.key, required this.subjects, this.loadParts});
 
   final List<SubjectStatistics> subjects;
+
+  /// The tags under a subject; without it no subject opens.
+  final Future<List<SubjectStatistics>> Function(SubjectStatistics subject)?
+      loadParts;
 
   @override
   State<SubjectsSection> createState() => _SubjectsSectionState();
@@ -258,6 +280,11 @@ class SubjectsSection extends StatefulWidget {
 class _SubjectsSectionState extends State<SubjectsSection> {
   static const _shown = 5;
   bool _expanded = false;
+  bool _showHelp = false;
+  String? _open;
+
+  bool _opens(SubjectStatistics subject) =>
+      widget.loadParts != null && subject.hasChildren && subject.tagID != null;
 
   @override
   Widget build(BuildContext context) {
@@ -265,23 +292,41 @@ class _SubjectsSectionState extends State<SubjectsSection> {
     final visible = _expanded ? subjects : subjects.take(_shown).toList();
     final most = subjects.fold(0, (most, s) => math.max(most, s.studySeconds));
     final insight = SubjectStatistics.insight(subjects);
+    // Rows keep one column of names even when only some can open.
+    final anyOpens = subjects.any(_opens);
+    final motion = StatMotion.of(context, const Duration(milliseconds: 280));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const StatSectionTitle(
+        StatSectionTitle(
           'به تفکیک درس',
-          trailing: ReText(
+          help: _HelpButton(
+            open: _showHelp,
+            onTap: () => setState(() => _showHelp = !_showHelp),
+          ),
+          trailing: const ReText(
             'زمان ، دقت تست',
             fontSize: 11,
             fontWeight: 700,
             color: StatColors.muted,
           ),
         ),
+        AnimatedSize(
+          duration: motion,
+          curve: StatMotion.curve,
+          alignment: Alignment.topCenter,
+          child: _showHelp
+              ? const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: _SubjectsHelp(),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
         const SizedBox(height: 12),
         StatCard(
           child: AnimatedSize(
-            duration: StatMotion.of(context, const Duration(milliseconds: 280)),
+            duration: motion,
             curve: StatMotion.curve,
             alignment: Alignment.topCenter,
             child: Column(
@@ -289,11 +334,7 @@ class _SubjectsSectionState extends State<SubjectsSection> {
               children: [
                 for (var i = 0; i < visible.length; i++) ...[
                   if (i > 0) const SizedBox(height: 12),
-                  _SubjectRow(
-                    subject: visible[i],
-                    share: most == 0 ? 0 : visible[i].studySeconds / most,
-                    order: i,
-                  ),
+                  _subject(visible[i], i, most, anyOpens),
                 ],
                 if (subjects.length > _shown) ...[
                   const SizedBox(height: 10),
@@ -347,88 +388,368 @@ class _SubjectsSectionState extends State<SubjectsSection> {
       ],
     );
   }
+
+  Widget _subject(
+    SubjectStatistics subject,
+    int order,
+    int most,
+    bool anyOpens,
+  ) {
+    final opens = _opens(subject);
+    final isOpen = opens && _open == subject.tagID;
+    final row = _SubjectRow(
+      subject: subject,
+      share: most == 0 ? 0 : subject.studySeconds / most,
+      order: order,
+      chevron: !anyOpens
+          ? null
+          : opens
+              ? (isOpen ? _Chevron.up : _Chevron.down)
+              : _Chevron.none,
+    );
+    if (!opens) return row;
+
+    // The open surface spreads past the rows, so they stay in line.
+    return AnimatedContainer(
+      duration: StatMotion.of(context, StatMotion.quick),
+      curve: StatMotion.curve,
+      padding: EdgeInsets.symmetric(vertical: isOpen ? 10 : 0),
+      decoration: BoxDecoration(
+        color: isOpen ? StatColors.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          if (isOpen)
+            const BoxShadow(color: StatColors.surface, spreadRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            key: ValueKey('subject-${subject.tagID}'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _open = isOpen ? null : subject.tagID),
+            child: row,
+          ),
+          if (isOpen)
+            _SubjectParts(
+              parent: subject,
+              parts: widget.loadParts!(subject),
+              onRetry: () => setState(() {}),
+            ),
+        ],
+      ),
+    );
+  }
 }
+
+/// The small «؟» beside the title.
+class _HelpButton extends StatelessWidget {
+  const _HelpButton({required this.open, required this.onTap});
+
+  final bool open;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'این آمار چطور حساب می‌شود؟',
+      child: GestureDetector(
+        key: const ValueKey('subjects-help'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: AnimatedContainer(
+            duration: StatMotion.of(context, StatMotion.quick),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: open ? StatColors.ink : StatColors.line,
+            ),
+            alignment: Alignment.center,
+            child: ReText(
+              '؟',
+              fontSize: 12,
+              fontWeight: 900,
+              color: open ? Colors.white : StatColors.muted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubjectsHelp extends StatelessWidget {
+  const _SubjectsHelp();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('subjects-help-text'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(IconsaxPlusLinear.info_circle,
+              size: 18, color: StatColors.muted),
+          SizedBox(width: 8),
+          Expanded(
+            child: ReText(
+              'این آمار بر اساس تگ‌هایی است که روی تسک‌هایتان می‌زنید. '
+              'با لمس هر درس، زمان و دقت زیرمجموعه‌هایش را می‌بینید؛ '
+              '«عمومی» تسک‌هایی است که فقط تگ خود درس را دارند و '
+              'تسک‌های بدون تگ در «متفرقه» می‌آیند.',
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: StatColors.ink,
+              maxLines: 6,
+              lineHeight: 1.7,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The tags under an opened subject, each bar a share of the subject's time.
+class _SubjectParts extends StatelessWidget {
+  const _SubjectParts({
+    required this.parent,
+    required this.parts,
+    required this.onRetry,
+  });
+
+  final SubjectStatistics parent;
+  final Future<List<SubjectStatistics>> parts;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<SubjectStatistics>>(
+      future: parts,
+      builder: (context, snapshot) {
+        final Widget child;
+        if (snapshot.hasError) {
+          child = Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Center(
+              child: _TextButton(
+                label: 'دریافت نشد؛ دوباره تلاش کنید',
+                icon: Icons.refresh_rounded,
+                onTap: onRetry,
+              ),
+            ),
+          );
+        } else if (!snapshot.hasData) {
+          child = const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: StatColors.muted,
+                ),
+              ),
+            ),
+          );
+        } else if (snapshot.data!.isEmpty) {
+          child = const Padding(
+            padding: EdgeInsets.only(top: 10),
+            child: ReText(
+              'در این بازه زیرمجموعه‌ای از این درس ثبت نشده.',
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: StatColors.muted,
+              textAlign: TextAlign.right,
+            ),
+          );
+        } else {
+          final parts = snapshot.data!;
+          final total = parent.studySeconds;
+          child = Container(
+            margin: const EdgeInsetsDirectional.only(start: 7, top: 2),
+            padding: const EdgeInsetsDirectional.only(start: 10),
+            decoration: const BoxDecoration(
+              border: BorderDirectional(
+                start: BorderSide(color: StatColors.line, width: 2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < parts.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: _SubjectRow(
+                      key: ValueKey('subject-part-${parts[i].name}'),
+                      subject: parts[i],
+                      share: total == 0 ? 0 : parts[i].studySeconds / total,
+                      order: i,
+                      compact: true,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
+        return AnimatedSwitcher(
+          duration: StatMotion.of(context, StatMotion.quick),
+          child: KeyedSubtree(
+            key: ValueKey(snapshot.connectionState),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+enum _Chevron { none, down, up }
 
 class _SubjectRow extends StatelessWidget {
   const _SubjectRow({
+    super.key,
     required this.subject,
     required this.share,
     required this.order,
+    this.chevron,
+    this.compact = false,
   });
 
   final SubjectStatistics subject;
   final double share;
   final int order;
 
+  /// Null when no row in the list opens, so no space is kept for it.
+  final _Chevron? chevron;
+
+  /// A tag under an opened subject: smaller, with a lighter bar.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final accuracy = subject.accuracy;
+    final muted = subject.isMiscellaneous || subject.isGeneral;
+    final figures = [
+      Expanded(
+        child: Container(
+          height: compact ? 6 : 8,
+          decoration: BoxDecoration(
+            color: compact ? Colors.white : StatColors.surface,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          alignment: AlignmentDirectional.centerStart,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: share.clamp(0.0, 1.0)),
+            // Each row a little after the one above.
+            duration: StatMotion.of(
+              context,
+              Duration(milliseconds: (compact ? 450 : 650) + order * 90),
+            ),
+            curve: StatMotion.curve,
+            builder: (context, value, _) => FractionallySizedBox(
+              widthFactor: value,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: compact ? StatColors.studySoft : StatColors.study,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 10),
+      SizedBox(
+        width: 36,
+        child: ReText(
+          StatsFormat.clock(subject.studySeconds),
+          fontSize: compact ? 11 : 12,
+          fontWeight: compact ? 800 : 900,
+          color: StatColors.ink,
+          textAlign: TextAlign.center,
+        ),
+      ),
+      const SizedBox(width: 4),
+      SizedBox(
+        width: 38,
+        child: ReText(
+          accuracy == null ? '-' : '${accuracy.round()}٪',
+          fontSize: compact ? 11 : 12,
+          fontWeight: 800,
+          color: accuracy != null && accuracy < 60
+              ? AppColors.errorColor
+              : StatColors.muted,
+          textAlign: TextAlign.left,
+        ),
+      ),
+    ];
+
+    // Tag names run long («ریاضیات گسسته دوازدهم»), so a tag's name gets a
+    // line of its own above its figures instead of a narrow column.
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ReText(
+            subject.name,
+            fontSize: 11.5,
+            fontWeight: 700,
+            color: muted ? StatColors.muted : StatColors.ink,
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            lineHeight: 1.6,
+          ),
+          const SizedBox(height: 4),
+          Row(children: figures),
+        ],
+      );
+    }
+
     return Row(
       children: [
+        if (chevron != null) ...[
+          SizedBox(
+            width: 16,
+            child: chevron == _Chevron.none
+                ? null
+                : AnimatedRotation(
+                    turns: chevron == _Chevron.up ? 0.5 : 0,
+                    duration: StatMotion.of(context, StatMotion.quick),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: StatColors.muted,
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 2),
+        ],
         SizedBox(
           width: 64,
           child: ReText(
             subject.name,
             fontSize: 12.5,
             fontWeight: 800,
-            color: subject.isMiscellaneous ? StatColors.muted : StatColors.ink,
+            color: muted ? StatColors.muted : StatColors.ink,
             textAlign: TextAlign.right,
             maxLines: 1,
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            height: 8,
-            decoration: BoxDecoration(
-              color: StatColors.surface,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            alignment: AlignmentDirectional.centerStart,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: share.clamp(0.0, 1.0)),
-              // Each row a little after the one above.
-              duration: StatMotion.of(
-                context,
-                Duration(milliseconds: 650 + order * 90),
-              ),
-              curve: StatMotion.curve,
-              builder: (context, value, _) => FractionallySizedBox(
-                widthFactor: value,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: StatColors.study,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 36,
-          child: ReText(
-            StatsFormat.clock(subject.studySeconds),
-            fontSize: 12,
-            fontWeight: 900,
-            color: StatColors.ink,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(width: 4),
-        SizedBox(
-          width: 38,
-          child: ReText(
-            accuracy == null ? '-' : '${accuracy.round()}٪',
-            fontSize: 12,
-            fontWeight: 800,
-            color: accuracy != null && accuracy < 60
-                ? AppColors.errorColor
-                : StatColors.muted,
-            textAlign: TextAlign.left,
-          ),
-        ),
+        ...figures,
       ],
     );
   }
@@ -506,7 +827,8 @@ class EmptyStatsCard extends StatelessWidget {
       child: Column(
         children: [
           const _Breathing(
-            child: TintIcon(IconsaxPlusBold.chart_2, StatColors.study, size: 64),
+            child:
+                TintIcon(IconsaxPlusBold.chart_2, StatColors.study, size: 64),
           ),
           const SizedBox(height: 14),
           ReText(
@@ -644,7 +966,8 @@ class StatisticsErrorView extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(IconsaxPlusLinear.refresh, size: 16, color: StatColors.ink),
+                  Icon(IconsaxPlusLinear.refresh,
+                      size: 16, color: StatColors.ink),
                   SizedBox(width: 6),
                   ReText(
                     'تلاش دوباره',

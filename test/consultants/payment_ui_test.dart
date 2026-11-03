@@ -312,6 +312,8 @@ void main() {
         'شما قبلاً از این کد تخفیف استفاده کرده‌اید.',
       );
       expect(discountRejectionMessage(Exception('something else')), isNull);
+      expect(discountStatusMessage('DURATION_NOT_ELIGIBLE'),
+          'این کد تخفیف برای این مدت اشتراک قابل استفاده نیست.');
       expect(discountStatusMessage('UNKNOWN_STATUS'), 'این کد تخفیف معتبر نیست.');
       expect(
         discountCheckErrorMessage(

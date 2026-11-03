@@ -484,6 +484,18 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // On top, where the eye is after «ثبت تسک».
+          AnimatedSize(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _added.isEmpty
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _AddedTasks(titles: _added),
+                  ),
+          ),
           enter(
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -567,17 +579,6 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 TagSelectionChips(selection: _tags, keyPrefix: 'quick-add'),
               ],
             ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: _added.isEmpty
-                ? const SizedBox(width: double.infinity)
-                : Padding(
-                    padding: const EdgeInsets.only(top: 18),
-                    child: _AddedTasks(titles: _added),
-                  ),
           ),
           TaskFormError(
             message: _error,

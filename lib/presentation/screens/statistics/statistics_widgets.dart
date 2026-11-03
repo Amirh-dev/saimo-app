@@ -63,9 +63,12 @@ class StatCard extends StatelessWidget {
 }
 
 class StatSectionTitle extends StatelessWidget {
-  const StatSectionTitle(this.title, {super.key, this.trailing});
+  const StatSectionTitle(this.title, {super.key, this.help, this.trailing});
 
   final String title;
+
+  /// Right after the title, such as a small «؟».
+  final Widget? help;
   final Widget? trailing;
 
   @override
@@ -75,6 +78,7 @@ class StatSectionTitle extends StatelessWidget {
       child: Row(
         children: [
           ReText(title, fontSize: 16, fontWeight: 900, color: StatColors.ink),
+          if (help != null) ...[const SizedBox(width: 2), help!],
           const Spacer(),
           if (trailing != null) trailing!,
         ],

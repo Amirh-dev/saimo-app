@@ -282,6 +282,20 @@ const StatisticsDashboard = _i1.OperationDefinitionNode(
               selectionSet: null,
             ),
             _i1.FieldNode(
+              name: _i1.NameNode(value: 'isGeneral'),
+              alias: null,
+              arguments: [],
+              directives: [],
+              selectionSet: null,
+            ),
+            _i1.FieldNode(
+              name: _i1.NameNode(value: 'hasChildren'),
+              alias: null,
+              arguments: [],
+              directives: [],
+              selectionSet: null,
+            ),
+            _i1.FieldNode(
               name: _i1.NameNode(value: 'studySeconds'),
               alias: null,
               arguments: [],

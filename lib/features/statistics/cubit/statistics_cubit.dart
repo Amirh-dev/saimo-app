@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
+import 'package:simo_learn/features/statistics/statistics_overview.dart';
 import 'package:simo_learn/features/statistics/statistics_repository.dart';
 
 import 'statistics_state.dart';
@@ -19,6 +20,10 @@ class StatisticsCubit extends Cubit<StatisticsState> {
   /// Bumped by every fetch; an answer for an older one is dropped, so quick
   /// taps through the weeks never end on the wrong week's numbers.
   int _request = 0;
+
+  /// Opened subjects' tags for the loaded numbers, by tag id. Emptied
+  /// whenever new numbers land, so they never disagree with the rows.
+  final Map<String, Future<List<SubjectStatistics>>> _parts = {};
 
   /// First open of the screen. Numbers already on screen are only refreshed.
   Future<void> load() =>
@@ -42,6 +47,21 @@ class StatisticsCubit extends Cubit<StatisticsState> {
         ? StatisticsPeriod.week
         : state.range.period;
     return _show(StatisticsRange.forPeriod(period), direction: 1);
+  }
+
+  /// The tags under [subject] for the loaded range, fetched once. A failed
+  /// fetch is forgotten, so opening the subject again retries it.
+  Future<List<SubjectStatistics>> partsOf(SubjectStatistics subject) {
+    final tagID = subject.tagID;
+    final range = state.loadedRange;
+    if (tagID == null || range == null) return Future.value(const []);
+    return _parts[tagID] ??= _repository
+        .fetchSubjectParts(start: range.start, end: range.end, parentTagID: tagID)
+        .then(SubjectStatistics.partsOf)
+        .catchError((Object error) {
+      _parts.remove(tagID);
+      throw error;
+    });
   }
 
   /// Fetches the shown range again after it failed to load.
@@ -80,6 +100,7 @@ class StatisticsCubit extends Cubit<StatisticsState> {
       ]);
       if (isClosed || request != _request) return;
 
+      _parts.clear();
       emit(
         state.copyWith(
           status: StatisticsStatus.success,

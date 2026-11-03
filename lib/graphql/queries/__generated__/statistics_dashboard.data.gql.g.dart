@@ -681,6 +681,12 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBucketsSerializer
       'isMiscellaneous',
       serializers.serialize(object.isMiscellaneous,
           specifiedType: const FullType(bool)),
+      'isGeneral',
+      serializers.serialize(object.isGeneral,
+          specifiedType: const FullType(bool)),
+      'hasChildren',
+      serializers.serialize(object.hasChildren,
+          specifiedType: const FullType(bool)),
       'studySeconds',
       serializers.serialize(object.studySeconds,
           specifiedType: const FullType(int)),
@@ -742,6 +748,14 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBucketsSerializer
           break;
         case 'isMiscellaneous':
           result.isMiscellaneous = serializers.deserialize(value,
+              specifiedType: const FullType(bool))! as bool;
+          break;
+        case 'isGeneral':
+          result.isGeneral = serializers.deserialize(value,
+              specifiedType: const FullType(bool))! as bool;
+          break;
+        case 'hasChildren':
+          result.hasChildren = serializers.deserialize(value,
               specifiedType: const FullType(bool))! as bool;
           break;
         case 'studySeconds':
@@ -2132,6 +2146,10 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
   @override
   final bool isMiscellaneous;
   @override
+  final bool isGeneral;
+  @override
+  final bool hasChildren;
+  @override
   final int studySeconds;
   @override
   final int completedTasks;
@@ -2157,6 +2175,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
       this.tagID,
       required this.tagName,
       required this.isMiscellaneous,
+      required this.isGeneral,
+      required this.hasChildren,
       required this.studySeconds,
       required this.completedTasks,
       required this.totalQuestions,
@@ -2184,6 +2204,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
         tagID == other.tagID &&
         tagName == other.tagName &&
         isMiscellaneous == other.isMiscellaneous &&
+        isGeneral == other.isGeneral &&
+        hasChildren == other.hasChildren &&
         studySeconds == other.studySeconds &&
         completedTasks == other.completedTasks &&
         totalQuestions == other.totalQuestions &&
@@ -2199,6 +2221,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
     _$hash = $jc(_$hash, tagID.hashCode);
     _$hash = $jc(_$hash, tagName.hashCode);
     _$hash = $jc(_$hash, isMiscellaneous.hashCode);
+    _$hash = $jc(_$hash, isGeneral.hashCode);
+    _$hash = $jc(_$hash, hasChildren.hashCode);
     _$hash = $jc(_$hash, studySeconds.hashCode);
     _$hash = $jc(_$hash, completedTasks.hashCode);
     _$hash = $jc(_$hash, totalQuestions.hashCode);
@@ -2217,6 +2241,8 @@ class _$GStatisticsDashboardData_statisticsDashboard_tagBuckets
           ..add('tagID', tagID)
           ..add('tagName', tagName)
           ..add('isMiscellaneous', isMiscellaneous)
+          ..add('isGeneral', isGeneral)
+          ..add('hasChildren', hasChildren)
           ..add('studySeconds', studySeconds)
           ..add('completedTasks', completedTasks)
           ..add('totalQuestions', totalQuestions)
@@ -2249,6 +2275,14 @@ class GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder
   bool? get isMiscellaneous => _$this._isMiscellaneous;
   set isMiscellaneous(bool? isMiscellaneous) =>
       _$this._isMiscellaneous = isMiscellaneous;
+
+  bool? _isGeneral;
+  bool? get isGeneral => _$this._isGeneral;
+  set isGeneral(bool? isGeneral) => _$this._isGeneral = isGeneral;
+
+  bool? _hasChildren;
+  bool? get hasChildren => _$this._hasChildren;
+  set hasChildren(bool? hasChildren) => _$this._hasChildren = hasChildren;
 
   int? _studySeconds;
   int? get studySeconds => _$this._studySeconds;
@@ -2291,6 +2325,8 @@ class GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder
       _tagID = $v.tagID;
       _tagName = $v.tagName;
       _isMiscellaneous = $v.isMiscellaneous;
+      _isGeneral = $v.isGeneral;
+      _hasChildren = $v.hasChildren;
       _studySeconds = $v.studySeconds;
       _completedTasks = $v.completedTasks;
       _totalQuestions = $v.totalQuestions;
@@ -2334,6 +2370,14 @@ class GStatisticsDashboardData_statisticsDashboard_tagBucketsBuilder
               isMiscellaneous,
               r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
               'isMiscellaneous'),
+          isGeneral: BuiltValueNullFieldError.checkNotNull(
+              isGeneral,
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
+              'isGeneral'),
+          hasChildren: BuiltValueNullFieldError.checkNotNull(
+              hasChildren,
+              r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',
+              'hasChildren'),
           studySeconds: BuiltValueNullFieldError.checkNotNull(
               studySeconds,
               r'GStatisticsDashboardData_statisticsDashboard_tagBuckets',

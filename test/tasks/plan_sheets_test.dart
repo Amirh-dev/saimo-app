@@ -104,6 +104,11 @@ void main() {
       expect(tester.widget<TextField>(_key('quick-add-title')).controller!.text,
           isEmpty);
       expect(find.text('تست فصل ۲'), findsOneWidget); // listed as added
+      // Shown above the title, not under the tags.
+      expect(
+        tester.getTopLeft(find.text('تست فصل ۲')).dy,
+        lessThan(tester.getTopLeft(_key('quick-add-title')).dy),
+      );
     });
 
     testWidgets('adds a 45-minute timed task; no tags before they are suggested',
@@ -128,7 +133,7 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
-      await tester.tap(_key('quick-add-type-checklist'));
+      await _tapInSheet(tester, 'quick-add-type-checklist');
       await tester.pumpAndSettle();
       await tester.enterText(_key('quick-add-title'), 'خرید کتاب');
       await tester.testTextInput.receiveAction(TextInputAction.done);

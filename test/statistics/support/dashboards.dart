@@ -36,10 +36,15 @@ SubjectBucket subjectBucket(
   int correctAnswers = 0,
   double? rating,
   bool miscellaneous = false,
+  String? tagID,
+  bool hasChildren = false,
 }) =>
     SubjectBucket((b) => b
+      ..tagID = tagID
       ..tagName = name
       ..isMiscellaneous = miscellaneous
+      ..isGeneral = false
+      ..hasChildren = hasChildren
       ..studySeconds = studySeconds
       ..completedTasks = 0
       ..totalQuestions = totalQuestions
@@ -93,6 +98,22 @@ class FakeStatisticsRepository implements StatisticsRepository {
   Future<StatisticsDashboard> Function(DateTime start, DateTime end) respond;
 
   final requests = <(DateTime, DateTime)>[];
+
+  /// tagStatistics rows for each parent tag id.
+  Map<String, List<Map<String, dynamic>>> parts = {};
+  final partRequests = <String>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchSubjectParts({
+    required DateTime start,
+    required DateTime end,
+    required String parentTagID,
+  }) async {
+    partRequests.add(parentTagID);
+    final rows = parts[parentTagID];
+    if (rows == null) throw const StatisticsFailure('no parts');
+    return rows;
+  }
 
   @override
   Future<StatisticsDashboard> fetchDashboard({
