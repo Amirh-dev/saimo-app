@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/auth_header.dart';
 
@@ -82,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: 100,
                                         onChanged: (p0) {
                                           setState(() {});
-                                        },
+                                        },
                                         controller: phoneController,
                                         placeholderAlign: TextAlign.right,
                                         backgroundColor: AppColors.gray1,
@@ -122,6 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         fontSize: 16,
                                         text: 'ورود / ثبت نام',
                                       ).tMargin(16),
+                                      const LoginTermsNotice().tMargin(14),
                                       // ReButton(
                                       //   isOutlined: true,
                                       //   color: AppColors.gray2,
@@ -174,4 +177,76 @@ class _LoginScreenState extends State<LoginScreen> {
         );
   }
 
+}
+
+const String kTermsUrl = 'https://saimo.app/privacy';
+
+/// Signing in counts as accepting the terms; the link opens them in the
+/// browser.
+class LoginTermsNotice extends StatefulWidget {
+  const LoginTermsNotice({super.key});
+
+  @override
+  State<LoginTermsNotice> createState() => _LoginTermsNoticeState();
+}
+
+class _LoginTermsNoticeState extends State<LoginTermsNotice> {
+  late final TapGestureRecognizer _openTerms = TapGestureRecognizer()
+    ..onTap = _launchTerms;
+
+  @override
+  void dispose() {
+    _openTerms.dispose();
+    super.dispose();
+  }
+
+  Future<void> _launchTerms() async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        Uri.parse(kTermsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && mounted) {
+      showReToast(context, 'باز کردن قوانین و مقررات ممکن نشد',
+          ReToastType.error);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontFamily: AppFonts.iranSansVar,
+      fontSize: 12,
+      height: 1.8,
+      color: AppColors.gray,
+      fontVariations: AppFonts.fontVariations(FontWeight.w500),
+    );
+    return Text.rich(
+      key: const ValueKey('login-terms'),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.rtl,
+      TextSpan(
+        style: style,
+        children: [
+          const TextSpan(text: 'ورود شما به معنای موافقت با '),
+          TextSpan(
+            text: 'قوانین و مقررات سایمو',
+            recognizer: _openTerms,
+            mouseCursor: SystemMouseCursors.click,
+            style: style.copyWith(
+              color: AppColors.black1,
+              decoration: TextDecoration.underline,
+              decorationColor: AppColors.black1,
+              fontVariations: AppFonts.fontVariations(FontWeight.w700),
+            ),
+          ),
+          const TextSpan(text: ' است.'),
+        ],
+      ),
+    );
+  }
 }
