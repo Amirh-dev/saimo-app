@@ -11,6 +11,7 @@ import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
+import 'package:simo_learn/presentation/screens/dashboard/install_card.dart';
 import 'package:simo_learn/presentation/screens/dashboard/live_tasks.dart';
 import 'package:simo_learn/presentation/screens/dashboard/study_metrics.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
@@ -140,6 +141,7 @@ class _DashboardContent extends StatelessWidget {
                     onRetry: cubit.retry,
                     builder: () => _ProfileCard(state: state),
                   ),
+                  const InstallAppCard(),
                   const SizedBox(height: 24),
                   _goals(context),
                   const SizedBox(height: 24),

@@ -1,11 +1,13 @@
 {
-    "name": "simo_learn",
-    "short_name": "simo_learn",
+    "name": "سایمو",
+    "short_name": "سایمو",
+    "description": "برنامه‌ریزی درسی، تایمر مطالعه، هدف‌ها و مشاور کنکور در یک اپ.",
+    "lang": "fa",
+    "dir": "rtl",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F5F5F9",
     "theme_color": "#F5F5F9",
-    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
 import 'package:simo_learn/data/app_update/app_update_check.dart';
+import 'package:simo_learn/data/install/home_screen_install.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_repository.dart';
 import 'package:simo_learn/features/statistics/cubit/statistics_cubit.dart';
@@ -91,6 +92,8 @@ Future<void> main() async {
 
   // Web only: watch for a newer release while this tab stays open.
   AppUpdateCheck.instance.start();
+  // Web only: the home's offer to add the app to the home screen.
+  unawaited(HomeScreenInstall.instance.start());
 
   runApp(
     MultiRepositoryProvider(
