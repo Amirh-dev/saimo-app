@@ -47,7 +47,8 @@ bool isCounselingAccessDenied(Object error) =>
     error.toString().toLowerCase().contains('forbidden');
 
 /// One student review as the app shows it. The server sends only a display
-/// name (first name and last initial, or a name set by an admin).
+/// name (first name and last initial, or a name set by an admin), and a photo
+/// only for reviews an admin wrote.
 class CounselorReview {
   const CounselorReview({
     required this.id,
@@ -55,11 +56,13 @@ class CounselorReview {
     required this.score,
     required this.createdAt,
     this.comment,
+    this.authorAvatarUrl,
   });
 
   factory CounselorReview.fromJson(Map<String, dynamic> json) {
     final comment = (json['comment'] as String?)?.trim();
     final author = (json['authorName'] as String?)?.trim();
+    final avatar = (json['authorAvatarURL'] as String?)?.trim();
     return CounselorReview(
       id: (json['id'] as String?) ?? '',
       authorName: (author == null || author.isEmpty) ? 'دانش‌آموز سایمو' : author,
@@ -68,11 +71,14 @@ class CounselorReview {
           DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ??
               DateTime.now(),
       comment: (comment == null || comment.isEmpty) ? null : comment,
+      authorAvatarUrl:
+          (avatar != null && avatar.startsWith('http')) ? avatar : null,
     );
   }
 
   final String id;
   final String authorName;
+  final String? authorAvatarUrl;
   final int score;
   final DateTime createdAt;
   final String? comment;

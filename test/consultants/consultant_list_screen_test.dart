@@ -250,6 +250,42 @@ void main() {
     expect(find.text('سارا ر.'), findsOneWidget);
   });
 
+  testWidgets('a review an admin gave a photo shows it, others the initial',
+      (tester) async {
+    await _pumpList(
+      tester,
+      answer: [_ratedCounselor()],
+      reviews: [
+        {
+          ..._review('r1', 'نگار ص.', 5, 'عالی'),
+          'authorAvatarURL': 'https://api.saimo.app/uploads/avatars/r1/p.jpg',
+        },
+        _review('r2', 'سارا ر.', 4, 'خوب'),
+      ],
+    );
+    await tester.tap(find.text('نظرات'));
+    await tester.pumpAndSettle();
+
+    final photo = find.byKey(const ValueKey('review-author-photo'));
+    expect(photo, findsOneWidget);
+    final image = tester.widget<Image>(photo).image;
+    expect(
+      (image is ResizeImage ? image.imageProvider : image) as NetworkImage,
+      isA<NetworkImage>().having((p) => p.url, 'url',
+          'https://api.saimo.app/uploads/avatars/r1/p.jpg'),
+    );
+    // The review without a photo keeps the first letter of the name.
+    expect(find.text('س'), findsOneWidget);
+  });
+
+  test('a review photo must be a web address', () {
+    final review = CounselorReview.fromJson({
+      ..._review('r1', 'نگار ص.', 5, null),
+      'authorAvatarURL': 'file:///etc/passwd',
+    });
+    expect(review.authorAvatarUrl, isNull);
+  });
+
   testWidgets('a filter with no reviews says so', (tester) async {
     await _pumpList(
       tester,

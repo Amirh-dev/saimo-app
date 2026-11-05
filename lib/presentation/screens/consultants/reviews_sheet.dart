@@ -592,21 +592,7 @@ class _ReviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: AppColors.gray1,
-                  shape: BoxShape.circle,
-                ),
-                child: ReText(
-                  review.authorName.characters.first,
-                  color: AppColors.black1,
-                  fontSize: 15,
-                  fontWeight: 900,
-                ),
-              ),
+              _ReviewAuthorAvatar(review: review),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -679,6 +665,47 @@ class _ReviewCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The photo an admin set for the review, or the name's first letter when
+/// there is none or it does not load.
+class _ReviewAuthorAvatar extends StatelessWidget {
+  const _ReviewAuthorAvatar({required this.review});
+
+  final CounselorReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = Center(
+      child: ReText(
+        review.authorName.characters.first,
+        color: AppColors.black1,
+        fontSize: 15,
+        fontWeight: 900,
+      ),
+    );
+    final url = review.authorAvatarUrl;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: const BoxDecoration(
+        color: AppColors.gray1,
+        shape: BoxShape.circle,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: url == null
+          ? initial
+          : Image.network(
+              url,
+              key: const ValueKey('review-author-photo'),
+              fit: BoxFit.cover,
+              width: 44,
+              height: 44,
+              cacheWidth: 132,
+              errorBuilder: (_, __, ___) => initial,
+            ),
     );
   }
 }

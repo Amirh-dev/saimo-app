@@ -45,6 +45,7 @@ class ConsultantRepository {
       counselorReviews(counselorProfileID: $counselorProfileID, limit: $limit, offset: $offset, minScore: $minScore, maxScore: $maxScore) {
         id
         authorName
+        authorAvatarURL
         createdAt
         score
         comment
