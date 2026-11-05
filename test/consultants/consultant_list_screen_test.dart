@@ -19,6 +19,7 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
     this.error,
     this.answer,
     this.major,
+    this.reviews = const [],
   }) : super(
           Client(
             link: Link.function(
@@ -33,6 +34,10 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
   Object? error;
   final List<Map<String, dynamic>>? answer;
   final String? major;
+  final List<Map<String, dynamic>> reviews;
+
+  /// Variables of every reviews request, in order.
+  final List<Map<String, dynamic>> reviewRequests = [];
 
   @override
   Future<Map<String, dynamic>> rawRequest({
@@ -42,6 +47,30 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
   }) async {
     final failure = error;
     if (failure != null) throw failure;
+    if (query.contains('counselorReviews(')) {
+      reviewRequests.add(variables);
+      final min = variables['minScore'] as int? ?? 1;
+      final max = variables['maxScore'] as int? ?? 5;
+      return {
+        'counselorReviews': [
+          for (final review in reviews)
+            if ((review['score'] as int) >= min &&
+                (review['score'] as int) <= max)
+              review,
+        ],
+      };
+    }
+    if (query.contains('counselorRatingDistribution')) {
+      return {
+        'counselorRatingDistribution': [
+          for (var score = 5; score >= 1; score--)
+            {
+              'score': score,
+              'count': reviews.where((r) => r['score'] == score).length,
+            },
+        ],
+      };
+    }
     return {
       'counselors': answer ?? const [],
       'getMe': {'major': major},
@@ -54,6 +83,7 @@ Future<_CounselorsGraphQLRepository> _pumpList(
   Object? error,
   List<Map<String, dynamic>>? answer,
   String? major,
+  List<Map<String, dynamic>> reviews = const [],
 }) async {
   SharedPreferences.setMockInitialValues({});
   final graphql = _CounselorsGraphQLRepository(
@@ -61,6 +91,7 @@ Future<_CounselorsGraphQLRepository> _pumpList(
     error: error,
     answer: answer,
     major: major,
+    reviews: reviews,
   );
   await tester.pumpWidget(
     RepositoryProvider<GraphQLRepository>.value(
@@ -150,8 +181,87 @@ void main() {
       (tester) async {
     await _pumpList(tester, answer: [_counselor('SCIENCE')]);
 
-    expect(find.text('مشاور جدید'), findsOneWidget);
+    expect(
+      find.textContaining('مشاور جدید', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.star_rounded), findsNothing);
+    // Nothing to read yet, so no reviews button.
+    expect(find.text('نظرات'), findsNothing);
+  });
+
+  testWidgets('the card highlights the first résumé item and lists the rest',
+      (tester) async {
+    await _pumpList(tester, answer: [_ratedCounselor()]);
+
+    expect(find.text('رتبه ۱۲۰ کنکور ریاضی'), findsOneWidget);
+    expect(find.text('شش سال سابقه مشاوره تحصیلی'), findsOneWidget);
+    expect(
+      find.textContaining('(۳۲ نظر)', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('رزومه مشاور'), findsNothing);
+  });
+
+  testWidgets('«نظرات» opens the reviews sheet, filters by score',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final long = 'برنامه‌ریزی دقیق و پیگیری منظم داشتند. ' * 6;
+    final graphql = await _pumpList(
+      tester,
+      answer: [_ratedCounselor()],
+      reviews: [
+        _review('r1', 'سارا ر.', 5, 'خیلی دقیق بودند.'),
+        _review('r2', 'امیر ح.', 3, long),
+        _review('r3', 'نگار ص.', 4, null),
+      ],
+    );
+
+    await tester.tap(find.text('نظرات'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('نظرات دانش‌آموزان'), findsOneWidget);
+    expect(find.text('از ۳۲ نظر'), findsOneWidget);
+    expect(find.text('سارا ر.'), findsOneWidget);
+    expect(find.text('نگار ص.'), findsOneWidget);
+    expect(find.text('ادامه'), findsOneWidget);
+    expect(graphql.reviewRequests.single['counselorProfileID'], 'profile-1');
+
+    await tester.ensureVisible(find.text('۳ ستاره و کمتر'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('۳ ستاره و کمتر'));
+    await tester.pumpAndSettle();
+    expect(graphql.reviewRequests.last['maxScore'], 3);
+    expect(graphql.reviewRequests.last.containsKey('minScore'), isFalse);
+    expect(find.text('امیر ح.'), findsOneWidget);
+    expect(find.text('سارا ر.'), findsNothing);
+
+    await tester.tap(find.text('ادامه'));
+    await tester.pumpAndSettle();
+    expect(find.text('بستن'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('۵ ستاره'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('۵ ستاره'));
+    await tester.pumpAndSettle();
+    expect(graphql.reviewRequests.last['minScore'], 5);
+    expect(find.text('سارا ر.'), findsOneWidget);
+  });
+
+  testWidgets('a filter with no reviews says so', (tester) async {
+    await _pumpList(
+      tester,
+      answer: [_ratedCounselor()],
+      reviews: [_review('r1', 'سارا ر.', 5, 'عالی')],
+    );
+    await tester.tap(find.text('نظرات'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('۴ ستاره'));
+    await tester.pumpAndSettle();
+    expect(find.text('نظری با این امتیاز ثبت نشده است'), findsOneWidget);
   });
 }
 
@@ -162,4 +272,35 @@ Map<String, dynamic> _counselor(String major) => {
       'ratingCount': 0,
       'resumeItems': ['ده سال سابقه'],
       'user': {'fullName': 'سارا احمدی', 'major': major},
+    };
+
+Map<String, dynamic> _ratedCounselor() => {
+      'id': 'profile-1',
+      'title': 'مشاور کنکور ریاضی',
+      'ratingAverage': 4.8,
+      'ratingCount': 32,
+      'resumeItems': [
+        'رتبه ۱۲۰ کنکور ریاضی',
+        'شش سال سابقه مشاوره تحصیلی',
+        'دانشجوی مهندسی برق دانشگاه شریف',
+      ],
+      'user': {
+        'fullName': 'سارا احمدی',
+        'major': 'MATHEMATICS',
+        'bio': 'برنامه‌ریزی را با توان واقعی شما شروع می‌کنم.',
+      },
+    };
+
+Map<String, dynamic> _review(
+  String id,
+  String author,
+  int score,
+  String? comment,
+) =>
+    {
+      'id': id,
+      'authorName': author,
+      'createdAt': '2026-11-03T09:00:00Z',
+      'score': score,
+      'comment': comment,
     };

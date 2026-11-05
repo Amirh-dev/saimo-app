@@ -45,3 +45,49 @@ const String kCounselingNoAccessMessage =
 /// Whether [error] is the server's role check rejecting this account.
 bool isCounselingAccessDenied(Object error) =>
     error.toString().toLowerCase().contains('forbidden');
+
+/// One student review as the app shows it. The server sends only a display
+/// name (first name and last initial, or a name set by an admin).
+class CounselorReview {
+  const CounselorReview({
+    required this.id,
+    required this.authorName,
+    required this.score,
+    required this.createdAt,
+    this.comment,
+  });
+
+  factory CounselorReview.fromJson(Map<String, dynamic> json) {
+    final comment = (json['comment'] as String?)?.trim();
+    final author = (json['authorName'] as String?)?.trim();
+    return CounselorReview(
+      id: (json['id'] as String?) ?? '',
+      authorName: (author == null || author.isEmpty) ? 'دانش‌آموز سایمو' : author,
+      score: ((json['score'] as num?)?.toInt() ?? 0).clamp(1, 5),
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ??
+              DateTime.now(),
+      comment: (comment == null || comment.isEmpty) ? null : comment,
+    );
+  }
+
+  final String id;
+  final String authorName;
+  final int score;
+  final DateTime createdAt;
+  final String? comment;
+}
+
+/// The score filters above the review list.
+enum ReviewScoreFilter {
+  all('همه'),
+  five('۵ ستاره', minScore: 5, maxScore: 5),
+  four('۴ ستاره', minScore: 4, maxScore: 4),
+  low('۳ ستاره و کمتر', maxScore: 3);
+
+  const ReviewScoreFilter(this.label, {this.minScore, this.maxScore});
+
+  final String label;
+  final int? minScore;
+  final int? maxScore;
+}

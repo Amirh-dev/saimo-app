@@ -16,6 +16,7 @@ import 'package:simo_learn/presentation/screens/consultants/payment_tab.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_tab_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_webview_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
+import 'package:simo_learn/presentation/screens/consultants/reviews_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/success_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -359,6 +360,16 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     );
   }
 
+  void _showReviews(Consultant consultant) {
+    final repository = _repository;
+    if (repository == null) return;
+    showCounselorReviewsSheet(
+      context,
+      repository: repository,
+      consultant: consultant,
+    );
+  }
+
   Widget _buildList() {
     if (_loading) {
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -407,6 +418,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
               expanded: index == _expandedIndex,
               showMajor: !matched,
               onToggle: () => _toggle(index),
+              onShowReviews: () => _showReviews(_consultants[index]),
               onSelect: () {
                 final consultant = _consultants[index];
                 if (widget.onSelect != null) {
@@ -621,6 +633,7 @@ class _ConsultantCard extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onSelect,
+    required this.onShowReviews,
     required this.showMajor,
   });
 
@@ -629,28 +642,34 @@ class _ConsultantCard extends StatelessWidget {
   final bool showMajor;
   final VoidCallback onToggle;
   final VoidCallback onSelect;
+  final VoidCallback onShowReviews;
 
   // A single shared curve/duration keeps the radius, size and fade in sync so
   // the card feels like one smooth morph rather than three separate tweens.
   static const Duration _animDuration = Duration(milliseconds: 280);
   static const Curve _animCurve = Curves.easeInOutCubic;
 
+  /// The first résumé item is the counselor's strongest point; it is shown
+  /// as the highlight, even on a closed card.
+  ConsultantResumeItem? get _highlight =>
+      consultant.resume.isEmpty ? null : consultant.resume.first;
+
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: _animDuration,
       curve: _animCurve,
-      // Clip to the animated rounded corners so the expanding body (buttons and
-      // bordered résumé rows) never bleeds past the corners mid-animation.
+      // Clip to the rounded corners so the expanding body never bleeds past
+      // them mid-animation.
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.whiteSec,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 44,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -663,13 +682,19 @@ class _ConsultantCard extends StatelessWidget {
             duration: _animDuration,
             curve: _animCurve,
             alignment: Alignment.topCenter,
-            child: AnimatedOpacity(
+            child: AnimatedSwitcher(
               duration: _animDuration,
-              curve: _animCurve,
-              opacity: expanded ? 1 : 0,
+              switchInCurve: _animCurve,
+              switchOutCurve: _animCurve,
               child: expanded
-                  ? _buildExpandedBody()
-                  : const SizedBox(width: double.infinity),
+                  ? KeyedSubtree(
+                      key: const ValueKey('expanded'),
+                      child: _buildExpandedBody(),
+                    )
+                  : KeyedSubtree(
+                      key: const ValueKey('collapsed'),
+                      child: _buildCollapsedBody(),
+                    ),
             ),
           ),
         ],
@@ -695,20 +720,34 @@ class _ConsultantCard extends StatelessWidget {
                   ReText(
                     consultant.name,
                     color: AppColors.black1,
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: 900,
                     textAlign: TextAlign.right,
                   ),
-                  if (consultant.specialty.isNotEmpty)
-                    ReText(
-                      consultant.specialty,
-                      color: AppColors.gray,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      textAlign: TextAlign.right,
+                  const SizedBox(height: 2),
+                  _buildSubtitle(),
+                  if (showMajor && consultant.major != null) ...[
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gray1,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ReText(
+                          consultant.major!.label,
+                          color: AppColors.black1,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  const SizedBox(height: 6),
-                  _buildSignals(),
+                  ],
                 ],
               ),
             ),
@@ -720,136 +759,241 @@ class _ConsultantCard extends StatelessWidget {
     );
   }
 
-  /// The rating, and the counselor's major when the list is not one major.
-  Widget _buildSignals() {
-    final major = consultant.major;
-    return Row(
-      children: [
-        if (consultant.ratingCount > 0) ...[
-          const Icon(Icons.star_rounded, size: 16, color: AppColors.simoCoin),
-          const SizedBox(width: 3),
-          ReText(
-            consultant.rating,
-            color: AppColors.black1,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-          const SizedBox(width: 4),
-          ReText(
-            '${convertToPersianNumbers(consultant.ratingCount.toString())} نظر',
-            color: AppColors.gray,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ] else
-          const ReText(
-            'مشاور جدید',
-            color: AppColors.gray,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        if (showMajor && major != null) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.gray1,
-              borderRadius: BorderRadius.circular(20),
+  /// «مشاور کنکور ریاضی، ★ ۴.۸ (۳۲ نظر)», or «…، مشاور جدید» before any
+  /// rating, on one line.
+  Widget _buildSubtitle() {
+    TextStyle style(Color color, Object weight) => TextStyle(
+          color: color,
+          fontSize: 12,
+          letterSpacing: -0.5,
+          fontFamily: AppFonts.iranSansVar,
+          fontVariations: AppFonts.fontVariations(weight),
+        );
+    final specialty = consultant.specialty;
+    final rated = consultant.ratingCount > 0;
+    return Text.rich(
+      TextSpan(
+        style: style(AppColors.gray, FontWeight.w600),
+        children: [
+          if (specialty.isNotEmpty) TextSpan(text: '$specialty، '),
+          if (rated) ...[
+            const WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(end: 3),
+                child: Icon(
+                  Icons.star_rounded,
+                  size: 15,
+                  color: AppColors.simoCoin,
+                ),
+              ),
             ),
-            child: ReText(
-              major.label,
-              color: AppColors.black1,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+            TextSpan(
+              text: consultant.rating,
+              style: style(AppColors.black1, 900),
             ),
-          ),
+            TextSpan(
+              text:
+                  ' (${convertToPersianNumbers(consultant.ratingCount.toString())} نظر)',
+            ),
+          ] else
+            TextSpan(
+              text: 'مشاور جدید',
+              style: style(AppColors.black1, FontWeight.w700),
+            ),
         ],
-      ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.right,
+      textDirection: TextDirection.rtl,
+    );
+  }
+
+  /// A closed card still shows the counselor's strongest point.
+  Widget _buildCollapsedBody() {
+    final highlight = _highlight;
+    if (highlight == null) return const SizedBox(width: double.infinity);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 6, 4, 4),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Container(
+          height: 36,
+          padding: const EdgeInsetsDirectional.only(start: 5, end: 14),
+          decoration: BoxDecoration(
+            color: kCoinSoft,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CoinBadge(
+                icon: SolarIconsOutline.cupStar,
+                size: 26,
+                iconSize: 14,
+                glow: false,
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: ReText(
+                  highlight.title,
+                  color: AppColors.black1,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildExpandedBody() {
+    final highlight = _highlight;
+    final rest = consultant.resume.skip(1).toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (highlight != null) ...[
+            Container(
+              constraints: const BoxConstraints(minHeight: 60),
+              padding: const EdgeInsetsDirectional.fromSTEB(10, 10, 18, 10),
+              decoration: BoxDecoration(
+                color: kCoinSoft,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                children: [
+                  const CoinBadge(icon: SolarIconsOutline.cupStar),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ReText(
+                      highlight.title,
+                      color: AppColors.black1,
+                      fontSize: 16,
+                      fontWeight: 900,
+                      textAlign: TextAlign.right,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          for (final item in rest)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: const BoxDecoration(
+                      color: AppColors.black1,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ReText(
+                      item.title,
+                      color: AppColors.black1,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      textAlign: TextAlign.right,
+                      maxLines: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (consultant.bio.isNotEmpty) ...[
-            ReText(
-              consultant.bio,
-              color: AppColors.black1,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              textAlign: TextAlign.right,
-              lineHeight: 1.7,
-              maxLines: 4,
+            if (rest.isNotEmpty) const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.only(top: 12),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.gray2)),
+              ),
+              child: ReText(
+                consultant.bio,
+                color: AppColors.dark8Color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                textAlign: TextAlign.right,
+                lineHeight: 1.9,
+                maxLines: 4,
+              ),
             ),
-            const SizedBox(height: 12),
           ],
-          if (consultant.resume.isNotEmpty) ...[
-            const ReText(
-              'رزومه مشاور',
-              color: AppColors.gray,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              textAlign: TextAlign.right,
-            ),
-            const SizedBox(height: 8),
-          ],
-          for (var i = 0; i < consultant.resume.length; i++)
-            _buildResumeItem(consultant.resume[i], i + 1),
-          const SizedBox(height: 8),
-          ReButton(
-            text: 'انتخاب مشاور',
-            background: AppColors.secondary,
-            borderRadius: 40,
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            onPressed: onSelect,
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              if (consultant.ratingCount > 0) ...[
+                _ReviewsButton(onTap: onShowReviews),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: ReButton(
+                  text: 'انتخاب مشاور',
+                  background: AppColors.secondary,
+                  borderRadius: 40,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  onPressed: onSelect,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildResumeItem(ConsultantResumeItem item, int number) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gray2),
-      ),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
+/// «نظرات ‹», beside «انتخاب مشاور»; opens the reviews sheet.
+class _ReviewsButton extends StatelessWidget {
+  const _ReviewsButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 55,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            color: AppColors.gray1,
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReText(
+                'نظرات',
                 color: AppColors.black1,
-                borderRadius: BorderRadius.circular(8),
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
               ),
-              child: ReText(
-                number.toString(),
-                color: AppColors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ReText(
-                item.title,
+              SizedBox(width: 4),
+              Icon(
+                SolarIconsOutline.altArrowLeft,
+                size: 16,
                 color: AppColors.black1,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                textAlign: TextAlign.start,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

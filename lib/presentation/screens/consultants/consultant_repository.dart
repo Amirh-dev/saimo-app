@@ -40,6 +40,27 @@ class ConsultantRepository {
     }
   ''';
 
+  static const String _reviewsQuery = r'''
+    query CounselorReviews($counselorProfileID: ID!, $limit: Int, $offset: Int, $minScore: Int, $maxScore: Int) {
+      counselorReviews(counselorProfileID: $counselorProfileID, limit: $limit, offset: $offset, minScore: $minScore, maxScore: $maxScore) {
+        id
+        authorName
+        createdAt
+        score
+        comment
+      }
+    }
+  ''';
+
+  static const String _ratingDistributionQuery = r'''
+    query CounselorRatingDistribution($counselorProfileID: ID!) {
+      counselorRatingDistribution(counselorProfileID: $counselorProfileID) {
+        score
+        count
+      }
+    }
+  ''';
+
   static const String _myMajorQuery = r'''
     query MyMajor {
       getMe {
@@ -190,6 +211,52 @@ class ConsultantRepository {
     if (raw is! List) return const [];
 
     return raw.whereType<Map<String, dynamic>>().map(_mapCounselor).toList();
+  }
+
+  /// One page of a counselor's reviews, newest first, optionally limited to
+  /// [filter]'s score range.
+  Future<List<CounselorReview>> fetchReviews(
+    String counselorProfileID, {
+    ReviewScoreFilter filter = ReviewScoreFilter.all,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final data = await _rawRequest(
+      query: _reviewsQuery,
+      variables: {
+        'counselorProfileID': counselorProfileID,
+        'limit': limit,
+        'offset': offset,
+        if (filter.minScore != null) 'minScore': filter.minScore,
+        if (filter.maxScore != null) 'maxScore': filter.maxScore,
+      },
+    );
+    final raw = data['counselorReviews'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(CounselorReview.fromJson)
+        .toList();
+  }
+
+  /// How many reviews gave each score, keyed 5 down to 1 (missing scores are 0).
+  Future<Map<int, int>> fetchRatingDistribution(
+      String counselorProfileID) async {
+    final data = await _rawRequest(
+      query: _ratingDistributionQuery,
+      variables: {'counselorProfileID': counselorProfileID},
+    );
+    final counts = {for (var score = 5; score >= 1; score--) score: 0};
+    final raw = data['counselorRatingDistribution'];
+    if (raw is List) {
+      for (final bucket in raw.whereType<Map<String, dynamic>>()) {
+        final score = (bucket['score'] as num?)?.toInt();
+        if (score != null && counts.containsKey(score)) {
+          counts[score] = (bucket['count'] as num?)?.toInt() ?? 0;
+        }
+      }
+    }
+    return counts;
   }
 
   /// The signed-in student's major, or null when none is set. The server does
