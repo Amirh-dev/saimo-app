@@ -1851,12 +1851,18 @@ class _AppVersionWidgetState extends State<AppVersionWidget> {
       return const SizedBox.shrink();
     }
 
-    return ReText(
-      'نسخه $_version',
-      color: AppColors.gray,
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      textAlign: TextAlign.center,
+    return Column(
+      children: [
+        ReText(
+          'نسخه $_version',
+          color: AppColors.gray,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        const MadeByCredit(),
+      ],
     );
   }
 }

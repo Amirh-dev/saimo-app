@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -64,7 +66,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) => SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      // Tall phones keep the small-phone spacing, so the
+                      // version and credit stay close under the form.
+                      constraints: BoxConstraints(
+                        minHeight: math.min(constraints.maxHeight, 667),
+                      ),
                       child: IntrinsicHeight(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -140,12 +146,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 )
                               ],
                             ).tMargin(130),
-                            ReText(
-                              'نسخه $_version',
-                              color: AppColors.gray,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ).bMargin(10)
+                            Column(
+                              children: [
+                                ReText(
+                                  'نسخه $_version',
+                                  color: AppColors.gray,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                const SizedBox(height: 2),
+                                const MadeByCredit(),
+                              ],
+                            ).bMargin(6)
                           ],
                         ).hMargin(30),
                       ),

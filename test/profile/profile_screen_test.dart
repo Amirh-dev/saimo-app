@@ -169,6 +169,17 @@ void main() {
     await tester.pumpAndSettle();
     final preferences = await SharedPreferences.getInstance();
     expect(preferences.getBool('profile_news_enabled'), isTrue);
+
+    // The credit under the version opens the studio's website.
+    final launcher = _FakeUrlLauncher();
+    UrlLauncherPlatform.instance = launcher;
+    final credit = find.byKey(const ValueKey('made-by-ravi'));
+    expect(find.text('تیم راوی'), findsOneWidget);
+    await tester.ensureVisible(credit);
+    await tester.pumpAndSettle();
+    await tester.tap(credit);
+    await tester.pumpAndSettle();
+    expect(launcher.launched, ['https://ravisite.com']);
   });
 
   group('support button', () {

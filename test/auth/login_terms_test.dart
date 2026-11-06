@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
+import 'package:simo_learn/presentation/widgets/made_by_credit.dart';
 // url_launcher's platform interface, so launches can be recorded.
 // ignore: depend_on_referenced_packages
 import 'package:url_launcher_platform_interface/link.dart';
@@ -26,6 +27,18 @@ void main() {
     await tester.pump();
 
     expect(launcher.launched, ['https://saimo.app/privacy']);
+  });
+
+  testWidgets('the Ravi credit opens the studio website', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: Center(child: MadeByCredit()))),
+    );
+
+    expect(find.text('تیم راوی'), findsOneWidget);
+    await tester.tap(find.byType(MadeByCredit));
+    await tester.pump();
+
+    expect(launcher.launched, ['https://ravisite.com']);
   });
 }
 
