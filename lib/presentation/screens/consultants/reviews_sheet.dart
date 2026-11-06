@@ -234,7 +234,7 @@ class _CounselorReviewsSheetState extends State<CounselorReviewsSheet> {
                 decoration: BoxDecoration(
                   color: AppColors.whiteSec,
                   shape: BoxShape.circle,
-                  boxShadow: _pillShadow,
+                  boxShadow: kCounselorPillShadow,
                 ),
                 child: const Icon(
                   Icons.close_rounded,
@@ -303,7 +303,7 @@ class _CounselorReviewsSheetState extends State<CounselorReviewsSheet> {
     }
     return [
       for (final review in _reviews) ...[
-        _ReviewCard(
+        CounselorReviewCard(
           review: review,
           expanded: _expanded.contains(review.id),
           onToggle: () => setState(() {
@@ -328,7 +328,8 @@ class _CounselorReviewsSheetState extends State<CounselorReviewsSheet> {
   }
 }
 
-final List<BoxShadow> _cardShadow = [
+/// Soft shadow of white counselor cards (list, sheet and details page).
+final List<BoxShadow> kCounselorCardShadow = [
   BoxShadow(
     color: Colors.black.withOpacity(0.04),
     blurRadius: 24,
@@ -336,7 +337,8 @@ final List<BoxShadow> _cardShadow = [
   ),
 ];
 
-final List<BoxShadow> _pillShadow = [
+/// Shadow of white pills and round buttons on the counselor screens.
+final List<BoxShadow> kCounselorPillShadow = [
   BoxShadow(
     color: Colors.black.withOpacity(0.06),
     blurRadius: 15,
@@ -404,7 +406,7 @@ class _RatingSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.whiteSec,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: _cardShadow,
+        boxShadow: kCounselorCardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -547,7 +549,7 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? AppColors.black1 : AppColors.whiteSec,
             borderRadius: BorderRadius.circular(100),
-            boxShadow: selected ? null : _pillShadow,
+            boxShadow: selected ? null : kCounselorPillShadow,
           ),
           child: ReText(
             label,
@@ -561,8 +563,9 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({
+class CounselorReviewCard extends StatelessWidget {
+  const CounselorReviewCard({
+    super.key,
     required this.review,
     required this.expanded,
     required this.onToggle,
@@ -585,7 +588,7 @@ class _ReviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.whiteSec,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: _cardShadow,
+        boxShadow: kCounselorCardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -765,7 +768,7 @@ class _WhitePill extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.whiteSec,
           borderRadius: BorderRadius.circular(100),
-          boxShadow: _pillShadow,
+          boxShadow: kCounselorPillShadow,
         ),
         child: ReText(
           label,
@@ -798,7 +801,7 @@ class _Notice extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.whiteSec,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: _cardShadow,
+        boxShadow: kCounselorCardShadow,
       ),
       child: Column(
         children: [

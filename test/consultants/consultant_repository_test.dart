@@ -546,4 +546,87 @@ void main() {
       expect(sentVariables, {'subscriptionID': 'sub-1'});
     });
   });
+
+  group('fetchCounselors details', () {
+    ConsultantRepository answering(Map<String, dynamic> counselor) =>
+        ConsultantRepository.withRawRequest(({
+          required String query,
+          Map<String, dynamic> variables = const {},
+          bool requiresAuth = true,
+        }) async {
+          expect(query, contains('educationItems { title detail }'));
+          expect(query, contains('studentCard { url status }'));
+          return {
+            'counselors': [counselor],
+          };
+        });
+
+    test('maps the details page fields and drops empty rows', () async {
+      final repository = answering({
+        'id': 'p1',
+        'title': 'مشاور',
+        'intro': '  سلام  ',
+        'experienceYears': 4,
+        'educationItems': [
+          {'title': ' رتبه ۱۲۰ ', 'detail': ' ۱۴۰۲ '},
+          {'title': ' ', 'detail': 'بدون عنوان'},
+        ],
+        'skillItems': [
+          {'title': 'برنامه هفتگی', 'description': null},
+        ],
+        'personalityTraits': [' صبور ', '', 7],
+        'studentCard': {
+          'url': 'https://cdn.test/card.jpg',
+          'status': 'VERIFIED'
+        },
+        'user': {'fullName': 'سارا'},
+      });
+
+      final c = (await repository.fetchCounselors()).single;
+
+      expect(c.intro, 'سلام');
+      expect(c.experienceYears, 4);
+      expect(c.education.single.title, 'رتبه ۱۲۰');
+      expect(c.education.single.detail, '۱۴۰۲');
+      expect(c.skills.single.description, '');
+      expect(c.traits, ['صبور']);
+      expect(c.studentCardUrl, 'https://cdn.test/card.jpg');
+      expect(c.isVerified, isTrue);
+    });
+
+    test('a card that is not verified gives no badge', () async {
+      final repository = answering({
+        'id': 'p1',
+        'title': 'مشاور',
+        'studentCard': {
+          'url': 'https://cdn.test/card.jpg',
+          'status': 'PENDING'
+        },
+        'user': {'fullName': 'سارا'},
+      });
+
+      final c = (await repository.fetchCounselors()).single;
+
+      expect(c.studentCardUrl, isNull);
+      expect(c.isVerified, isFalse);
+      expect(c.education, isEmpty);
+      expect(c.experienceYears, isNull);
+    });
+  });
+
+  test('fetchStudentCount reads the count for one counselor', () async {
+    Map<String, dynamic>? sent;
+    final repository = ConsultantRepository.withRawRequest(({
+      required String query,
+      Map<String, dynamic> variables = const {},
+      bool requiresAuth = true,
+    }) async {
+      expect(query, contains('counselorStudentCount('));
+      sent = variables;
+      return {'counselorStudentCount': 45};
+    });
+
+    expect(await repository.fetchStudentCount('p1'), 45);
+    expect(sent, {'counselorProfileID': 'p1'});
+  });
 }

@@ -11,6 +11,7 @@ import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
+import 'package:simo_learn/presentation/screens/consultants/details_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/invoice_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_tab.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_tab_screen.dart';
@@ -360,13 +361,22 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     );
   }
 
-  void _showReviews(Consultant consultant) {
-    final repository = _repository;
-    if (repository == null) return;
-    showCounselorReviewsSheet(
+  void _select(Consultant consultant) {
+    if (widget.onSelect != null) {
+      widget.onSelect!(consultant);
+    } else {
+      _startConsultationFlow(context, consultant);
+    }
+  }
+
+  void _showDetails(Consultant consultant) {
+    openConsultantDetails(
       context,
-      repository: repository,
       consultant: consultant,
+      repository: _repository,
+      onSelect: () {
+        if (mounted) _select(consultant);
+      },
     );
   }
 
@@ -418,15 +428,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
               expanded: index == _expandedIndex,
               showMajor: !matched,
               onToggle: () => _toggle(index),
-              onShowReviews: () => _showReviews(_consultants[index]),
-              onSelect: () {
-                final consultant = _consultants[index];
-                if (widget.onSelect != null) {
-                  widget.onSelect!(consultant);
-                } else {
-                  _startConsultationFlow(context, consultant);
-                }
-              },
+              onShowDetails: () => _showDetails(_consultants[index]),
+              onSelect: () => _select(_consultants[index]),
             ),
           ],
         ],
@@ -633,7 +636,7 @@ class _ConsultantCard extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onSelect,
-    required this.onShowReviews,
+    required this.onShowDetails,
     required this.showMajor,
   });
 
@@ -642,7 +645,7 @@ class _ConsultantCard extends StatelessWidget {
   final bool showMajor;
   final VoidCallback onToggle;
   final VoidCallback onSelect;
-  final VoidCallback onShowReviews;
+  final VoidCallback onShowDetails;
 
   // A single shared curve/duration keeps the radius, size and fade in sync so
   // the card feels like one smooth morph rather than three separate tweens.
@@ -936,10 +939,8 @@ class _ConsultantCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              if (consultant.ratingCount > 0) ...[
-                _ReviewsButton(onTap: onShowReviews),
-                const SizedBox(width: 8),
-              ],
+              _DetailsButton(onTap: onShowDetails),
+              const SizedBox(width: 8),
               Expanded(
                 child: ReButton(
                   text: 'انتخاب مشاور',
@@ -958,9 +959,9 @@ class _ConsultantCard extends StatelessWidget {
   }
 }
 
-/// «نظرات ‹», beside «انتخاب مشاور»; opens the reviews sheet.
-class _ReviewsButton extends StatelessWidget {
-  const _ReviewsButton({required this.onTap});
+/// «جزئیات ‹», beside «انتخاب مشاور»; opens the counselor's details page.
+class _DetailsButton extends StatelessWidget {
+  const _DetailsButton({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -981,7 +982,7 @@ class _ReviewsButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ReText(
-                'نظرات',
+                'جزئیات',
                 color: AppColors.black1,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,

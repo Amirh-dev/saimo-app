@@ -20,6 +20,12 @@ class Consultant {
     this.ratingCount = 0,
     this.major,
     this.bio = '',
+    this.intro = '',
+    this.experienceYears,
+    this.education = const [],
+    this.skills = const [],
+    this.traits = const [],
+    this.studentCardUrl,
   });
 
   final String id;
@@ -33,7 +39,39 @@ class Consultant {
   /// How many students rated this counselor; 0 means no rating to show yet.
   final int ratingCount;
   final UserMajor? major;
+
+  /// The counselor's longer story, «داستان من» on the details page.
   final String bio;
+
+  /// Details page («جزئیات»). Empty values hide their section.
+  /// [intro] is the short pitch at the top.
+  final String intro;
+  final int? experienceYears;
+  final List<CounselorEducation> education;
+  final List<CounselorSkill> skills;
+  final List<String> traits;
+
+  /// The student-card photo, sent only once an administrator verified it;
+  /// its presence is what the «تأیید شده» badge means.
+  final String? studentCardUrl;
+
+  bool get isVerified => studentCardUrl != null;
+}
+
+/// One step on a counselor's academic timeline.
+class CounselorEducation {
+  const CounselorEducation({required this.title, this.detail = ''});
+
+  final String title;
+  final String detail;
+}
+
+/// One thing a student gets from counseling, with a short explanation.
+class CounselorSkill {
+  const CounselorSkill({required this.title, this.description = ''});
+
+  final String title;
+  final String description;
 }
 
 /// Shown when the server refuses the counseling section to this account
@@ -65,7 +103,8 @@ class CounselorReview {
     final avatar = (json['authorAvatarURL'] as String?)?.trim();
     return CounselorReview(
       id: (json['id'] as String?) ?? '',
-      authorName: (author == null || author.isEmpty) ? 'دانش‌آموز سایمو' : author,
+      authorName:
+          (author == null || author.isEmpty) ? 'دانش‌آموز سایمو' : author,
       score: ((json['score'] as num?)?.toInt() ?? 0).clamp(1, 5),
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ??

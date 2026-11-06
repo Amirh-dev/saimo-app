@@ -29,6 +29,12 @@ class ConsultantRepository {
         ratingAverage
         ratingCount
         resumeItems
+        intro
+        experienceYears
+        personalityTraits
+        educationItems { title detail }
+        skillItems { title description }
+        studentCard { url status }
         user {
           fullName
           username
@@ -50,6 +56,12 @@ class ConsultantRepository {
         score
         comment
       }
+    }
+  ''';
+
+  static const String _studentCountQuery = r'''
+    query CounselorStudentCount($counselorProfileID: ID!) {
+      counselorStudentCount(counselorProfileID: $counselorProfileID)
     }
   ''';
 
@@ -238,6 +250,15 @@ class ConsultantRepository {
         .whereType<Map<String, dynamic>>()
         .map(CounselorReview.fromJson)
         .toList();
+  }
+
+  /// How many distinct students have paid for counseling with the counselor.
+  Future<int> fetchStudentCount(String counselorProfileID) async {
+    final data = await _rawRequest(
+      query: _studentCountQuery,
+      variables: {'counselorProfileID': counselorProfileID},
+    );
+    return (data['counselorStudentCount'] as num?)?.toInt() ?? 0;
   }
 
   /// How many reviews gave each score, keyed 5 down to 1 (missing scores are 0).
@@ -578,7 +599,48 @@ class ConsultantRepository {
       ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
       major: UserMajor.fromApi(userMap['major']),
       bio: (userMap['bio'] as String?)?.trim() ?? '',
+      intro: (json['intro'] as String?)?.trim() ?? '',
+      experienceYears: (json['experienceYears'] as num?)?.toInt(),
+      education: _maps(json['educationItems'])
+          .map((e) => CounselorEducation(
+                title: _text(e['title']),
+                detail: _text(e['detail']),
+              ))
+          .where((e) => e.title.isNotEmpty)
+          .toList(),
+      skills: _maps(json['skillItems'])
+          .map((k) => CounselorSkill(
+                title: _text(k['title']),
+                description: _text(k['description']),
+              ))
+          .where((k) => k.title.isNotEmpty)
+          .toList(),
+      traits: _strings(json['personalityTraits']),
+      studentCardUrl: _verifiedCardUrl(json['studentCard']),
     );
+  }
+
+  static Iterable<Map<String, dynamic>> _maps(Object? raw) =>
+      raw is List ? raw.whereType<Map<String, dynamic>>() : const [];
+
+  static List<String> _strings(Object? raw) => raw is List
+      ? raw
+          .whereType<String>()
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList()
+      : const [];
+
+  static String _text(Object? raw) => raw is String ? raw.trim() : '';
+
+  /// The server only sends students a verified card; the status check keeps
+  /// the badge honest if that ever changes.
+  static String? _verifiedCardUrl(Object? raw) {
+    if (raw is! Map<String, dynamic> || raw['status'] != 'VERIFIED') {
+      return null;
+    }
+    final url = _text(raw['url']);
+    return url.isEmpty ? null : url;
   }
 }
 
