@@ -8,6 +8,8 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/data/home_widgets/home_widget_snapshot.dart';
+import 'package:simo_learn/data/home_widgets/home_widgets.dart';
 import 'package:simo_learn/data/links/app_links.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
@@ -26,11 +28,15 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_repositor
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/payment_return.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
+import 'package:simo_learn/presentation/screens/dashboard/live_tasks.dart';
 import 'package:simo_learn/presentation/screens/profile/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
+import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/app_update_banner.dart';
@@ -52,6 +58,7 @@ class MyApp extends StatelessWidget {
           if (state is AuthUnauthenticated) {
             context.read<ProfileCubit>().reset();
             context.read<DashboardCubit>().reset();
+            unawaited(HomeWidgets.instance.clear());
             ActiveCounselorStore.instance.clear();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final navigator = _rootNavigatorKey.currentState;
@@ -270,6 +277,9 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   /// A return from the payment result page that arrived before login.
   PaymentReturn? _pendingPaymentReturn;
 
+  /// A home-screen widget tapped before login.
+  HomeWidgetLink? _pendingWidgetLink;
+
   @override
   void initState() {
     super.initState();
@@ -293,6 +303,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     _authSubscription = _authCubit.stream.listen(_handleAuthState);
     // "بازگشت به اپلیکیشن" on the payment result page opens the app here.
     AppLinks.instance.listen(_openLink);
+    HomeWidgets.instance.attach(context.read<DashboardCubit>());
   }
 
   @override
@@ -386,6 +397,15 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   }
 
   void _openLink(Uri link) {
+    final widgetLink = HomeWidgetLink.fromLink(link);
+    if (widgetLink != null) {
+      if (!_isAuthenticated) {
+        _pendingWidgetLink = widgetLink;
+        return;
+      }
+      unawaited(_openWidgetLink(widgetLink));
+      return;
+    }
     final payment = PaymentReturn.fromLink(link);
     if (payment == null) return;
     if (!_isAuthenticated) {
@@ -393,6 +413,49 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       return;
     }
     unawaited(_showPaymentReturn(payment));
+  }
+
+  /// A tap on a home-screen widget: the home tab, and for a task row that
+  /// is not done yet, its timer, as tapping it on the home tab does; the
+  /// «+» button opens the new-task form.
+  Future<void> _openWidgetLink(HomeWidgetLink link) async {
+    final cubit = context.read<DashboardCubit>();
+    await WidgetsBinding.instance.endOfFrame;
+    final navigator = _rootNavigatorKey.currentState;
+    if (navigator == null || !mounted) return;
+    AppTabsShell.select(navigator.context, AppTabsShell.home);
+
+    if (link.addTask) {
+      unawaited(navigator.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => AddTimedTaskScreen(onBack: cubit.load),
+        ),
+      ));
+      return;
+    }
+
+    final taskId = link.taskId;
+    if (taskId == null) return;
+    final timer = TaskTimerService.instance;
+    if (timer.isTimerScreenOpen && timer.isActive(taskId)) return;
+    var tasks = cubit.state.tasks;
+    // Opened from a closed app: today's tasks are still loading.
+    tasks ??= await cubit.stream
+        .map((state) => state.tasks)
+        .firstWhere((tasks) => tasks != null)
+        .timeout(const Duration(seconds: 15), onTimeout: () => null);
+    if (tasks == null || !mounted) return;
+    final live = liveTodayTasks(tasks, timer);
+    final matches = live.where((task) => task.id == taskId && !task.isDone);
+    if (matches.isEmpty) return;
+    final task = matches.first;
+    final current = _rootNavigatorKey.currentState;
+    if (current == null) return;
+    unawaited(current.push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => TaskTimerScreen(task: task.toMap(), onPop: () {}),
+      ),
+    ));
   }
 
   /// The purchase was finished in a browser, outside the app's own checkout:
@@ -444,6 +507,9 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       final payment = _pendingPaymentReturn;
       _pendingPaymentReturn = null;
       if (payment != null) unawaited(_showPaymentReturn(payment));
+      final widgetLink = _pendingWidgetLink;
+      _pendingWidgetLink = null;
+      if (widgetLink != null) unawaited(_openWidgetLink(widgetLink));
       unawaited(
           _inboxClient.connect(force: state.action == AuthAction.refresh));
       return;

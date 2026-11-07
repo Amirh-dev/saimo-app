@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widgets («امروز», «کارهای امروز»). Same tokens as the app. -->
+<resources>
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="widget_text">#161A2E</color>
+    <color name="widget_muted">#8B8B91</color>
+    <color name="widget_track">#F0F0F5</color>
+    <color name="widget_row">#F5F5F9</color>
+    <color name="widget_row_running">#FFF1EC</color>
+    <color name="widget_orange">#F14922</color>
+    <color name="widget_blue">#4361EE</color>
+    <color name="widget_green">#1AC56A</color>
+    <color name="widget_idle">#C4C4C9</color>
+    <color name="widget_mark_dark">#161A2E</color>
+    <!-- The multiplier line and pill text. -->
+    <color name="widget_streak_text">#B5381A</color>
+    <color name="widget_bar_track">#14161A2E</color>
+</resources>

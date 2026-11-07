@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#1C1F2E</color>
+    <color name="widget_text">#F2F2F5</color>
+    <color name="widget_muted">#9A9AA3</color>
+    <color name="widget_track">#2C3045</color>
+    <color name="widget_row">#262A3C</color>
+    <color name="widget_row_running">#3A2A27</color>
+    <color name="widget_orange">#F25A36</color>
+    <color name="widget_blue">#6B84F2</color>
+    <color name="widget_green">#2BCB76</color>
+    <color name="widget_idle">#5A5D6B</color>
+    <color name="widget_mark_dark">#F2F2F5</color>
+    <!-- The multiplier line and pill text. -->
+    <color name="widget_streak_text">#FF8A6B</color>
+    <color name="widget_bar_track">#24FFFFFF</color>
+</resources>

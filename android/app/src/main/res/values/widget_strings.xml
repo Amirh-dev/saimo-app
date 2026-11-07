@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_label">امروز</string>
+    <string name="widget_today_description">مطالعه‌ی امروز در برابر برنامه</string>
+    <string name="widget_tasks_label">کارهای امروز</string>
+    <string name="widget_tasks_description">کارهای امروز و وضعیت هر کدام</string>
+</resources>

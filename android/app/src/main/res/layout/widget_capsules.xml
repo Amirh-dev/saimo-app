@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Today's tasks as capsules (Capsules.kt): one white mask per colour,
+     stacked and tinted by HomeWidgets so they follow the light/dark theme.
+     Shared by «امروز» and the tall «کارهای امروز». -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/caps"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/caps_track"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerInside" />
+
+    <ImageView
+        android:id="@+id/caps_green"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerInside" />
+
+    <ImageView
+        android:id="@+id/caps_orange"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerInside" />
+
+    <ImageView
+        android:id="@+id/caps_blue"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerInside" />
+
+    <ImageView
+        android:id="@+id/caps_more"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerInside" />
+</FrameLayout>

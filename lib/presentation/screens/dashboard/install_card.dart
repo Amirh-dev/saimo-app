@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 import 'package:simo_learn/data/install/home_screen_install.dart';
@@ -6,7 +7,7 @@ import 'package:simo_learn/presentation/widgets/re_modal_bottom_sheet.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/colors.dart';
 
-/// The home's offer to add the web app to the home screen (see
+/// The home header's offer to add the web app to the home screen (see
 /// [HomeScreenInstall]); takes no space when there is nothing to offer.
 class InstallAppCard extends StatelessWidget {
   const InstallAppCard({super.key, this.install});
@@ -28,7 +29,7 @@ class InstallAppCard extends StatelessWidget {
           child: offer == InstallOffer.none
               ? const SizedBox(width: double.infinity)
               : Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                   child: _Card(install: install, offer: offer),
                 ),
         );
@@ -37,6 +38,7 @@ class InstallAppCard extends StatelessWidget {
   }
 }
 
+/// A slim pill under the home's title: the logo, one line, «نصب» and «بعداً».
 class _Card extends StatelessWidget {
   const _Card({required this.install, required this.offer});
 
@@ -48,71 +50,58 @@ class _Card extends StatelessWidget {
     final ios = offer == InstallOffer.iosSteps;
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: DecoratedBox(
+      child: Container(
         key: const ValueKey('install-card'),
+        height: 48,
+        padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 4, 0),
         decoration: BoxDecoration(
-          color: AppColors.whiteSec,
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black1.withValues(alpha: 0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: AppColors.gray1,
+          borderRadius: BorderRadius.circular(100),
         ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 8, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  SolarIconsBold.homeAdd,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.whiteSec,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black1.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ReText(
-                      'سایمو را نصب کنید',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      textAlign: TextAlign.right,
-                    ),
-                    SizedBox(height: 4),
-                    ReText(
-                      'از صفحه اصلی، مثل یک اپ باز می‌شود.',
-                      color: AppColors.gray,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      textAlign: TextAlign.right,
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
+              child: SvgPicture.asset(
+                'assets/icons/saimo_mark.svg',
+                width: 18,
+                height: 18,
               ),
-              const SizedBox(width: 8),
-              _InstallButton(
-                label: ios ? 'روش نصب' : 'نصب',
-                onTap: ios
-                    ? () => showIosInstallSheet(context)
-                    : install.install,
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: ReText(
+                'سایمو را به صفحه اصلی اضافه کنید',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                textAlign: TextAlign.right,
               ),
-              IconButton(
+            ),
+            const SizedBox(width: 8),
+            _InstallButton(
+              label: ios ? 'روش نصب' : 'نصب',
+              onTap: ios ? () => showIosInstallSheet(context) : install.install,
+            ),
+            SizedBox(
+              width: 36,
+              height: 44,
+              child: IconButton(
                 key: const ValueKey('install-dismiss'),
                 onPressed: install.dismiss,
-                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
                 icon: const Icon(
                   Icons.close_rounded,
                   color: AppColors.gray,
@@ -120,8 +109,8 @@ class _Card extends StatelessWidget {
                   semanticLabel: 'بعداً',
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -144,14 +133,14 @@ class _InstallButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(100),
         onTap: onTap,
         child: SizedBox(
-          height: 38,
+          height: 36,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Center(
               child: ReText(
                 label,
                 color: AppColors.whiteSec,
-                fontSize: 12.5,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
             ),

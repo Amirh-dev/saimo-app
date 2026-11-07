@@ -62,6 +62,10 @@ class TaskTimerService extends ChangeNotifier {
 
   bool get isCompleted => _isCompleted;
 
+  /// When the current session started; null while paused. The home-screen
+  /// widgets count on from it without the app running.
+  DateTime? get sessionStartedAt => _sessionStartedAt;
+
   int get totalSeconds => _totalSeconds;
 
   int get _rawSessionSeconds {

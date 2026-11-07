@@ -206,16 +206,17 @@ void main() {
                 backgroundColor: const Color(0xFFF5F5F9),
                 body: Column(
                   children: [
-                    Container(
-                      height: 120,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFCFCFC),
-                        borderRadius: BorderRadius.vertical(
-                          bottom: Radius.circular(48),
-                        ),
+                    // The home's white header: title, then the strip.
+                    ColoredBox(
+                      color: const Color(0xFFFCFCFC),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 72),
+                          InstallAppCard(install: install),
+                          const SizedBox(height: 16),
+                        ],
                       ),
                     ),
-                    InstallAppCard(install: install),
                   ],
                 ),
               ),

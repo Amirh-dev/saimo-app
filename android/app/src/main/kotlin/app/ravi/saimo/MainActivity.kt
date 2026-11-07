@@ -7,6 +7,8 @@ import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import app.ravi.saimo.widgets.HomeWidgets
+import app.ravi.saimo.widgets.WidgetStore
 
 class MainActivity : FlutterActivity() {
     // The saimo:// link the app was opened with, until Dart takes it.
@@ -31,6 +33,25 @@ class MainActivity : FlutterActivity() {
                     "isScreenOn" -> {
                         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
                         result.success(power.isInteractive)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // HomeWidgets (Dart) hands over today's tasks whenever they change;
+        // the home-screen widgets draw from that snapshot.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.ravi.saimo/widgets")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "update" -> {
+                        WidgetStore.save(applicationContext, call.arguments as? String ?: "")
+                        HomeWidgets.updateAll(applicationContext)
+                        result.success(null)
+                    }
+                    "clear" -> {
+                        WidgetStore.clear(applicationContext)
+                        HomeWidgets.updateAll(applicationContext)
+                        result.success(null)
                     }
                     else -> result.notImplemented()
                 }

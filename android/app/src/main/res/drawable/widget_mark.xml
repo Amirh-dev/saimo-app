@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Saimo mark (design-previews/app-icon/saimo-mark.svg). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp" android:height="16dp"
+    android:viewportWidth="104" android:viewportHeight="104">
+    <group android:translateX="-48" android:translateY="-48">
+        <path android:fillColor="@color/widget_mark_dark"
+            android:pathData="M72,48 A24,24 0 0,1 96,72 V96 H72 A24,24 0 0,1 48,72 A24,24 0 0,1 72,48 Z" />
+        <path android:fillColor="@color/widget_mark_dark"
+            android:pathData="M128,48 A24,24 0 0,1 152,72 A24,24 0 0,1 128,96 H104 V72 A24,24 0 0,1 128,48 Z" />
+        <path android:fillColor="@color/widget_mark_dark"
+            android:pathData="M72,104 H96 V128 A24,24 0 0,1 72,152 A24,24 0 0,1 48,128 A24,24 0 0,1 72,104 Z" />
+        <path android:fillColor="#F14922"
+            android:pathData="M128,104 A24,24 0 1,1 127.99,104 Z" />
+    </group>
+</vector>

@@ -123,6 +123,9 @@ class _DashboardContent extends StatelessWidget {
             child: Column(
               children: [
                 AppTabHeader('خوش آمدید'),
+                // Under the title, so the offer stays in view without
+                // pushing the page down.
+                InstallAppCard(),
                 SizedBox(height: 16),
               ],
             ),
@@ -141,7 +144,6 @@ class _DashboardContent extends StatelessWidget {
                     onRetry: cubit.retry,
                     builder: () => _ProfileCard(state: state),
                   ),
-                  const InstallAppCard(),
                   const SizedBox(height: 24),
                   _goals(context),
                   const SizedBox(height: 24),
