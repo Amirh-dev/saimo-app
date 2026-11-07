@@ -192,7 +192,7 @@ class _OTPCodeScreenState extends State<OTPCodeScreen> {
                           ],
                         ),
                         const ReText(
-                          'سایمو لرن',
+                          'سایمو',
                           color: AppColors.black1,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

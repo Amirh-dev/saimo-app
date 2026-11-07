@@ -705,7 +705,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ],
                         ).tMargin(64),
                         const ReText(
-                          'سایمو لرن',
+                          'سایمو',
                           color: AppColors.black1,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
