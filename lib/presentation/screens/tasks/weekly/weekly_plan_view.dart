@@ -335,7 +335,7 @@ class WeeklyPlanViewState extends State<WeeklyPlanView> {
         context,
         error is TaskActionException
             ? error.message
-            : 'تغییر وضعیت تسک ناموفق بود. دوباره تلاش کنید.',
+            : 'تغییر وضعیت تسک ناموفق بود. دوباره امتحان کن.',
         ReToastType.failed,
       );
     }
@@ -936,7 +936,7 @@ class _DayColumn extends StatelessWidget {
                     key: ValueKey('week-empty-hint'),
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                     child: ReText(
-                      'اولین زمان‌بندی هفته را بساز',
+                      'اولین تسک زمان‌دار هفته رو بساز',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.gray,
@@ -1368,7 +1368,7 @@ class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             const ReText(
-              'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.',
+              'اینترنتت رو چک کن و دوباره امتحان کن.',
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: AppColors.gray,

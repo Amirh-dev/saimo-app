@@ -12,7 +12,7 @@ import 'package:solar_icons/solar_icons.dart';
 /// Step 2 of the purchase flow: "صورتحساب" — payment summary. Shown as a
 /// modal bottom sheet.
 ///
-/// "تایید و پرداخت" runs [onConfirm] (preparing the bank gateway) with the
+/// "تأیید و پرداخت" runs [onConfirm] (preparing the bank gateway) with the
 /// button in its loading state and the sheet still open, so a failure shows
 /// inline and the student can retry without picking the plan again. Returns
 /// [onConfirm]'s result, or null on cancel/dismiss. [notice] explains the
@@ -561,7 +561,7 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
               SizedBox(width: 8),
               Expanded(
                 child: ReText(
-                  'کد تخفیف دارید؟',
+                  'کد تخفیف داری؟',
                   color: AppColors.black1,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -569,7 +569,7 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
                 ),
               ),
               ReText(
-                'وارد کنید',
+                'وارد کن',
                 color: AppColors.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -942,7 +942,7 @@ class _InvoiceSheetState<T> extends State<_InvoiceSheet<T>> {
       children: [
         Expanded(
           child: ReButton(
-            text: widget.notice == null ? 'تایید و پرداخت' : 'پرداخت دوباره',
+            text: widget.notice == null ? 'تأیید و پرداخت' : 'پرداخت دوباره',
             icon: SolarIconsOutline.altArrowLeft,
             reverseIconPosition: true,
             background: AppColors.primary,

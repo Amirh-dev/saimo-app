@@ -317,7 +317,7 @@ class _DatePickerModalState extends State<_DatePickerModal> {
                         _selectedYear, _selectedMonth, _selectedDay);
                   },
                   child: const ReText(
-                    'تایید',
+                    'تأیید',
                     color: AppColors.primary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

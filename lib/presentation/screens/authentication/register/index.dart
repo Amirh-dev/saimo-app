@@ -61,7 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _suggestionFullNameInFlight;
   String? _lastSuggestedFullName;
 
-  /// Set by the first tap on «ثبت نام»; from then on every missing field
+  /// Set by the first tap on «ثبت‌نام»; from then on every missing field
   /// says so under itself.
   bool _showMissingFields = false;
 
@@ -172,7 +172,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isSuggestedUsername = true;
         _usernameError = suggestion.available
             ? null
-            : 'نام کاربری پیشنهادی در دسترس نیست؛ یک نام دیگر وارد کنید.';
+            : 'نام کاربری پیشنهادی آزاد نیست؛ یک نام دیگه بنویس.';
       });
     } catch (error) {
       if (!mounted || revision != _suggestionRequestRevision) return;
@@ -200,9 +200,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _validatedUsername = null;
       _isSuggestingUsername = false;
       _usernameError = !hasValidCharacters
-          ? 'نام کاربری را فقط با حروف انگلیسی، عدد و _ وارد کنید.'
+          ? 'نام کاربری رو فقط با حروف انگلیسی، عدد و _ بنویس.'
           : username.isNotEmpty && username.length < 3
-              ? 'نام کاربری باید حداقل ۳ کاراکتر باشد.'
+              ? 'نام کاربری باید حداقل ۳ کاراکتر باشه.'
               : null;
       _isCheckingUsername = hasValidCharacters && username.length >= 3;
     });
@@ -231,7 +231,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             availability.available ? availability.normalizedUsername : null;
         _usernameError = availability.available
             ? null
-            : 'این نام کاربری قبلاً انتخاب شده است.';
+            : 'این نام کاربری قبلاً گرفته شده.';
       });
     } catch (error) {
       if (!mounted || revision != _availabilityRequestRevision) return;
@@ -278,10 +278,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? get _fullNameMessage {
     final text = _fullNameController.text.trim();
     if (text.isNotEmpty && !_hasValidPersianFullName) {
-      return 'نام و نام خانوادگی را به فارسی وارد کنید.';
+      return 'نام و نام خانوادگی رو فارسی بنویس.';
     }
     if (_showMissingFields && text.isEmpty) {
-      return 'نام و نام خانوادگی را وارد کنید.';
+      return 'نام و نام خانوادگی رو بنویس.';
     }
     return null;
   }
@@ -292,16 +292,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _usernameController.text.trim().isEmpty;
 
   String? get _birthDateMessage => _showMissingFields && _birthDate == null
-      ? 'تاریخ تولد را انتخاب کنید.'
+      ? 'تاریخ تولدت رو انتخاب کن.'
       : null;
 
   String? get _majorMessage => _showMissingFields && _major == null
-      ? 'رشته تحصیلی را انتخاب کنید.'
+      ? 'رشته‌ت رو انتخاب کن.'
       : null;
 
   String? get _studyMessage =>
       _showMissingFields && _selectedStudyIndex == null
-          ? 'میزان مطالعه روزانه را انتخاب کنید.'
+          ? 'میزان مطالعه‌ی روزانه‌ت رو انتخاب کن.'
           : null;
 
   // ── Building blocks ──
@@ -462,13 +462,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (_usernameError != null)
           _error(_usernameError!)
         else if (_usernameMissing)
-          _error('نام کاربری را وارد کنید.')
+          _error('نام کاربری رو بنویس.')
         else if (_isSuggestedUsername)
-          _note('بر اساس نام شما پیشنهاد شد و قابل تغییر است.')
+          _note('از روی اسمت پیشنهاد شد؛ می‌تونی عوضش کنی.')
         else if (isAvailable)
-          _note('این نام کاربری در دسترس است.', color: AppColors.done)
+          _note('این نام کاربری آزاده.', color: AppColors.done)
         else
-          _note('فقط از حروف انگلیسی، عدد و _ استفاده کنید.'),
+          _note('فقط از حروف انگلیسی، عدد و _ استفاده کن.'),
         if (suggestion != null)
           Align(
             alignment: Alignment.centerRight,
@@ -491,7 +491,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final hasError = _birthDateMessage != null;
     final date = _birthDate;
     final text = date == null
-        ? 'انتخاب کنید'
+        ? 'انتخاب کن'
         : convertToPersianNumbers(
             '${date.day} ${date.formatter.mN} ${date.year}',
           );
@@ -616,7 +616,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (state is AuthAuthenticated && state.action == AuthAction.register) {
           showReToast(
             context,
-            'ثبت نام با موفقیت انجام شد',
+            'ثبت‌نامت انجام شد',
             ReToastType.success,
           );
         } else if (state is AuthFailure &&
@@ -694,7 +694,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           isLoading: isLoading,
                                           isEnabled: !isLoading,
                                           onPressed: _submitRegistration,
-                                          text: 'ثبت نام',
+                                          text: 'ثبت‌نام',
                                         ).tMargin(20),
                                       ],
                                     ),
@@ -790,19 +790,19 @@ String _friendlyUsernameError(Object error) {
   final normalized = message.toLowerCase();
   if (error is ArgumentError || normalized.contains('at least 3')) {
     if (normalized.contains('english letters')) {
-      return 'نام کاربری را فقط با حروف انگلیسی، عدد و _ وارد کنید.';
+      return 'نام کاربری رو فقط با حروف انگلیسی، عدد و _ بنویس.';
     }
-    return 'نام کاربری باید حداقل ۳ کاراکتر باشد.';
+    return 'نام کاربری باید حداقل ۳ کاراکتر باشه.';
   }
   if (normalized.contains('rate_limit') ||
       normalized.contains('too many') ||
       normalized.contains('429')) {
-    return 'تعداد درخواست‌ها زیاد شده است؛ لطفاً کمی بعد تلاش کنید.';
+    return 'درخواست‌ها زیاد شد؛ کمی بعد دوباره امتحان کن.';
   }
   if (normalized.contains('socket') ||
       normalized.contains('network') ||
       normalized.contains('host lookup')) {
     return 'اتصال به سرور برقرار نشد.';
   }
-  return 'بررسی نام کاربری ناموفق بود؛ دوباره تلاش کنید.';
+  return 'بررسی نام کاربری ناموفق بود؛ دوباره امتحان کن.';
 }

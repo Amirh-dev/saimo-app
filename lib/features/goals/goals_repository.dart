@@ -139,7 +139,7 @@ class GoalsRepository {
     final deleted = response.data?.deleteGoal;
 
     if (deleted == null) {
-      throw const GoalsFailure('پاسخ حذف هدف نامعتبر است.');
+      throw const GoalsFailure('حذف هدف انجام نشد.');
     }
 
     return deleted;
@@ -153,7 +153,7 @@ class GoalsRepository {
     }
 
     if (response.linkException != null) {
-      return 'خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اینترنتت رو چک کن.';
     }
 
     return 'خطای ناشناخته';

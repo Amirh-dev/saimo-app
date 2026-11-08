@@ -215,8 +215,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
       case ProfileContentSection.notifications:
         return _SimpleProfileContent(
           title: 'اعلان‌ها',
-          emptyTitle: 'اعلانی وجود ندارد!',
-          emptyDescription: 'اعلان‌های جدید شما در این قسمت نمایش داده می‌شود.',
+          emptyTitle: 'اعلانی نداری',
+          emptyDescription: 'اعلان‌های جدیدت اینجا نشون داده می‌شه.',
           icon: SolarIconsOutline.bell,
           onSectionSelected: _setSection,
           selectedSection: _section,
@@ -224,8 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen> with AppTabRevisit {
       case ProfileContentSection.competition:
         return _SimpleProfileContent(
           title: 'مسابقه',
-          emptyTitle: 'مسابقه‌ای فعال نیست!',
-          emptyDescription: 'مسابقه‌ها و رتبه‌بندی‌ها به‌زودی اینجا قرار می‌گیرند.',
+          emptyTitle: 'مسابقه‌ای فعال نیست',
+          emptyDescription: 'مسابقه‌ها و رتبه‌بندی‌ها به‌زودی اینجا میان.',
           icon: SolarIconsOutline.cupFirst,
           onSectionSelected: _setSection,
           selectedSection: _section,
@@ -384,7 +384,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
   String get _actionTitle => switch (_relation) {
         FriendshipRelation.accepted => 'لغو دوستی',
-        FriendshipRelation.incomingPending => 'تایید درخواست',
+        FriendshipRelation.incomingPending => 'تأیید درخواست',
         FriendshipRelation.outgoingPending => 'لغو درخواست',
         null => 'درخواست دوستی',
       };
@@ -572,7 +572,7 @@ class _FriendProfileSummaryCard extends StatelessWidget {
               Expanded(
                 child: _ProfileMetricCard(
                   value: '${profile?.simoCoins ?? 36}',
-                  label: 'سیموکوین',
+                  label: 'سایموکوین',
                   color: const Color(0xFFFFC94C),
                   icon: SvgPicture.asset('assets/icons/simo_coin.svg', color: Color(0xffe56929)),
                 ),
@@ -1244,7 +1244,7 @@ class _ProfileInfoSections extends StatelessWidget {
             icon: SolarIconsOutline.infoCircle,
           ),
           ReText(
-            profile?.bio?.trim().isNotEmpty == true ? profile!.bio!.trim() : 'سلام! ${profile?.displayName ?? 'علیرضا یوسفی'} هستم. دانش آموز رشته ریاضی فیزیک! از مدرسه خواجه نصیر شهرستان چهرم.',
+            profile?.bio?.trim().isNotEmpty == true ? profile!.bio!.trim() : 'سلام! ${profile?.displayName ?? 'علیرضا یوسفی'} هستم. دانش‌آموز رشته ریاضی فیزیک! از مدرسه خواجه نصیر شهرستان چهرم.',
             color: AppColors.gray,
             fontSize: 10.5,
             fontWeight: FontWeight.w500,
@@ -1253,7 +1253,7 @@ class _ProfileInfoSections extends StatelessWidget {
           ).tMargin(10),
           Divider(color: AppColors.gray2, height: 30),
           _ProfileSectionHeading(
-            title: 'علاقه مندی ها',
+            title: 'علاقه‌مندی‌ها',
             icon: SolarIconsOutline.heart,
             iconColor: AppColors.errorColor,
           ),
@@ -1340,7 +1340,7 @@ class _SuggestedProfilesSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _OutlinedProfileAction(
-                  title: 'بروزرسانی',
+                  title: 'به‌روزرسانی',
                   icon: Icons.refresh_rounded,
                   onTap: isRefreshing ? () {} : onRefresh,
                 ),
@@ -1429,7 +1429,7 @@ class _AchievementsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     const achievements = [
       ('۳ پیروزی در لیگ', '۳ بار پیروزی اول لیگ های مختلف را کسب کنید.'),
-      ('مدال وفاداری', 'یک سال فعالیت در سیمو'),
+      ('مدال وفاداری', 'یک سال فعالیت در سایمو'),
       ('شکست ناپذیر', 'پیروزی در ۱۰ دوئل'),
     ];
     return Padding(
@@ -1683,7 +1683,7 @@ Future<void> _confirmProfileLogout(BuildContext context) async {
             ),
             const SizedBox(height: 8),
             const ReText(
-              'آیا از خروج از حساب کاربری خود مطمئن هستید؟',
+              'از حسابت خارج می‌شی؟',
               fontSize: 12.5,
               color: AppColors.gray,
               textAlign: TextAlign.center,
@@ -2142,8 +2142,8 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
     final birthDate = _birthDate;
 
     setState(() {
-      _nameError = isValidPersianFullName(fullName) ? null : 'نام و نام خانوادگی را به فارسی وارد کنید.';
-      _birthDateError = birthDate == null ? 'تاریخ تولد را انتخاب کنید.' : null;
+      _nameError = isValidPersianFullName(fullName) ? null : 'نام و نام خانوادگی رو فارسی بنویس.';
+      _birthDateError = birthDate == null ? 'تاریخ تولدت رو انتخاب کن.' : null;
     });
     if (_nameError != null || _birthDateError != null) return;
 
@@ -2269,7 +2269,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                           child: _ProfileEditSelector(
                             key: const ValueKey('profile-major-field'),
                             value: (_major ?? widget.profile.major)?.label,
-                            placeholder: 'انتخاب کنید',
+                            placeholder: 'انتخاب کن',
                             icon: Icons.keyboard_arrow_down_rounded,
                             onTap: _pickMajor,
                           ),
@@ -2280,7 +2280,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
                           child: _ProfileEditSelector(
                             key: const ValueKey('profile-birth-date-field'),
                             value: _birthDate == null ? null : _profileBirthDateLabel(_birthDate),
-                            placeholder: 'انتخاب کنید',
+                            placeholder: 'انتخاب کن',
                             icon: SolarIconsOutline.calendar,
                             hasError: _birthDateError != null,
                             onTap: _pickBirthDate,
@@ -2333,7 +2333,7 @@ class _ProfileEditSheetHeader extends StatelessWidget {
               ),
               SizedBox(height: 4),
               ReText(
-                'مشخصات حساب کاربری خود را ویرایش کنید.',
+                'مشخصات حسابت رو ویرایش کن.',
                 color: AppColors.gray,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -2983,10 +2983,10 @@ class _FriendsContentState extends State<_FriendsContent> with WidgetsBindingObs
   Future<String?> _sendFriendRequest(UsernameSearchUser user) async {
     final currentUser = _currentUser;
     if (currentUser == null) return 'اطلاعات حساب کاربری در دسترس نیست.';
-    if (_isSendingRequest) return 'درخواست قبلی در حال ارسال است.';
+    if (_isSendingRequest) return 'درخواست قبلی هنوز در حال ارساله.';
 
     if (currentUser.id == user.id) {
-      return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
+      return 'نمی‌تونی خودت رو به دوستات اضافه کنی.';
     }
 
     setState(() => _isSendingRequest = true);
@@ -3021,7 +3021,7 @@ class _FriendsContentState extends State<_FriendsContent> with WidgetsBindingObs
         setState(() {
           _friends = _upsertFriendship(accepted.copyWith(isExpanded: true));
         });
-        showReToast(context, 'درخواست دوستی تایید شد', ReToastType.success);
+        showReToast(context, 'درخواست دوستی تأیید شد', ReToastType.success);
       },
     );
   }
@@ -3210,14 +3210,14 @@ class _FriendsContentState extends State<_FriendsContent> with WidgetsBindingObs
             child: _FriendsEmptyIllustration(),
           ),
           const ReText(
-            'لیست دوستان خالی است!',
+            'هنوز دوستی نداری',
             color: AppColors.black1,
             fontSize: 18,
             fontWeight: FontWeight.w900,
             textAlign: TextAlign.center,
           ).tMargin(18),
           ReText(
-            'برای افزودن دوست کلیک کنید.',
+            'برای افزودن دوست بزن.',
             color: AppColors.black1.withOpacity(0.55),
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -3700,7 +3700,7 @@ class _ConsultationEntry extends StatelessWidget {
                       ),
                       const Expanded(
                         child: ReText(
-                          'هنوز مشاوری انتخاب نکردی!',
+                          'هنوز مشاوری انتخاب نکردی',
                           color: AppColors.black1,
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -3928,14 +3928,14 @@ String _friendStatusText(FriendshipItem friend, UserActivity? activity) {
   if (friend.relation == FriendshipRelation.accepted) {
     final taskName = activity?.currentTaskName?.trim();
     if (taskName != null && taskName.isNotEmpty) {
-      return 'درحال انجام $taskName';
+      return 'در حال انجام $taskName';
     }
   }
 
   return switch (friend.relation) {
-    FriendshipRelation.accepted => 'دوست شما',
+    FriendshipRelation.accepted => 'دوستت',
     FriendshipRelation.incomingPending => 'درخواست دوستی جدید',
-    FriendshipRelation.outgoingPending => 'در انتظار تایید درخواست',
+    FriendshipRelation.outgoingPending => 'در انتظار تأیید درخواست',
   };
 }
 
@@ -4139,7 +4139,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
     if (!_canMakeSearchRequest()) {
       setState(() {
         _isSearching = false;
-        _error = 'تعداد جست‌وجوها زیاد شده است؛ لطفاً یک دقیقه دیگر دوباره تلاش کنید.';
+        _error = 'جست‌وجوها زیاد شد؛ یک دقیقه دیگه دوباره امتحان کن.';
       });
       return;
     }
@@ -4203,11 +4203,11 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
   FriendshipRelation? _relationFor(String userID) => _relationsByUserID[userID];
 
   String? _resultStatus(String userID) {
-    if (userID == widget.currentUserID) return 'حساب شما';
+    if (userID == widget.currentUserID) return 'حساب خودت';
     return switch (_relationFor(userID)) {
-      FriendshipRelation.accepted => 'دوست شما',
+      FriendshipRelation.accepted => 'دوستت',
       FriendshipRelation.incomingPending => 'درخواست دریافت‌شده',
-      FriendshipRelation.outgoingPending => 'در انتظار تایید',
+      FriendshipRelation.outgoingPending => 'در انتظار تأیید',
       null => null,
     };
   }
@@ -4244,7 +4244,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
               ReTextField(
                 controller: widget.controller,
                 autofocus: true,
-                placeholder: 'نام کاربری را وارد کنید',
+                placeholder: 'نام کاربری رو بنویس',
                 inputTextAlign: TextAlign.left,
                 placeholderAlign: TextAlign.right,
                 keyboardType: TextInputType.text,
@@ -4292,7 +4292,7 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
               textAlign: TextAlign.center,
             ),
             ReText(
-              'دوستتان را با نام کاربری پیدا کنید',
+              'دوستت رو با نام کاربری پیدا کن',
               color: AppColors.black1.withOpacity(0.7),
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -4326,11 +4326,11 @@ class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
 
   Widget _buildSearchBody() {
     if (_query.length < _minimumQueryLength) {
-      return _searchHint('برای جست‌وجو حداقل ۳ کاراکتر وارد کنید.');
+      return _searchHint('برای جست‌وجو حداقل ۳ کاراکتر بنویس.');
     }
     if (!hasValidUsernameCharacters(_query)) {
       return _searchHint(
-        'نام کاربری را با حروف انگلیسی، عدد و _ جست‌وجو کنید.',
+        'نام کاربری رو با حروف انگلیسی، عدد و _ جست‌وجو کن.',
         isError: true,
       );
     }
@@ -5014,22 +5014,22 @@ String _friendlyProfileError(Object error) {
   final text = error.toString();
   final upperText = text.toUpperCase();
   if (text.contains('Unauthorized') || text.contains('Authentication')) {
-    return 'برای ادامه دوباره وارد حساب شوید.';
+    return 'برای ادامه دوباره وارد حسابت شو.';
   }
   if (upperText.contains('RATE_LIMIT') || upperText.contains('TOO MANY REQUESTS') || upperText.contains('429')) {
-    return 'تعداد درخواست‌ها زیاد شده است؛ لطفاً یک دقیقه دیگر تلاش کنید.';
+    return 'درخواست‌ها زیاد شد؛ یک دقیقه دیگه دوباره امتحان کن.';
   }
   if (upperText.contains('USER_NOT_FOUND') || upperText.contains('USER NOT FOUND')) {
     return 'کاربری با این نام کاربری پیدا نشد.';
   }
   if (upperText.contains('CANNOT_ADD_SELF')) {
-    return 'نمی‌توانید خودتان را به دوستان اضافه کنید.';
+    return 'نمی‌تونی خودت رو به دوستات اضافه کنی.';
   }
   if (upperText.contains('ALREADY_FRIENDS')) {
-    return 'این کاربر از قبل در فهرست دوستان شماست.';
+    return 'این کاربر از قبل توی دوستاته.';
   }
   if (upperText.contains('REQUEST_ALREADY_SENT')) {
-    return 'درخواست دوستی قبلاً ارسال شده است.';
+    return 'درخواست دوستی قبلاً فرستاده شده.';
   }
   if (upperText.contains('UUID')) {
     return 'انجام درخواست دوستی ناموفق بود.';
@@ -5168,10 +5168,10 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
       setState(() {
         _isPicking = false;
         _error = !denied
-            ? 'باز کردن تصویر ممکن نشد. دوباره تلاش کنید.'
+            ? 'باز کردن تصویر ممکن نشد. دوباره امتحان کن.'
             : source == ImageSource.camera
-                ? 'دسترسی به دوربین داده نشده است. آن را از تنظیمات گوشی فعال کنید.'
-                : 'دسترسی به عکس‌ها داده نشده است. آن را از تنظیمات گوشی فعال کنید.';
+                ? 'دسترسی به دوربین داده نشده. از تنظیمات گوشی فعالش کن.'
+                : 'دسترسی به عکس‌ها داده نشده. از تنظیمات گوشی فعالش کن.';
       });
     }
   }
@@ -5193,7 +5193,7 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
       if (!mounted) return;
       setState(() {
         _isSaving = false;
-        _error = error is AvatarUploadException ? error.message : 'ذخیره تصویر ناموفق بود. دوباره تلاش کنید.';
+        _error = error is AvatarUploadException ? error.message : 'ذخیره تصویر ناموفق بود. دوباره امتحان کن.';
       });
     }
   }
@@ -5212,8 +5212,8 @@ class _ProfileAvatarBottomSheetState extends State<ProfileAvatarBottomSheet> {
     final hint = _isSaving
         ? 'در حال بارگذاری تصویر…'
         : hasNew
-            ? 'اگر تصویر مناسب است، آن را ذخیره کنید.'
-            : 'یک عکس واضح از چهره‌تان انتخاب کنید.';
+            ? 'اگه تصویر خوبه، ذخیره‌ش کن.'
+            : 'یک عکس واضح از چهره‌ت انتخاب کن.';
 
     return PopScope(
       // An upload in flight finishes or fails before the sheet can close.

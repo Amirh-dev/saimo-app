@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
@@ -22,7 +23,7 @@ class TaskActionException implements Exception {
 String taskFailureMessage(Object? error, {required String fallback}) {
   if (error is TaskActionException) return error.message;
   if (error is UnauthorizedException) {
-    return 'نشست شما به پایان رسیده است؛ دوباره وارد شوید.';
+    return 'لطفاً دوباره وارد حسابت شو.';
   }
   final text = (error ?? '').toString();
   final lower = text.toLowerCase();
@@ -38,36 +39,36 @@ String taskFailureMessage(Object? error, {required String fallback}) {
     'timeoutexception',
   ];
   if (error is TimeoutException || offlineHints.any(lower.contains)) {
-    return 'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره تلاش کنید.';
+    return 'اینترنت وصل نیست؛ اتصالت رو چک کن و دوباره امتحان کن.';
   }
   if (lower.contains('blocked tags')) {
     final colon = text.lastIndexOf(':');
     final tag = colon < 0 ? '' : text.substring(colon + 1).trim();
     return tag.isEmpty
-        ? 'یکی از تگ‌ها قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.'
-        : 'تگ «$tag» قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.';
+        ? 'یکی از تگ‌ها قابل استفاده نیست؛ برش دار و دوباره ثبت کن.'
+        : 'تگ «$tag» قابل استفاده نیست؛ برش دار و دوباره ثبت کن.';
   }
   if (lower.contains('failed to process tags')) {
     // The server rejects a tag name too long for it (more than 25 Persian
     // letters, as its length check counts bytes).
-    return 'یکی از تگ‌ها ثبت نشد؛ نام کوتاه‌تری برایش بنویسید و دوباره ثبت کنید.';
+    return 'یکی از تگ‌ها ثبت نشد؛ یک اسم کوتاه‌تر براش بنویس و دوباره ثبت کن.';
   }
   if (lower.contains('goal not found')) {
-    return 'هدف این تسک پیدا نشد؛ شاید حذف شده باشد.';
+    return 'هدف این تسک پیدا نشد؛ شاید حذف شده باشه.';
   }
   if (lower.contains('weekday')) {
-    return 'روزهای تکرار درست انتخاب نشده‌اند؛ دوباره انتخاب کنید.';
+    return 'روزهای تکرار درست انتخاب نشدن؛ دوباره انتخاب کن.';
   }
   if (lower.contains('already has an occurrence')) {
-    return 'این تسک تکرارشونده برای آن روز هم برنامه‌ریزی شده است.';
+    return 'این تسک تکراری برای اون روز هم برنامه‌ریزی شده.';
   }
   if (lower.contains('duration')) {
-    return 'مدت زمان تسک را انتخاب کنید.';
+    return 'مدت زمان تسک رو انتخاب کن.';
   }
   if (lower.contains('internal server error') ||
       lower.contains('status code: 5') ||
       lower.contains('statuscode: 5')) {
-    return 'سرور فعلاً پاسخ نمی‌دهد؛ کمی بعد دوباره تلاش کنید.';
+    return 'سرور فعلاً جواب نمی‌ده؛ کمی بعد دوباره امتحان کن.';
   }
   return fallback;
 }
@@ -204,8 +205,8 @@ $kTaskFields
       debugPrint('GraphQLTasksApi.moveTask: $error');
       throw TaskActionException(
         error.toString().contains('already has an occurrence')
-            ? 'این تسک تکرارشونده برای آن روز هم برنامه‌ریزی شده است.'
-            : 'جابه‌جایی تسک ناموفق بود. دوباره تلاش کنید.',
+            ? 'این تسک تکراری برای اون روز هم برنامه‌ریزی شده.'
+            : 'جابه‌جایی تسک ناموفق بود. دوباره امتحان کن.',
       );
     }
 
@@ -228,10 +229,11 @@ $kTaskFields
       debugPrint('GraphQLTasksApi.setTaskDone: $error');
       throw TaskActionException(
         done
-            ? 'ثبت انجام تسک ناموفق بود. دوباره تلاش کنید.'
-            : 'برگرداندن تسک ناموفق بود. دوباره تلاش کنید.',
+            ? 'ثبت انجام تسک ناموفق بود. دوباره امتحان کن.'
+            : 'برگرداندن تسک ناموفق بود. دوباره امتحان کن.',
       );
     }
+    if (done) OnboardingStore.instance.markStudied();
     // A finished task must never keep a pending reminder.
     if (done) await _reminders.cancel(taskId);
   }
@@ -251,7 +253,7 @@ $kTaskFields
       debugPrint('GraphQLTasksApi.saveReport: $error');
       throw TaskActionException(taskFailureMessage(
         error,
-        fallback: 'ثبت گزارش ناموفق بود. دوباره تلاش کنید.',
+        fallback: 'ثبت گزارش ناموفق بود. دوباره امتحان کن.',
       ));
     }
   }
@@ -275,8 +277,9 @@ $kTaskFields
 
     final created = data['createTask'];
     if (created is! Map<String, dynamic>) {
-      throw const TaskActionException('ثبت تسک ناموفق بود؛ دوباره تلاش کنید.');
+      throw const TaskActionException('ثبت تسک ناموفق بود؛ دوباره امتحان کن.');
     }
+    OnboardingStore.instance.markPlanned();
     return plannedTaskFromApi(created);
   }
 
@@ -293,7 +296,7 @@ $kTaskFields
   String _requireId(Map<String, dynamic> task) {
     final taskId = task['id'] as String?;
     if (taskId == null || taskId.isEmpty) {
-      throw const TaskActionException('شناسه تسک پیدا نشد');
+      throw const TaskActionException('این تسک پیدا نشد');
     }
     return taskId;
   }

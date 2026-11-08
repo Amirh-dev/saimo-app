@@ -112,7 +112,7 @@ class _ExitConfirmationDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const ReText(
-                'آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟',
+                'از سایمو خارج می‌شی؟',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
                 color: AppColors.gray,

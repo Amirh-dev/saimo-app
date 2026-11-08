@@ -169,7 +169,7 @@ Future<void> openInfoModal(
                       elevation: 0,
                     ),
                     child: const ReText(
-                      'تایید',
+                      'تأیید',
                       fontSize: 20,
                       color: AppColors.black,
                       fontWeight: FontWeight.bold,
@@ -232,7 +232,7 @@ void showFreePremiumMessage(BuildContext context) {
               const SizedBox(height: 10),
 
               const ReText(
-                'تا اطلاع ثانوی اشتراک ویژه برای همه کاربران به شکل رایگان فعال است.',
+                'فعلاً اشتراک ویژه برای همه رایگانه.',
                 textAlign: TextAlign.center,
                 textDirection: TextDirection.rtl,
                 fontSize: 15,

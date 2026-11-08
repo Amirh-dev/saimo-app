@@ -39,7 +39,7 @@ void main() {
 
     test('counts the days in the last two weeks', () {
       expect(advisorSubscriptionLabel(DateTime(2026, 10, 20), now: now), '۸ روز تا پایان اشتراک');
-      expect(advisorSubscriptionLabel(DateTime(2026, 10, 12, 23), now: now), 'امروز آخرین روز اشتراک است');
+      expect(advisorSubscriptionLabel(DateTime(2026, 10, 12, 23), now: now), 'امروز آخرین روز اشتراکه');
     });
 
     test('falls back to a plain label without an end date', () {

@@ -137,13 +137,13 @@ void main() {
       await tester.tap(_key('task-form-submit'));
       await tester.pumpAndSettle();
 
-      expect(find.text('عنوان تسک را بنویسید.'), findsOneWidget);
+      expect(find.text('عنوان تسک رو بنویس.'), findsOneWidget);
       expect(repository.creates, isEmpty);
 
       // Typing clears it.
       await tester.enterText(_key('task-form-title'), 'خرید کتاب');
       await tester.pumpAndSettle();
-      expect(find.text('عنوان تسک را بنویسید.'), findsNothing);
+      expect(find.text('عنوان تسک رو بنویس.'), findsNothing);
     });
 
     testWidgets('a refused tag is named in the error box, form stays open',
@@ -166,7 +166,7 @@ void main() {
 
       expect(repository.creates, hasLength(1));
       expect(
-        find.text('تگ «ممنوع» قابل استفاده نیست؛ آن را بردارید و دوباره ثبت کنید.'),
+        find.text('تگ «ممنوع» قابل استفاده نیست؛ برش دار و دوباره ثبت کن.'),
         findsOneWidget,
       );
       expect(find.byType(AddTaskScreen), findsOneWidget);
@@ -189,7 +189,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-            'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره تلاش کنید.'),
+            'اینترنت وصل نیست؛ اتصالت رو چک کن و دوباره امتحان کن.'),
         findsOneWidget,
       );
 
@@ -230,11 +230,11 @@ void main() {
     test('names what went wrong, or falls back', () {
       expect(
         taskFailureMessage(const SocketException('x'), fallback: 'f'),
-        startsWith('اتصال به اینترنت'),
+        startsWith('اینترنت وصل نیست'),
       );
       expect(
         taskFailureMessage(const UnauthorizedException(), fallback: 'f'),
-        startsWith('نشست شما'),
+        startsWith('لطفاً دوباره وارد حسابت شو'),
       );
       expect(
         taskFailureMessage('specified goal not found', fallback: 'f'),

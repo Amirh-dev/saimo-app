@@ -15,6 +15,7 @@ import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
 import 'package:simo_learn/presentation/screens/authentication/login/index.dart';
@@ -82,7 +83,7 @@ class MyApp extends StatelessWidget {
             if (overlayContext == null) return;
             showReToast(
               overlayContext,
-              'با موفقیت به حساب خود وارد شدید',
+              'با موفقیت وارد حسابت شدی',
               ReToastType.success,
             );
           });
@@ -496,6 +497,8 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   void _handleAuthState(AuthState state) {
     if (state is AuthAuthenticated) {
       _isAuthenticated = true;
+      // A brand-new account gets the first-steps guide.
+      if (state.action == AuthAction.register) OnboardingStore.instance.start();
       unawaited(_resolveCurrentUser());
       // The FCM token may have been fetched before login (when registration was
       // skipped for lack of auth); register it now that we're authenticated.
@@ -519,6 +522,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     // device's push registration before the session is torn down.
     if (state is AuthLoading && state.action == AuthAction.logout) {
       unawaited(_unregisterDeviceToken());
+      OnboardingStore.instance.reset();
     }
 
     if (_shouldDisconnectForAuthState(state)) {

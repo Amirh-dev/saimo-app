@@ -129,7 +129,7 @@ void main() {
     await tester.pump();
 
     expect(server.sends, 2);
-    expect(find.text('برای دریافت کد جدید کمی صبر کنید.'), findsOneWidget);
+    expect(find.text('برای گرفتن کد جدید کمی صبر کن.'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
   });
 }

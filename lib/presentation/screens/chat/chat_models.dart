@@ -204,12 +204,12 @@ class ChatContact {
     final username = usernameLabel;
     if (username != null) return username;
 
-    return 'کاربر سیمو';
+    return 'کاربر سایمو';
   }
 
   String get subtitle {
-    if (isPending) return 'در انتظار تایید درخواست';
-    return 'برای شروع گفتگو لمس کنید';
+    if (isPending) return 'در انتظار تأیید درخواست';
+    return 'برای شروع گفتگو بزن';
   }
 }
 

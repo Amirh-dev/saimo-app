@@ -71,7 +71,7 @@ void main() {
     await expectLater(
       uploader.upload(image),
       throwsA(isA<AvatarUploadException>().having(
-          (e) => e.message, 'message', contains('دوباره وارد حساب شوید'))),
+          (e) => e.message, 'message', contains('دوباره وارد حسابت شو'))),
     );
   });
 
@@ -91,7 +91,7 @@ void main() {
     }
 
     expect(await messageFor({'code': 'AVATAR_TOO_LARGE'}, 413),
-        'حجم تصویر بیشتر از ۵ مگابایت است.');
+        'حجم تصویر بیشتر از ۵ مگابایته.');
     expect(await messageFor({'code': 'INVALID_AVATAR'}, 400),
         contains('JPG یا PNG'));
     expect(await messageFor({'code': 'AVATAR_UPLOAD_UNAVAILABLE'}, 503),
@@ -109,7 +109,7 @@ void main() {
     await expectLater(
       uploader.upload(image),
       throwsA(isA<AvatarUploadException>()
-          .having((e) => e.message, 'message', contains('اتصال اینترنت'))),
+          .having((e) => e.message, 'message', contains('اینترنتت رو چک کن'))),
     );
   });
 }

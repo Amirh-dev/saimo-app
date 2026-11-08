@@ -121,16 +121,16 @@ class _DateRangePickerBottomSheetState
 
   void _submitRange() {
     if (_startDate == null) {
-      setState(() => _errorMessage = 'لطفاً تاریخ شروع را انتخاب کنید.');
+      setState(() => _errorMessage = 'تاریخ شروع رو انتخاب کن.');
       return;
     }
     if (!_isUntilToday && _endDate == null) {
-      setState(() => _errorMessage = 'لطفاً تاریخ پایان را انتخاب کنید.');
+      setState(() => _errorMessage = 'تاریخ پایان رو انتخاب کن.');
       return;
     }
     if (!_isUntilToday && _endDate != null && _startDate!.isAfter(_endDate!)) {
       setState(() =>
-          _errorMessage = 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+          _errorMessage = 'تاریخ شروع نمی‌تونه بعد از تاریخ پایان باشه.');
       return;
     }
 

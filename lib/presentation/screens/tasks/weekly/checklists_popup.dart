@@ -254,7 +254,7 @@ class _ChecklistsPopup extends StatelessWidget {
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 18),
                             child: ReText(
-                              'چک‌لیستی برای این روز ندارید.',
+                              'چک‌لیستی برای این روز نداری.',
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.gray,

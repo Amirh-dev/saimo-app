@@ -83,8 +83,8 @@ class _SuccessDialog extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: ReText(
-                'درخواستت برای انتخاب مشاور با موفقیت ثبت و تایید شد. در سریع ترین '
-                'زمان ممکن مشاور اطلاعاتت رو بررسی می کنه و بهت پیام میده!',
+                'درخواستت ثبت شد. مشاورت به‌زودی '
+                'اطلاعاتت رو می‌بینه و بهت پیام می‌ده.',
                 color: AppColors.gray,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -97,7 +97,7 @@ class _SuccessDialog extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ReButton(
-                text: 'تایید',
+                text: 'تأیید',
                 height: 56,
                 background: AppColors.secondary,
                 borderRadius: 40,

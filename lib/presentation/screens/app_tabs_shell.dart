@@ -36,7 +36,7 @@ class AppTabsShell extends StatefulWidget {
   ];
 
   static const List<String> _defaultTitles = [
-    'خوش آمدید',
+    'خوش اومدی',
     'تسک‌ها',
     'اهداف',
     'آمــــار',

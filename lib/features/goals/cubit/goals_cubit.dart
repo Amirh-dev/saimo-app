@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/goals/goals_repository.dart';
 import 'package:simo_learn/features/goals/pinned_goal_store.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
@@ -85,6 +86,7 @@ class GoalsCubit extends Cubit<GoalsState> {
         note: note,
         targetDate: targetDate,
       );
+      OnboardingStore.instance.markGoalSet();
       if (pin) await setPinned(created.id);
 
       final goals = await _repository.getGoals();

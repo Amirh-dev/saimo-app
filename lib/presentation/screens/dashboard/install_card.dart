@@ -84,7 +84,7 @@ class _Card extends StatelessWidget {
             const SizedBox(width: 10),
             const Expanded(
               child: ReText(
-                'سایمو را به صفحه اصلی اضافه کنید',
+                'سایمو رو به صفحه‌ی اصلی اضافه کن',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 textAlign: TextAlign.right,
@@ -212,7 +212,7 @@ class _IosStepsSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 const ReText(
-                  'این صفحه را در Safari باز کنید و این سه قدم را بزنید:',
+                  'این صفحه رو توی Safari باز کن و این سه قدم رو انجام بده:',
                   color: AppColors.gray,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -223,7 +223,7 @@ class _IosStepsSheet extends StatelessWidget {
                 const _Step(
                   number: '۱',
                   icon: SolarIconsOutline.uploadSquare,
-                  title: 'دکمه‌ی Share را بزنید',
+                  title: 'دکمه‌ی Share رو بزن',
                   hint: 'مربع با فلش رو به بالا، پایین یا بالای صفحه',
                 ),
                 const SizedBox(height: 10),
@@ -237,7 +237,7 @@ class _IosStepsSheet extends StatelessWidget {
                 const _Step(
                   number: '۳',
                   icon: SolarIconsOutline.checkCircle,
-                  title: 'بالای صفحه Add را بزنید',
+                  title: 'بالای صفحه Add رو بزن',
                   hint: 'آیکون سایمو به صفحه اصلی اضافه می‌شود.',
                 ),
                 const SizedBox(height: 24),

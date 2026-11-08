@@ -106,7 +106,7 @@ void main() {
           'id': 'friend-1',
           'username': 'friend_user',
           'fullName': 'دوست سیمو',
-          'bio': 'دانش آموز رشته ریاضی',
+          'bio': 'دانش‌آموز رشته ریاضی',
           'simoCoins': 21,
           'score': 4,
           'isPremium': true,
@@ -121,7 +121,7 @@ void main() {
     final profile = await repository.getUserProfile('friend-1');
 
     expect(sentVariables, {'id': 'friend-1'});
-    expect(profile.bio, 'دانش آموز رشته ریاضی');
+    expect(profile.bio, 'دانش‌آموز رشته ریاضی');
     expect(profile.interests, ['ریاضی', 'هنر']);
   });
 }

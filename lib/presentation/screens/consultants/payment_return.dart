@@ -2,7 +2,7 @@ import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 
 const String kPaymentReturnSucceededMessage =
-    'پرداخت شما تایید شد و مشاور برای شما فعال است.';
+    'پرداختت تأیید شد و مشاورت فعاله.';
 
 /// The student came back from the payment result page ("بازگشت به
 /// اپلیکیشن"): on Android through `saimo://payment-result`, on the web

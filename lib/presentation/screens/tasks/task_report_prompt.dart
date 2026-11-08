@@ -3,6 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
+import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
+import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
+import 'package:simo_learn/presentation/screens/onboarding/onboarding_widgets.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart'
+    show taskPlannedMinutes;
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
@@ -50,11 +56,38 @@ class _TaskReportPromptState extends State<TaskReportPrompt> {
         initial: task['report'] as TaskReport?,
         onSubmit: (report) => api.saveReport(task, report),
       );
-      if (saved == null || !overlayContext.mounted) return;
-      task['report'] = saved;
-      showReToast(overlayContext, 'گزارش تسک ثبت شد', ReToastType.success);
+      if (saved != null && overlayContext.mounted) {
+        task['report'] = saved;
+        showReToast(overlayContext, 'گزارش تسک ثبت شد', ReToastType.success);
+      }
+      // Reported or skipped, the first finished task is when a new student
+      // hears about counselors.
+      if (overlayContext.mounted) {
+        await _offerCounselorOnce(overlayContext, task);
+      }
     } finally {
       _open = false;
+    }
+  }
+
+  Future<void> _offerCounselorOnce(
+      BuildContext overlayContext, Map<String, dynamic> task) async {
+    final onboarding = OnboardingStore.instance;
+    if (!onboarding.shouldOfferCounselor) return;
+    onboarding.markOfferShown();
+    // Someone who already has a counselor needs no offer.
+    if (ActiveCounselorStore.instance.counselor != null) return;
+
+    final minutes = taskPlannedMinutes(task);
+    final seeCounselors = await showFirstTaskDoneSheet(
+      overlayContext,
+      title: task['title']?.toString() ?? '',
+      minutes: minutes > 0 ? minutes : (task['durationM'] as int? ?? 0),
+    );
+    if (seeCounselors) {
+      unawaited(widget.navigatorKey.currentState?.push(
+        MaterialPageRoute<void>(builder: (_) => const ConsultantListScreen()),
+      ));
     }
   }
 

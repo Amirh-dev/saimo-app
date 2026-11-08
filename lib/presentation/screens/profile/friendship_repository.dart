@@ -145,7 +145,7 @@ class FriendshipRepository {
         currentUserID: currentUserID,
       );
     }
-    throw const GraphQLRawException('تایید درخواست دوستی ناموفق بود');
+    throw const GraphQLRawException('تأیید درخواست دوستی ناموفق بود');
   }
 
   Future<void> rejectFriendRequest(String targetUserID) {

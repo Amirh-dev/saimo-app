@@ -142,9 +142,9 @@ void main() {
 
     await tester.tap(_key('subject-math'));
     await tester.pumpAndSettle();
-    expect(find.text('دریافت نشد؛ دوباره تلاش کنید'), findsOneWidget);
+    expect(find.text('دریافت نشد؛ دوباره امتحان کن'), findsOneWidget);
 
-    await tester.tap(find.text('دریافت نشد؛ دوباره تلاش کنید'));
+    await tester.tap(find.text('دریافت نشد؛ دوباره امتحان کن'));
     await tester.pumpAndSettle();
     expect(calls, 2);
     expect(_key('subject-part-هندسه'), findsOneWidget);
@@ -159,7 +159,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(_key('subjects-help-text'), findsOneWidget);
     expect(
-      find.textContaining('تگ‌هایی است که روی تسک‌هایتان می‌زنید'),
+      find.textContaining('از تگ‌های تسک‌هات ساخته می‌شه'),
       findsOneWidget,
     );
 

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
+import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart'
+    show lowestPlanPrice;
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/re_header.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -78,7 +80,7 @@ class ConsultantIntroCard extends StatelessWidget {
   static const String _illustration = 'assets/images/consultant_intro.png';
 
   static const List<String> _benefits = [
-    'برنامه ریزی شخصی سازی شده',
+    'برنامه‌ریزی شخصی‌سازی‌شده',
     'ارتباط مستقیم با مشاور',
     'تحلیل وضعیت و عملکرد درسی',
     'کمک به مدیریت استرس امتحان',
@@ -303,31 +305,29 @@ class ConsultantIntroCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
             const SizedBox(width: 8),
-            const Row(
+            Row(
+              key: const ValueKey('consultant-intro-price'),
               mainAxisSize: MainAxisSize.min,
               textDirection: TextDirection.ltr,
               children: [
-                ReText(
-                  '۴۹۹',
-                  color: AppColors.black1,
-                  fontSize: 20,
-                  fontWeight: 900,
-                  textDirection: TextDirection.ltr,
-                ),
-                ReText(
-                  ',',
-                  color: AppColors.secondary,
-                  fontSize: 20,
-                  fontWeight: 900,
-                  textDirection: TextDirection.ltr,
-                ),
-                ReText(
-                  '۰۰۰',
-                  color: AppColors.black1,
-                  fontSize: 20,
-                  fontWeight: 900,
-                  textDirection: TextDirection.ltr,
-                ),
+                for (final (i, group)
+                    in _thousands(lowestPlanPrice()).indexed) ...[
+                  if (i > 0)
+                    const ReText(
+                      ',',
+                      color: AppColors.secondary,
+                      fontSize: 20,
+                      fontWeight: 900,
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ReText(
+                    convertToPersianNumbers(group),
+                    color: AppColors.black1,
+                    fontSize: 20,
+                    fontWeight: 900,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ],
               ],
             ),
             const SizedBox(width: 4),
@@ -342,4 +342,14 @@ class ConsultantIntroCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 1190000 -> [1, 190, 000]: the groups a price is read in.
+List<String> _thousands(int value) {
+  final digits = value.toString();
+  final head = digits.length % 3;
+  return [
+    if (head > 0) digits.substring(0, head),
+    for (var i = head; i < digits.length; i += 3) digits.substring(i, i + 3),
+  ];
 }

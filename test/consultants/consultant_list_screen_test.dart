@@ -208,7 +208,7 @@ void main() {
     await _pumpList(tester, answer: [_counselor('SCIENCE')]);
 
     expect(
-      find.text('برای دیدن مشاوران رشته خود، رشته‌تان را در پروفایل ثبت کنید.'),
+      find.text('برای دیدن مشاورهای رشته‌ت، رشته‌ت رو توی پروفایل ثبت کن.'),
       findsOneWidget,
     );
   });
@@ -331,7 +331,7 @@ void main() {
 
     await tester.tap(find.text('۴ ستاره'));
     await tester.pumpAndSettle();
-    expect(find.text('نظری با این امتیاز ثبت نشده است'), findsOneWidget);
+    expect(find.text('نظری با این امتیاز ثبت نشده'), findsOneWidget);
   });
 
   testWidgets('«جزئیات» shows every filled section of the details page',
@@ -352,7 +352,7 @@ void main() {
     expect(find.text('سابقه مشاوره'), findsOneWidget);
     expect(find.text('۴۵'), findsOneWidget);
     expect(find.text('دانش‌آموز'), findsOneWidget);
-    expect(find.text('چرا من مشاور شما هستم'), findsOneWidget);
+    expect(find.text('چرا من مشاورت باشم'), findsOneWidget);
     expect(find.text('با برنامه‌ای قدم‌به‌قدم همراهتان هستم.'), findsOneWidget);
     expect(find.text('داستان من'), findsOneWidget);
     expect(find.text('سوابق تحصیلی'), findsOneWidget);
@@ -360,10 +360,10 @@ void main() {
     expect(find.text('از ۱۴۰۲ تا اکنون'), findsOneWidget);
     // The academic record replaces the résumé lines in the timeline.
     expect(find.text('شش سال سابقه مشاوره تحصیلی'), findsNothing);
-    expect(find.text('در مشاوره با من چه می‌گیرید'), findsOneWidget);
+    expect(find.text('در مشاوره با من چی می‌گیری'), findsOneWidget);
     expect(find.text('برنامه هفتگی و پیگیری روزانه'), findsOneWidget);
     expect(find.text('صبور'), findsOneWidget);
-    expect(find.text('دانشجو بودن تأیید شده است'), findsOneWidget);
+    expect(find.text('دانشجو بودنش تأیید شده'), findsOneWidget);
     expect(find.byKey(const ValueKey('student-card-photo')), findsOneWidget);
     expect(find.text('دیدن همه ۳۲ نظر'), findsOneWidget);
     expect(find.text('سارا ر.'), findsOneWidget);
@@ -385,9 +385,9 @@ void main() {
     ]);
     await _openDetails(tester);
 
-    expect(find.text('دانشجو بودن تأیید شده است'), findsNothing);
-    expect(find.text('چرا من مشاور شما هستم'), findsNothing);
-    expect(find.text('در مشاوره با من چه می‌گیرید'), findsNothing);
+    expect(find.text('دانشجو بودنش تأیید شده'), findsNothing);
+    expect(find.text('چرا من مشاورت باشم'), findsNothing);
+    expect(find.text('در مشاوره با من چی می‌گیری'), findsNothing);
     expect(find.text('ویژگی‌های شخصیتی'), findsNothing);
     expect(find.text('سابقه مشاوره'), findsNothing);
     expect(find.text('دانش‌آموز'), findsNothing);

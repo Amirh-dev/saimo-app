@@ -207,7 +207,7 @@ class _CelebrationState extends State<_Celebration>
                       onTap: () => Navigator.of(context).pop(true),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
-                        child: ReText('هدف بعدی‌ات را بگذار',
+                        child: ReText('هدف بعدیت رو بذار',
                             fontSize: 12.5,
                             fontWeight: 800,
                             color: GoalColors.accent,

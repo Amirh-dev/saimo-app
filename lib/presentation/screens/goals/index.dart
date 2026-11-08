@@ -319,7 +319,7 @@ class _GoalsViewState extends State<GoalsView>
                 borderRadius: BorderRadius.circular(26),
               ),
               child: const ReText(
-                'هدف دیگری نداری؛ یک هدف تازه بگذار.',
+                'هدف دیگه‌ای نداری؛ یک هدف تازه بذار.',
                 fontSize: 12.5,
                 fontWeight: 700,
                 color: GoalColors.muted,

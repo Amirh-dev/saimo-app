@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 
@@ -291,6 +292,7 @@ class TaskTimerService extends ChangeNotifier {
       debugPrint('TaskTimerService.complete failed: $error');
       return false;
     }
+    OnboardingStore.instance.markStudied();
     final task = _taskData;
     if (announce && task != null && !_completions.isClosed) {
       _completions.add(task);

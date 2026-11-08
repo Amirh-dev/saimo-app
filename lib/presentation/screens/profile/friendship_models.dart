@@ -25,7 +25,7 @@ class FriendshipUser {
     final normalizedUsername = usernameLabel;
     if (normalizedUsername != null) return normalizedUsername;
 
-    return 'کاربر سیمو';
+    return 'کاربر سایمو';
   }
 
   factory FriendshipUser.fromJson(Map<String, dynamic> json) {
@@ -146,7 +146,7 @@ class UsernameSearchUser {
 
   String get displayName {
     final name = fullName?.trim();
-    return name == null || name.isEmpty ? 'کاربر سیمو' : name;
+    return name == null || name.isEmpty ? 'کاربر سایمو' : name;
   }
 
   factory UsernameSearchUser.fromJson(Map<String, dynamic> json) {

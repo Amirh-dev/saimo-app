@@ -122,7 +122,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
     );
     if (!mounted || picked == null) return;
     if (picked.julianDayNumber <= _today.julianDayNumber) {
-      showReToast(context, 'موعد باید بعد از امروز باشد.', ReToastType.info);
+      showReToast(context, 'موعد باید بعد از امروز باشه.', ReToastType.info);
       return;
     }
     setState(() {
@@ -143,7 +143,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
   Future<void> _submit() async {
     final title = _title.text.trim();
     if (title.isEmpty) {
-      showReToast(context, 'عنوان هدف را بنویس.', ReToastType.failed);
+      showReToast(context, 'عنوان هدف رو بنویس.', ReToastType.failed);
       _titleFocus.requestFocus();
       return;
     }
@@ -230,7 +230,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                             ReText(
                               widget.extend
                                   ? 'یک فرصت تازه به این هدف بده.'
-                                  : 'هدفی بگذار و تا موعدش برایش بجنگ.',
+                                  : 'یک هدف بذار و تا موعدش براش بجنگ.',
                               fontSize: 12,
                               fontWeight: 600,
                               color: GoalColors.muted,
@@ -328,7 +328,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                   label('یادداشت (اختیاری)'),
                   ReTextField(
                     controller: _note,
-                    placeholder: 'چرا این هدف برایت مهم است؟',
+                    placeholder: 'چرا این هدف برات مهمه؟',
                     maxLines: 3,
                     maxLength: 200,
                     height: 88,
@@ -349,7 +349,7 @@ class _GoalFormSheetState extends State<GoalFormSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ReText('هدف اصلی من باشد',
+                              ReText('هدف اصلی من باشه',
                                   fontSize: 13,
                                   fontWeight: 800,
                                   color: GoalColors.ink),

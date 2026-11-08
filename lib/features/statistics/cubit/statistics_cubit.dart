@@ -166,18 +166,18 @@ class StatisticsCubit extends Cubit<StatisticsState> {
         message.contains('invalid token') ||
         message.contains('expired token') ||
         message.contains('token expired')) {
-      return 'نشست کاربری شما منقضی شده است. لطفاً دوباره وارد شوید.';
+      return 'لطفاً دوباره وارد حسابت شو.';
     }
 
     if (message.contains('socketexception') ||
         message.contains('failed host lookup') ||
         message.contains('connection')) {
-      return 'خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اینترنتت رو چک کن.';
     }
 
     if (message.contains('internal system error') ||
         message.contains('internal server error')) {
-      return 'سرور در حال حاضر نتوانست اطلاعات آمار را دریافت کند. لطفاً دوباره تلاش کنید.';
+      return 'آمار فعلاً دریافت نشد. دوباره امتحان کن.';
     }
 
     return 'دریافت اطلاعات آمار با مشکل مواجه شد.';

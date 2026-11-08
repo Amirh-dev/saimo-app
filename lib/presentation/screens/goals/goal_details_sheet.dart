@@ -243,7 +243,7 @@ class _GoalDetailsSheetState extends State<GoalDetailsSheet> {
                             filled: pinned,
                             label: pinned
                                 ? 'برداشتن از هدف اصلی'
-                                : 'هدف اصلی شود',
+                                : 'هدف اصلی بشه',
                             onTap: () => context
                                 .read<GoalsCubit>()
                                 .setPinned(pinned ? null : goal.id),
@@ -317,7 +317,7 @@ class _CountdownRing extends StatelessWidget {
               fontWeight: 1000,
               color: GoalColors.accent,
               textAlign: TextAlign.center),
-          ReText('موعد است',
+          ReText('موعده',
               fontSize: 12,
               fontWeight: 700,
               color: GoalColors.muted,
@@ -393,7 +393,7 @@ class _RingPainter extends CustomPainter {
       oldDelegate.share != share || oldDelegate.color != color;
 }
 
-/// «از وقتی این هدف را گذاشتی»: study time and finished tasks since then.
+/// «از وقتی این هدف رو گذاشتی»: study time and finished tasks since then.
 class _EffortBox extends StatelessWidget {
   const _EffortBox({required this.effort, required this.reached});
 
@@ -438,7 +438,7 @@ class _EffortBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ReText(
-            reached ? 'تا رسیدن به این هدف' : 'از وقتی این هدف را گذاشتی',
+            reached ? 'تا رسیدن به این هدف' : 'از وقتی این هدف رو گذاشتی',
             fontSize: 12,
             fontWeight: 700,
             color: GoalColors.muted,
@@ -600,7 +600,7 @@ Future<bool> confirmGoalDelete(BuildContext context, Goal goal) async {
                   size: 52),
               const SizedBox(height: 12),
               ReText(
-                'هدف «${goal.title}» حذف شود؟',
+                'هدف «${goal.title}» حذف بشه؟',
                 fontSize: 16,
                 fontWeight: 900,
                 color: GoalColors.ink,
@@ -609,7 +609,7 @@ Future<bool> confirmGoalDelete(BuildContext context, Goal goal) async {
               ),
               const SizedBox(height: 6),
               const ReText(
-                'این هدف برای همیشه پاک می‌شود.',
+                'این هدف برای همیشه پاک می‌شه.',
                 fontSize: 12.5,
                 fontWeight: 600,
                 color: GoalColors.muted,

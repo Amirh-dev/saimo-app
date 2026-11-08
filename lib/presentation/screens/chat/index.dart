@@ -864,7 +864,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
   void _showUnsupportedAttachmentAction() {
     showReToast(
       context,
-      'ارسال فایل هنوز پشتیبانی نمی‌شود',
+      'ارسال فایل هنوز ممکن نیست',
       ReToastType.info,
     );
   }
@@ -994,9 +994,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     if (isTargetViewingChat) return 'آنلاین';
     final taskName = activity?.currentTaskName?.trim();
     if (taskName != null && taskName.isNotEmpty) {
-      return 'درحال انجام $taskName';
+      return 'در حال انجام $taskName';
     }
-    return widget.advisor?.title ?? 'مشاور شما';
+    return widget.advisor?.title ?? 'مشاورت';
   }
 }
 
@@ -1161,7 +1161,7 @@ class _ChatRoomHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const ReText(
-                'پیام‌های جدید پس از اتصال دوباره همگام می‌شوند',
+                'پیام‌های جدید بعد از وصل شدن دوباره می‌رسن',
                 color: AppColors.simoCoin,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
@@ -1347,7 +1347,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                               ).bMargin(7),
                             ReText(
                               message.isDeleted
-                                  ? 'این پیام حذف شده است'
+                                  ? 'این پیام حذف شده'
                                   : message.content,
                               color: message.isDeleted
                                   ? AppColors.gray
@@ -2196,11 +2196,11 @@ String _formatMessageTime(String isoDate) {
 
 String _friendlyError(Object error) {
   if (_isCommittedTransactionError(error)) {
-    return 'پیام ارسال شد و در حال همگام‌سازی است.';
+    return 'پیام رفت و داره همگام می‌شه.';
   }
   final text = error.toString();
   if (text.contains('Unauthorized') || text.contains('Authentication')) {
-    return 'برای ادامه دوباره وارد حساب شوید.';
+    return 'برای ادامه دوباره وارد حسابت شو.';
   }
   if (text.trim().isEmpty) return 'خطای ناشناخته رخ داد.';
   return text.replaceFirst('Exception: ', '');

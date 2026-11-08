@@ -108,7 +108,7 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> with SingleTickerProv
         if (!started && !_timer.isCompleted && mounted) {
           showReToast(
             context,
-            'شروع تایمر ناموفق بود. دوباره تلاش کنید.',
+            'شروع تایمر ناموفق بود. دوباره امتحان کن.',
             ReToastType.failed,
           );
         }
@@ -611,7 +611,7 @@ class _Controls extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               opacity: running ? 1 : 0,
               child: const ReText(
-                'با خروج از این صفحه، تایمر ادامه پیدا می‌کند.',
+                'اگه از این صفحه بری، تایمر ادامه پیدا می‌کنه.',
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppColors.gray,
@@ -861,19 +861,19 @@ class _ShieldSheetContent extends StatelessWidget {
 
               const _Section(
                 title: 'سایموگارد چیست؟',
-                body: 'سایموگارد کمک می‌کند تمرکزتان را حفظ کنید و فقط زمانی ثبت '
-                    'شود که واقعاً مطالعه کرده‌اید. وقتی روشن باشد، خروج از برنامه '
-                    'در حین کار تایمر، تایمر را متوقف می‌کند.',
+                body: 'سایموگارد کمکت می‌کنه تمرکزت رو نگه داری؛ فقط زمانی ثبت '
+                    'می‌شه که واقعاً خوندی. وقتی روشنه، اگه از برنامه '
+                    'بیرون بری، تایمر می‌ایسته.',
               ),
 
               const SizedBox(height: 28),
 
               const _Section(
-                title: 'چه زمانی تایمر متوقف می‌شود؟',
-                body: 'اگر سایموگارد روشن باشد و تایمر در حال اجرا باشد، با رفتن به '
-                    'برنامه‌ای دیگر یا بستن برنامه، تایمر متوقف می‌شود. قفل شدن گوشی '
-                    'تایمر را متوقف نمی‌کند. با بازگشت به برنامه می‌توانید تایمر را '
-                    'ادامه دهید.',
+                title: 'کی تایمر می‌ایسته؟',
+                body: 'وقتی سایموگارد روشنه و تایمر کار می‌کنه، با رفتن به '
+                    'یک برنامه‌ی دیگه یا بستن برنامه، تایمر می‌ایسته. قفل کردن گوشی '
+                    'تایمر رو نگه نمی‌داره. وقتی برگشتی، می‌تونی تایمر رو '
+                    'ادامه بدی.',
               ),
 
               const SizedBox(height: 36),
@@ -890,7 +890,7 @@ class _ShieldSheetContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: const ReText(
-                    'تایید',
+                    'تأیید',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.black1,

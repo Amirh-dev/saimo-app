@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ferry/ferry.dart' show OperationResponse;
 import 'package:flutter/material.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:flutter/services.dart';
 import 'package:gql_http_link/gql_http_link.dart' show HttpLinkServerException;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -296,7 +297,7 @@ Widget _formTagsSection(TagSelection tags) {
 
 /// Why the server refused to save the task, for the form's error box.
 String _responseFailure(OperationResponse<dynamic, dynamic> response) {
-  const fallback = 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.';
+  const fallback = 'ذخیره تسک ناموفق بود؛ دوباره امتحان کن.';
   final link = response.linkException;
   if (link != null) {
     if (link is HttpLinkServerException) {
@@ -306,14 +307,14 @@ String _responseFailure(OperationResponse<dynamic, dynamic> response) {
             fallback: fallback);
       }
       if (status >= 500) {
-        return 'سرور فعلاً پاسخ نمی‌دهد؛ کمی بعد دوباره تلاش کنید.';
+        return 'سرور فعلاً جواب نمی‌ده؛ کمی بعد دوباره امتحان کن.';
       }
     }
     // No answer at all: most often the connection.
     return taskFailureMessage(
       link.originalException ?? link,
       fallback:
-          'اتصال به اینترنت برقرار نیست؛ اتصال را بررسی کنید و دوباره تلاش کنید.',
+          'اینترنت وصل نیست؛ اتصالت رو چک کن و دوباره امتحان کن.',
     );
   }
   return taskFailureMessage(graphQLResponseErrorMessage(response),
@@ -331,7 +332,7 @@ mixin _TaskFormFeedback<T extends StatefulWidget> on State<T> {
 
   void _showTitleError() {
     setState(() {
-      _titleError = 'عنوان تسک را بنویسید.';
+      _titleError = 'عنوان تسک رو بنویس.';
       _titleErrorTick++;
     });
     _titleFocusNode.requestFocus();
@@ -631,7 +632,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       if (!mounted) return;
       debugPrint('Saving the task failed: $error');
       _failWith(taskFailureMessage(error,
-          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره امتحان کن.'));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -645,14 +646,14 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
     }
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
-      _failWith('حداقل یک روز را برای تکرار انتخاب کنید.');
+      _failWith('حداقل یک روز رو برای تکرار انتخاب کن.');
       return;
     }
 
     if (_isReminderEnabled &&
         _isReminderInPast(_selectedDate, _reminderTime,
             isWeekly: _isWeeklyRepeat)) {
-      _failWith('زمان یادآوری گذشته است؛ زمان دیگری انتخاب کنید.');
+      _failWith('زمان یادآوری گذشته؛ یک زمان دیگه انتخاب کن.');
       return;
     }
 
@@ -723,6 +724,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       }
 
       final task = response.data!.createTask;
+      OnboardingStore.instance.markPlanned();
       if (_isReminderEnabled) {
         unawaited(_scheduleCreatedTaskReminder(
             context.read<GraphQLRepository>(), task.id, task.title, taskDate,
@@ -758,7 +760,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       if (!mounted) return;
       debugPrint('Saving the task failed: $error');
       _failWith(taskFailureMessage(error,
-          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره امتحان کن.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -845,7 +847,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
                       fieldKey: const ValueKey('task-form-note'),
                       controller: _noteController,
                       focusNode: _noteFocusNode,
-                      hint: 'نکته‌ای که موقع انجام کار لازم دارید (اختیاری)',
+                      hint: 'نکته‌ای که موقع انجام کار لازم داری (اختیاری)',
                       maxLength: 200,
                       maxLines: 4,
                     ),
@@ -1160,7 +1162,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       if (!mounted) return;
       debugPrint('Saving the task failed: $error');
       _failWith(taskFailureMessage(error,
-          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره امتحان کن.'));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -1174,14 +1176,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
     }
 
     if (_isWeeklyRepeat && _selectedWeekDays.isEmpty) {
-      _failWith('حداقل یک روز را برای تکرار انتخاب کنید.');
+      _failWith('حداقل یک روز رو برای تکرار انتخاب کن.');
       return;
     }
 
     if (_isReminderEnabled &&
         _isReminderInPast(_selectedDate, _reminderTime,
             isWeekly: _isWeeklyRepeat)) {
-      _failWith('زمان یادآوری گذشته است؛ زمان دیگری انتخاب کنید.');
+      _failWith('زمان یادآوری گذشته؛ یک زمان دیگه انتخاب کن.');
       return;
     }
 
@@ -1251,6 +1253,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       }
 
       final task = response.data!.createTask;
+      OnboardingStore.instance.markPlanned();
       if (_isReminderEnabled) {
         unawaited(_scheduleCreatedTaskReminder(
             context.read<GraphQLRepository>(), task.id, task.title, taskDate,
@@ -1277,7 +1280,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       if (!mounted) return;
       debugPrint('Saving the task failed: $error');
       _failWith(taskFailureMessage(error,
-          fallback: 'ذخیره تسک ناموفق بود؛ دوباره تلاش کنید.'));
+          fallback: 'ذخیره تسک ناموفق بود؛ دوباره امتحان کن.'));
     } finally {
       if (mounted) {
         setState(() {
@@ -1670,7 +1673,7 @@ class _WeekDaysGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <MapEntry<String, String>>[
-      const MapEntry('ALL', 'هرروز'),
+      const MapEntry('ALL', 'هر روز'),
       for (final day in _weekDayOptions) MapEntry(day.code, 'هر ${day.label}'),
     ];
 

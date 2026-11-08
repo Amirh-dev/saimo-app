@@ -139,7 +139,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
             // already used; the bank page is gone with it.
             if (classifyPaymentUrl(url) == PaymentPageKind.checkoutLauncher) {
               _showError(
-                'مهلت این پرداخت به پایان رسیده است. لطفاً این صفحه را ببندید و دوباره پرداخت کنید.',
+                'مهلت این پرداخت تموم شده. این صفحه رو ببند و دوباره پرداخت کن.',
               );
             }
           },
@@ -152,7 +152,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
               return;
             }
             _showError(
-              'صفحه پرداخت باز نشد. اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.',
+              'صفحه‌ی پرداخت باز نشد. اینترنتت رو چک کن و دوباره امتحان کن.',
             );
           },
         ),
@@ -250,12 +250,12 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
                     if (_phase == _Phase.loading)
                       const _StatusPanel(
                         title: 'در حال اتصال به درگاه بانک',
-                        subtitle: 'چند لحظه صبر کنید…',
+                        subtitle: 'چند لحظه صبر کن…',
                       ),
                     if (_phase == _Phase.returning)
                       const _StatusPanel(
                         title: 'در حال بررسی پرداخت',
-                        subtitle: 'لطفاً تا پایان بررسی، برنامه را نبندید.',
+                        subtitle: 'تا آخر بررسی، برنامه رو نبند.',
                       ),
                     if (_phase == _Phase.error) _buildError(),
                   ],
@@ -446,7 +446,7 @@ class _LeavePaymentDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const ReText(
-                'از پرداخت خارج می‌شوید؟',
+                'از پرداخت خارج می‌شی؟',
                 color: AppColors.black1,
                 fontSize: 16,
                 fontWeight: 1000,
@@ -454,7 +454,7 @@ class _LeavePaymentDialog extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const ReText(
-                'اگر هنوز پرداخت را تکمیل نکرده‌اید، مبلغی از حساب شما کسر نمی‌شود و می‌توانید بعداً دوباره پرداخت کنید.',
+                'اگه هنوز پرداخت رو تموم نکردی، پولی از حسابت کم نمی‌شه و بعداً می‌تونی دوباره پرداخت کنی.',
                 maxLines: 4,
                 color: AppColors.gray,
                 fontSize: 13,

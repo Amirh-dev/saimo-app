@@ -539,7 +539,7 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
           'birthDate': '2001-02-03T00:00:00.000Z',
           'studyTime': 'BETWEEN_4_AND_7',
           'major': 'MATHEMATICS',
-          'bio': 'دانش آموز رشته ریاضی',
+          'bio': 'دانش‌آموز رشته ریاضی',
           'simoCoins': 36,
           'score': 3,
           'isPremium': true,

@@ -144,7 +144,7 @@ class _SimoGuardNoticeState extends State<SimoGuardNotice> {
       if (overlayContext == null || !overlayContext.mounted) return;
       showReToast(
         overlayContext,
-        'سایموگارد تایمر را متوقف کرد، چون از برنامه خارج شدید.',
+        'سایموگارد تایمر رو نگه داشت، چون از برنامه بیرون رفتی.',
         ReToastType.info,
       );
     });

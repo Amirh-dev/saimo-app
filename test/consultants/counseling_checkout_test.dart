@@ -335,7 +335,7 @@ void main() {
 
       await expectLater(
         _start(api, discountCode: 'OLD'),
-        _checkoutError('مهلت استفاده از این کد تخفیف تمام شده است.'),
+        _checkoutError('مهلت این کد تخفیف تموم شده.'),
       );
     });
 
@@ -406,7 +406,7 @@ void main() {
 
       await expectLater(
         _start(api),
-        _checkoutError('شما در حال حاضر یک مشاور فعال دارید.'),
+        _checkoutError('الان یک مشاور فعال داری.'),
       );
     });
 

@@ -107,7 +107,7 @@ class _Pill extends StatelessWidget {
                       ),
                       SizedBox(height: 2),
                       ReText(
-                        'با یک لمس، آخرین نسخه را ببینید.',
+                        'بزن تا آخرین نسخه رو ببینی.',
                         color: AppColors.gray,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,

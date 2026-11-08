@@ -56,20 +56,20 @@ Row authHeaderWidget(
             children: [
               ReText(
                 authType == AuthMode.register
-                    ? 'ثبت نام'
+                    ? 'ثبت‌نام'
                     : authType == AuthMode.login
                         ? 'ورود به حساب'
-                        : 'کد تایید',
+                        : 'کد تأیید',
                 fontSize: 14.fs,
                 fontWeight: FontWeight.w900,
               ),
               ReText(
                 subtitle ??
                     (authType == AuthMode.register
-                        ? 'یک حساب ایجاد کنید.'
+                        ? 'حساب خودتو بساز.'
                         : authType == AuthMode.login
-                            ? 'به حساب کاربری خود وارد شوید.'
-                            : 'کد تایید ارسال شده را وارد کنید.'),
+                            ? 'وارد حسابت شو.'
+                            : 'کدی که برات فرستادیم رو وارد کن.'),
                 fontSize: 11.fs,
                 color: AppColors.gray,
                 fontWeight: FontWeight.w600,

@@ -94,8 +94,8 @@ void main() {
 
   testWidgets('no goals: says what the tab is for', (tester) async {
     await pumpGoals(tester, []);
-    expect(find.text('هنوز هدفی نگذاشتی'), findsOneWidget);
-    expect(find.text('اولین هدفت را بگذار'), findsOneWidget);
+    expect(find.text('هنوز هدفی نذاشتی'), findsOneWidget);
+    expect(find.text('اولین هدفت رو بذار'), findsOneWidget);
 
     await tester.tap(find.text('قبولی در کنکور سراسری'));
     await tester.pumpAndSettle();

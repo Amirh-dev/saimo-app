@@ -115,7 +115,7 @@ class _TaskReportPopupState extends State<_TaskReportPopup> {
     }
     if (correct == null) return (null, 'تعداد پاسخ‌های صحیح را وارد کن.');
     if (correct > total) {
-      return (null, 'پاسخ صحیح نمی‌تواند از تعداد کل سوالات بیشتر باشد.');
+      return (null, 'پاسخ صحیح نمی‌تونه از کل سوال‌ها بیشتر باشه.');
     }
     return (
       TaskReport(
@@ -150,7 +150,7 @@ class _TaskReportPopupState extends State<_TaskReportPopup> {
         _saving = false;
         _error = taskFailureMessage(
           error,
-          fallback: 'ثبت گزارش ناموفق بود. دوباره تلاش کنید.',
+          fallback: 'ثبت گزارش ناموفق بود. دوباره امتحان کن.',
         );
       });
     }
@@ -283,8 +283,8 @@ class _SuccessHeader extends StatelessWidget {
           ),
           child: ReText(
             finishesTask
-                ? 'با ثبت گزارش، تسک به پایان می‌رسد.'
-                : 'تسک با موفقیت به پایان رسید.',
+                ? 'با ثبت گزارش، تسک تموم می‌شه.'
+                : 'تسک تموم شد.',
             fontSize: 16,
             fontWeight: FontWeight.w900,
             color: AppColors.success,
@@ -339,7 +339,7 @@ class _RatingCard extends StatelessWidget {
           child: Column(
             children: [
               const ReText(
-                'به عملکرد خودت در این تسک چه امتیازی میدی؟',
+                'به عملکرد خودت در این تسک چه امتیازی می‌دی؟',
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 color: AppColors.black1,
@@ -530,7 +530,7 @@ class _TestFields extends StatelessWidget {
           _field(
             key: const ValueKey('task-report-correct'),
             label: 'پاسخ صحیح',
-            placeholder: 'مثلا ۹۰',
+            placeholder: 'مثلاً ۹۰',
             controller: correct,
             action: TextInputAction.done,
           ),
@@ -620,7 +620,7 @@ class _NoteField extends StatelessWidget {
                 ReTextField(
                   key: const ValueKey('task-report-note'),
                   controller: controller,
-                  placeholder: 'چه چیزی سخت بود؟ دفعه بعد چه کار می‌کنی؟',
+                  placeholder: 'چی سخت بود؟ دفعه‌ی بعد چی کار می‌کنی؟',
                   isEnabled: enabled,
                   autofocus: controller.text.isEmpty,
                   keyboardType: TextInputType.multiline,

@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         isLoading: isLoading,
                                         onPressed: _sendOtp,
                                         fontSize: 16,
-                                        text: 'ورود / ثبت نام',
+                                        text: 'ورود یا ثبت‌نام',
                                       ).tMargin(16),
                                       const LoginTermsNotice().tMargin(14),
                                       // ReButton(
@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       //   isEnabled: !isLoading,
                                       //   onPressed: _startRegistration,
                                       //   fontSize: 16,
-                                      //   text: 'ثبت نام',
+                                      //   text: 'ثبت‌نام',
                                       // ).tMargin(8),
                                     ],
                                   ).hMargin(16).vMargin(18),
@@ -244,7 +244,7 @@ class _LoginTermsNoticeState extends State<LoginTermsNotice> {
       TextSpan(
         style: style,
         children: [
-          const TextSpan(text: 'ورود شما به معنای موافقت با '),
+          const TextSpan(text: 'ورودت یعنی موافقت با '),
           TextSpan(
             text: 'قوانین و مقررات سایمو',
             recognizer: _openTerms,

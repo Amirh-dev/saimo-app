@@ -7,7 +7,7 @@ import '_widgets.dart';
 class ReSearchPill extends StatelessWidget {
   const ReSearchPill({
     super.key,
-    this.placeholder = 'جستجو',
+    this.placeholder = 'جست‌وجو',
     this.onTap,
     this.height = 48,
     this.horizontalPadding = 18,

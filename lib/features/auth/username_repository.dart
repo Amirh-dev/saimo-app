@@ -105,7 +105,7 @@ class UsernameRepository {
     final normalizedUsername =
         payload['normalizedUsername']?.toString().trim() ?? '';
     if (normalizedUsername.isEmpty) {
-      throw const GraphQLRawException('نام کاربری نامعتبر است');
+      throw const GraphQLRawException('نام کاربری درست نیست');
     }
     final rawSuggestion = payload['suggestion']?.toString().trim();
     return UsernameAvailability(

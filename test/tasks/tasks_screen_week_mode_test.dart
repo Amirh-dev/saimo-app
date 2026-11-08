@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
+import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/week_header.dart';
@@ -109,6 +111,7 @@ Future<_TasksRepository> _pumpTasksScreen(
   Map<String, Object> preferences = const {},
   List<Map<String, dynamic>>? schedule,
   bool weekly = false,
+  bool inShell = false,
 }) async {
   await tester.binding.setSurfaceSize(const Size(390, 844));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -119,7 +122,15 @@ Future<_TasksRepository> _pumpTasksScreen(
   await tester.pumpWidget(
     RepositoryProvider<GraphQLRepository>.value(
       value: repository,
-      child: const MaterialApp(home: TasksScreen()),
+      child: MaterialApp(
+        home: inShell
+            ? const AppTabsShell(
+                titles: null,
+                initialIndex: 1,
+                tabs: [SizedBox(), TasksScreen()],
+              )
+            : const TasksScreen(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -240,6 +251,38 @@ void main() {
     );
   });
 
+  testWidgets('a new student is pointed at the add button until a task exists',
+      (tester) async {
+    final onboarding = OnboardingStore.instance;
+    addTearDown(onboarding.reset);
+    onboarding.start();
+    final repository = await _pumpTasksScreen(tester);
+
+    expect(_key('onboarding-task-hint'), findsOneWidget);
+    expect(find.text('اولین تسک زمان‌دار امروز رو بساز'), findsOneWidget);
+
+    // The hint does what the button does.
+    await tester.tap(_key('onboarding-task-hint'));
+    await tester.pumpAndSettle();
+    expect(_key('quick-add-sheet'), findsOneWidget);
+    await tester.enterText(_key('quick-add-title'), 'زیست، فصل ۱');
+    await tester.pump();
+    await tester.tap(_key('quick-add-submit'));
+    await tester.pumpAndSettle();
+    expect(repository.createdInputs, hasLength(1));
+
+    Navigator.of(tester.element(_key('quick-add-sheet'))).pop();
+    await tester.pumpAndSettle();
+    expect(_key('onboarding-task-hint'), findsNothing);
+    expect(onboarding.planned, isTrue);
+  });
+
+  testWidgets('no hint for someone who did not just register', (tester) async {
+    OnboardingStore.instance.reset();
+    await _pumpTasksScreen(tester);
+    expect(_key('onboarding-task-hint'), findsNothing);
+  });
+
   testWidgets('quick add creates the task through the API', (tester) async {
     final repository = await _pumpTasksScreen(tester);
 
@@ -277,6 +320,34 @@ void main() {
 
     expect(find.text(other < todayIndex ? 'دیروز،' : 'فردا،'), findsOneWidget);
     expect(find.textContaining('تسک‌های '), findsNothing);
+  });
+
+  testWidgets('a link to today\'s tasks brings the tab back to today',
+      (tester) async {
+    await _pumpTasksScreen(tester, inShell: true);
+    Jalali selected() =>
+        tester.widget<WeekHeader>(find.byType(WeekHeader)).selectedDate;
+    bool onToday() => [selected().year, selected().month, selected().day]
+        .join() == [today.year, today.month, today.day].join();
+    final other = todayIndex == 0 ? 1 : todayIndex - 1;
+
+    // Left on another day in daily mode.
+    await tester.tap(_key('week-capsule-$other'));
+    await tester.pumpAndSettle();
+    expect(onToday(), isFalse);
+    TasksScreen.openToday(tester.element(find.byType(TasksScreen)));
+    await tester.pumpAndSettle();
+    expect(onToday(), isTrue);
+
+    // Left on another day of the week board.
+    await tester.tap(find.text('هفتگی'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('week-capsule-$other'));
+    await tester.pumpAndSettle();
+    TasksScreen.openToday(tester.element(find.byType(TasksScreen)));
+    await tester.pumpAndSettle();
+    expect(_key('weekly-plan-view'), findsNothing);
+    expect(onToday(), isTrue);
   });
 
   testWidgets('a day\'s add button in the week opens quick add for that day',
@@ -379,7 +450,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(_key('task-sheet-report'));
     await tester.pumpAndSettle();
-    expect(find.text('تسک با موفقیت به پایان رسید.'), findsOneWidget);
+    expect(find.text('تسک تموم شد.'), findsOneWidget);
     expect(find.text('۵۰'), findsOneWidget);
 
     await tester.tap(_key('task-report-rating-4'));

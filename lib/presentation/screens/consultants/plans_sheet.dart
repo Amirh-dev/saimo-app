@@ -126,6 +126,13 @@ PlanPrice _price(int months, int total, int baseMonthly, int discount) =>
       discountPercent: discount,
     );
 
+/// The least a student can pay for counseling: the cheapest plan for its
+/// shortest time. «شروع از» quotes this.
+int lowestPlanPrice([List<ConsultationPlan>? plans]) => (plans ?? kPlans)
+    .expand((plan) => plan.prices.values)
+    .map((price) => price.total)
+    .reduce((a, b) => a < b ? a : b);
+
 /// The published price list; real offers from the server replace [prices].
 final List<ConsultationPlan> kPlans = [
   ConsultationPlan(
@@ -323,7 +330,7 @@ class _PlansSheetState extends State<PlansSheet> {
               const SizedBox(height: 4),
               ReText(
                 widget.counselorName.isEmpty
-                    ? 'پلن و مدت همراهی را انتخاب کنید'
+                    ? 'پلن و مدت همراهی رو انتخاب کن'
                     : 'مشاور: ${widget.counselorName}',
                 color: AppColors.gray,
                 fontSize: 13,

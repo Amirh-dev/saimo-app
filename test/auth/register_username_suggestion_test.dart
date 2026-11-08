@@ -45,7 +45,7 @@ void main() {
     expect(suggestionRequests, 1);
     expect(_usernameText(tester), 'ali_rezaei');
     expect(
-      find.text('بر اساس نام شما پیشنهاد شد و قابل تغییر است.'),
+      find.text('از روی اسمت پیشنهاد شد؛ می‌تونی عوضش کنی.'),
       findsOneWidget,
     );
   });
@@ -117,7 +117,7 @@ void main() {
 
     expect(_usernameText(tester), 'ali13842');
     expect(checked, ['ali13842']);
-    expect(find.text('این نام کاربری در دسترس است.'), findsOneWidget);
+    expect(find.text('این نام کاربری آزاده.'), findsOneWidget);
   });
 
   testWidgets('submitting an empty form names every missing field',
@@ -130,23 +130,23 @@ void main() {
         const {});
     await _pumpRegister(tester, usernameRepository);
 
-    expect(find.text('تاریخ تولد را انتخاب کنید.'), findsNothing);
+    expect(find.text('تاریخ تولدت رو انتخاب کن.'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('register-submit')));
     await tester.pump();
 
-    expect(find.text('نام و نام خانوادگی را وارد کنید.'), findsOneWidget);
-    expect(find.text('نام کاربری را وارد کنید.'), findsOneWidget);
-    expect(find.text('تاریخ تولد را انتخاب کنید.'), findsOneWidget);
-    expect(find.text('رشته تحصیلی را انتخاب کنید.'), findsOneWidget);
-    expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsOneWidget);
+    expect(find.text('نام و نام خانوادگی رو بنویس.'), findsOneWidget);
+    expect(find.text('نام کاربری رو بنویس.'), findsOneWidget);
+    expect(find.text('تاریخ تولدت رو انتخاب کن.'), findsOneWidget);
+    expect(find.text('رشته‌ت رو انتخاب کن.'), findsOneWidget);
+    expect(find.text('میزان مطالعه‌ی روزانه‌ت رو انتخاب کن.'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('register-major-OTHER')));
     await tester.tap(find.byKey(const ValueKey('register-study-1')));
     await tester.pump();
 
-    expect(find.text('رشته تحصیلی را انتخاب کنید.'), findsNothing);
-    expect(find.text('میزان مطالعه روزانه را انتخاب کنید.'), findsNothing);
+    expect(find.text('رشته‌ت رو انتخاب کن.'), findsNothing);
+    expect(find.text('میزان مطالعه‌ی روزانه‌ت رو انتخاب کن.'), findsNothing);
   });
 }
 

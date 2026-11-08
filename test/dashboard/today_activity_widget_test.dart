@@ -96,7 +96,7 @@ void main() {
 
   testWidgets('an empty day asks for the first task', (tester) async {
     final taps = await _pump(tester, const []);
-    expect(find.text('برای امروز تسکی ندارید'), findsOneWidget);
+    expect(find.text('برای امروز تسکی نداری'), findsOneWidget);
     expect(find.text('پیشرفت امروز'), findsNothing);
 
     await tester.tap(find.text('افزودن'));

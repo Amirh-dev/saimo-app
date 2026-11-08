@@ -464,7 +464,7 @@ class ConsultantRepository {
 
     final payload = data['verifyCounselingPayment'];
     if (payload is! Map<String, dynamic>) {
-      throw const GraphQLRawException('تایید پرداخت ناموفق بود');
+      throw const GraphQLRawException('تأیید پرداخت ناموفق بود');
     }
     final attempt = payload['attempt'];
     final subscription = payload['subscription'];

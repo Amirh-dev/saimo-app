@@ -308,8 +308,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
     if (tasks.isEmpty) {
       return _SuggestionStrip(
         notchCenter: notchCenter,
-        title: 'برای امروز تسکی ندارید',
-        subtitle: 'اولین تسک زمان‌دار را اضافه کنید.',
+        title: 'برای امروز تسکی نداری',
+        subtitle: 'اولین تسک زمان‌دار امروز رو بساز.',
         onTap: widget.onAddTap,
         action: _StripButton(
           label: 'افزودن',
@@ -379,7 +379,7 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
   String _allDoneLine() {
     final consistency = widget.consistency;
     if (consistency == null || !consistency.hasPlan) {
-      return 'آفرین، برنامه‌ی امروز تمام شد.';
+      return 'آفرین، برنامه‌ی امروز تموم شد.';
     }
     if (consistency.countedToday) {
       return 'امروز حساب شد؛ ضریب امتیاز ${consistency.level}×';

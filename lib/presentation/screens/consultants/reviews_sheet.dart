@@ -282,7 +282,7 @@ class _CounselorReviewsSheetState extends State<CounselorReviewsSheet> {
       return [
         _Notice(
           title: 'دریافت نظرات ممکن نشد',
-          message: 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.',
+          message: 'اینترنتت رو چک کن و دوباره امتحان کن.',
           actionLabel: 'تلاش دوباره',
           onAction: _loadFirstPage,
         ),
@@ -292,12 +292,12 @@ class _CounselorReviewsSheetState extends State<CounselorReviewsSheet> {
       return [
         _filter == ReviewScoreFilter.all
             ? const _Notice(
-                title: 'هنوز نظری ثبت نشده است',
-                message: 'نظر دانش‌آموزان پس از دوره مشاوره اینجا می‌آید.',
+                title: 'هنوز نظری ثبت نشده',
+                message: 'نظر دانش‌آموزها بعد از دوره‌ی مشاوره اینجا میاد.',
               )
             : const _Notice(
-                title: 'نظری با این امتیاز ثبت نشده است',
-                message: 'فیلتر دیگری را انتخاب کنید.',
+                title: 'نظری با این امتیاز ثبت نشده',
+                message: 'یک فیلتر دیگه انتخاب کن.',
               ),
       ];
     }

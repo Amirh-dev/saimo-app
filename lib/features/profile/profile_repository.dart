@@ -41,7 +41,7 @@ class ProfileUser {
 
   String get displayName {
     final name = fullName?.trim();
-    return name == null || name.isEmpty ? 'کاربر سیمو' : name;
+    return name == null || name.isEmpty ? 'کاربر سایمو' : name;
   }
 
   factory ProfileUser.fromJson(Map<String, dynamic> json) {

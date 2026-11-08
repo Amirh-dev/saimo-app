@@ -79,6 +79,22 @@ void main() {
       );
     }
 
+    testWidgets('fields run title, tags, type and time, then day',
+        (tester) async {
+      await openQuickAdd(tester);
+      double top(Finder finder) => tester.getTopLeft(finder).dy;
+
+      final title = top(_key('quick-add-title'));
+      final tags = top(find.text('تگ‌ها'));
+      final type = top(find.text('نوع'));
+      final minutes = top(_key('quick-add-durations'));
+      final day = top(find.text('روز'));
+      expect(title, lessThan(tags));
+      expect(tags, lessThan(type));
+      expect(type, lessThan(minutes));
+      expect(minutes, lessThan(day));
+    });
+
     testWidgets('adds a timed task with a tag and stays open for the next',
         (tester) async {
       await openQuickAdd(tester);
@@ -144,6 +160,9 @@ void main() {
 
     testWidgets('needs a title and does not offer past days', (tester) async {
       await openQuickAdd(tester);
+      // The day picker sits last, below the fold.
+      await tester.ensureVisible(_key('day-picker-weeks'));
+      await tester.pumpAndSettle();
 
       await tester.tap(_key('quick-add-submit'));
       // Saturday has passed: it is shown crossed out, and tapping it does
@@ -162,6 +181,9 @@ void main() {
 
     testWidgets('browses to later weeks but not earlier ones', (tester) async {
       await openQuickAdd(tester);
+      // The day picker sits last, below the fold.
+      await tester.ensureVisible(_key('day-picker-weeks'));
+      await tester.pumpAndSettle();
 
       await tester.tap(_key('day-picker-prev'));
       await tester.pump();
@@ -180,6 +202,9 @@ void main() {
         (tester) async {
       await openQuickAdd(tester);
       final weeks = _key('day-picker-weeks');
+      // The day picker sits last, below the fold.
+      await tester.ensureVisible(_key('day-picker-weeks'));
+      await tester.pumpAndSettle();
       // Later weeks lie where the reading direction goes.
       final rtl = Directionality.of(tester.element(weeks)) == TextDirection.rtl;
       final forward = Offset(rtl ? 300 : -300, 0);

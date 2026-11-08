@@ -100,7 +100,7 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
                         onTap: () => setState(() => _expandedPlan = index),
                         onPurchase: () => showReToast(
                           context,
-                          'درگاه پرداخت به‌زودی فعال می‌شود',
+                          'درگاه پرداخت به‌زودی فعال می‌شه',
                           ReToastType.info,
                         ),
                       );
@@ -256,7 +256,7 @@ class _PremiumPlanCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: ReButton(
                     key: const ValueKey('purchase-premium-plan'),
-                    text: 'پرداخت و فعالسازی',
+                    text: 'پرداخت و فعال‌سازی',
                     height: 56,
                     background: AppColors.secondary,
                     borderRadius: 40,
@@ -426,7 +426,7 @@ class _PremiumBenefits extends StatelessWidget {
         SizedBox(height: 12),
         _BenefitRow(label: 'لیگ', value: 'آزاد'),
         SizedBox(height: 12),
-        _BenefitRow(label: 'چالش ها', value: 'آزاد'),
+        _BenefitRow(label: 'چالش‌ها', value: 'آزاد'),
       ],
     );
   }
@@ -530,7 +530,7 @@ class _PremiumBannerDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ReButton(
                 key: const ValueKey('view-premium-plans'),
-                text: 'مشاهده پلن ها',
+                text: 'مشاهده پلن‌ها',
                 height: 56,
                 background: AppColors.secondary,
                 borderRadius: 40,

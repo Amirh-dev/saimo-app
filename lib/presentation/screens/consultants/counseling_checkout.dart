@@ -43,19 +43,19 @@ class CheckoutOutcome {
 }
 
 const String kCheckoutCancelledMessage =
-    'پرداخت انجام نشد. هر زمان آماده بودید، می‌توانید دوباره پرداخت کنید.';
+    'پرداخت انجام نشد. هر وقت آماده بودی، دوباره پرداخت کن.';
 const String kCheckoutFailedMessage =
-    'پرداخت ناموفق بود. اگر مبلغی از حساب شما کسر شده باشد، حداکثر تا ۷۲ ساعت به حسابتان برمی‌گردد.';
+    'پرداخت ناموفق بود. اگه پولی از حسابت کم شده، تا ۷۲ ساعت برمی‌گرده.';
 const String kCheckoutPendingMessage =
-    'پرداخت شما در حال تایید بانک است. پس از تایید، مشاور برای شما فعال می‌شود.';
+    'بانک داره پرداختت رو تأیید می‌کنه. بعد از تأیید، مشاورت فعال می‌شه.';
 const String kCheckoutUnknownMessage =
-    'وضعیت پرداخت هنوز مشخص نیست. اگر مبلغی از حساب شما کسر شده باشد، پس از تایید بانک مشاور برای شما فعال می‌شود؛ در غیر این صورت مبلغ حداکثر تا ۷۲ ساعت برمی‌گردد.';
+    'وضعیت پرداخت هنوز مشخص نیست. اگه پولی از حسابت کم شده، بعد از تأیید بانک مشاورت فعال می‌شه؛ وگرنه تا ۷۲ ساعت برمی‌گرده.';
 const String kCheckoutExpiredMessage =
-    'مهلت پرداخت به پایان رسید. می‌توانید دوباره پرداخت کنید.';
+    'مهلت پرداخت تموم شد. می‌تونی دوباره پرداخت کنی.';
 const String kCheckoutPreviousPaymentOpenMessage =
-    'پرداخت قبلی شما هنوز در حال بررسی است. لطفاً چند دقیقه دیگر دوباره تلاش کنید.';
+    'پرداخت قبلیت هنوز در حال بررسیه. چند دقیقه دیگه دوباره امتحان کن.';
 const String kCheckoutPreviousSucceededMessage =
-    'پرداخت قبلی شما تایید شد و مشاور برای شما فعال است.';
+    'پرداخت قبلیت تأیید شد و مشاورت فعاله.';
 
 /// Drives one counseling purchase against the API: reserve the request,
 /// open (or resume) a payment attempt, and read back the verified result.
@@ -234,7 +234,7 @@ class CounselingCheckout {
       // The slot's attempt had expired meanwhile; the next round moves on.
     }
     throw const CheckoutException(
-      'درگاه پرداخت باز نشد. لطفاً دوباره تلاش کنید.',
+      'درگاه پرداخت باز نشد. دوباره امتحان کن.',
     );
   }
 
@@ -293,11 +293,11 @@ const String _kDiscountRejectedPrefix = 'discount code is not applicable: ';
 /// Why a discount code cannot be used, by the server's
 /// CounselingDiscountStatus.
 String discountStatusMessage(String status) => switch (status) {
-      'INACTIVE' => 'این کد تخفیف دیگر فعال نیست.',
-      'NOT_STARTED' => 'زمان استفاده از این کد تخفیف هنوز شروع نشده است.',
-      'EXPIRED' => 'مهلت استفاده از این کد تخفیف تمام شده است.',
-      'USAGE_LIMIT_REACHED' => 'ظرفیت استفاده از این کد تخفیف تکمیل شده است.',
-      'ALREADY_USED' => 'شما قبلاً از این کد تخفیف استفاده کرده‌اید.',
+      'INACTIVE' => 'این کد تخفیف دیگه فعال نیست.',
+      'NOT_STARTED' => 'زمان استفاده از این کد تخفیف هنوز نرسیده.',
+      'EXPIRED' => 'مهلت این کد تخفیف تموم شده.',
+      'USAGE_LIMIT_REACHED' => 'ظرفیت این کد تخفیف پر شده.',
+      'ALREADY_USED' => 'قبلاً از این کد تخفیف استفاده کردی.',
       'PLAN_NOT_ELIGIBLE' => 'این کد تخفیف برای این پلن قابل استفاده نیست.',
       'DURATION_NOT_ELIGIBLE' =>
         'این کد تخفیف برای این مدت اشتراک قابل استفاده نیست.',
@@ -320,16 +320,16 @@ String? discountRejectionMessage(Object error) {
 /// Message for a failed code check in the invoice.
 String discountCheckErrorMessage(Object error) {
   if (_mentions(error, 'too many requests')) {
-    return 'تعداد تلاش‌ها زیاد بود. لطفاً چند دقیقه دیگر دوباره امتحان کنید.';
+    return 'تعداد تلاش‌ها زیاد بود. چند دقیقه دیگه دوباره امتحان کن.';
   }
   final message = checkoutErrorMessage(error);
   return message == _kCheckoutGenericMessage
-      ? 'بررسی کد تخفیف ناموفق بود. لطفاً دوباره تلاش کنید.'
+      ? 'بررسی کد تخفیف ناموفق بود. دوباره امتحان کن.'
       : message;
 }
 
 const String _kCheckoutGenericMessage =
-    'شروع پرداخت ناموفق بود. لطفاً دوباره تلاش کنید.';
+    'شروع پرداخت ناموفق بود. دوباره امتحان کن.';
 
 /// Turns an API or network error from the purchase flow into a short Persian
 /// message. Server errors arrive as English sentences, which the student
@@ -337,15 +337,15 @@ const String _kCheckoutGenericMessage =
 String checkoutErrorMessage(Object error) {
   if (error is CheckoutException) return error.message;
   if (error is UnauthorizedException) {
-    return 'نشست شما به پایان رسیده است. لطفاً دوباره وارد حساب کاربری شوید.';
+    return 'لطفاً دوباره وارد حسابت شو.';
   }
   if (error is SocketException ||
       error is http.ClientException ||
       error is TimeoutException) {
-    return 'اتصال به اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.';
+    return 'اینترنت وصل نیست. اتصالت رو چک کن و دوباره امتحان کن.';
   }
   if (_mentions(error, 'already has an active or pending')) {
-    return 'شما در حال حاضر یک مشاور فعال دارید.';
+    return 'الان یک مشاور فعال داری.';
   }
   if (_mentions(error, 'already has a pending payment attempt')) {
     return kCheckoutPreviousPaymentOpenMessage;
@@ -353,16 +353,16 @@ String checkoutErrorMessage(Object error) {
   if (_mentions(error, 'gateway is unavailable') ||
       _mentions(error, 'gateway returned an invalid result') ||
       _mentions(error, 'checkout is unavailable')) {
-    return 'درگاه پرداخت در حال حاضر در دسترس نیست. لطفاً چند دقیقه دیگر دوباره تلاش کنید.';
+    return 'درگاه پرداخت فعلاً در دسترس نیست. چند دقیقه دیگه دوباره امتحان کن.';
   }
   if (_mentions(error, 'counselor is not available')) {
-    return 'این مشاور در حال حاضر پذیرش ندارد.';
+    return 'این مشاور فعلاً پذیرش نداره.';
   }
   if (_mentions(error, 'offer is not available')) {
-    return 'این طرح در حال حاضر قابل خرید نیست.';
+    return 'این پلن فعلاً قابل خرید نیست.';
   }
   if (_mentions(error, 'pending counseling subscription has expired')) {
-    return 'مهلت پرداخت به پایان رسید. لطفاً دوباره تلاش کنید.';
+    return 'مهلت پرداخت تموم شد. دوباره امتحان کن.';
   }
   final discount = discountRejectionMessage(error);
   if (discount != null) return discount;

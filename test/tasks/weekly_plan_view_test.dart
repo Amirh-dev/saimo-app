@@ -470,11 +470,11 @@ void main() {
       expect(
         find.descendant(
           of: _key('week-day-column-2'),
-          matching: find.text('اولین زمان‌بندی هفته را بساز'),
+          matching: find.text('اولین تسک زمان‌دار هفته رو بساز'),
         ),
         findsOneWidget,
       );
-      expect(find.text('اولین زمان‌بندی هفته را بساز'), findsOneWidget);
+      expect(find.text('اولین تسک زمان‌دار هفته رو بساز'), findsOneWidget);
     });
 
     testWidgets('a narrow screen opens the week on today', (tester) async {

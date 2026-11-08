@@ -55,15 +55,15 @@ class AuthCubit extends Cubit<AuthState> {
   // Persian, user-facing fallback messages for auth toasts.
   static final RegExp _persianChars = RegExp(r'[؀-ۿ]');
   static const _kSendOtpFailed =
-      'ارسال کد تایید ناموفق بود. لطفاً دوباره تلاش کنید.';
+      'ارسال کد تأیید ناموفق بود. دوباره امتحان کن.';
   static const _kInvalidCode =
-      'کد تایید نادرست است. لطفاً دوباره بررسی کنید.';
+      'کد تأیید درست نیست. دوباره چک کن.';
   static const _kUpdateProfileFailed = 'به‌روزرسانی پروفایل ناموفق بود.';
   static const _kRefreshFailed =
-      'تمدید نشست ناموفق بود. لطفاً دوباره وارد شوید.';
-  static const _kRegisterFailed = 'ثبت نام ناموفق بود. لطفاً دوباره تلاش کنید.';
+      'لطفاً دوباره وارد حسابت شو.';
+  static const _kRegisterFailed = 'ثبت‌نام ناموفق بود. دوباره امتحان کن.';
   static const _kRegistrationExpired =
-      'مهلت تکمیل ثبت نام به پایان رسیده است. لطفاً دوباره کد تایید دریافت کنید.';
+      'مهلت ثبت‌نام تموم شد. دوباره کد تأیید بگیر.';
 
   Future<void> sendOtp(String phoneNumber) async {
     // Every code request starts a new flow; a previous verification is void.
@@ -687,7 +687,7 @@ query GetMeForAuthCompletion {
         m.contains('socketexception') ||
         m.contains('network') ||
         m.contains('connection')) {
-      return 'اتصال به اینترنت برقرار نیست. لطفاً شبکه‌ی خود را بررسی کنید.';
+      return 'اینترنت وصل نیست. اتصالت رو چک کن.';
     }
     // "registration verification is expired; request a new OTP".
     if (m.contains('registration verification')) {
@@ -695,20 +695,20 @@ query GetMeForAuthCompletion {
     }
     // "phone number or username is already registered".
     if (m.contains('username') && m.contains('already registered')) {
-      return 'این نام کاربری یا شماره قبلاً ثبت شده است. لطفاً دوباره تلاش کنید.';
+      return 'این نام کاربری یا شماره قبلاً ثبت شده.';
     }
     // The resend cooldown: "please wait before requesting another OTP".
     if (m.contains('wait') && (m.contains('otp') || m.contains('code'))) {
-      return 'برای دریافت کد جدید کمی صبر کنید.';
+      return 'برای گرفتن کد جدید کمی صبر کن.';
     }
     if ((m.contains('expire') || m.contains('expired')) &&
         (m.contains('code') || m.contains('otp'))) {
-      return 'کد تایید منقضی شده است. لطفاً کد جدید دریافت کنید.';
+      return 'کد تأیید منقضی شده. کد جدید بگیر.';
     }
     if (m.contains('too many') ||
         m.contains('rate limit') ||
         m.contains('attempt')) {
-      return 'تعداد تلاش‌ها بیش از حد مجاز است. کمی بعد دوباره تلاش کنید.';
+      return 'تعداد تلاش‌ها زیاد شد. کمی بعد دوباره امتحان کن.';
     }
     if ((m.contains('invalid') ||
             m.contains('incorrect') ||
@@ -718,24 +718,24 @@ query GetMeForAuthCompletion {
       return _kInvalidCode;
     }
     if (m.contains('not registered') || m.contains('not found')) {
-      return 'این شماره ثبت نام نشده است.';
+      return 'این شماره هنوز ثبت‌نام نکرده.';
     }
     if (m.contains('already') &&
         (m.contains('register') || m.contains('exist'))) {
-      return 'این شماره قبلاً ثبت نام شده است.';
+      return 'این شماره قبلاً ثبت‌نام کرده.';
     }
     if (m.contains('username') &&
         (m.contains('taken') || m.contains('exist') || m.contains('use'))) {
-      return 'این نام کاربری قبلاً استفاده شده است.';
+      return 'این نام کاربری قبلاً گرفته شده.';
     }
     if (m.contains('phone') && (m.contains('invalid') || m.contains('format'))) {
-      return 'شماره تماس نامعتبر است.';
+      return 'شماره تماس درست نیست.';
     }
     if (m.contains('unauthorized') ||
         m.contains('unauthenticated') ||
         m.contains('401') ||
         m.contains('token')) {
-      return 'نشست شما منقضی شده است. لطفاً دوباره وارد شوید.';
+      return 'لطفاً دوباره وارد حسابت شو.';
     }
     return fallback;
   }

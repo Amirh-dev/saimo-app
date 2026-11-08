@@ -139,7 +139,7 @@ class _ConsultantDetailsScreenState extends State<ConsultantDetailsScreen> {
                     if (_c.skills.isNotEmpty) ...[
                       const SizedBox(height: 14),
                       _Section(
-                        title: 'در مشاوره با من چه می‌گیرید',
+                        title: 'در مشاوره با من چی می‌گیری',
                         child: Column(
                           children: [
                             for (var i = 0; i < _c.skills.length; i++) ...[
@@ -340,7 +340,7 @@ class _ConsultantDetailsScreenState extends State<ConsultantDetailsScreen> {
       overflow: _storyOpen ? TextOverflow.visible : TextOverflow.ellipsis,
     );
     return _Section(
-      title: 'چرا من مشاور شما هستم',
+      title: 'چرا من مشاورت باشم',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -542,7 +542,7 @@ class _HeroAvatar extends StatelessWidget {
             errorBuilder: (_, __, ___) => fallback,
           );
     return Semantics(
-      label: verified ? 'دانشجو بودن تأیید شده است' : null,
+      label: verified ? 'دانشجو بودنش تأیید شده' : null,
       child: SizedBox(
         width: 96,
         height: 96,
@@ -868,14 +868,14 @@ class _VerifiedCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ReText(
-                      'دانشجو بودن تأیید شده است',
+                      'دانشجو بودنش تأیید شده',
                       color: AppColors.black1,
                       fontSize: 16,
                       fontWeight: 900,
                       textAlign: TextAlign.right,
                     ),
                     ReText(
-                      'سایمو کارت دانشجویی را بررسی کرده است.',
+                      'سایمو کارت دانشجویی‌ش رو بررسی کرده.',
                       color: AppColors.dark8Color,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

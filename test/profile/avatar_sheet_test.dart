@@ -115,7 +115,7 @@ void main() {
       upload: (_) async {
         attempts += 1;
         if (attempts == 1) {
-          throw const AvatarUploadException('حجم تصویر بیشتر از ۵ مگابایت است.');
+          throw const AvatarUploadException('حجم تصویر بیشتر از ۵ مگابایته.');
         }
         return 'https://cdn.example/ok.jpg';
       },
@@ -126,7 +126,7 @@ void main() {
     await tester.tap(byKey('avatar-save'));
     await tester.pumpAndSettle();
 
-    expect(find.text('حجم تصویر بیشتر از ۵ مگابایت است.'), findsOneWidget);
+    expect(find.text('حجم تصویر بیشتر از ۵ مگابایته.'), findsOneWidget);
     expect(find.text('تلاش دوباره'), findsOneWidget);
     expect(find.byType(ProfileAvatarBottomSheet), findsOneWidget);
 
@@ -162,7 +162,7 @@ void main() {
     await tester.tap(byKey('avatar-source-gallery'));
     await tester.pumpAndSettle();
     expect(
-      find.text('دسترسی به عکس‌ها داده نشده است. آن را از تنظیمات گوشی فعال کنید.'),
+      find.text('دسترسی به عکس‌ها داده نشده. از تنظیمات گوشی فعالش کن.'),
       findsOneWidget,
     );
   });

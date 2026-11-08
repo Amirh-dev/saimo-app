@@ -170,7 +170,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     return plans.isEmpty ? kPlans : plans;
   }
 
-  /// Shows the invoice, and on "تایید و پرداخت" reserves the request and opens
+  /// Shows the invoice, and on "تأیید و پرداخت" reserves the request and opens
   /// the bank gateway in-app, then verifies the payment. A cancelled or failed
   /// payment reopens the invoice with an explanation so the student can retry
   /// in one tap. The success dialog is shown ONLY when the server confirms the
@@ -187,7 +187,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     // Nothing may be granted without a verified payment.
     if (repo == null || consultant.id.isEmpty) {
       messenger.showSnackBar(
-        _snack('در حال حاضر امکان پرداخت وجود ندارد. لطفاً دوباره تلاش کنید.',
+        _snack('فعلاً پرداخت ممکن نیست. دوباره امتحان کن.',
             error: true),
       );
       return;
@@ -395,7 +395,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
         return _ListMessage(
           icon: SolarIconsOutline.dangerTriangle,
           title: 'دریافت فهرست مشاوران ممکن نشد',
-          message: 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.',
+          message: 'اینترنتت رو چک کن و دوباره امتحان کن.',
           onRetry: _loadConsultants,
         );
       case null:
@@ -405,7 +405,7 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
       return const _ListMessage(
         icon: SolarIconsOutline.usersGroupRounded,
         title: 'فعلاً مشاوری در دسترس نیست',
-        message: 'به‌زودی مشاوران جدید به این فهرست اضافه می‌شوند.',
+        message: 'به‌زودی مشاورهای جدید به این فهرست اضافه می‌شن.',
       );
     }
     final matched = _studentMajor != null &&
@@ -461,7 +461,7 @@ class _MatchHeading extends StatelessWidget {
     if (matched) {
       note = null;
     } else if (major == null) {
-      note = 'برای دیدن مشاوران رشته خود، رشته‌تان را در پروفایل ثبت کنید.';
+      note = 'برای دیدن مشاورهای رشته‌ت، رشته‌ت رو توی پروفایل ثبت کن.';
     } else {
       note = 'فعلاً مشاوری برای رشته ${major.label} نداریم.';
     }
@@ -618,7 +618,7 @@ class _VerifyingCard extends StatelessWidget {
           ),
           SizedBox(height: 4),
           ReText(
-            'چند لحظه صبر کنید…',
+            'چند لحظه صبر کن…',
             color: AppColors.gray,
             fontSize: 13,
             fontWeight: FontWeight.w600,

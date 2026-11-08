@@ -105,7 +105,7 @@ query StatisticsSubjectParts($start: Time!, $end: Time!, $parent: ID!) {
     }
 
     if (response.linkException != null) {
-      return 'خطا در ارتباط با سرور. اتصال اینترنت را بررسی کنید.';
+      return 'ارتباط با سرور برقرار نشد. اینترنتت رو چک کن.';
     }
 
     return 'خطای ناشناخته در دریافت آمار.';

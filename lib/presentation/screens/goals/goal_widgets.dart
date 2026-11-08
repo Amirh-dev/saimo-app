@@ -177,7 +177,7 @@ String goalDeadlineText(GoalTiming timing) {
   final target = timing.target;
   final days = timing.daysLeft;
   if (target == null || days == null) return 'بدون موعد';
-  if (days == 0) return 'موعدش امروز است';
+  if (days == 0) return 'موعدش امروزه';
   if (days == -1) return 'موعدش دیروز بود';
   if (days < 0) return 'موعدش ${-days} روز پیش بود';
   return target.year == timing.today.year
@@ -316,7 +316,7 @@ class _HeroCount extends StatelessWidget {
               fontWeight: 1000,
               color: GoalColors.accent,
               lineHeight: 1.4),
-          unit('موعد است'),
+          unit('موعده'),
         ],
       );
     }
@@ -722,14 +722,14 @@ class GoalsEmpty extends StatelessWidget {
                 size: 32, color: GoalColors.ink),
           ),
           const SizedBox(height: 16),
-          const ReText('هنوز هدفی نگذاشتی',
+          const ReText('هنوز هدفی نذاشتی',
               fontSize: 16,
               fontWeight: 1000,
               color: GoalColors.ink,
               textAlign: TextAlign.center),
           const SizedBox(height: 6),
           const ReText(
-            'یک هدف با تاریخ مشخص بگذار؛ اینجا روزهای مانده تا آن را می‌شماریم.',
+            'هدف خودتو مشخص کن، مثلاً یک آزمون با تاریخ.',
             fontSize: 12.5,
             fontWeight: 600,
             color: GoalColors.muted,
@@ -747,7 +747,7 @@ class GoalsEmpty extends StatelessWidget {
                 color: GoalColors.accent,
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: const ReText('اولین هدفت را بگذار',
+              child: const ReText('اولین هدفت رو بذار',
                   fontSize: 14,
                   fontWeight: 800,
                   color: Colors.white,
@@ -755,7 +755,7 @@ class GoalsEmpty extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const ReText('یا یکی از این‌ها را شروع کن:',
+          const ReText('یا یکی از این‌ها رو شروع کن:',
               fontSize: 11.5,
               fontWeight: 700,
               color: GoalColors.muted,

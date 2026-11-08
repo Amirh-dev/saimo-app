@@ -792,7 +792,7 @@ class _Hint extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: ReText(
-              'با نوشتن عنوان، تگ‌های مرتبط پیشنهاد می‌شوند.',
+              'با نوشتن عنوان، تگ‌های مرتبط پیشنهاد می‌شن.',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.gray,
@@ -829,19 +829,19 @@ class TagTitleHint extends StatelessWidget {
         // Set when the title could say more; the general note otherwise.
         final String? clarify;
         if (example != null) {
-          clarify = 'هرچه عنوان کامل‌تر باشد، آمار دقیق‌تر است؛ '
+          clarify = 'هرچی عنوان کامل‌تر باشه، آمار دقیق‌تره؛ '
               'مثلاً «$example».';
         } else if (grade != null) {
           clarify = 'با نوشتن نام درس، مثلاً «فیزیک $grade»، '
-              'تگ آن خودکار انتخاب می‌شود و در آمار می‌آید.';
+              'تگش خودکار انتخاب می‌شه و توی آمار میاد.';
         } else if (selection.needsClearerTitle) {
-          clarify = 'با نوشتن نام کامل درس، تگ آن خودکار انتخاب می‌شود '
-              'و آمار دقیق‌تر می‌شود.';
+          clarify = 'با نوشتن اسم کامل درس، تگش خودکار انتخاب می‌شه '
+              'و آمار دقیق‌تر می‌شه.';
         } else {
           clarify = null;
         }
         final text = clarify ??
-            'تگ‌ها از روی عنوان انتخاب می‌شوند و آمار درس‌ها را می‌سازند.';
+            'تگ‌ها از روی عنوان انتخاب می‌شن و آمار درس‌ها رو می‌سازن.';
         return AnimatedSize(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,

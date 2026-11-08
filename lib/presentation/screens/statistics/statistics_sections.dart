@@ -306,7 +306,7 @@ class _SubjectsSectionState extends State<SubjectsSection> {
             onTap: () => setState(() => _showHelp = !_showHelp),
           ),
           trailing: const ReText(
-            'زمان ، دقت تست',
+            'زمان، دقت تست',
             fontSize: 11,
             fontWeight: 700,
             color: StatColors.muted,
@@ -454,7 +454,7 @@ class _HelpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'این آمار چطور حساب می‌شود؟',
+      label: 'این آمار چطور حساب می‌شه؟',
       child: GestureDetector(
         key: const ValueKey('subjects-help'),
         behavior: HitTestBehavior.opaque,
@@ -503,10 +503,10 @@ class _SubjectsHelp extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: ReText(
-              'این آمار بر اساس تگ‌هایی است که روی تسک‌هایتان می‌زنید. '
-              'با لمس هر درس، زمان و دقت زیرمجموعه‌هایش را می‌بینید؛ '
-              '«عمومی» تسک‌هایی است که فقط تگ خود درس را دارند و '
-              'تسک‌های بدون تگ در «متفرقه» می‌آیند.',
+              'این آمار از تگ‌های تسک‌هات ساخته می‌شه. '
+              'با زدن روی هر درس، زمان و دقت زیرمجموعه‌هاش رو می‌بینی؛ '
+              '«عمومی» یعنی تسک‌هایی که فقط تگ خود درس رو دارن و '
+              'تسک‌های بدون تگ توی «متفرقه» میان.',
               fontSize: 11.5,
               fontWeight: 600,
               color: StatColors.ink,
@@ -544,7 +544,7 @@ class _SubjectParts extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Center(
               child: _TextButton(
-                label: 'دریافت نشد؛ دوباره تلاش کنید',
+                label: 'دریافت نشد؛ دوباره امتحان کن',
                 icon: Icons.refresh_rounded,
                 onTap: onRetry,
               ),
@@ -800,8 +800,8 @@ class _NoTestsYet extends StatelessWidget {
       icon: IconsaxPlusBold.edit_2,
       title: isCurrent ? 'هنوز تستی ثبت نکرده‌ای' : 'در این بازه تستی ثبت نشده',
       body: isCurrent
-          ? 'بعد از هر تسک، تعداد تست‌ها و جواب‌های درستت را در گزارشش بنویس تا نمودارت اینجا ساخته شود.'
-          : 'تست‌هایی که در گزارش تسک‌ها ثبت کنی، اینجا نمودار می‌شوند.',
+          ? 'بعد از هر تسک، تعداد تست‌ها و جواب‌های درستت رو توی گزارشش بنویس تا نمودارت اینجا ساخته بشه.'
+          : 'تست‌هایی که توی گزارش تسک‌ها ثبت کنی، اینجا نمودار می‌شن.',
     );
   }
 }
@@ -844,8 +844,8 @@ class EmptyStatsCard extends StatelessWidget {
           const SizedBox(height: 6),
           ReText(
             current
-                ? 'تسک‌هایت را با تایمر انجام بده تا زمان مطالعه، تست‌ها و پیشرفتت اینجا ساخته شود.'
-                : 'بازه‌ی دیگری را ببین یا به بازه‌ی جاری برگرد.',
+                ? 'آمار بعد از اتمام اولین تسک نمایش داده می‌شه.'
+                : 'یک بازه‌ی دیگه رو ببین یا به بازه‌ی جاری برگرد.',
             fontSize: 12.5,
             fontWeight: 600,
             color: StatColors.muted,

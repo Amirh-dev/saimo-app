@@ -423,7 +423,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     final title = _title.text.trim();
     if (title.isEmpty) {
       setState(() {
-        _titleError = 'عنوان تسک را بنویسید.';
+        _titleError = 'عنوان تسک رو بنویس.';
         _titleErrorTick++;
       });
       _titleFocus.requestFocus();
@@ -515,16 +515,20 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               ],
             ),
           ),
+          // Right under the title they are suggested from, so the student
+          // sees them follow what they type.
           enter(
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const TaskSectionLabel('روز'),
-                WeekDayPicker(
-                  selected: _day,
-                  today: widget.today,
-                  onChanged: (day) => setState(() => _day = day),
+                TaskSectionLabel(
+                  'تگ‌ها',
+                  trailing: TagSuggestionStatus(
+                    selection: _tags,
+                    keyPrefix: 'quick-add',
+                  ),
                 ),
+                TagSelectionChips(selection: _tags, keyPrefix: 'quick-add'),
               ],
             ),
           ),
@@ -565,18 +569,18 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
               ],
             ),
           ),
+          // Last: it is already the day the sheet was opened for, and the
+          // header says so.
           enter(
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TaskSectionLabel(
-                  'تگ‌ها',
-                  trailing: TagSuggestionStatus(
-                    selection: _tags,
-                    keyPrefix: 'quick-add',
-                  ),
+                const TaskSectionLabel('روز'),
+                WeekDayPicker(
+                  selected: _day,
+                  today: widget.today,
+                  onChanged: (day) => setState(() => _day = day),
                 ),
-                TagSelectionChips(selection: _tags, keyPrefix: 'quick-add'),
               ],
             ),
           ),
@@ -818,7 +822,7 @@ class _MoveTaskSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const ReText(
-            'روزی را که می‌خواهید تسک به آن منتقل شود انتخاب کنید.',
+            'روز جدید این تسک رو انتخاب کن.',
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: AppColors.gray,

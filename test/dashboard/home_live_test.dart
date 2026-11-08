@@ -13,6 +13,7 @@ import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/profile/profile_repository.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
@@ -91,8 +92,94 @@ DashboardTask _task(String id, String title, int minutes, {int elapsed = 0}) {
   );
 }
 
+Future<DashboardCubit> _pumpHome(
+    WidgetTester tester, List<DashboardTask> tasks) async {
+  tester.view.physicalSize = const Size(390 * 3, 1000 * 3);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
+  ActiveCounselorStore.instance.debugReset();
+  ActiveCounselorStore.instance.set(null);
+  final cubit = DashboardCubit(_Repository(tasks), settle: Duration.zero);
+  final graphql = GraphQLRepository(
+    Client(
+      link:
+          Link.function((request, [forward]) => const Stream<Response>.empty()),
+    ),
+    tokenStorage: await TokenStorage.create(),
+    logger: GraphQLConsoleLogger(endpoint: 'https://example.invalid/graphql'),
+  );
+  await tester.pumpWidget(
+    RepositoryProvider.value(
+      value: graphql,
+      child: BlocProvider.value(
+        value: cubit,
+        child: const MaterialApp(
+          home: AppTabsShell(
+            titles: ['خوش اومدی'],
+            tabs: [DashboardScreen()],
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 2));
+  return cubit;
+}
+
+Future<void> _closeHome(WidgetTester tester, DashboardCubit cubit) async {
+  await tester.pumpWidget(const SizedBox());
+  await tester.pump(const Duration(minutes: 5));
+  await tester.runAsync(cubit.close);
+}
+
 void main() {
   setUpAll(loadAppFonts);
+
+  testWidgets('a new student is welcomed once, then guided from the home',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final onboarding = OnboardingStore.instance;
+    addTearDown(onboarding.reset);
+    onboarding.start();
+
+    final cubit = await _pumpHome(tester, const []);
+    await tester.pumpAndSettle();
+    expect(find.text('اولین تسک زمان‌دار امروز رو بساز'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('onboarding-welcome-later')));
+    await tester.pumpAndSettle();
+    expect(onboarding.showWelcome, isFalse);
+    expect(find.byKey(const ValueKey('onboarding-checklist')), findsOneWidget);
+    expect(find.text('برنامه‌ی امروزتو بچین'), findsOneWidget);
+    expect(find.text('۰ از ۳ انجام شد'), findsOneWidget);
+
+    await _closeHome(tester, cubit);
+  });
+
+  testWidgets('tasks already on the server tick off the plan step',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final onboarding = OnboardingStore.instance;
+    addTearDown(onboarding.reset);
+    onboarding.start();
+    onboarding.markWelcomeSeen();
+
+    final cubit = await _pumpHome(tester, [_task('bio', 'زیست', 45)]);
+    await tester.pump();
+    expect(onboarding.planned, isTrue);
+    expect(find.text('۱ از ۳ انجام شد'), findsOneWidget);
+
+    await _closeHome(tester, cubit);
+  });
+
+  testWidgets('an old account sees no checklist', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    OnboardingStore.instance.reset();
+    final cubit = await _pumpHome(tester, const []);
+    expect(find.byKey(const ValueKey('onboarding-checklist')), findsNothing);
+    await _closeHome(tester, cubit);
+  });
 
   testWidgets(
       'a timer started anywhere shows on the home at once and keeps counting',
@@ -124,7 +211,7 @@ void main() {
           value: cubit,
           child: const MaterialApp(
             home: AppTabsShell(
-              titles: ['خوش آمدید'],
+              titles: ['خوش اومدی'],
               tabs: [DashboardScreen()],
             ),
           ),

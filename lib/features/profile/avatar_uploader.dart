@@ -69,7 +69,7 @@ class AvatarUploader {
       try {
         response = await http.Response.fromStream(await _client.send(request).timeout(_timeout)).timeout(_timeout);
       } on TimeoutException {
-        throw const AvatarUploadException('بارگذاری بیش از حد طول کشید. دوباره تلاش کنید.');
+        throw const AvatarUploadException('بارگذاری خیلی طول کشید. دوباره امتحان کن.');
       } on http.ClientException {
         // No connection, on every platform: the browser client and the
         // dart:io one both report it this way.
@@ -97,15 +97,15 @@ class AvatarUploader {
     }
 
     throw AvatarUploadException(switch (json['code']) {
-      'AVATAR_TOO_LARGE' => 'حجم تصویر بیشتر از ۵ مگابایت است.',
-      'INVALID_AVATAR' => 'این فایل پذیرفته نشد. یک تصویر JPG یا PNG انتخاب کنید.',
-      'AVATAR_UPLOAD_UNAVAILABLE' => 'بارگذاری تصویر فعلاً ممکن نیست. کمی بعد دوباره تلاش کنید.',
+      'AVATAR_TOO_LARGE' => 'حجم تصویر بیشتر از ۵ مگابایته.',
+      'INVALID_AVATAR' => 'این فایل قبول نشد. یک تصویر JPG یا PNG انتخاب کن.',
+      'AVATAR_UPLOAD_UNAVAILABLE' => 'بارگذاری تصویر فعلاً ممکن نیست. کمی بعد دوباره امتحان کن.',
       'UNAUTHORIZED' => _signedOut,
       _ => _failed,
     });
   }
 
-  static const _offline = 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.';
-  static const _signedOut = 'نشست شما به پایان رسیده است. دوباره وارد حساب شوید.';
-  static const _failed = 'ذخیره تصویر ناموفق بود. دوباره تلاش کنید.';
+  static const _offline = 'اینترنتت رو چک کن و دوباره امتحان کن.';
+  static const _signedOut = 'لطفاً دوباره وارد حسابت شو.';
+  static const _failed = 'ذخیره تصویر ناموفق بود. دوباره امتحان کن.';
 }

@@ -8,14 +8,18 @@ import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
+import 'package:simo_learn/presentation/screens/onboarding/onboarding_widgets.dart';
+import 'package:simo_learn/presentation/screens/onboarding/welcome_screen.dart';
 import 'package:simo_learn/presentation/screens/dashboard/activity_widget.dart';
 import 'package:simo_learn/presentation/screens/dashboard/install_card.dart';
 import 'package:simo_learn/presentation/screens/dashboard/live_tasks.dart';
 import 'package:simo_learn/presentation/screens/dashboard/study_metrics.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
@@ -51,8 +55,31 @@ class _DashboardScreenState extends State<DashboardScreen> with AppTabRevisit {
       if (mounted) {
         context.read<DashboardCubit>().load();
         _consultantPopupTimer = ConsultantIntroPopup.schedule(context);
+        unawaited(_welcomeIfNew());
       }
     });
+  }
+
+  /// Right after registration: the welcome page, once. «ساختن برنامه» goes
+  /// on to the tasks tab, where the hint points at the add button.
+  Future<void> _welcomeIfNew() async {
+    final onboarding = OnboardingStore.instance;
+    await onboarding.load();
+    if (!mounted || !onboarding.showWelcome) return;
+    onboarding.markWelcomeSeen();
+    final buildPlan = await context.to<bool>(const OnboardingWelcomeScreen());
+    if (buildPlan == true && mounted) TasksScreen.openToday(context);
+  }
+
+  /// A plan, a finished task or a goal already on the server counts for the
+  /// first-steps checklist too, wherever it was made.
+  void _noteOnboardingProgress(DashboardState state) {
+    final onboarding = OnboardingStore.instance;
+    if (state.goals?.isNotEmpty ?? false) onboarding.markGoalSet();
+    final tasks = state.tasks;
+    if (tasks == null || tasks.isEmpty) return;
+    onboarding.markPlanned();
+    if (tasks.any((task) => task.isDone)) onboarding.markStudied();
   }
 
   @override
@@ -65,8 +92,12 @@ class _DashboardScreenState extends State<DashboardScreen> with AppTabRevisit {
   Widget build(BuildContext context) => AppExitGuard(
         child: BlocConsumer<DashboardCubit, DashboardState>(
           listenWhen: (previous, current) =>
-              previous.tasksFetchedAt != current.tasksFetchedAt,
-          listener: (context, state) => _adoptServerTimer(state.tasks),
+              previous.tasksFetchedAt != current.tasksFetchedAt ||
+              previous.goals != current.goals,
+          listener: (context, state) {
+            _adoptServerTimer(state.tasks);
+            _noteOnboardingProgress(state);
+          },
           builder: (context, state) {
             return Scaffold(
               backgroundColor: AppColors.gray1,
@@ -122,7 +153,7 @@ class _DashboardContent extends StatelessWidget {
           child: const SafeArea(
             child: Column(
               children: [
-                AppTabHeader('خوش آمدید'),
+                AppTabHeader('خوش اومدی'),
                 // Under the title, so the offer stays in view without
                 // pushing the page down.
                 InstallAppCard(),
@@ -137,6 +168,26 @@ class _DashboardContent extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // A new student's first steps, above everything else
+                  // until they are done.
+                  ListenableBuilder(
+                    listenable: OnboardingStore.instance,
+                    builder: (context, _) {
+                      final onboarding = OnboardingStore.instance;
+                      if (!onboarding.showChecklist) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 24),
+                        child: StartChecklistCard(
+                          store: onboarding,
+                          onPlan: () => TasksScreen.openToday(context),
+                          onStudy: () => TasksScreen.openToday(context),
+                          onGoal: () => AppTabsShell.select(context, 2),
+                        ),
+                      );
+                    },
+                  ),
                   _DashboardSection(
                     failed: state.hasFailed(DashboardSection.profile),
                     ready: state.profile != null,
@@ -362,7 +413,7 @@ class _EmptyGoals extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ReText(
-                      'هنوز هدف فعالی ندارید',
+                      'هنوز هدف فعالی نداری',
                       textAlign: TextAlign.right,
                       color: AppColors.black1,
                       fontSize: 13,
@@ -370,7 +421,7 @@ class _EmptyGoals extends StatelessWidget {
                     ),
                     SizedBox(height: 3),
                     ReText(
-                      'برای ساختن اولین هدف ضربه بزنید',
+                      'بزن تا اولین هدفت رو بسازی',
                       textAlign: TextAlign.right,
                       color: AppColors.gray,
                       fontSize: 11,
@@ -890,7 +941,7 @@ class _GoalCard extends StatelessWidget {
           color: AppColors.errorColor);
     }
     if (days == 0) {
-      return const ReText('موعدش امروز است',
+      return const ReText('موعدش امروزه',
           fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.black1);
     }
     final date = Jalali.fromDateTime(target);

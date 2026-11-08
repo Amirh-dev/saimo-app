@@ -10,8 +10,10 @@ import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
+import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/presentation/screens/onboarding/onboarding_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
@@ -35,6 +37,17 @@ import 'package:solar_icons/solar_icons.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
+
+  /// Bumped to bring the tab back to today's day view.
+  static final ValueNotifier<int> _todayRequests = ValueNotifier(0);
+
+  /// Opens the tasks tab on today, in daily mode, whatever day it was left
+  /// on. For links that are about today's tasks, such as the new student's
+  /// first steps; plain tab switches keep the day the student chose.
+  static void openToday(BuildContext context) {
+    _todayRequests.value++;
+    navigateToIndex(context, 1, -1);
+  }
 
   @override
   State<TasksScreen> createState() => _TasksScreenState();
@@ -136,6 +149,7 @@ class _TasksScreenState extends State<TasksScreen>
 
     _timer.addListener(_onGlobalTimerChanged);
     WidgetsBinding.instance.addObserver(this);
+    TasksScreen._todayRequests.addListener(_showToday);
 
     // A task written somewhere else (the home, a timer, another tab) while
     // this tab is out of sight: reload on the way back, however soon.
@@ -154,8 +168,20 @@ class _TasksScreenState extends State<TasksScreen>
     });
   }
 
+  /// See [TasksScreen.openToday].
+  void _showToday() {
+    if (_isWeekMode) {
+      // Daily mode starts on [_selectedDate]; set it first.
+      _selectedDate = _today;
+      _setMode(TasksViewMode.day);
+    } else if (!isSameJalaliDay(_selectedDate, _today)) {
+      unawaited(_goToToday());
+    }
+  }
+
   @override
   void dispose() {
+    TasksScreen._todayRequests.removeListener(_showToday);
     _taskWrites?.cancel();
     _undoTimer?.cancel();
     _week
@@ -314,7 +340,7 @@ class _TasksScreenState extends State<TasksScreen>
   void _explainPlanningHorizon() {
     showReToast(
       context,
-      'برنامه‌ریزی تا ۱۲ هفته آینده امکان‌پذیر است.',
+      'فقط تا ۱۲ هفته‌ی آینده می‌تونی برنامه بچینی.',
       ReToastType.info,
     );
   }
@@ -370,7 +396,7 @@ class _TasksScreenState extends State<TasksScreen>
           showReToast(
             context,
             _actionErrorMessage(
-                error, 'جابه‌جایی تسک ناموفق بود. دوباره تلاش کنید.'),
+                error, 'جابه‌جایی تسک ناموفق بود. دوباره امتحان کن.'),
             ReToastType.failed,
           );
         }
@@ -416,7 +442,7 @@ class _TasksScreenState extends State<TasksScreen>
         showReToast(
           context,
           _actionErrorMessage(
-              error, 'تغییر وضعیت تسک ناموفق بود. دوباره تلاش کنید.'),
+              error, 'تغییر وضعیت تسک ناموفق بود. دوباره امتحان کن.'),
           ReToastType.failed,
         );
       }
@@ -449,7 +475,7 @@ class _TasksScreenState extends State<TasksScreen>
         showReToast(
           context,
           _actionErrorMessage(
-              error, 'تغییر وضعیت تسک ناموفق بود. دوباره تلاش کنید.'),
+              error, 'تغییر وضعیت تسک ناموفق بود. دوباره امتحان کن.'),
           ReToastType.failed,
         );
       }
@@ -500,7 +526,7 @@ class _TasksScreenState extends State<TasksScreen>
           debugPrint('Quick add failed: $error');
           return taskFailureMessage(
             error,
-            fallback: 'ثبت تسک ناموفق بود؛ دوباره تلاش کنید.',
+            fallback: 'ثبت تسک ناموفق بود؛ دوباره امتحان کن.',
           );
         }
       },
@@ -679,7 +705,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       setState(() => _isLoadingTasks = false);
       showReToast(
         context,
-        _userErrorMessage(error, 'دریافت تسک‌ها ناموفق بود. دوباره تلاش کنید.'),
+        _userErrorMessage(error, 'دریافت تسک‌ها ناموفق بود. دوباره امتحان کن.'),
         ReToastType.failed,
       );
     }
@@ -694,7 +720,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
     String? recurrenceId,
   }) async {
     if (taskId == null || taskId.isEmpty) {
-      showReToast(context, 'شناسه تسک پیدا نشد', ReToastType.failed);
+      showReToast(context, 'این تسک پیدا نشد', ReToastType.failed);
       return false;
     }
 
@@ -724,7 +750,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       if (!mounted) return false;
       showReToast(
         context,
-        _userErrorMessage(error, 'حذف تسک ناموفق بود. دوباره تلاش کنید.'),
+        _userErrorMessage(error, 'حذف تسک ناموفق بود. دوباره امتحان کن.'),
         ReToastType.failed,
       );
       return false;
@@ -812,7 +838,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                 ReText(
                   isRecurring
                       ? 'این تسک تکرارشونده است'
-                      : 'تسک موردنظر حذف شود؟',
+                      : 'این تسک حذف بشه؟',
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: AppColors.black1,
@@ -821,7 +847,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                 const SizedBox(height: 6),
                 ReText(
                   isRecurring
-                      ? 'می‌توانید فقط همین روز را حذف کنید یا تکرار را برای روزهای آینده هم متوقف کنید.'
+                      ? 'می‌تونی فقط همین روز رو حذف کنی یا تکرار روزهای بعد رو هم برداری.'
                       : 'این کار قابل بازگشت نیست.',
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -891,8 +917,8 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
   Widget _buildEmptyDay(BuildContext context) {
     return ReEmptyList(
       imageWidth: MediaQuery.of(context).size.width / 2.5,
-      title: 'تسک زمان‌داری ندارید!',
-      subtitle: 'برای ${_selectedDayPhrase()} تسکی اضافه نکردید.',
+      title: 'تسک زمان‌داری نداری',
+      subtitle: 'برای ${_selectedDayPhrase()} هنوز تسکی نساختی.',
     );
   }
 
@@ -988,7 +1014,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
     if (!started && !_timer.isCompleted && mounted) {
       showReToast(
         context,
-        'شروع تایمر ناموفق بود. دوباره تلاش کنید.',
+        'شروع تایمر ناموفق بود. دوباره امتحان کن.',
         ReToastType.failed,
       );
     }
@@ -1402,6 +1428,25 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                 ),
               ],
             ),
+          ),
+          // A new student's first step: points at «ثبت تسک» until the
+          // first task exists.
+          ListenableBuilder(
+            listenable: OnboardingStore.instance,
+            builder: (context, _) {
+              if (_isWeekMode || !OnboardingStore.instance.showTaskHint) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: OnboardingHint(
+                  key: const ValueKey('onboarding-task-hint'),
+                  text: 'اولین تسک زمان‌دار امروز رو بساز',
+                  arrowInset: 64,
+                  onTap: () => _openQuickAdd(_selectedDate),
+                ),
+              );
+            },
           ),
           Expanded(
             child: Stack(

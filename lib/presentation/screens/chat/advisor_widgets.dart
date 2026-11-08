@@ -28,7 +28,7 @@ int? _daysLeft(DateTime? endDate, DateTime now) {
 String advisorSubscriptionLabel(DateTime? endDate, {DateTime? now}) {
   final days = _daysLeft(endDate, now ?? DateTime.now());
   if (days == null) return 'اشتراک فعال';
-  if (days <= 0) return 'امروز آخرین روز اشتراک است';
+  if (days <= 0) return 'امروز آخرین روز اشتراکه';
   if (days <= 14) return convertToPersianNumbers('$days روز تا پایان اشتراک');
   final end = Jalali.fromDateTime(endDate!.toLocal());
   return convertToPersianNumbers(
@@ -154,7 +154,7 @@ class AdvisorIntroView extends StatelessWidget {
   static const List<(IconData, String)> _benefits = [
     (SolarIconsOutline.calendarMark, 'بررسی و تنظیم برنامه هفتگی'),
     (SolarIconsOutline.chatRoundDots, 'پاسخ به سوال‌های درسی و انگیزشی'),
-    (SolarIconsOutline.graphUp, 'پیگیری پیشرفت شما در طول مسیر'),
+    (SolarIconsOutline.graphUp, 'پیگیری پیشرفتت در طول مسیر'),
   ];
 
   @override
@@ -183,9 +183,9 @@ class AdvisorIntroView extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     ReText(
-                      'این بخش برای گفتگوی مستقیم با مشاور شخصی شماست. پس از انتخاب '
-                      'مشاور، برنامه، سوال‌ها و حال درس‌خواندنتان را همین‌جا با او '
-                      'در میان بگذارید.',
+                      'اینجا مستقیم با مشاور خودت حرف می‌زنی. بعد از انتخاب '
+                      'مشاور، برنامه و سوال‌هات رو همین‌جا '
+                      'باهاش در میون بذار.',
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: AppColors.gray,
@@ -374,7 +374,7 @@ class AdvisorWelcome extends StatelessWidget {
               child: Column(
                 children: [
                   ReText(
-                    advisor?.name ?? 'مشاور شما',
+                    advisor?.name ?? 'مشاورت',
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                     color: AppColors.black1,
@@ -382,7 +382,7 @@ class AdvisorWelcome extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   ReText(
-                    advisor?.title ?? 'مشاور شما',
+                    advisor?.title ?? 'مشاورت',
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppColors.gray,
@@ -395,7 +395,7 @@ class AdvisorWelcome extends StatelessWidget {
             const _Rise(
               order: 2,
               child: ReText(
-                'گفتگو را با یکی از این پیام‌ها شروع کنید',
+                'گفتگو رو با یکی از این پیام‌ها شروع کن',
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppColors.gray,
@@ -510,7 +510,7 @@ class _AdvisorSheet extends StatelessWidget {
           Center(child: AdvisorAvatar(path: advisor.avatar, size: 80, ring: true)),
           const SizedBox(height: 12),
           ReText(
-            advisor.name ?? 'مشاور شما',
+            advisor.name ?? 'مشاورت',
             fontSize: 17,
             fontWeight: FontWeight.w900,
             color: AppColors.black1,

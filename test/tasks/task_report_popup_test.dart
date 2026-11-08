@@ -135,7 +135,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(submitted, isEmpty);
-    expect(find.text('پاسخ صحیح نمی‌تواند از تعداد کل سوالات بیشتر باشد.'),
+    expect(find.text('پاسخ صحیح نمی‌تونه از کل سوال‌ها بیشتر باشه.'),
         findsOneWidget);
   });
 

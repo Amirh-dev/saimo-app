@@ -18,7 +18,7 @@ class ConsultantIntroPopup {
   ConsultantIntroPopup._();
 
   static const Duration delay = Duration(seconds: 15);
-  static const Duration gracePeriod = Duration(days: 2);
+  static const Duration gracePeriod = Duration(days: 5);
 
   static const String _firstSeenKey = 'consultant_popup_first_seen_at';
   static const String _dismissedDayKey = 'consultant_popup_dismissed_day';

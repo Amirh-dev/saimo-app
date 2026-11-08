@@ -109,7 +109,7 @@ void main() {
       final gate = Completer<String>();
       final result = await openSheet(tester, onConfirm: (_) => gate.future);
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pump();
       expect(find.text('صورتحساب'), findsOneWidget);
 
@@ -135,14 +135,14 @@ void main() {
         },
       );
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
 
       expect(find.text('صورتحساب'), findsOneWidget);
-      expect(find.textContaining('درگاه پرداخت در حال حاضر'), findsOneWidget);
+      expect(find.textContaining('درگاه پرداخت فعلاً'), findsOneWidget);
       expect(find.textContaining('unavailable'), findsNothing);
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
 
       expect(await result, 'gateway');
@@ -169,7 +169,7 @@ void main() {
     );
 
     Future<void> enterCode(WidgetTester tester, String code) async {
-      await tester.tap(find.text('کد تخفیف دارید؟'));
+      await tester.tap(find.text('کد تخفیف داری؟'));
       await tester.pumpAndSettle();
       await tester.enterText(
           find.byKey(const ValueKey('discount-code-field')), code);
@@ -181,7 +181,7 @@ void main() {
     testWidgets('hides the code entry when no checker is given',
         (tester) async {
       await openSheet(tester, onConfirm: (_) async => 'gateway');
-      expect(find.text('کد تخفیف دارید؟'), findsNothing);
+      expect(find.text('کد تخفیف داری؟'), findsNothing);
     });
 
     testWidgets('applies a code, shows the breakdown and pays with it',
@@ -208,7 +208,7 @@ void main() {
       expect(find.text('۳,۹۷۶,۰۰۰-'), findsOneWidget);
       expect(find.text('قیمت پلن'), findsNWidgets(2));
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
       expect(await result, 'gateway');
       expect(paidWith?.code, 'SAIMO20');
@@ -234,11 +234,11 @@ void main() {
 
       await enterCode(tester, 'old');
 
-      expect(find.text('مهلت استفاده از این کد تخفیف تمام شده است.'),
+      expect(find.text('مهلت این کد تخفیف تموم شده.'),
           findsOneWidget);
       expect(find.text('اعمال شد'), findsNothing);
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
       expect(paidWith, isNull);
     });
@@ -258,10 +258,10 @@ void main() {
 
       await tester.tap(find.text('حذف'));
       await tester.pumpAndSettle();
-      expect(find.text('کد تخفیف دارید؟'), findsOneWidget);
+      expect(find.text('کد تخفیف داری؟'), findsOneWidget);
       expect(find.text('مبلغ قابل پرداخت'), findsNothing);
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
       expect(paidWith, isNull);
     });
@@ -284,14 +284,14 @@ void main() {
       );
       await enterCode(tester, 'SAIMO20');
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
-      expect(find.text('ظرفیت استفاده از این کد تخفیف تکمیل شده است.'),
+      expect(find.text('ظرفیت این کد تخفیف پر شده.'),
           findsOneWidget);
       expect(find.text('اعمال شد'), findsNothing);
       expect(find.textContaining('not applicable'), findsNothing);
 
-      await tester.tap(find.text('تایید و پرداخت'));
+      await tester.tap(find.text('تأیید و پرداخت'));
       await tester.pumpAndSettle();
       expect(await result, 'gateway');
       expect(codes, ['SAIMO20', null]);
@@ -309,7 +309,7 @@ void main() {
       expect(
         discountRejectionMessage(const GraphQLRawException(
             'discount code is not applicable: ALREADY_USED')),
-        'شما قبلاً از این کد تخفیف استفاده کرده‌اید.',
+        'قبلاً از این کد تخفیف استفاده کردی.',
       );
       expect(discountRejectionMessage(Exception('something else')), isNull);
       expect(discountStatusMessage('DURATION_NOT_ELIGIBLE'),

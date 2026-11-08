@@ -76,9 +76,9 @@ class CounselorSkill {
 
 /// Shown when the server refuses the counseling section to this account
 /// (e.g. an admin account, which is not a student).
-const String kCounselingNoAccessTitle = 'شما به این بخش دسترسی ندارید';
+const String kCounselingNoAccessTitle = 'به این بخش دسترسی نداری';
 const String kCounselingNoAccessMessage =
-    'برای استفاده از بخش مشاوره، با پشتیبانی تماس بگیرید.';
+    'برای استفاده از بخش مشاوره، با پشتیبانی تماس بگیر.';
 
 /// Whether [error] is the server's role check rejecting this account.
 bool isCounselingAccessDenied(Object error) =>

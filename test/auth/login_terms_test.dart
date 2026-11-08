@@ -19,7 +19,7 @@ void main() {
     );
 
     expect(
-      find.textContaining('ورود شما به معنای موافقت با', findRichText: true),
+      find.textContaining('ورودت یعنی موافقت با', findRichText: true),
       findsOneWidget,
     );
 

@@ -322,7 +322,7 @@ class SubjectStatistics {
     }
     if (weakest.accuracy! < 60) {
       return 'دقت تست‌های ${weakest.name} ${weakest.accuracy!.round()}٪ است؛ '
-          'مرور بیشتری لازم دارد.';
+          'مرور بیشتری لازم داره.';
     }
     if (tested.length >= 2) {
       return 'بهترین دقتت در ${best.name} بوده: ${best.accuracy!.round()}٪.';
