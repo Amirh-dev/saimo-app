@@ -7,6 +7,7 @@ import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/app/routes.dart';
+import 'package:simo_learn/data/activity/app_activity_reporter.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/home_widgets/home_widget_snapshot.dart';
 import 'package:simo_learn/data/home_widgets/home_widgets.dart';
@@ -305,10 +306,32 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     // "بازگشت به اپلیکیشن" on the payment result page opens the app here.
     AppLinks.instance.listen(_openLink);
     HomeWidgets.instance.attach(context.read<DashboardCubit>());
+    // Tabs shown, for the admin panel's usage figures.
+    AppActivityReporter.instance?.currentScreen = _currentTabKey;
+    AppTabsShell.selectedTab.addListener(_reportTabView);
+  }
+
+  static const List<String> _tabKeys = [
+    'home',
+    'tasks',
+    'goals',
+    'statistics',
+    'profile',
+  ];
+
+  String? _currentTabKey() {
+    final index = AppTabsShell.selectedTab.value;
+    return index >= 0 && index < _tabKeys.length ? _tabKeys[index] : null;
+  }
+
+  void _reportTabView() {
+    final key = _currentTabKey();
+    if (key != null) AppActivityReporter.instance?.screenViewed(key);
   }
 
   @override
   void dispose() {
+    AppTabsShell.selectedTab.removeListener(_reportTabView);
     WidgetsBinding.instance.removeObserver(this);
     _authSubscription?.cancel();
     _inboxEventSubscription?.cancel();
@@ -497,6 +520,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   void _handleAuthState(AuthState state) {
     if (state is AuthAuthenticated) {
       _isAuthenticated = true;
+      unawaited(AppActivityReporter.instance?.setSignedIn(true));
       // A brand-new account gets the first-steps guide.
       if (state.action == AuthAction.register) OnboardingStore.instance.start();
       unawaited(_resolveCurrentUser());
@@ -527,6 +551,8 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
 
     if (_shouldDisconnectForAuthState(state)) {
       _isAuthenticated = false;
+      // On logout this sends what is pending while the token still works.
+      unawaited(AppActivityReporter.instance?.setSignedIn(false));
       unawaited(_inboxClient.disconnect());
     }
   }

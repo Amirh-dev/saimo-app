@@ -2,9 +2,12 @@ export 'package:simo_learn/app/app.dart';
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/app/app.dart';
+import 'package:simo_learn/data/activity/app_activity_reporter.dart';
+import 'package:simo_learn/data/activity/error_reporting.dart';
 import 'package:simo_learn/data/app_update/app_update_check.dart';
 import 'package:simo_learn/data/install/home_screen_install.dart';
 import 'package:simo_learn/core/global/global_data.dart';
@@ -72,6 +75,19 @@ Future<void> main() async {
     graphqlRepository: graphQLRepository,
     tokenStorage: tokenStorage,
   );
+
+  // Usage and crash reports for the admin panel. Older servers ignore them.
+  final activityReporter = AppActivityReporter(
+    send: (query, variables) =>
+        graphQLRepository.rawRequest(query: query, variables: variables),
+  );
+  AppActivityReporter.instance = activityReporter;
+  AppLifecycleListener(
+    onShow: activityReporter.appShown,
+    onHide: activityReporter.appHidden,
+  );
+  activityReporter.appShown();
+  if (!kDebugMode) installErrorReporting(activityReporter);
 
   debugPrint(
     "ACCESS TOKEN: -> "
