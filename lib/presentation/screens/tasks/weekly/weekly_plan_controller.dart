@@ -23,8 +23,8 @@ class WeeklyPlanController extends ChangeNotifier {
 
   Jalali get today => _today();
   Jalali get weekStart => _weekStart ?? weekStartOf(today);
-  WeekPlan get plan =>
-      _plan ??= WeekPlan.build(weekStart: weekStart, tasks: _tasks, today: today);
+  WeekPlan get plan => _plan ??=
+      WeekPlan.build(weekStart: weekStart, tasks: _tasks, today: today);
   List<Map<String, dynamic>> get tasks => List.unmodifiable(_tasks);
 
   bool get isLoading => _isLoading;
@@ -69,9 +69,11 @@ class WeeklyPlanController extends ChangeNotifier {
 
   /// Marks [task] done, or back to do, showing the change at once. On failure
   /// the change is undone and the error rethrown for the caller to report.
-  Future<void> setTaskDone(Map<String, dynamic> task, {required bool done}) async {
+  Future<void> setTaskDone(Map<String, dynamic> task,
+      {required bool done}) async {
     final id = task['id'] as String?;
-    if (id == null || isTaskDone(task) == done || _savingIds.contains(id)) return;
+    if (id == null || isTaskDone(task) == done || _savingIds.contains(id))
+      return;
 
     void show(String status) {
       _tasks = [
@@ -122,7 +124,8 @@ class WeeklyPlanController extends ChangeNotifier {
     }
 
     try {
-      final fetched = await _api.fetchSchedule(start: start, end: start.addDays(7));
+      final fetched =
+          await _api.fetchSchedule(start: start, end: start.addDays(7));
       if (request != _loadRequest) return;
       _tasks = [...fetched];
       _hasData = true;

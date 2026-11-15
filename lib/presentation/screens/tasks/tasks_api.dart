@@ -73,14 +73,15 @@ String taskFailureMessage(Object? error, {required String fallback}) {
   return fallback;
 }
 
-/// What the quick-add sheet creates: a one-off task with a title and,
-/// optionally, a duration (a timed task) and tags.
+/// What the quick-add sheet creates: a task with a title and, optionally, a
+/// duration (a timed task), tags and weekly repeat days.
 class QuickTaskDraft {
   const QuickTaskDraft({
     required this.title,
     required this.day,
     this.timedMinutes,
     this.tags = const [],
+    this.weekdays = const [],
   });
 
   final String title;
@@ -88,7 +89,12 @@ class QuickTaskDraft {
   final int? timedMinutes;
   final List<String> tags;
 
+  /// Recurrence codes («SAT»…) in week order for a weekly task; empty for a
+  /// one-day task on [day].
+  final List<String> weekdays;
+
   bool get isTimed => timedMinutes != null;
+  bool get isWeekly => weekdays.isNotEmpty;
 }
 
 /// Task operations the planning views need, as screen-ready task maps.
@@ -221,7 +227,8 @@ $kTaskFields
   }
 
   @override
-  Future<void> setTaskDone(Map<String, dynamic> task, {required bool done}) async {
+  Future<void> setTaskDone(Map<String, dynamic> task,
+      {required bool done}) async {
     final taskId = _requireId(task);
     try {
       await _updateTask(taskId, {'status': done ? 'COMPLETED' : 'TODO'});
@@ -247,7 +254,8 @@ $kTaskFields
         variables: {'taskID': taskId, 'input': report.toInput()},
       );
       if (data['saveTaskCompletionReport'] == null) {
-        throw const TaskActionException('saveTaskCompletionReport returned no report');
+        throw const TaskActionException(
+            'saveTaskCompletionReport returned no report');
       }
     } catch (error) {
       debugPrint('GraphQLTasksApi.saveReport: $error');
@@ -266,7 +274,11 @@ $kTaskFields
         'input': {
           'title': draft.title,
           'type': draft.isTimed ? 'TIMED' : 'NORMAL',
-          'date': rfc3339Local(_onDay(draft.day, null)),
+          // The server takes exactly one of `date` and `recurrence`.
+          if (draft.isWeekly)
+            'recurrence': {'weekdays': draft.weekdays}
+          else
+            'date': rfc3339Local(_onDay(draft.day, null)),
           if (draft.isTimed) 'durationM': draft.timedMinutes,
           'hasReminder': false,
           // The server infers the subject from the tags, as with the full form.
@@ -304,6 +316,7 @@ $kTaskFields
   /// [day] at [time]'s time of day, or at its start without one.
   static DateTime _onDay(Jalali day, DateTime? time) {
     final date = day.toDateTime();
-    return DateTime(date.year, date.month, date.day, time?.hour ?? 0, time?.minute ?? 0);
+    return DateTime(
+        date.year, date.month, date.day, time?.hour ?? 0, time?.minute ?? 0);
   }
 }

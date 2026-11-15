@@ -503,6 +503,8 @@ class _TasksScreenState extends State<TasksScreen>
     // user can see them.
     final created = <Map<String, dynamic>>[];
     var sheetOpen = true;
+    // A weekly task lands on several days; the views reload once it is in.
+    var addedWeekly = false;
     // The start-up load needs a signed-in user and may have failed; the
     // sheet reads the tags whenever it needs them, so they can land late.
     GlobalData.instance.refreshParentTags();
@@ -516,10 +518,12 @@ class _TasksScreenState extends State<TasksScreen>
       onSubmit: (draft) async {
         try {
           final task = await _tasksApi.createQuickTask(draft);
+          addedWeekly |= draft.isWeekly;
           if (sheetOpen) {
             created.add(task);
           } else if (mounted) {
             _showCreated([task]);
+            if (draft.isWeekly) unawaited(_reloadActiveView());
           }
           return null;
         } catch (error) {
@@ -534,6 +538,7 @@ class _TasksScreenState extends State<TasksScreen>
     );
     sheetOpen = false;
     if (mounted && created.isNotEmpty) _showCreated(created);
+    if (mounted && addedWeekly) await _reloadActiveView();
   }
 
   /// Puts tasks the server just created straight into the lists and the day
@@ -591,11 +596,13 @@ class _TasksScreenState extends State<TasksScreen>
               initialTitle: draft.title,
               initialMinutes: draft.timedMinutes,
               initialTags: tags,
+              initialWeekdays: draft.weekdays,
             )
           : AddTaskScreen(
               initialDate: draft.day,
               initialTitle: draft.title,
               initialTags: tags,
+              initialWeekdays: draft.weekdays,
             ),
     );
     if (created == null || !mounted) return;
@@ -836,9 +843,7 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
                 ),
                 const SizedBox(height: 10),
                 ReText(
-                  isRecurring
-                      ? 'این تسک تکرارشونده است'
-                      : 'این تسک حذف بشه؟',
+                  isRecurring ? 'این تسک تکرارشونده است' : 'این تسک حذف بشه؟',
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: AppColors.black1,

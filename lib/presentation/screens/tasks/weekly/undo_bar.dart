@@ -32,7 +32,8 @@ class UndoBar extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.done),
+              const Icon(Icons.check_circle_rounded,
+                  size: 18, color: AppColors.done),
               const SizedBox(width: 8),
               Expanded(
                 child: ReText(

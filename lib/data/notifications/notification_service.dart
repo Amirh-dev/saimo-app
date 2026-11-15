@@ -55,11 +55,11 @@ const String kPushTypeCounselingPayment = 'COUNSELING_PAYMENT';
 const String kPushTypeConsistencyAtRisk = 'CONSISTENCY_AT_RISK';
 
 /// Channel for everything that is not a chat message: friend requests,
-/// payment results and the evening multiplier reminder.
+/// payment results, study reminders and counseling reminders.
 const String _generalChannelId = 'general_channel';
 const String _generalChannelName = 'اعلان‌ها';
 const String _generalChannelDescription =
-    'درخواست‌های دوستی، نتیجه‌ی پرداخت و یادآوری ضریب روزانه';
+    'درخواست‌های دوستی، نتیجه‌ی پرداخت، یادآوری‌های درس و مشاوره';
 
 /// Upper bound for each Firebase step at startup. Google endpoints can be slow
 /// or unreachable on some networks; past this the app carries on without push
@@ -622,9 +622,7 @@ Future<void> _showGeneralNotification(
   required String body,
   required Map<String, dynamic> data,
 }) async {
-  final type = data[_payloadTypeKey]?.toString() ?? '';
-  final subject = data['friendshipID'] ?? data['attemptID'] ?? '';
-  final id = '$type:$subject'.hashCode & 0x7fffffff;
+  final id = generalNotificationKey(data).hashCode & 0x7fffffff;
   await plugin.show(
     id,
     title,
@@ -644,6 +642,21 @@ Future<void> _showGeneralNotification(
     ),
     payload: jsonEncode(_stringMap(data)),
   );
+}
+
+/// What a non-chat push is about. A newer push with the same key replaces
+/// the shown one; reminders of different kinds, or about different tasks,
+/// stay side by side.
+@visibleForTesting
+String generalNotificationKey(Map<String, dynamic> data) {
+  final type = data[_payloadTypeKey]?.toString() ?? '';
+  final kind = data['kind']?.toString() ?? '';
+  final subject = data['friendshipID'] ??
+      data['attemptID'] ??
+      data['taskID'] ??
+      data['subscriptionID'] ??
+      '';
+  return kind.isEmpty ? '$type:$subject' : '$type:$kind:$subject';
 }
 
 String _titleFromData(Map<String, dynamic> data) {

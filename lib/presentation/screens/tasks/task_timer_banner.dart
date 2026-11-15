@@ -63,41 +63,41 @@ class TaskTimerBanner extends StatelessWidget {
     final timer = TaskTimerService.instance;
 
     return ListenableBuilder(
-        listenable: Listenable.merge([timer, AppBottomNavigationBar.isVisible]),
-        builder: (context, _) {
-          final visible = timer.shouldShowBanner;
+      listenable: Listenable.merge([timer, AppBottomNavigationBar.isVisible]),
+      builder: (context, _) {
+        final visible = timer.shouldShowBanner;
 
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.4),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.4),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
-            child: !visible
-                ? const SizedBox.shrink(key: ValueKey('timer-banner-hidden'))
-                : AnimatedPadding(
-              key: const ValueKey('timer-banner'),
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: MediaQuery.viewPaddingOf(context).bottom +
-                    (AppBottomNavigationBar.isVisible.value
-                        ? AppBottomNavigationBar.height
-                        : 0) +
-                    _gap,
-              ),
-              child: _buildPill(context, timer),
-            ),
-          );
-        },
+          ),
+          child: !visible
+              ? const SizedBox.shrink(key: ValueKey('timer-banner-hidden'))
+              : AnimatedPadding(
+                  key: const ValueKey('timer-banner'),
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    bottom: MediaQuery.viewPaddingOf(context).bottom +
+                        (AppBottomNavigationBar.isVisible.value
+                            ? AppBottomNavigationBar.height
+                            : 0) +
+                        _gap,
+                  ),
+                  child: _buildPill(context, timer),
+                ),
+        );
+      },
     );
   }
 
@@ -125,7 +125,7 @@ class TaskTimerBanner extends StatelessWidget {
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20,8,20,0),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                 child: Row(
                   children: [
                     const Icon(

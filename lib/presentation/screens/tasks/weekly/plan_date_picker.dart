@@ -152,7 +152,8 @@ class _PlanDatePickerState extends State<_PlanDatePicker> {
                             kPersianWeekdays[index],
                             fontSize: 8,
                             fontWeight: FontWeight.w500,
-                            color: index == 6 ? AppColors.primary : AppColors.gray,
+                            color:
+                                index == 6 ? AppColors.primary : AppColors.gray,
                           ),
                         ),
                       ),
@@ -309,7 +310,8 @@ class _MonthGrid extends StatelessWidget {
             child: Row(
               children: [
                 for (var column = 0; column < 7; column++)
-                  Expanded(child: _cell(row * 7 + column - leading + 1, length)),
+                  Expanded(
+                      child: _cell(row * 7 + column - leading + 1, length)),
               ],
             ),
           ),

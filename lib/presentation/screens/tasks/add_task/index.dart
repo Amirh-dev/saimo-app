@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ferry/ferry.dart' show OperationResponse;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:flutter/services.dart';
@@ -14,11 +15,13 @@ import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/update_task.req.gql.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/presentation/screens/tasks/tag_selection.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_form_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly_repeat.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/re_text_field.dart';
@@ -79,7 +82,7 @@ TagSelection _formTagSelection(
 
 Set<String> _weekdaysFromRecurring(String? raw) {
   if (raw == null) return {};
-  final known = _weekDayOptions.map((day) => day.code).toSet();
+  final known = kWeekDayOptions.map((day) => day.code).toSet();
   return RegExp(r'[A-Za-z]{3}')
       .allMatches(raw)
       .map((m) => m.group(0)!.toUpperCase())
@@ -87,25 +90,8 @@ Set<String> _weekdaysFromRecurring(String? raw) {
       .toSet();
 }
 
-class WeekDayOption {
-  const WeekDayOption(this.code, this.label);
-
-  final String code;
-  final String label;
-}
-
-const List<WeekDayOption> _weekDayOptions = [
-  WeekDayOption('SAT', 'شنبه'),
-  WeekDayOption('SUN', 'یکشنبه'),
-  WeekDayOption('MON', 'دوشنبه'),
-  WeekDayOption('TUE', 'سه‌شنبه'),
-  WeekDayOption('WED', 'چهارشنبه'),
-  WeekDayOption('THU', 'پنجشنبه'),
-  WeekDayOption('FRI', 'جمعه'),
-];
-
 List<String> _recurrenceWeekdays(Set<String> selectedDays) {
-  return _weekDayOptions
+  return kWeekDayOptions
       .map((day) => day.code)
       .where(selectedDays.contains)
       .toList();
@@ -171,6 +157,69 @@ Future<void> _scheduleCreatedTaskReminder(
       isWeekly: isWeekly, weekdays: weekdays, time: time);
 }
 
+const String _seriesReminderMutation = r'''
+mutation UpdateSeriesReminder($id: ID!, $input: UpdateTaskInput!) {
+  updateTask(id: $id, input: $input) { id }
+}
+''';
+
+/// Whether the edit turned the reminder on or off, or moved its time.
+bool _reminderChangedFrom(
+  Map<String, dynamic>? editing,
+  bool enabled,
+  TimeOfDay time,
+) {
+  final wasOn = editing?['reminder'] as bool? ?? false;
+  if (wasOn != enabled) return true;
+  if (!enabled) return false;
+  final saved = editing?['reminderTime'] as DateTime?;
+  return saved == null || TimeOfDay.fromDateTime(saved) != time;
+}
+
+/// After editing one copy of a weekly task. Its reminder belongs to the
+/// whole series: a change goes to this and the later copies on the server,
+/// and the phone's weekly reminder is replaced, never joined by a one-off
+/// one for this day.
+Future<void> _saveSeriesReminder(
+  GraphQLRepository repository, {
+  required String taskId,
+  required String recurrenceId,
+  required String title,
+  required Set<String> weekdays,
+  required bool enabled,
+  required DateTime reminderAt,
+  required TimeOfDay time,
+  required bool changed,
+}) async {
+  if (changed) {
+    try {
+      await repository.rawRequest(
+        query: _seriesReminderMutation,
+        variables: {
+          'id': taskId,
+          'input': {
+            'hasReminder': enabled,
+            if (enabled) 'reminderTime': reminderAt.toUtc().toIso8601String(),
+            'recurrenceScope': 'FUTURE_OCCURRENCES',
+          },
+        },
+      );
+    } catch (error) {
+      // The phone below still reminds as asked.
+      debugPrint('Saving the weekly reminder on the server failed: $error');
+    }
+  }
+  final service = TaskReminderService.instance;
+  final key = TaskReminderService.recurrenceKey(recurrenceId);
+  await service.cancel(taskId);
+  await service.cancel(key);
+  final days = _recurrenceWeekdays(weekdays);
+  if (enabled && days.isNotEmpty) {
+    await service.scheduleWeekly(
+        taskId: key, title: title, weekdays: days, time: time);
+  }
+}
+
 /// Default reminder hour for a new task: the start of the next hour.
 TimeOfDay _initialReminderTime(Map<String, dynamic>? editing) {
   final saved = editing?['reminderTime'] as DateTime?;
@@ -202,9 +251,11 @@ Future<TimeOfDay?> _showReminderTimePicker(
   );
 }
 
-/// The header's subtitle: when the task happens.
-String _formSubtitle(String dateLabel, bool weekly) =>
-    weekly ? 'تکرار هفتگی' : 'برای $dateLabel';
+/// The header's subtitle: when the task happens, in the switch's words.
+String _formSubtitle(String dateLabel, bool weekly, Set<String> days) {
+  if (!weekly) return 'برای $dateLabel';
+  return days.isEmpty ? 'هر هفته' : weeklyRepeatSummary(days);
+}
 
 /// The scrolling column the forms' sections sit in.
 Widget _taskFormBody({required List<Widget> children}) {
@@ -313,8 +364,7 @@ String _responseFailure(OperationResponse<dynamic, dynamic> response) {
     // No answer at all: most often the connection.
     return taskFailureMessage(
       link.originalException ?? link,
-      fallback:
-          'اینترنت وصل نیست؛ اتصالت رو چک کن و دوباره امتحان کن.',
+      fallback: 'اینترنت وصل نیست؛ اتصالت رو چک کن و دوباره امتحان کن.',
     );
   }
   return taskFailureMessage(graphQLResponseErrorMessage(response),
@@ -360,6 +410,7 @@ class AddTimedTaskScreen extends StatefulWidget {
     this.initialTitle,
     this.initialMinutes,
     this.initialTags = const [],
+    this.initialWeekdays = const [],
   });
 
   final String? goalId;
@@ -377,6 +428,9 @@ class AddTimedTaskScreen extends StatefulWidget {
   /// Duration and tags already chosen in quick add. Ignored when editing.
   final int? initialMinutes;
   final List<String> initialTags;
+
+  /// Weekly repeat days already picked in quick add. Ignored when editing.
+  final List<String> initialWeekdays;
 
   @override
   State<AddTimedTaskScreen> createState() => _AddTimedTaskScreenState();
@@ -426,6 +480,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
   late FocusNode _descriptionFocusNode;
   late FocusNode _noteFocusNode;
 
+  // The note starts folded into a chip unless the task already has one.
+  late bool _showNote;
+
   @override
   void initState() {
     super.initState();
@@ -453,11 +510,15 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
         text: widget.task?['shortDescription'] as String? ?? '');
     _noteController =
         TextEditingController(text: widget.task?['note'] as String? ?? '');
+    _showNote = _noteController.text.isNotEmpty;
     if (editing != null) {
       _isReminderEnabled = editing['reminder'] as bool? ?? false;
       _selectedWeekDays
           .addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
       _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
+    } else if (widget.initialWeekdays.isNotEmpty) {
+      _selectedWeekDays.addAll(widget.initialWeekdays);
+      _isWeeklyRepeat = true;
     }
     _titleFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
     _descriptionFocusNode = FocusNode()..addListener(_handleFieldFocusChange);
@@ -514,21 +575,33 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
     _openCalendarModal();
   }
 
+  void _openNote() {
+    setState(() => _showNote = true);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _noteFocusNode.requestFocus());
+  }
+
+  void _selectOneDay() => setState(() => _isWeeklyRepeat = false);
+
   void _selectWeeklyRepeatTimed() {
     setState(() {
       _isWeeklyRepeat = true;
+      // Start from the day already picked, as quick add does.
+      if (_selectedWeekDays.isEmpty) {
+        _selectedWeekDays.add(weekdayCodeOf(_selectedDate));
+      }
     });
   }
 
   void _toggleWeekDay(String code) {
     setState(() {
       if (code == 'ALL') {
-        if (_selectedWeekDays.length == _weekDayOptions.length) {
+        if (_selectedWeekDays.length == kWeekDayOptions.length) {
           _selectedWeekDays.clear();
         } else {
           _selectedWeekDays
             ..clear()
-            ..addAll(_weekDayOptions.map((day) => day.code));
+            ..addAll(kWeekDayOptions.map((day) => day.code));
         }
       } else if (!_selectedWeekDays.remove(code)) {
         _selectedWeekDays.add(code);
@@ -619,10 +692,26 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       }
 
       final task = response.data!.updateTask;
-      await TaskReminderService.instance.cancel(taskId);
-      if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate,
-            time: _reminderTime));
+      final recurrenceId = widget.task!['recurrenceId'] as String?;
+      if (recurrenceId != null) {
+        unawaited(_saveSeriesReminder(
+          context.read<GraphQLRepository>(),
+          taskId: taskId,
+          recurrenceId: recurrenceId,
+          title: task.title,
+          weekdays: _selectedWeekDays,
+          enabled: _isReminderEnabled,
+          reminderAt: _toDateTime(_selectedDate, time: _reminderTime),
+          time: _reminderTime,
+          changed: _reminderChangedFrom(
+              widget.task, _isReminderEnabled, _reminderTime),
+        ));
+      } else {
+        await TaskReminderService.instance.cancel(taskId);
+        if (_isReminderEnabled) {
+          unawaited(_scheduleReminder(task.id, task.title, taskDate,
+              time: _reminderTime));
+        }
       }
       if (!mounted) return;
 
@@ -674,45 +763,55 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
     try {
       final taskDate = _toDateTime(_selectedDate);
       final tagNames = _tags.selected;
-      final response = await context.read<GraphQLRepository>().requestOnce(
-        GCreateTaskReq(
-          (request) {
-            request.vars.input
-              ..title = _titleController.text.trim()
-              ..shortDescription = _emptyToNull(description)
-              ..type = GTaskType.TIMED
-              ..note = _emptyToNull(note)
-              ..durationM = _selectedMinutes
-              ..hasReminder = _isReminderEnabled
-              ..tagNames.addAll(tagNames);
+      final repository = context.read<GraphQLRepository>();
+      // A server from before Oct 2026 refuses a reminder time on a weekly
+      // task; then it is sent again without one (the phone still reminds).
+      send({required bool weeklyReminderTime}) => repository.requestOnce(
+            GCreateTaskReq(
+              (request) {
+                request.vars.input
+                  ..title = _titleController.text.trim()
+                  ..shortDescription = _emptyToNull(description)
+                  ..type = GTaskType.TIMED
+                  ..note = _emptyToNull(note)
+                  ..durationM = _selectedMinutes
+                  ..hasReminder = _isReminderEnabled
+                  ..tagNames.addAll(tagNames);
 
-            // The server requires exactly one of `date` or `recurrence`.
-            final weekdays = _isWeeklyRepeat
-                ? _recurrenceWeekdays(_selectedWeekDays)
-                : <String>[];
-            if (weekdays.isNotEmpty) {
-              request.vars.input.recurrence.weekdays.replace(weekdays);
-            } else {
-              request.vars.input.date.value =
-                  taskDate.toUtc().toIso8601String();
-            }
+                // The server requires exactly one of `date` or `recurrence`.
+                final weekdays = _isWeeklyRepeat
+                    ? _recurrenceWeekdays(_selectedWeekDays)
+                    : <String>[];
+                if (weekdays.isNotEmpty) {
+                  request.vars.input.recurrence.weekdays.replace(weekdays);
+                } else {
+                  request.vars.input.date.value =
+                      taskDate.toUtc().toIso8601String();
+                }
 
-            final goalId = _emptyToNull(widget.goalId ?? '');
-            if (goalId != null) {
-              request.vars.input.goalID = goalId;
-            }
+                final goalId = _emptyToNull(widget.goalId ?? '');
+                if (goalId != null) {
+                  request.vars.input.goalID = goalId;
+                }
 
-            // The server rejects reminderTime on a recurring task; its weekly
-            // reminder is scheduled on the device below.
-            if (_isReminderEnabled && weekdays.isEmpty) {
-              request.vars.input.reminderTime.value =
-                  _toDateTime(_selectedDate, time: _reminderTime)
-                      .toUtc()
-                      .toIso8601String();
-            }
-          },
-        ),
-      );
+                // The server keeps this clock time for every weekly copy, so the
+                // edit screen and other devices know it.
+                if (_isReminderEnabled &&
+                    (weekdays.isEmpty || weeklyReminderTime)) {
+                  request.vars.input.reminderTime.value =
+                      _toDateTime(_selectedDate, time: _reminderTime)
+                          .toUtc()
+                          .toIso8601String();
+                }
+              },
+            ),
+          );
+      var response = await send(weeklyReminderTime: true);
+      if (_isReminderEnabled &&
+          _isWeeklyRepeat &&
+          (response.graphqlErrors?.isNotEmpty ?? false)) {
+        response = await send(weeklyReminderTime: false);
+      }
 
       if (!mounted) return;
 
@@ -790,7 +889,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
                 TaskFormHeader(
                   title:
                       _isEditing ? 'ویرایش تسک زمان‌دار' : 'تسک زمان‌دار جدید',
-                  subtitle: _formSubtitle(_scheduleDateLabel, _isWeeklyRepeat),
+                  subtitle: _formSubtitle(
+                      _scheduleDateLabel, _isWeeklyRepeat, _selectedWeekDays),
                 ),
               ),
               const SizedBox(height: 22),
@@ -838,19 +938,17 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
                   ],
                 ),
               ),
+              // When before the optional note, so weekly repeat is in view.
               enter(
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const TaskSectionLabel('یادداشت'),
-                    TaskTextField(
-                      fieldKey: const ValueKey('task-form-note'),
-                      controller: _noteController,
-                      focusNode: _noteFocusNode,
-                      hint: 'نکته‌ای که موقع انجام کار لازم داری (اختیاری)',
-                      maxLength: 200,
-                      maxLines: 4,
-                    ),
+                    // Not «زمان»: it sat next to «مدت زمان» and read like the same thing.
+                    TaskSectionLabel(
+                        _isWeeklyRepeat ? 'روزهای انجام' : 'روز انجام'),
+                    _buildDateCardCompact(),
+                    const SizedBox(height: 10),
+                    _buildReminderCardCompact(),
                   ],
                 ),
               ),
@@ -858,10 +956,25 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const TaskSectionLabel('زمان'),
-                    _buildDateCardCompact(),
-                    const SizedBox(height: 10),
-                    _buildReminderCardCompact(),
+                    // Folded, the chip names itself; no label above it.
+                    if (_showNote) ...[
+                      const TaskSectionLabel('یادداشت'),
+                      TaskTextField(
+                        fieldKey: const ValueKey('task-form-note'),
+                        controller: _noteController,
+                        focusNode: _noteFocusNode,
+                        hint: 'نکته‌ای که موقع انجام کار لازم داری (اختیاری)',
+                        maxLength: 200,
+                        maxLines: 4,
+                      ),
+                    ] else
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _AddNoteChip(onTap: _openNote),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -883,12 +996,12 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
     return _ScheduleSelectionCard(
       formattedDateLabel: _scheduleDateLabel,
       isWeeklyRepeat: _isWeeklyRepeat,
-      onSelectDateMode: _selectDateModeTimed,
+      onSelectOneDay: _selectOneDay,
+      onTapDate: _selectDateModeTimed,
       onSelectWeeklyRepeat: _selectWeeklyRepeatTimed,
       showWeeklyRepeat: !_isEditing,
       selectedWeekDays: _selectedWeekDays,
       onToggleWeekDay: _toggleWeekDay,
-      timedTask: true,
     );
   }
 
@@ -911,6 +1024,7 @@ class AddTaskScreen extends StatefulWidget {
     this.initialDate,
     this.initialTitle,
     this.initialTags = const [],
+    this.initialWeekdays = const [],
   });
 
   final String? goalId;
@@ -926,6 +1040,9 @@ class AddTaskScreen extends StatefulWidget {
 
   /// Tags already chosen in quick add. Ignored when editing.
   final List<String> initialTags;
+
+  /// Weekly repeat days already picked in quick add. Ignored when editing.
+  final List<String> initialWeekdays;
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -985,6 +1102,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       _selectedWeekDays
           .addAll(_weekdaysFromRecurring(editing['recurringDays'] as String?));
       _isWeeklyRepeat = _selectedWeekDays.isNotEmpty;
+    } else if (widget.initialWeekdays.isNotEmpty) {
+      _selectedWeekDays.addAll(widget.initialWeekdays);
+      _isWeeklyRepeat = true;
     }
     _titleController = TextEditingController(
         text: editing?['title'] as String? ?? widget.initialTitle ?? '');
@@ -1046,21 +1166,27 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
     _openCalendarModal();
   }
 
+  void _selectOneDay() => setState(() => _isWeeklyRepeat = false);
+
   void _selectWeeklyRepeatDirectly() {
     setState(() {
       _isWeeklyRepeat = true;
+      // Start from the day already picked, as quick add does.
+      if (_selectedWeekDays.isEmpty) {
+        _selectedWeekDays.add(weekdayCodeOf(_selectedDate));
+      }
     });
   }
 
   void _toggleWeekDay(String code) {
     setState(() {
       if (code == 'ALL') {
-        if (_selectedWeekDays.length == _weekDayOptions.length) {
+        if (_selectedWeekDays.length == kWeekDayOptions.length) {
           _selectedWeekDays.clear();
         } else {
           _selectedWeekDays
             ..clear()
-            ..addAll(_weekDayOptions.map((day) => day.code));
+            ..addAll(kWeekDayOptions.map((day) => day.code));
         }
       } else if (!_selectedWeekDays.remove(code)) {
         _selectedWeekDays.add(code);
@@ -1149,10 +1275,26 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       }
 
       final task = response.data!.updateTask;
-      await TaskReminderService.instance.cancel(taskId);
-      if (_isReminderEnabled) {
-        unawaited(_scheduleReminder(task.id, task.title, taskDate,
-            time: _reminderTime));
+      final recurrenceId = widget.task!['recurrenceId'] as String?;
+      if (recurrenceId != null) {
+        unawaited(_saveSeriesReminder(
+          context.read<GraphQLRepository>(),
+          taskId: taskId,
+          recurrenceId: recurrenceId,
+          title: task.title,
+          weekdays: _selectedWeekDays,
+          enabled: _isReminderEnabled,
+          reminderAt: _toDateTime(_selectedDate, time: _reminderTime),
+          time: _reminderTime,
+          changed: _reminderChangedFrom(
+              widget.task, _isReminderEnabled, _reminderTime),
+        ));
+      } else {
+        await TaskReminderService.instance.cancel(taskId);
+        if (_isReminderEnabled) {
+          unawaited(_scheduleReminder(task.id, task.title, taskDate,
+              time: _reminderTime));
+        }
       }
       if (!mounted) return;
 
@@ -1205,43 +1347,53 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
     try {
       final taskDate = _toDateTime(_selectedDate, time: _selectedTime);
       final tagNames = _tags.selected;
-      final response = await context.read<GraphQLRepository>().requestOnce(
-        GCreateTaskReq(
-          (request) {
-            request.vars.input
-              ..title = _titleController.text.trim()
-              ..shortDescription = _emptyToNull(description)
-              ..type = GTaskType.NORMAL
-              ..hasReminder = _isReminderEnabled
-              ..tagNames.addAll(tagNames);
+      final repository = context.read<GraphQLRepository>();
+      // A server from before Oct 2026 refuses a reminder time on a weekly
+      // task; then it is sent again without one (the phone still reminds).
+      send({required bool weeklyReminderTime}) => repository.requestOnce(
+            GCreateTaskReq(
+              (request) {
+                request.vars.input
+                  ..title = _titleController.text.trim()
+                  ..shortDescription = _emptyToNull(description)
+                  ..type = GTaskType.NORMAL
+                  ..hasReminder = _isReminderEnabled
+                  ..tagNames.addAll(tagNames);
 
-            // The server requires exactly one of `date` or `recurrence`.
-            final weekdays = _isWeeklyRepeat
-                ? _recurrenceWeekdays(_selectedWeekDays)
-                : <String>[];
-            if (weekdays.isNotEmpty) {
-              request.vars.input.recurrence.weekdays.replace(weekdays);
-            } else {
-              request.vars.input.date.value =
-                  taskDate.toUtc().toIso8601String();
-            }
+                // The server requires exactly one of `date` or `recurrence`.
+                final weekdays = _isWeeklyRepeat
+                    ? _recurrenceWeekdays(_selectedWeekDays)
+                    : <String>[];
+                if (weekdays.isNotEmpty) {
+                  request.vars.input.recurrence.weekdays.replace(weekdays);
+                } else {
+                  request.vars.input.date.value =
+                      taskDate.toUtc().toIso8601String();
+                }
 
-            final goalId = _emptyToNull(widget.goalId ?? '');
-            if (goalId != null) {
-              request.vars.input.goalID = goalId;
-            }
+                final goalId = _emptyToNull(widget.goalId ?? '');
+                if (goalId != null) {
+                  request.vars.input.goalID = goalId;
+                }
 
-            // The server rejects reminderTime on a recurring task; its weekly
-            // reminder is scheduled on the device below.
-            if (_isReminderEnabled && weekdays.isEmpty) {
-              request.vars.input.reminderTime.value =
-                  _toDateTime(_selectedDate, time: _reminderTime)
-                      .toUtc()
-                      .toIso8601String();
-            }
-          },
-        ),
-      );
+                // The server keeps this clock time for every weekly copy, so the
+                // edit screen and other devices know it.
+                if (_isReminderEnabled &&
+                    (weekdays.isEmpty || weeklyReminderTime)) {
+                  request.vars.input.reminderTime.value =
+                      _toDateTime(_selectedDate, time: _reminderTime)
+                          .toUtc()
+                          .toIso8601String();
+                }
+              },
+            ),
+          );
+      var response = await send(weeklyReminderTime: true);
+      if (_isReminderEnabled &&
+          _isWeeklyRepeat &&
+          (response.graphqlErrors?.isNotEmpty ?? false)) {
+        response = await send(weeklyReminderTime: false);
+      }
 
       if (!mounted) return;
 
@@ -1305,7 +1457,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
             enter(
               TaskFormHeader(
                 title: _isEditing ? 'ویرایش چک‌لیست' : 'چک‌لیست جدید',
-                subtitle: _formSubtitle(_scheduleDateLabel, _isWeeklyRepeat),
+                subtitle: _formSubtitle(
+                    _scheduleDateLabel, _isWeeklyRepeat, _selectedWeekDays),
               ),
             ),
             const SizedBox(height: 22),
@@ -1342,7 +1495,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const TaskSectionLabel('زمان'),
+                  // Not «زمان»: it sat next to «مدت زمان» and read like the same thing.
+                  TaskSectionLabel(
+                      _isWeeklyRepeat ? 'روزهای انجام' : 'روز انجام'),
                   _buildDateCard(),
                   const SizedBox(height: 10),
                   _buildReminderCard(),
@@ -1366,12 +1521,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
     return _ScheduleSelectionCard(
       formattedDateLabel: _scheduleDateLabel,
       isWeeklyRepeat: _isWeeklyRepeat,
-      onSelectDateMode: _selectDateModeDirectly,
+      onSelectOneDay: _selectOneDay,
+      onTapDate: _selectDateModeDirectly,
       onSelectWeeklyRepeat: _selectWeeklyRepeatDirectly,
       showWeeklyRepeat: !_isEditing,
       selectedWeekDays: _selectedWeekDays,
       onToggleWeekDay: _toggleWeekDay,
-      timedTask: false,
     );
   }
 
@@ -1386,33 +1541,95 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
   }
 }
 
-class _ScheduleSelectionCard extends StatelessWidget {
+/// SharedPreferences key: the one-time tip on «هر هفته» was shown.
+const weeklyRepeatTipSeenKey = 'weekly_repeat_tip_seen';
+
+/// When the task happens: one day (a date) or every week (on picked days).
+/// The «هر هفته» side is pulsed and explained by a tip the first time the
+/// form is opened on this device; the days are picked inline, no popup.
+class _ScheduleSelectionCard extends StatefulWidget {
   const _ScheduleSelectionCard({
     required this.formattedDateLabel,
     required this.isWeeklyRepeat,
-    required this.onSelectDateMode,
+    required this.onSelectOneDay,
+    required this.onTapDate,
     required this.onSelectWeeklyRepeat,
     required this.selectedWeekDays,
     required this.onToggleWeekDay,
-    required this.timedTask,
     this.showWeeklyRepeat = true,
   });
 
   final String formattedDateLabel;
   final bool isWeeklyRepeat;
-  final VoidCallback onSelectDateMode;
+  final VoidCallback onSelectOneDay;
+  final VoidCallback onTapDate;
   final VoidCallback onSelectWeeklyRepeat;
   final Set<String> selectedWeekDays;
   final ValueChanged<String> onToggleWeekDay;
-  final bool timedTask;
 
   /// The server cannot turn an existing task into a recurring one, so the
   /// edit screens hide this option.
   final bool showWeeklyRepeat;
 
   @override
+  State<_ScheduleSelectionCard> createState() => _ScheduleSelectionCardState();
+}
+
+class _ScheduleSelectionCardState extends State<_ScheduleSelectionCard>
+    with SingleTickerProviderStateMixin {
+  bool _showTip = false;
+
+  // Two soft pulses of the «هر هفته» outline while the tip is up.
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+  late final Animation<double> _glow = TweenSequence<double>([
+    for (var i = 0; i < 2; i++) ...[
+      TweenSequenceItem(tween: Tween(begin: 0.35, end: 1), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 1, end: 0.35), weight: 1),
+    ],
+  ]).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showWeeklyRepeat && !widget.isWeeklyRepeat) _loadTip();
+  }
+
+  Future<void> _loadTip() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(weeklyRepeatTipSeenKey) ?? false) return;
+      // Seen once it is shown, so it never comes back.
+      await prefs.setBool(weeklyRepeatTipSeenKey, true);
+    } catch (_) {
+      return; // No storage: skip the tip rather than show it every time.
+    }
+    if (!mounted || widget.isWeeklyRepeat) return;
+    setState(() => _showTip = true);
+    _pulse.forward();
+  }
+
+  void _hideTip() {
+    if (!_showTip) return;
+    _pulse.stop();
+    setState(() => _showTip = false);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDateModeSelected = !isWeeklyRepeat;
+    final date = _SelectedDateSummary(
+      formattedDateLabel: widget.formattedDateLabel,
+      isEnabled: true,
+      onTap: widget.onTapDate,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -1420,297 +1637,93 @@ class _ScheduleSelectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: AppColors.gray2),
       ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: onSelectDateMode,
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              opacity: isDateModeSelected ? 1 : 0.55,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  ReText(
-                    'تاریخ',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDateModeSelected
-                        ? AppColors.black1
-                        : AppColors.dark7Color,
-                  ),
-                  const SizedBox(width: 8),
-                  _RadioDot(isSelected: isDateModeSelected),
+      padding: const EdgeInsets.all(14),
+      child: !widget.showWeeklyRepeat
+          ? date
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RepeatSwitch(
+                  isWeekly: widget.isWeeklyRepeat,
+                  glow: _showTip ? _glow : null,
+                  onOneDay: () {
+                    _hideTip();
+                    widget.onSelectOneDay();
+                  },
+                  onWeekly: () {
+                    _hideTip();
+                    widget.onSelectWeeklyRepeat();
+                  },
+                ),
+                if (_showTip) ...[
+                  const SizedBox(height: 4),
+                  _RepeatTip(onTap: _hideTip),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _SelectedDateSummary(
-            formattedDateLabel: formattedDateLabel,
-            isEnabled: isDateModeSelected,
-            onTap: onSelectDateMode,
-          ),
-          if (showWeeklyRepeat) ...[
-            const SizedBox(height: 16),
-            const Divider(
-              color: AppColors.gray2,
-              thickness: 1,
-              height: 1,
-            ),
-            GestureDetector(
-              onTap: onSelectWeeklyRepeat,
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                opacity: isWeeklyRepeat ? 1 : 0.55,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 16, bottom: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ReText(
-                        'تـکــــرار هفتگی',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isWeeklyRepeat
-                            ? AppColors.black1
-                            : AppColors.dark7Color,
-                      ),
-                      const SizedBox(width: 8),
-                      _RadioDot(isSelected: isWeeklyRepeat).bMargin(8),
-                    ],
-                  ),
+                const SizedBox(height: 12),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  alignment: Alignment.topCenter,
+                  child: widget.isWeeklyRepeat
+                      ? WeeklyRepeatDays(
+                          selectedDays: widget.selectedWeekDays,
+                          onToggleDay: widget.onToggleWeekDay,
+                          today: Jalali.now(),
+                        )
+                      : date,
                 ),
-              ),
+              ],
             ),
-            if (isWeeklyRepeat)
-              _WeekDaysPopupField(
-                selectedDays: selectedWeekDays,
-                onToggleDay: onToggleWeekDay,
-                timedTask: timedTask,
-              ),
-          ],
-        ],
-      ),
     );
   }
 }
 
-class _WeekDaysPopupField extends StatefulWidget {
-  const _WeekDaysPopupField({
-    required this.selectedDays,
-    required this.onToggleDay,
-    required this.timedTask,
-  });
+class _RepeatTip extends StatelessWidget {
+  const _RepeatTip({required this.onTap});
 
-  final Set<String> selectedDays;
-  final ValueChanged<String> onToggleDay;
-  final bool timedTask;
-
-  @override
-  State<_WeekDaysPopupField> createState() => _WeekDaysPopupFieldState();
-}
-
-class _WeekDaysPopupFieldState extends State<_WeekDaysPopupField> {
-  OverlayEntry? _overlayEntry;
-  bool _isOpen = false;
-
-  @override
-  void didUpdateWidget(covariant _WeekDaysPopupField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_overlayEntry != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _overlayEntry?.markNeedsBuild();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _removeOverlayEntry();
-    super.dispose();
-  }
-
-  void _removeOverlayEntry() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
-  void _closePopup() {
-    _removeOverlayEntry();
-    if (mounted) setState(() => _isOpen = false);
-  }
-
-  void _openPopup() {
-    final overlayState = Overlay.of(context);
-
-    _overlayEntry = OverlayEntry(
-      builder: (overlayContext) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _closePopup,
-              ),
-            ),
-            Positioned(
-              bottom: widget.timedTask ? 50 : 100,
-              child: SafeArea(
-                child: Material(
-                  color: Colors.transparent,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width,
-                        maxHeight: 300),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.gray2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.black1.withOpacity(0.14),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: _WeekDaysGrid(
-                        selectedDays: widget.selectedDays,
-                        onToggleDay: widget.onToggleDay,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    overlayState.insert(_overlayEntry!);
-    setState(() => _isOpen = true);
-  }
-
-  void _togglePopup() {
-    if (_isOpen) {
-      _closePopup();
-    } else {
-      _openPopup();
-    }
-  }
-
-  String get _triggerLabel {
-    if (widget.selectedDays.isEmpty) return 'انتخاب روز';
-    final labels = _weekDayOptions
-        .where((day) => widget.selectedDays.contains(day.code))
-        .map((day) => day.label);
-    return 'هر ${labels.join('، ')}';
-  }
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _togglePopup,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 54,
-        decoration: BoxDecoration(
-          color: AppColors.gray1,
-          borderRadius: BorderRadius.circular(34),
-          border:
-              Border.all(color: _isOpen ? AppColors.primary : AppColors.gray2),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(
-              _isOpen
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              color: AppColors.black1.withOpacity(0.5),
-              size: 20,
+    // «هر هفته» is the left half of the switch; the arrow points at its middle.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final arrowLeft = (constraints.maxWidth - 8) / 4 + 4 - 8;
+        return Directionality(
+          // Physical left: the tip sits under «هر هفته».
+          textDirection: TextDirection.ltr,
+          child: GestureDetector(
+            key: const ValueKey('repeat-tip'),
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(left: arrowLeft),
+                  child: CustomPaint(
+                    size: const Size(16, 8),
+                    painter: _TipArrowPainter(),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.black1,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const ReText(
+                    'درس‌هایی که هر هفته داری رو یه بار بساز.',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.white,
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: ReText(
-                textAlign: TextAlign.start,
-                _triggerLabel,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black1,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WeekDaysGrid extends StatelessWidget {
-  const _WeekDaysGrid({
-    required this.selectedDays,
-    required this.onToggleDay,
-  });
-
-  final Set<String> selectedDays;
-  final ValueChanged<String> onToggleDay;
-
-  bool get _isAllSelected => selectedDays.length == _weekDayOptions.length;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <MapEntry<String, String>>[
-      const MapEntry('ALL', 'هر روز'),
-      for (final day in _weekDayOptions) MapEntry(day.code, 'هر ${day.label}'),
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 0),
-      itemCount: items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 5,
-          childAspectRatio: 3.1,
-          mainAxisExtent: 35),
-      itemBuilder: (context, index) {
-        final entry = items[index];
-        final isChecked = entry.key == 'ALL'
-            ? _isAllSelected
-            : selectedDays.contains(entry.key);
-
-        return GestureDetector(
-          onTap: () => onToggleDay(entry.key),
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ReText(
-                entry.value,
-                fontSize: 13,
-                fontWeight: isChecked ? FontWeight.w700 : FontWeight.w600,
-                color: isChecked
-                    ? AppColors.black1
-                    : AppColors.black1.withOpacity(0.55),
-              ),
-              const SizedBox(width: 8),
-              _SquareCheckbox(isChecked: isChecked),
-            ],
           ),
         );
       },
@@ -1718,36 +1731,19 @@ class _WeekDaysGrid extends StatelessWidget {
   }
 }
 
-class _SquareCheckbox extends StatelessWidget {
-  const _SquareCheckbox({required this.isChecked});
-
-  final bool isChecked;
+class _TipArrowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = AppColors.black1);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        color: isChecked
-            ? AppColors.primary.withOpacity(0.12)
-            : Colors.transparent,
-        border: Border.all(
-          color: isChecked ? AppColors.primary : AppColors.dark4Color,
-          width: 1.2,
-        ),
-      ),
-      child: isChecked
-          ? const Icon(
-              Icons.check_rounded,
-              size: 14,
-              color: AppColors.primary,
-            )
-          : null,
-    );
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _SelectedDateSummary extends StatelessWidget {
@@ -1787,12 +1783,15 @@ class _SelectedDateSummary extends StatelessWidget {
                   color: AppColors.black,
                   size: 12,
                 ),
-                const Spacer(),
-                ReText(
-                  formattedDateLabel,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.black1,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ReText(
+                    formattedDateLabel,
+                    textAlign: TextAlign.right,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
                 ),
               ],
             ),
@@ -1803,39 +1802,36 @@ class _SelectedDateSummary extends StatelessWidget {
   }
 }
 
-class _RadioDot extends StatelessWidget {
-  const _RadioDot({required this.isSelected});
+/// «+ یادداشت»: the folded note, in the dashed look of «+ تگ دیگر».
+class _AddNoteChip extends StatelessWidget {
+  const _AddNoteChip({required this.onTap});
 
-  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    // The picked option in the brand color; the dot grows in.
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.10)
-            : Colors.transparent,
-        border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.dark4Color,
-          width: isSelected ? 1.5 : 1,
-        ),
-      ),
-      child: Center(
-        child: AnimatedScale(
-          scale: isSelected ? 1 : 0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutBack,
-          child: Container(
-            width: 9,
-            height: 9,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
+    return GestureDetector(
+      key: const ValueKey('task-form-add-note'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: const DashedBorder(
+        child: SizedBox(
+          height: 34,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              textDirection: TextDirection.rtl,
+              children: [
+                Icon(Icons.add_rounded, size: 16, color: AppColors.gray),
+                SizedBox(width: 4),
+                ReText(
+                  'یادداشت',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gray,
+                ),
+              ],
             ),
           ),
         ),
@@ -2212,8 +2208,8 @@ class _ThreeColumnJalaliDatePickerSheetState
                             });
                           },
                           itemBuilder: (context, index) {
-                            final name =
-                                widget.monthNames[_monthsInSelectedYear[index] - 1];
+                            final name = widget
+                                .monthNames[_monthsInSelectedYear[index] - 1];
                             return SizedBox(
                               height: _wheelItemExtent,
                               child: Center(
@@ -2589,6 +2585,13 @@ class _ReminderTimePickerSheetState extends State<_ReminderTimePickerSheet> {
 }
 
 /// Reminder toggle row; shows the chosen time (tap to change) while enabled.
+/// Tests set this to see the web look; null means the real platform.
+@visibleForTesting
+bool? debugTaskRemindersSupported;
+
+/// Task reminders are local notifications, which browsers never fire.
+bool get _taskRemindersSupported => debugTaskRemindersSupported ?? !kIsWeb;
+
 class _ReminderCard extends StatelessWidget {
   const _ReminderCard({
     required this.isEnabled,
@@ -2606,6 +2609,7 @@ class _ReminderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!_taskRemindersSupported) return _unsupported();
     return Container(
       height: 56,
       decoration: BoxDecoration(
@@ -2654,6 +2658,44 @@ class _ReminderCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// On the web: the card faded and off, and why.
+  Widget _unsupported() {
+    return Column(
+      key: const ValueKey('task-form-reminder-unsupported'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IgnorePointer(
+          child: Opacity(
+            opacity: 0.5,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(borderRadius),
+                border: Border.all(color: AppColors.gray2),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  _ReminderSwitch(value: false, onChanged: (_) {}),
+                  const Spacer(),
+                  const ReText(
+                    'یادآوری',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.black1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const TaskFormHint('یادآوری فقط تو اپ گوشی کار می‌کنه.'),
+      ],
     );
   }
 }

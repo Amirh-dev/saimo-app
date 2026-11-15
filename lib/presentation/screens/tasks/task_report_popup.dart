@@ -282,9 +282,7 @@ class _SuccessHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
           ),
           child: ReText(
-            finishesTask
-                ? 'با ثبت گزارش، تسک تموم می‌شه.'
-                : 'تسک تموم شد.',
+            finishesTask ? 'با ثبت گزارش، تسک تموم می‌شه.' : 'تسک تموم شد.',
             fontSize: 16,
             fontWeight: FontWeight.w900,
             color: AppColors.success,

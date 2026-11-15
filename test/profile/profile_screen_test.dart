@@ -215,7 +215,9 @@ void main() {
     });
   });
 
-  testWidgets('premium account row opens the plans screen', (tester) async {
+  // Premium is free for now: the row says so instead of opening the plans
+  // screen (profile/index.dart keeps that route commented out).
+  testWidgets('premium account row says premium is free', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final storage = await TokenStorage.create();
     final repository = _ProfileGraphQLRepository(storage);
@@ -232,13 +234,9 @@ void main() {
     await tester.tap(premium);
     await tester.pumpAndSettle();
 
-    expect(find.text('اشتراک ویژه'), findsOneWidget);
-    expect(find.text('یک ماهه'), findsOneWidget);
-    expect(find.text('شش ماهه'), findsOneWidget);
-    expect(find.byKey(const ValueKey('purchase-premium-plan')), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
-    await tester.pumpAndSettle();
-    expect(find.text('یک ساله'), findsOneWidget);
+    expect(find.text('اشتراک ویژه رایگان شد!'), findsOneWidget);
+    expect(find.text('فعلاً اشتراک ویژه برای همه رایگانه.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('purchase-premium-plan')), findsNothing);
   });
 
   testWidgets('reopening profile reuses the session-cached getMe response',

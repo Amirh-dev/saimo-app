@@ -105,7 +105,11 @@ class TaskTimerService extends ChangeNotifier {
 
   /// Whether the floating timer banner should be on screen right now.
   bool get shouldShowBanner =>
-      hasActiveTask && !_isCompleted && !_isTimerScreenOpen && !_bannerDismissed && _bannerSuppressions == 0;
+      hasActiveTask &&
+      !_isCompleted &&
+      !_isTimerScreenOpen &&
+      !_bannerDismissed &&
+      _bannerSuppressions == 0;
 
   double get progress {
     if (_totalSeconds <= 0) return 0;

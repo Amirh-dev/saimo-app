@@ -20,13 +20,15 @@ class TaskTimerScreen extends StatefulWidget {
   final Map<String, dynamic> task;
   final VoidCallback onPop;
 
-  const TaskTimerScreen({Key? key, required this.task, required this.onPop}) : super(key: key);
+  const TaskTimerScreen({Key? key, required this.task, required this.onPop})
+      : super(key: key);
 
   @override
   State<TaskTimerScreen> createState() => _TaskTimerScreenState();
 }
 
-class _TaskTimerScreenState extends State<TaskTimerScreen> with SingleTickerProviderStateMixin {
+class _TaskTimerScreenState extends State<TaskTimerScreen>
+    with SingleTickerProviderStateMixin {
   final TaskTimerService _timer = TaskTimerService.instance;
 
   /// True while a start, pause or finish is on its way to the server, so a
@@ -56,7 +58,8 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> with SingleTickerProv
     super.initState();
 
     // Give the global service a repository (safe to call more than once).
-    _timer.bindRepository(TaskTimerRepository(context.read<GraphQLRepository>()));
+    _timer
+        .bindRepository(TaskTimerRepository(context.read<GraphQLRepository>()));
 
     // Load this task into the service. If this exact task is already running
     // in the background, load() is a no-op and the session keeps going.
@@ -151,7 +154,9 @@ class _TaskTimerScreenState extends State<TaskTimerScreen> with SingleTickerProv
                             ),
                             if (_note case final note?) ...[
                               const SizedBox(height: 12),
-                              _Rise(t: intro.rise(3), child: _NoteCard(note: note)),
+                              _Rise(
+                                  t: intro.rise(3),
+                                  child: _NoteCard(note: note)),
                             ],
                           ],
                         ),
@@ -212,7 +217,8 @@ class _Intro {
   double get check => _phase(0.7, 1.0, Curves.easeOutBack);
 
   /// The parts of the screen rising into place, one after another.
-  double rise(int order) => _phase(0.08 * order, 0.08 * order + 0.4, Curves.easeOutCubic);
+  double rise(int order) =>
+      _phase(0.08 * order, 0.08 * order + 0.4, Curves.easeOutCubic);
 }
 
 /// Fades [child] in as it rises the last few pixels into place.
@@ -266,13 +272,15 @@ class _Header extends StatelessWidget {
           const Spacer(),
           Material(
             color: AppColors.white,
-            shape: const StadiumBorder(side: BorderSide(color: AppColors.gray2)),
+            shape:
+                const StadiumBorder(side: BorderSide(color: AppColors.gray2)),
             child: InkWell(
               key: const ValueKey('timer-guard'),
               customBorder: const StadiumBorder(),
               onTap: () => showShieldBottomSheet(context),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -305,7 +313,11 @@ class _TimerCard extends StatelessWidget {
   final TaskTimerService timer;
   final _Intro intro;
 
-  const _TimerCard({required this.task, required this.stage, required this.timer, required this.intro});
+  const _TimerCard(
+      {required this.task,
+      required this.stage,
+      required this.timer,
+      required this.intro});
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +369,8 @@ class _TimerCard extends StatelessWidget {
           const SizedBox(height: 16),
           const Divider(height: 1, thickness: 1, color: AppColors.gray2),
           const SizedBox(height: 20),
-          Center(child: _Rise(t: intro.rise(1), child: _StatusPill(stage: stage))),
+          Center(
+              child: _Rise(t: intro.rise(1), child: _StatusPill(stage: stage))),
           const SizedBox(height: 20),
           Center(
             child: SizedBox(
@@ -385,7 +398,8 @@ class _TimerCard extends StatelessWidget {
                           ? [
                               Transform.scale(
                                 scale: intro.check,
-                                child: const Icon(Icons.check_circle_rounded, color: AppColors.done, size: 36),
+                                child: const Icon(Icons.check_circle_rounded,
+                                    color: AppColors.done, size: 36),
                               ),
                               const SizedBox(height: 6),
                               ReText(
@@ -465,7 +479,8 @@ class _StatusPill extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          ReText(label, fontSize: 12, fontWeight: FontWeight.w800, color: color),
+          ReText(label,
+              fontSize: 12, fontWeight: FontWeight.w800, color: color),
         ],
       ),
     );
@@ -487,7 +502,8 @@ class _Stats extends StatelessWidget {
     final cells = [
       ('انجام‌شده', _clock((timer.elapsedSeconds * fill).round())),
       // Time since the last start, without a pause.
-      if (stage == _Stage.running) ('این دور', _clock((timer.currentSessionSeconds * fill).round())),
+      if (stage == _Stage.running)
+        ('این دور', _clock((timer.currentSessionSeconds * fill).round())),
       ('پیشرفت', '$percent٪'),
     ];
 
@@ -504,9 +520,15 @@ class _Stats extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  ReText(label, fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.gray),
+                  ReText(label,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray),
                   const SizedBox(height: 2),
-                  ReText(value, fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.black1),
+                  ReText(value,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.black1),
                 ],
               ),
             ),
@@ -537,7 +559,10 @@ class _NoteCard extends StatelessWidget {
             children: [
               Icon(IconsaxPlusLinear.note_1, size: 16, color: AppColors.gray),
               SizedBox(width: 6),
-              ReText('یادداشت', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.gray),
+              ReText('یادداشت',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gray),
             ],
           ),
           const SizedBox(height: 8),
@@ -660,7 +685,10 @@ class _PillButton extends StatelessWidget {
                   Icon(icon, color: foreground, size: 24),
                   const SizedBox(width: 6),
                 ],
-                ReText(label, fontSize: 15, fontWeight: FontWeight.w800, color: foreground),
+                ReText(label,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: foreground),
               ],
             ),
           ),
@@ -713,7 +741,11 @@ class TimerPainter extends CustomPainter {
       ..strokeWidth = _strokeWidth
       ..strokeCap = StrokeCap.round;
     if (trackFraction <= 0) return;
-    canvas.drawArc(rect, _startAngle, _sweepAngle * trackFraction.clamp(0.0, 1.0), false,
+    canvas.drawArc(
+        rect,
+        _startAngle,
+        _sweepAngle * trackFraction.clamp(0.0, 1.0),
+        false,
         track(Paint()..color = AppColors.gray2));
 
     if (totalSeconds <= 0) return;
@@ -765,8 +797,8 @@ class TimerPainter extends CustomPainter {
     final reach = radius + _strokeWidth;
     return Path()
       ..moveTo(center.dx, center.dy)
-      ..arcTo(Rect.fromCircle(center: center, radius: reach), from, sweep,
-          false)
+      ..arcTo(
+          Rect.fromCircle(center: center, radius: reach), from, sweep, false)
       ..close();
   }
 
@@ -937,7 +969,9 @@ class _GuardSwitch extends StatelessWidget {
             child: AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              alignment: value ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+              alignment: value
+                  ? AlignmentDirectional.centerEnd
+                  : AlignmentDirectional.centerStart,
               child: Container(
                 width: 20,
                 height: 20,

@@ -15,6 +15,7 @@ import 'package:simo_learn/data/links/app_links.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
+import 'package:simo_learn/data/notifications/push_destination.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
 import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
@@ -393,17 +394,24 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
         NotificationService.instance.setPendingOpen(data);
         return;
       }
-      switch (data['type']) {
-        case kPushTypeFriendRequest:
+      switch (pushDestination(data)) {
+        case PushDestination.friends:
           ProfileScreen.requestedSection.value = ProfileContentSection.friends;
           AppTabsShell.select(navigator.context, AppTabsShell.profile);
-        case kPushTypeCounselingPayment:
+        case PushDestination.paymentResult:
           unawaited(
             _showPaymentReturn(PaymentReturn(attemptID: data['attemptID'])),
           );
-        case kPushTypeConsistencyAtRisk:
+        case PushDestination.home:
           AppTabsShell.select(navigator.context, AppTabsShell.home);
-        default:
+        case PushDestination.tasks:
+          AppTabsShell.select(navigator.context, AppTabsShell.tasks);
+        case PushDestination.counselors:
+          AppTabsShell.select(navigator.context, AppTabsShell.home);
+          navigator.push<void>(
+            MaterialPageRoute<void>(builder: (_) => const ConsultantListScreen()),
+          );
+        case PushDestination.chat:
           // A chat message. Push the inbox with an auto-open target. The
           // conversation opens on top of the inbox, so back goes room, inbox,
           // then home.

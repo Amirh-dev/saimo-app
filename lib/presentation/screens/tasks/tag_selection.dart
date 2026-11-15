@@ -15,9 +15,18 @@ import 'package:simo_learn/utils/_utils.dart';
 const int kMaxTagNameLength = 50;
 
 const Map<String, String> _letterVariants = {
-  'ي': 'ی', 'ك': 'ک',
-  '٠': '۰', '١': '۱', '٢': '۲', '٣': '۳', '٤': '۴',
-  '٥': '۵', '٦': '۶', '٧': '۷', '٨': '۸', '٩': '۹',
+  'ي': 'ی',
+  'ك': 'ک',
+  '٠': '۰',
+  '١': '۱',
+  '٢': '۲',
+  '٣': '۳',
+  '٤': '۴',
+  '٥': '۵',
+  '٦': '۶',
+  '٧': '۷',
+  '٨': '۸',
+  '٩': '۹',
 };
 
 /// A tag name as the server stores it (its canonicalizeTagName): Arabic
@@ -36,9 +45,35 @@ String canonicalTagName(String name) {
 /// Common short words the server drops from a title before matching
 /// (persianStopwords), so they never make a tag look named.
 const Set<String> _stopwords = {
-  'از', 'به', 'با', 'در', 'را', 'که', 'این', 'آن', 'برای', 'هم', 'تا', 'یا',
-  'اگر', 'ولی', 'اما', 'است', 'بود', 'شد', 'شود', 'می', 'ها', 'های', 'و',
-  'یک', 'همه', 'روی', 'بین', 'چون', 'پس',
+  'از',
+  'به',
+  'با',
+  'در',
+  'را',
+  'که',
+  'این',
+  'آن',
+  'برای',
+  'هم',
+  'تا',
+  'یا',
+  'اگر',
+  'ولی',
+  'اما',
+  'است',
+  'بود',
+  'شد',
+  'شود',
+  'می',
+  'ها',
+  'های',
+  'و',
+  'یک',
+  'همه',
+  'روی',
+  'بین',
+  'چون',
+  'پس',
 };
 
 /// Grade words, shared by every subject's courses: a title naming only a

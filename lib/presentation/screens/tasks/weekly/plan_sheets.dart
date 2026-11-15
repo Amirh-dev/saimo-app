@@ -8,6 +8,7 @@ import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/plan_widgets.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/week_plan.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly_repeat.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/utils/_utils.dart';
@@ -314,7 +315,8 @@ class _CrossedOutPainter extends CustomPainter {
 
 // ----------------------------------------------------------------- quick add
 
-TagCatalog _noTags() => (names: const [], aliases: const {}, children: const {});
+TagCatalog _noTags() =>
+    (names: const [], aliases: const {}, children: const {});
 
 /// Quick add: a title, a day, a type and tags, then the next task.
 /// [onSubmit] returns null when the task was created, otherwise the message
@@ -381,6 +383,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   late Jalali _day = widget.initialDay;
   late bool _timed = widget.initialTimed;
   int _minutes = kDefaultTaskMinutes;
+  bool _weekly = false;
+  final Set<String> _weekdays = {};
   bool _submitting = false;
   String? _error;
   String? _titleError;
@@ -429,6 +433,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       _titleFocus.requestFocus();
       return;
     }
+    if (_weekly && _weekdays.isEmpty) {
+      setState(() => _error = 'حداقل یک روز رو برای تکرار انتخاب کن.');
+      return;
+    }
 
     setState(() {
       _submitting = true;
@@ -461,7 +469,37 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
         day: _day,
         timedMinutes: _timed ? _minutes : null,
         tags: List.unmodifiable(_tags.selected),
+        weekdays: _weekly
+            ? [
+                for (final day in kWeekDayOptions)
+                  if (_weekdays.contains(day.code)) day.code,
+              ]
+            : const [],
       );
+
+  void _setWeekly(bool weekly) {
+    if (weekly == _weekly) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _weekly = weekly;
+      _error = null;
+      // Start from the day already picked.
+      if (weekly && _weekdays.isEmpty) _weekdays.add(weekdayCodeOf(_day));
+    });
+  }
+
+  void _toggleWeekday(String code) {
+    setState(() {
+      _error = null;
+      if (code == 'ALL') {
+        final all = _weekdays.length == kWeekDayOptions.length;
+        _weekdays.clear();
+        if (!all) _weekdays.addAll(kWeekDayOptions.map((day) => day.code));
+      } else if (!_weekdays.remove(code)) {
+        _weekdays.add(code);
+      }
+    });
+  }
 
   void _openFullForm() {
     final draft = _draft(_title.text.trim());
@@ -478,7 +516,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     return PlanSheetFrame(
       key: const ValueKey('quick-add-sheet'),
       title: 'تسک جدید',
-      subtitle: 'برای ${dayLabel(_day)}',
+      subtitle: !_weekly
+          ? 'برای ${dayLabel(_day)}'
+          : _weekdays.isEmpty
+              ? 'هر هفته'
+              : weeklyRepeatSummary(_weekdays),
       footer: _buildActions(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -539,11 +581,31 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                 const TaskSectionLabel('نوع'),
                 _Segmented(
                   options: const [
-                    (key: 'quick-add-type-timed', text: 'زمان‌دار'),
-                    (key: 'quick-add-type-checklist', text: 'چک‌لیست'),
+                    (
+                      key: 'quick-add-type-timed',
+                      text: 'زمان‌دار',
+                      icon: Icons.timer_outlined,
+                    ),
+                    (
+                      key: 'quick-add-type-checklist',
+                      text: 'چک‌لیست',
+                      icon: Icons.check_circle_outline_rounded,
+                    ),
                   ],
                   selected: _timed ? 0 : 1,
                   onChanged: (index) => setState(() => _timed = index == 0),
+                ),
+                // Only timed tasks count in the stats; a checklist says so.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _timed
+                      ? const SizedBox(width: double.infinity)
+                      : const TaskFormHint(
+                          'تو آمار زمان مطالعه حساب نمی‌شه.',
+                          key: ValueKey('quick-add-type-hint'),
+                        ),
                 ),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 260),
@@ -570,16 +632,34 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
             ),
           ),
           // Last: it is already the day the sheet was opened for, and the
-          // header says so.
+          // header says so. Weekly swaps the dated week for plain weekdays:
+          // any day can repeat, even one already past this week.
           enter(
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const TaskSectionLabel('روز'),
-                WeekDayPicker(
-                  selected: _day,
-                  today: widget.today,
-                  onChanged: (day) => setState(() => _day = day),
+                TaskSectionLabel(_weekly ? 'روزهای انجام' : 'روز انجام'),
+                RepeatSwitch(
+                  isWeekly: _weekly,
+                  onOneDay: () => _setWeekly(false),
+                  onWeekly: () => _setWeekly(true),
+                ),
+                const SizedBox(height: 12),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _weekly
+                      ? WeeklyRepeatDays(
+                          selectedDays: _weekdays,
+                          onToggleDay: _toggleWeekday,
+                          today: widget.today,
+                        )
+                      : WeekDayPicker(
+                          selected: _day,
+                          today: widget.today,
+                          onChanged: (day) => setState(() => _day = day),
+                        ),
                 ),
               ],
             ),
@@ -624,7 +704,7 @@ class _Segmented extends StatelessWidget {
     required this.onChanged,
   });
 
-  final List<({String key, String text})> options;
+  final List<({String key, String text, IconData icon})> options;
   final int selected;
   final ValueChanged<int> onChanged;
 
@@ -671,13 +751,29 @@ class _Segmented extends StatelessWidget {
                             ]
                           : null,
                     ),
-                    child: ReText(
-                      options[index].text,
-                      fontSize: 13,
-                      fontWeight:
-                          index == selected ? FontWeight.w800 : FontWeight.w600,
-                      color:
-                          index == selected ? AppColors.black1 : AppColors.gray,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      textDirection: TextDirection.rtl,
+                      children: [
+                        Icon(
+                          options[index].icon,
+                          size: 17,
+                          color: index == selected
+                              ? AppColors.black1
+                              : AppColors.gray,
+                        ),
+                        const SizedBox(width: 6),
+                        ReText(
+                          options[index].text,
+                          fontSize: 13,
+                          fontWeight: index == selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: index == selected
+                              ? AppColors.black1
+                              : AppColors.gray,
+                        ),
+                      ],
                     ),
                   ),
                 ),

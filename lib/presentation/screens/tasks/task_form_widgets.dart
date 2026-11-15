@@ -635,3 +635,41 @@ class TaskFormActions extends StatelessWidget {
     );
   }
 }
+
+/// A short gray line under a field: an info icon and one sentence.
+class TaskFormHint extends StatelessWidget {
+  const TaskFormHint(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, right: 6, left: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(Icons.info_outline_rounded,
+                  size: 15, color: AppColors.gray),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: ReText(
+                text,
+                textAlign: TextAlign.right,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gray,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

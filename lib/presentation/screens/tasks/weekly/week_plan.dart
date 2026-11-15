@@ -29,7 +29,15 @@ const List<String> kPersianWeekdays = [
   'جمعه',
 ];
 
-const List<String> kPersianWeekdayInitials = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+const List<String> kPersianWeekdayInitials = [
+  'ش',
+  'ی',
+  'د',
+  'س',
+  'چ',
+  'پ',
+  'ج'
+];
 
 /// The Saturday that opens [date]'s week, at the start of the day.
 Jalali weekStartOf(Jalali date) {
@@ -88,7 +96,8 @@ int taskDoneSeconds(Map<String, dynamic> task) {
   return taskWorkedSeconds(task).clamp(0, load);
 }
 
-int _sum(Iterable<Map<String, dynamic>> tasks, int Function(Map<String, dynamic>) value) =>
+int _sum(Iterable<Map<String, dynamic>> tasks,
+        int Function(Map<String, dynamic>) value) =>
     tasks.fold(0, (total, task) => total + value(task));
 
 class WeekDayPlan {
@@ -120,6 +129,7 @@ class WeekDayPlan {
     if (load == 0) return 0;
     return (_sum(tasks, taskDoneSeconds) / (load * 60)).clamp(0.0, 1.0);
   }
+
   bool get isEmpty => tasks.isEmpty;
   bool get isAllDone => tasks.isNotEmpty && doneCount == taskCount;
 }
@@ -151,7 +161,9 @@ class WeekPlan {
       byDay[index].add(task);
     }
 
-    final loads = [for (final dayTasks in byDay) _sum(dayTasks, taskLoadMinutes)];
+    final loads = [
+      for (final dayTasks in byDay) _sum(dayTasks, taskLoadMinutes)
+    ];
     final days = <WeekDayPlan>[];
     for (var index = 0; index < 7; index++) {
       final date = weekStart.addDays(index);
@@ -167,7 +179,8 @@ class WeekPlan {
       );
     }
 
-    return WeekPlan._(weekStart, days, _subjectShares(byDay.expand((day) => day)));
+    return WeekPlan._(
+        weekStart, days, _subjectShares(byDay.expand((day) => day)));
   }
 
   final Jalali start;
@@ -178,7 +191,8 @@ class WeekPlan {
 
   int get taskCount => days.fold(0, (total, day) => total + day.taskCount);
   int get doneCount => days.fold(0, (total, day) => total + day.doneCount);
-  int get plannedMinutes => days.fold(0, (total, day) => total + day.plannedMinutes);
+  int get plannedMinutes =>
+      days.fold(0, (total, day) => total + day.plannedMinutes);
   int get loadMinutes => days.fold(0, (total, day) => total + day.loadMinutes);
   int get maxDayLoad =>
       days.fold(0, (max, day) => day.loadMinutes > max ? day.loadMinutes : max);
@@ -204,7 +218,8 @@ class WeekPlan {
     return load > average * _heavyDayRatio;
   }
 
-  static List<SubjectShare> _subjectShares(Iterable<Map<String, dynamic>> tasks) {
+  static List<SubjectShare> _subjectShares(
+      Iterable<Map<String, dynamic>> tasks) {
     final bySubject = <String?, int>{};
     for (final task in tasks) {
       final subject = task['subject'] as String?;
@@ -217,8 +232,9 @@ class WeekPlan {
         return byLoad != 0 ? byLoad : a.key!.compareTo(b.key!);
       });
 
-    final rest = named.skip(_maxNamedSubjects).fold(0, (total, e) => total + e.value) +
-        (bySubject[null] ?? 0);
+    final rest =
+        named.skip(_maxNamedSubjects).fold(0, (total, e) => total + e.value) +
+            (bySubject[null] ?? 0);
     return [
       for (final entry in named.take(_maxNamedSubjects))
         SubjectShare(entry.key, entry.value),

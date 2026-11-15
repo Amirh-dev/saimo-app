@@ -18,6 +18,17 @@ Future<void> _waitForSuggestions(WidgetTester tester) async {
 Future<void> _tapInSheet(WidgetTester tester, String key) async {
   await tester.ensureVisible(_key(key));
   await tester.pumpAndSettle();
+  // Just at the edge it can still sit under the pinned buttons.
+  final sheetScroll = find
+      .descendant(
+          of: _key('quick-add-sheet'), matching: find.byType(Scrollable))
+      .first;
+  if (sheetScroll.evaluate().isNotEmpty &&
+      tester.getBottomLeft(_key(key)).dy >
+          tester.getTopLeft(_key('quick-add-submit')).dy - 8) {
+    await tester.drag(sheetScroll, const Offset(0, -200));
+    await tester.pumpAndSettle();
+  }
   await tester.tap(_key(key));
 }
 
@@ -88,7 +99,7 @@ void main() {
       final tags = top(find.text('تگ‌ها'));
       final type = top(find.text('نوع'));
       final minutes = top(_key('quick-add-durations'));
-      final day = top(find.text('روز'));
+      final day = top(find.text('روز انجام'));
       expect(title, lessThan(tags));
       expect(tags, lessThan(type));
       expect(type, lessThan(minutes));
@@ -104,7 +115,8 @@ void main() {
       await tester.tap(_key('quick-add-type-timed'));
       await tester.pumpAndSettle();
       await _tapInSheet(tester, 'quick-add-minutes-60');
-      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
+      await _tapInSheet(
+          tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
       await tester.tap(_key('week-day-chip-4'));
       await tester.pump();
       await tester.tap(_key('quick-add-submit'));
@@ -127,7 +139,8 @@ void main() {
       );
     });
 
-    testWidgets('adds a 45-minute timed task; no tags before they are suggested',
+    testWidgets(
+        'adds a 45-minute timed task; no tags before they are suggested',
         (tester) async {
       await openQuickAdd(tester);
 
@@ -139,6 +152,69 @@ void main() {
       expect(drafts.single.timedMinutes, 45);
       expect(drafts.single.tags, isEmpty);
       expect(ymd(drafts.single.day), [1405, 7, 20]);
+    });
+
+    testWidgets('«هر هفته» swaps the dated week for weekdays and sends them',
+        (tester) async {
+      await openQuickAdd(tester, day: Jalali(1405, 7, 23)); // Thursday
+      await tester.enterText(_key('quick-add-title'), 'مرور زیست');
+
+      await _tapInSheet(tester, 'repeat-weekly');
+      await tester.pumpAndSettle();
+      // Starts from the picked day; in the header and under the circles.
+      expect(find.text('هر پنجشنبه'), findsNWidgets(2));
+      expect(find.text('روزهای انجام'), findsOneWidget);
+      expect(_key('repeat-first-day'), findsOneWidget);
+
+      // Saturday has no date and is never crossed out, past or not.
+      await _tapInSheet(tester, 'repeat-day-SAT');
+      await tester.pumpAndSettle();
+      await _tapInSheet(tester, 'quick-add-submit');
+      await tester.pumpAndSettle();
+
+      expect(drafts.single.weekdays, ['SAT', 'THU']);
+      expect(drafts.single.isWeekly, isTrue);
+    });
+
+    testWidgets('weekly with no day says so and sends nothing', (tester) async {
+      await openQuickAdd(tester);
+      await tester.enterText(_key('quick-add-title'), 'مرور');
+      await _tapInSheet(tester, 'repeat-weekly');
+      await tester.pumpAndSettle();
+      await _tapInSheet(tester, 'repeat-day-MON'); // the preselected day, off
+      await tester.pumpAndSettle();
+
+      await _tapInSheet(tester, 'quick-add-submit');
+      await tester.pumpAndSettle();
+      expect(
+          find.text('حداقل یک روز رو برای تکرار انتخاب کن.'), findsOneWidget);
+      expect(drafts, isEmpty);
+    });
+
+    testWidgets('weekly days go along to the advanced form', (tester) async {
+      await openQuickAdd(tester);
+      await tester.enterText(_key('quick-add-title'), 'مرور');
+      await _tapInSheet(tester, 'repeat-weekly');
+      await tester.pumpAndSettle();
+      await tester.tap(_key('quick-add-more'));
+      await tester.pumpAndSettle();
+
+      expect(handedOver.single.weekdays, ['MON']);
+    });
+
+    testWidgets('only a checklist warns that it stays out of the stats',
+        (tester) async {
+      const warning = 'تو آمار زمان مطالعه حساب نمی‌شه.';
+      await openQuickAdd(tester);
+      expect(find.text(warning), findsNothing);
+
+      await _tapInSheet(tester, 'quick-add-type-checklist');
+      await tester.pumpAndSettle();
+      expect(find.text(warning), findsOneWidget);
+
+      await _tapInSheet(tester, 'quick-add-type-timed');
+      await tester.pumpAndSettle();
+      expect(find.text(warning), findsNothing);
     });
 
     testWidgets('offers up to two hours, and checklist tasks', (tester) async {
@@ -233,7 +309,8 @@ void main() {
       await tester.enterText(_key('quick-add-title'), 'پروژه');
       await _waitForSuggestions(tester);
       await _tapInSheet(tester, 'quick-add-minutes-90');
-      await _tapInSheet(tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
+      await _tapInSheet(
+          tester, 'quick-add-tag-ریاضی'); // suggested, off: turn on
       await tester.pump();
       await tester.tap(_key('quick-add-more'));
       await tester.pumpAndSettle();

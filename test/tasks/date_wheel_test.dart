@@ -37,7 +37,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('تاریخ').first);
+    await tester.tap(find.textContaining('امروز،').last);
     await tester.pumpAndSettle();
     expect(find.text('برو به تاریخ'), findsOneWidget);
 
