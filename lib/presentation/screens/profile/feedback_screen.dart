@@ -168,7 +168,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         ),
                         const SizedBox(height: 10),
                         const ReText(
-                          'مشاور ارشد سایمو می‌خونه و پیگیری می‌کنه.',
+                          'هر مشکلی با اپ یا مشاورها داری، اینجا بگو.',
                           fontSize: 12,
                           color: AppColors.gray,
                           textAlign: TextAlign.right,
