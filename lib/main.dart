@@ -9,6 +9,8 @@ import 'package:simo_learn/app/app.dart';
 import 'package:simo_learn/data/activity/app_activity_reporter.dart';
 import 'package:simo_learn/data/activity/error_reporting.dart';
 import 'package:simo_learn/data/app_update/app_update_check.dart';
+import 'package:simo_learn/data/app_update/store_update_check.dart';
+import 'package:simo_learn/data/app_update/store_update_setup.dart';
 import 'package:simo_learn/data/install/home_screen_install.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/core/global/global_data_repository.dart';
@@ -108,6 +110,9 @@ Future<void> main() async {
 
   // Web only: watch for a newer release while this tab stays open.
   AppUpdateCheck.instance.start();
+  // Android and iOS: block versions older than the server requires.
+  StoreUpdateCheck.instance = createStoreUpdateCheck(graphQLRepository);
+  unawaited(StoreUpdateCheck.instance?.start());
   // Web only: the home's offer to add the app to the home screen.
   unawaited(HomeScreenInstall.instance.start());
 

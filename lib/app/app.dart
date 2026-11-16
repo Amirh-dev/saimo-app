@@ -43,6 +43,7 @@ import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
 import 'package:simo_learn/presentation/widgets/app_update_banner.dart';
+import 'package:simo_learn/presentation/widgets/store_update_gate.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -126,6 +127,8 @@ class MyApp extends StatelessWidget {
                     alignment: Alignment.topCenter,
                     child: AppUpdateBanner(),
                   ),
+                  // Android and iOS: this version must be updated first.
+                  const StoreUpdateGate(),
                 ],
               ),
             );
