@@ -38,6 +38,7 @@ import 'package:simo_learn/presentation/widgets/re_image.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
+import 'feedback_screen.dart';
 import 'friendship_models.dart';
 import 'friendship_repository.dart';
 import 'dart:typed_data';
@@ -766,6 +767,13 @@ class _ProfileAccountMenu extends StatelessWidget {
             title: 'تنظیمات',
             icon: SolarIconsOutline.settings,
             onTap: onSettings,
+          ),
+          const SizedBox(height: 10),
+          _ProfileAccountMenuTile(
+            key: const ValueKey('open-feedback'),
+            title: 'شکایت و پیشنهاد',
+            icon: SolarIconsOutline.chatSquareLike,
+            onTap: () => context.to(const FeedbackScreen()),
           ),
           const SizedBox(height: 10),
           Row(
