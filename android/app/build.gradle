@@ -124,6 +124,8 @@ android {
             // Without the upload key (a local machine), debug keys keep
             // `flutter run --release` working; CI fails above instead.
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+            // Keeps Gson generics for flutter_local_notifications (see the file).
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

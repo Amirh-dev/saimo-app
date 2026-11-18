@@ -121,16 +121,20 @@ class TaskReminderService {
     if (!when.isAfter(DateTime.now())) return;
     if (!await requestPermission()) return;
 
-    await _plugin.zonedSchedule(
-      _baseId(taskId),
-      'یادآوری تسک',
-      title,
-      tz.TZDateTime.from(when, tz.local),
-      _details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      payload: taskId,
-    );
+    try {
+      await _plugin.zonedSchedule(
+        _baseId(taskId),
+        'یادآوری تسک',
+        title,
+        tz.TZDateTime.from(when, tz.local),
+        _details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        payload: taskId,
+      );
+    } catch (error) {
+      _log('scheduleOnce failed: $error');
+    }
   }
 
   /// Schedules a reminder repeating every week on each of [weekdays]
@@ -146,21 +150,25 @@ class TaskReminderService {
 
     final base = _baseId(taskId);
     var slot = 1;
-    for (final code in weekdays) {
-      final weekday = _weekdayNumbers[code];
-      if (weekday == null || slot > 7) continue;
+    try {
+      for (final code in weekdays) {
+        final weekday = _weekdayNumbers[code];
+        if (weekday == null || slot > 7) continue;
 
-      await _plugin.zonedSchedule(
-        base + slot++,
-        'یادآوری تسک',
-        title,
-        _nextWeekday(weekday, time),
-        _details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        payload: taskId,
-      );
+        await _plugin.zonedSchedule(
+          base + slot++,
+          'یادآوری تسک',
+          title,
+          _nextWeekday(weekday, time),
+          _details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+          payload: taskId,
+        );
+      }
+    } catch (error) {
+      _log('scheduleWeekly failed: $error');
     }
   }
 
@@ -178,8 +186,14 @@ class TaskReminderService {
   Future<void> cancel(String taskId) async {
     if (!await _ensureReady()) return;
     final base = _baseId(taskId);
-    for (var slot = 0; slot < 8; slot++) {
-      await _plugin.cancel(base + slot);
+    try {
+      for (var slot = 0; slot < 8; slot++) {
+        await _plugin.cancel(base + slot);
+      }
+    } catch (error) {
+      // Reminders are best-effort; a native failure must never break the
+      // task action (complete/delete) that triggered the cancel.
+      _log('cancel failed: $error');
     }
   }
 

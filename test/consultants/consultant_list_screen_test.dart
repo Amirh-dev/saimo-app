@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_console_logger.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/support/support_link.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/details_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
@@ -49,6 +50,12 @@ class _CounselorsGraphQLRepository extends GraphQLRepository {
     Map<String, dynamic> variables = const {},
     bool requiresAuth = true,
   }) async {
+    // Support stays reachable even when the counselors request fails.
+    if (query.contains('supportContacts')) {
+      return {
+        'supportContacts': {'telegram': 'SaimoSupport', 'bale': 'SaimoBale'},
+      };
+    }
     final failure = error;
     if (failure != null) throw failure;
     if (query.contains('counselorReviews(')) {
@@ -139,7 +146,62 @@ void tallView(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+List<Map<String, dynamic>> _manyCounselors(int count) => [
+      for (var i = 0; i < count; i++)
+        {
+          'id': 'profile-$i',
+          'title': 'مشاور تحصیلی',
+          'ratingAverage': 4.5,
+          'resumeItems': ['ده سال سابقه'],
+          'user': {'fullName': 'مشاور $i'},
+        },
+    ];
+
 void main() {
+  testWidgets('«سوالی داری؟» opens the support sheet with Telegram and Bale',
+      (tester) async {
+    tallView(tester);
+    await _pumpList(tester, answer: _manyCounselors(10));
+
+    expect(find.text('سوالی داری؟'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('counselor-support')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SupportSheet), findsOneWidget);
+    expect(find.text('تلگرام'), findsOneWidget);
+    expect(find.text('@SaimoSupport'), findsOneWidget);
+    expect(find.text('بله'), findsOneWidget);
+    expect(find.text('@SaimoBale'), findsOneWidget);
+  });
+
+  testWidgets('the support button shrinks to its icon while the list scrolls',
+      (tester) async {
+    tallView(tester);
+    await _pumpList(tester, answer: _manyCounselors(10));
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(ListView)));
+    await gesture.moveBy(const Offset(0, -200));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('سوالی داری؟'), findsNothing);
+    expect(find.byKey(const ValueKey('counselor-support')), findsOneWidget);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('سوالی داری؟'), findsOneWidget);
+  });
+
+  testWidgets('support is offered even when counseling is refused',
+      (tester) async {
+    await _pumpList(
+      tester,
+      error: const GraphQLRawException('forbidden: insufficient permissions'),
+    );
+    expect(find.text(kCounselingNoAccessTitle), findsOneWidget);
+    expect(find.byKey(const ValueKey('counselor-support')), findsOneWidget);
+  });
+
   testWidgets('an account the server refuses is told to contact support',
       (tester) async {
     await _pumpList(

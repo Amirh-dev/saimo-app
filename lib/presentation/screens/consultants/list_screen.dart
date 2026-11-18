@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/features/profile/user_major.dart';
+import 'package:simo_learn/features/support/support_link.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
 import 'package:simo_learn/presentation/screens/consultants/counseling_checkout.dart';
@@ -48,6 +49,9 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   /// True while the payment result is read back after the gateway closes;
   /// blocks the screen so a second purchase can't start mid-flow.
   bool _verifying = false;
+
+  /// The support button shrinks to its icon while the list scrolls.
+  bool _supportCollapsed = false;
 
   // The top match opens with its résumé and button showing.
   int _expandedIndex = 0;
@@ -356,9 +360,38 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
             ),
           ),
         ),
-        Expanded(child: _buildList()),
+        Expanded(
+          child: Stack(
+            children: [
+              NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: _buildList(),
+              ),
+              Positioned(
+                right: 20,
+                bottom: 20 + MediaQuery.of(context).padding.bottom,
+                child: SupportFab(
+                  collapsed: _supportCollapsed,
+                  onTap: () => openSupport(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    final collapsed = switch (notification) {
+      ScrollStartNotification() => true,
+      ScrollEndNotification() => false,
+      _ => _supportCollapsed,
+    };
+    if (collapsed != _supportCollapsed) {
+      setState(() => _supportCollapsed = collapsed);
+    }
+    return false;
   }
 
   void _select(Consultant consultant) {
@@ -413,7 +446,8 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        // Room at the end so the support button never covers the last card.
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
         children: [
           _MatchHeading(
             major: _studentMajor,
@@ -1078,6 +1112,79 @@ class _Avatar extends StatelessWidget {
       path,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => fallback,
+    );
+  }
+}
+
+/// Fixed «سوالی داری؟» button over the counselor list; opens the support
+/// sheet. [collapsed] leaves only the headset icon.
+class SupportFab extends StatelessWidget {
+  const SupportFab({super.key, required this.collapsed, required this.onTap});
+
+  final bool collapsed;
+  final VoidCallback onTap;
+
+  static const Color _navy = Color(0xFF161A2E);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'سوالی داری؟ پشتیبانی',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: _navy.withOpacity(0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Material(
+          color: _navy,
+          shape: const StadiumBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: const ValueKey('counselor-support'),
+            onTap: onTap,
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: collapsed ? 15 : 18,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        SolarIconsOutline.headphonesRound,
+                        size: 22,
+                        color: Colors.white,
+                      ),
+                      if (!collapsed) ...[
+                        const SizedBox(width: 8),
+                        const ReText(
+                          'سوالی داری؟',
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: 900,
+                          maxLines: 1,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -186,10 +186,15 @@ void main() {
     late _FakeUrlLauncher launcher;
     setUp(() => UrlLauncherPlatform.instance = launcher = _FakeUrlLauncher());
 
-    Future<void> tapSupport(WidgetTester tester, String? serverLink) async {
+    Future<void> tapSupport(
+      WidgetTester tester, {
+      Map<String, dynamic>? contacts,
+      String? serverLink,
+    }) async {
       SharedPreferences.setMockInitialValues({});
       final storage = await TokenStorage.create();
       final repository = _ProfileGraphQLRepository(storage)
+        ..supportContacts = contacts
         ..supportLink = serverLink;
       await tester.pumpWidget(
         _profileTestApp(repository, const ProfileScreen()),
@@ -203,15 +208,25 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('opens the link the admin set', (tester) async {
-      await tapSupport(tester, 'https://wa.me/989121234567');
-      expect(launcher.launched, ['https://wa.me/989121234567']);
+    testWidgets('opens the support sheet with the usernames the admin set',
+        (tester) async {
+      await tapSupport(tester,
+          contacts: {'telegram': 'SaimoSupport', 'bale': 'SaimoBale'});
+      expect(find.text('پشتیبانی سایمو'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('support-bale')));
+      await tester.pumpAndSettle();
+      expect(launcher.launched, ['https://ble.ir/SaimoBale']);
     });
 
-    testWidgets('falls back to the Telegram account when none is set',
+    testWidgets('an older server\'s t.me link becomes the Telegram option',
         (tester) async {
-      await tapSupport(tester, null);
-      expect(launcher.launched, ['https://t.me/SaimoSupport']);
+      await tapSupport(tester, serverLink: 'https://t.me/old_support');
+      expect(find.byKey(const ValueKey('support-bale')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('support-telegram')));
+      await tester.pumpAndSettle();
+      expect(launcher.launched, ['https://t.me/old_support']);
     });
   });
 
@@ -501,6 +516,9 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
   String profileFullName = 'علی رضایی';
   String? supportLink;
 
+  /// null answers like a server without supportContacts.
+  Map<String, dynamic>? supportContacts;
+
   Map<String, dynamic> get profileResponse {
     return {
       'getMe': {
@@ -546,6 +564,13 @@ class _ProfileGraphQLRepository extends GraphQLRepository {
           ],
         },
       };
+    }
+    if (query.contains('supportContacts')) {
+      final contacts = supportContacts;
+      if (contacts == null) {
+        throw const GraphQLRawException('Cannot query field "supportContacts"');
+      }
+      return {'supportContacts': contacts};
     }
     if (query.contains('SupportLink')) return {'supportLink': supportLink};
     if (query.contains('GetMeForFriends')) {
