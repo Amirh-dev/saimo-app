@@ -745,9 +745,9 @@ mutation DeleteTaskWithScope($id: ID!, $scope: RecurringTaskDeleteScope) {
       );
 
       await TaskReminderService.instance.cancel(taskId);
-      if (scope == _RecurringDeleteScope.series && recurrenceId != null) {
-        await TaskReminderService.instance
-            .cancel(TaskReminderService.recurrenceKey(recurrenceId));
+      // A stopped series leaves its later copies canceled on the server.
+      if (scope == _RecurringDeleteScope.series) {
+        unawaited(TaskReminderService.instance.sync());
       }
       if (!mounted) return false;
 

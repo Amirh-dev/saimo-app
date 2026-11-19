@@ -2,6 +2,7 @@ package app.ravi.saimo
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import io.flutter.embedding.android.FlutterActivity
@@ -20,6 +21,7 @@ class MainActivity : FlutterActivity() {
         // with, and that one was already handled.
         if (savedInstanceState == null) pendingLink = linkFrom(intent)
         super.onCreate(savedInstanceState)
+        if (isTaskAlarm(intent)) showOverLockScreen(true)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -33,6 +35,18 @@ class MainActivity : FlutterActivity() {
                     "isScreenOn" -> {
                         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
                         result.success(power.isInteractive)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // The task alarm page closed: the phone locks again as before.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.ravi.saimo/alarm")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "release" -> {
+                        showOverLockScreen(false)
+                        result.success(null)
                     }
                     else -> result.notImplemented()
                 }
@@ -77,9 +91,30 @@ class MainActivity : FlutterActivity() {
     // The app was already open (singleTop): the link arrives here.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (isTaskAlarm(intent)) showOverLockScreen(true)
         val link = linkFrom(intent) ?: return
         pendingLink = link
         linksChannel?.invokeMethod("linkAvailable", null)
+    }
+
+    // A ringing task alarm opened the app (its full-screen intent or a tap):
+    // its page shows over the lock screen and turns the screen on. Only
+    // then, so the app is never reachable from a locked phone otherwise.
+    private fun isTaskAlarm(intent: Intent?): Boolean {
+        if (intent?.action != "SELECT_NOTIFICATION") return false
+        return intent.getStringExtra("payload")?.contains("\"TASK_ALARM\"") == true
+    }
+
+    private fun showOverLockScreen(show: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(show)
+            setTurnScreenOn(show)
+        } else {
+            ("DEPRECATION")
+            val flags = android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            if (show) window.addFlags(flags) else window.clearFlags(flags)
+        }
     }
 
     private fun linkFrom(intent: Intent?): String? {

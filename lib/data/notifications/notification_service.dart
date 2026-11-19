@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'active_chat_tracker.dart';
 import 'announcement_push.dart';
+import 'task_reminder_service.dart';
 
 /// Android notification channel id. Must match the value declared in
 /// AndroidManifest.xml (`default_notification_channel_id`) so FCM system
@@ -244,6 +245,8 @@ class NotificationService {
     await _localNotifications.initialize(
       const InitializationSettings(android: androidInit, iOS: darwinInit),
       onDidReceiveNotificationResponse: _onNotificationResponse,
+      // «۱۰ دقیقه بعد» on a task alarm while the app is closed.
+      onDidReceiveBackgroundNotificationResponse: taskAlarmBackgroundResponse,
     );
 
     // Create the Android channels up front so their importance is correct.
@@ -369,10 +372,17 @@ class NotificationService {
   }
 
   void _onNotificationResponse(NotificationResponse response) {
-    // Task reminders share this plugin; their payload is a bare task id, and
-    // tapping one just brings the app forward.
     final data = _pushPayload(response.payload);
     if (data == null) return;
+    if (data['type'] == kPushTypeTaskAlarm) {
+      // A task alarm: its page, or one of the notification's buttons.
+      final alarm = TaskAlarm.fromData(data);
+      if (alarm != null && response.actionId == kAlarmActionSnooze) {
+        unawaited(TaskReminderService.instance.snooze(alarm));
+        return;
+      }
+      if (response.actionId != null) data['action'] = response.actionId!;
+    }
     _dispatchOpen(data);
   }
 

@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
+import 'package:simo_learn/presentation/screens/tasks/alarm_access_sheet.dart';
 import 'package:simo_learn/features/tags/tag_suggestion_repository.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/create_task.req.gql.dart';
@@ -97,64 +98,27 @@ List<String> _recurrenceWeekdays(Set<String> selectedDays) {
       .toList();
 }
 
-/// Schedules the local reminder for a freshly created task: weekly on the
-/// selected weekdays for recurring tasks, otherwise once at [date].
+/// Sets the alarm for a task just saved. A one-off task rings at once from
+/// here; every task, weekly ones included, is then rebuilt from the server's
+/// schedule so each occurrence has its own alarm.
 Future<void> _scheduleReminder(
   String taskId,
   String title,
   DateTime date, {
   bool isWeekly = false,
-  Set<String> weekdays = const {},
   TimeOfDay time = kDefaultReminderTime,
 }) async {
   final service = TaskReminderService.instance;
-  final days = isWeekly ? _recurrenceWeekdays(weekdays) : const <String>[];
-  if (days.isNotEmpty) {
-    await service.scheduleWeekly(
-        taskId: taskId, title: title, weekdays: days, time: time);
-  } else {
+  if (!isWeekly) {
     await service.scheduleOnce(
       taskId: taskId,
       title: title,
       when: DateTime(date.year, date.month, date.day, time.hour, time.minute),
     );
+  } else {
+    await service.requestPermission();
   }
-}
-
-const String _taskRecurrenceQuery = r'''
-query TaskRecurrence($id: ID!) {
-  getTask(id: $id) { recurrenceID }
-}
-''';
-
-/// Schedules the reminder of a task just created. A weekly reminder is keyed
-/// by the recurrence rather than by the first occurrence the server returned.
-Future<void> _scheduleCreatedTaskReminder(
-  GraphQLRepository repository,
-  String taskId,
-  String title,
-  DateTime date, {
-  required bool isWeekly,
-  required Set<String> weekdays,
-  required TimeOfDay time,
-}) async {
-  var key = taskId;
-  if (isWeekly) {
-    try {
-      final data = await repository.rawRequest(
-        query: _taskRecurrenceQuery,
-        variables: {'id': taskId},
-      );
-      final recurrenceId =
-          (data['getTask'] as Map?)?['recurrenceID'] as String?;
-      if (recurrenceId != null)
-        key = TaskReminderService.recurrenceKey(recurrenceId);
-    } catch (error) {
-      debugPrint('Loading task recurrence for its reminder failed: $error');
-    }
-  }
-  await _scheduleReminder(key, title, date,
-      isWeekly: isWeekly, weekdays: weekdays, time: time);
+  await service.sync();
 }
 
 const String _seriesReminderMutation = r'''
@@ -178,17 +142,12 @@ bool _reminderChangedFrom(
 
 /// After editing one copy of a weekly task. Its reminder belongs to the
 /// whole series: a change goes to this and the later copies on the server,
-/// and the phone's weekly reminder is replaced, never joined by a one-off
-/// one for this day.
+/// then the phone's alarms are rebuilt from there.
 Future<void> _saveSeriesReminder(
   GraphQLRepository repository, {
   required String taskId,
-  required String recurrenceId,
-  required String title,
-  required Set<String> weekdays,
   required bool enabled,
   required DateTime reminderAt,
-  required TimeOfDay time,
   required bool changed,
 }) async {
   if (changed) {
@@ -205,19 +164,11 @@ Future<void> _saveSeriesReminder(
         },
       );
     } catch (error) {
-      // The phone below still reminds as asked.
       debugPrint('Saving the weekly reminder on the server failed: $error');
     }
   }
-  final service = TaskReminderService.instance;
-  final key = TaskReminderService.recurrenceKey(recurrenceId);
-  await service.cancel(taskId);
-  await service.cancel(key);
-  final days = _recurrenceWeekdays(weekdays);
-  if (enabled && days.isNotEmpty) {
-    await service.scheduleWeekly(
-        taskId: key, title: title, weekdays: days, time: time);
-  }
+  if (enabled) await TaskReminderService.instance.requestPermission();
+  await TaskReminderService.instance.sync();
 }
 
 /// Default reminder hour for a new task: the start of the next hour.
@@ -620,6 +571,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       _reminderTime = picked;
       _isReminderEnabled = true;
     });
+    unawaited(ensureAlarmAccess(context));
   }
 
   Future<void> _changeReminderTime() async {
@@ -697,12 +649,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
         unawaited(_saveSeriesReminder(
           context.read<GraphQLRepository>(),
           taskId: taskId,
-          recurrenceId: recurrenceId,
-          title: task.title,
-          weekdays: _selectedWeekDays,
           enabled: _isReminderEnabled,
           reminderAt: _toDateTime(_selectedDate, time: _reminderTime),
-          time: _reminderTime,
           changed: _reminderChangedFrom(
               widget.task, _isReminderEnabled, _reminderTime),
         ));
@@ -825,11 +773,8 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       final task = response.data!.createTask;
       OnboardingStore.instance.markPlanned();
       if (_isReminderEnabled) {
-        unawaited(_scheduleCreatedTaskReminder(
-            context.read<GraphQLRepository>(), task.id, task.title, taskDate,
-            isWeekly: _isWeeklyRepeat,
-            weekdays: _selectedWeekDays,
-            time: _reminderTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate,
+            isWeekly: _isWeeklyRepeat, time: _reminderTime));
       }
       final minutesLabel = convertToPersianNumbers(_selectedMinutes.toString());
       final subtitle = task.shortDescription?.trim().isNotEmpty == true
@@ -1205,6 +1150,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       _reminderTime = picked;
       _isReminderEnabled = true;
     });
+    unawaited(ensureAlarmAccess(context));
   }
 
   Future<void> _changeReminderTime() async {
@@ -1280,12 +1226,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
         unawaited(_saveSeriesReminder(
           context.read<GraphQLRepository>(),
           taskId: taskId,
-          recurrenceId: recurrenceId,
-          title: task.title,
-          weekdays: _selectedWeekDays,
           enabled: _isReminderEnabled,
           reminderAt: _toDateTime(_selectedDate, time: _reminderTime),
-          time: _reminderTime,
           changed: _reminderChangedFrom(
               widget.task, _isReminderEnabled, _reminderTime),
         ));
@@ -1407,11 +1349,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       final task = response.data!.createTask;
       OnboardingStore.instance.markPlanned();
       if (_isReminderEnabled) {
-        unawaited(_scheduleCreatedTaskReminder(
-            context.read<GraphQLRepository>(), task.id, task.title, taskDate,
-            isWeekly: _isWeeklyRepeat,
-            weekdays: _selectedWeekDays,
-            time: _reminderTime));
+        unawaited(_scheduleReminder(task.id, task.title, taskDate,
+            isWeekly: _isWeeklyRepeat, time: _reminderTime));
       }
       Navigator.of(context).pop(
         <String, dynamic>{

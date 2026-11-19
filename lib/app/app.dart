@@ -16,6 +16,7 @@ import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/data/notifications/push_destination.dart';
+import 'package:simo_learn/data/notifications/task_reminder_service.dart';
 import 'package:simo_learn/features/announcements/announcements_repository.dart';
 import 'package:simo_learn/features/announcements/announcements_store.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
@@ -40,6 +41,7 @@ import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/statistics/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_alarm_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
@@ -290,6 +292,12 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
   /// A home-screen widget tapped before login.
   HomeWidgetLink? _pendingWidgetLink;
 
+  /// When task alarms were last rebuilt from the server.
+  DateTime? _lastAlarmSync;
+
+  /// Whether the alarm page is showing, so a second tap does not stack one.
+  bool _alarmOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -357,6 +365,12 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
         state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed && _isAuthenticated) {
       unawaited(_inboxClient.connect(force: true));
+      final lastSync = _lastAlarmSync;
+      if (lastSync == null ||
+          DateTime.now().difference(lastSync) > const Duration(minutes: 15)) {
+        _lastAlarmSync = DateTime.now();
+        unawaited(TaskReminderService.instance.sync());
+      }
       unawaited(AnnouncementsStore.instance.refresh());
     }
   }
@@ -427,6 +441,9 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
           AppTabsShell.select(navigator.context, AppTabsShell.home);
         case PushDestination.tasks:
           AppTabsShell.select(navigator.context, AppTabsShell.tasks);
+        case PushDestination.taskAlarm:
+          final alarm = TaskAlarm.fromData(data);
+          if (alarm != null) _openTaskAlarm(navigator, alarm, data['action']);
         case PushDestination.counselors:
           AppTabsShell.select(navigator.context, AppTabsShell.home);
           navigator.push<void>(
@@ -447,6 +464,66 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
           );
       }
     });
+  }
+
+  /// A task alarm rang and was tapped (or opened itself full screen). The
+  /// notification's «شروع» button skips the page.
+  void _openTaskAlarm(NavigatorState navigator, TaskAlarm alarm, String? action) {
+    final reminders = TaskReminderService.instance;
+
+    void start() {
+      unawaited(reminders.silence(alarm.taskId));
+      unawaited(reminders.releaseLockScreen());
+      if (alarm.timed) {
+        unawaited(_openWidgetLink(HomeWidgetLink(taskId: alarm.taskId)));
+      } else {
+        AppTabsShell.select(navigator.context, AppTabsShell.tasks);
+      }
+    }
+
+    if (action == kAlarmActionStart) {
+      start();
+      return;
+    }
+    if (_alarmOpen) return;
+    _alarmOpen = true;
+
+    void close() {
+      unawaited(reminders.releaseLockScreen());
+      if (navigator.canPop()) navigator.pop();
+    }
+
+    unawaited(navigator
+        .push<void>(
+          MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (_) => PopScope(
+              // Back silences it, like ✕.
+              onPopInvokedWithResult: (didPop, _) {
+                if (didPop) unawaited(reminders.silence(alarm.taskId));
+              },
+              child: TaskAlarmScreen(
+                title: alarm.title,
+                at: alarm.at,
+                tagName: alarm.tagName,
+                minutes: alarm.timed ? alarm.minutes : null,
+                onStart: () {
+                  close();
+                  start();
+                },
+                onSnooze: () {
+                  unawaited(reminders.snooze(alarm));
+                  close();
+                },
+                onDismiss: () {
+                  unawaited(reminders.silence(alarm.taskId));
+                  close();
+                },
+              ),
+            ),
+          ),
+        )
+        .whenComplete(() => _alarmOpen = false));
   }
 
   void _openLink(Uri link) {
@@ -553,6 +630,11 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       // A brand-new account gets the first-steps guide.
       if (state.action == AuthAction.register) OnboardingStore.instance.start();
       unawaited(_resolveCurrentUser());
+      // Task alarms come from the server's schedule, so tasks planned
+      // elsewhere (a counselor, another phone) ring here too.
+      TaskReminderService.instance.attach(context.read<GraphQLRepository>());
+      _lastAlarmSync = DateTime.now();
+      unawaited(TaskReminderService.instance.sync());
       // The bell's count and the home message row.
       AnnouncementsStore.instance
         ..attach(AnnouncementsRepository(context.read<GraphQLRepository>()))
@@ -579,6 +661,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     // device's push registration before the session is torn down.
     if (state is AuthLoading && state.action == AuthAction.logout) {
       unawaited(_unregisterDeviceToken());
+      unawaited(TaskReminderService.instance.detach());
       OnboardingStore.instance.reset();
     }
 

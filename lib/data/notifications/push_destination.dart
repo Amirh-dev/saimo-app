@@ -1,4 +1,5 @@
 import 'notification_service.dart';
+import 'task_reminder_service.dart';
 
 /// Reminder kinds the server sends inside a reminder push's `kind` field.
 /// The push's `type` stays [kPushTypeConsistencyAtRisk] so older builds still
@@ -18,7 +19,16 @@ const String kReminderCounselingEnded = 'COUNSELING_ENDED';
 const String kPushKindAnnouncement = 'ANNOUNCEMENT';
 
 /// Where tapping a push takes the user.
-enum PushDestination { chat, friends, paymentResult, home, tasks, counselors, announcements }
+enum PushDestination {
+  chat,
+  friends,
+  paymentResult,
+  home,
+  tasks,
+  counselors,
+  announcements,
+  taskAlarm,
+}
 
 /// The destination for a tapped push's data.
 PushDestination pushDestination(Map<String, String> data) {
@@ -30,6 +40,8 @@ PushDestination pushDestination(Map<String, String> data) {
       return PushDestination.friends;
     case kPushTypeCounselingPayment:
       return PushDestination.paymentResult;
+    case kPushTypeTaskAlarm:
+      return PushDestination.taskAlarm;
     case kPushTypeConsistencyAtRisk:
       return switch (data['kind']) {
         kReminderPlanEmpty ||
