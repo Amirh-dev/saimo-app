@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:simo_learn/presentation/screens/announcements/announcements_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_header_button.dart';
 import 'package:simo_learn/presentation/screens/dashboard/index.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
@@ -253,16 +254,10 @@ class _TabHeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Notifications are not built yet; bring the bell back with them,
-        // here for every tab:
-        // GestureDetector(
-        //   child: SizedBox(
-        //     width: 48,
-        //     height: 48,
-        //     child: SvgPicture.asset('assets/icons/bell.svg').vMargin(11),
-        //   ),
-        // ),
         const ConsultantHeaderButton(),
+        const SizedBox(width: 8),
+        // Messages from the team, on every tab.
+        const AnnouncementBell(),
         Expanded(child: title),
       ],
     ).tMargin(20).hMargin(16);

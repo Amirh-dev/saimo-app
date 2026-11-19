@@ -13,8 +13,12 @@ const String kReminderTasksLeft = 'TASKS_LEFT';
 const String kReminderCounselingEnding = 'COUNSELING_ENDING';
 const String kReminderCounselingEnded = 'COUNSELING_ENDED';
 
+/// A message from the team (admin panel). Sent with the reminders' type so
+/// builds before it open home; it carries announcementID.
+const String kPushKindAnnouncement = 'ANNOUNCEMENT';
+
 /// Where tapping a push takes the user.
-enum PushDestination { chat, friends, paymentResult, home, tasks, counselors }
+enum PushDestination { chat, friends, paymentResult, home, tasks, counselors, announcements }
 
 /// The destination for a tapped push's data.
 PushDestination pushDestination(Map<String, String> data) {
@@ -37,6 +41,7 @@ PushDestination pushDestination(Map<String, String> data) {
         // Ended, the student picks a counselor again; while it is still
         // running there is nothing to buy yet.
         kReminderCounselingEnded => PushDestination.counselors,
+        kPushKindAnnouncement => PushDestination.announcements,
         _ => PushDestination.home,
       };
     default:

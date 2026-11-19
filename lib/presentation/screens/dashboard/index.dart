@@ -9,6 +9,8 @@ import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
 import 'package:simo_learn/features/onboarding/onboarding_store.dart';
+import 'package:simo_learn/features/announcements/announcements_store.dart';
+import 'package:simo_learn/presentation/screens/announcements/announcements_screen.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
 import 'package:simo_learn/presentation/screens/consultants/intro_popup.dart';
 import 'package:simo_learn/presentation/screens/onboarding/onboarding_widgets.dart';
@@ -45,7 +47,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AppTabRevisit {
   int get tabIndex => 0;
 
   @override
-  void onTabRevisited() => context.read<DashboardCubit>().load();
+  void onTabRevisited() {
+    context.read<DashboardCubit>().load();
+    AnnouncementsStore.instance.refresh();
+  }
 
   @override
   void initState() {
@@ -154,6 +159,8 @@ class _DashboardContent extends StatelessWidget {
             child: Column(
               children: [
                 AppTabHeader('خوش اومدی'),
+                // A message from the team, until the inbox is opened.
+                HomeAnnouncementRow(),
                 // Under the title, so the offer stays in view without
                 // pushing the page down.
                 InstallAppCard(),

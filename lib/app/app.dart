@@ -16,7 +16,10 @@ import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
 import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/data/notifications/push_destination.dart';
+import 'package:simo_learn/features/announcements/announcements_repository.dart';
+import 'package:simo_learn/features/announcements/announcements_store.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
+import 'package:simo_learn/presentation/screens/announcements/announcements_screen.dart';
 import 'package:simo_learn/features/onboarding/onboarding_store.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/profile/profile_cubit.dart';
@@ -64,6 +67,7 @@ class MyApp extends StatelessWidget {
             context.read<DashboardCubit>().reset();
             unawaited(HomeWidgets.instance.clear());
             ActiveCounselorStore.instance.clear();
+            AnnouncementsStore.instance.clear();
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final navigator = _rootNavigatorKey.currentState;
               if (navigator == null) return;
@@ -302,6 +306,10 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     // to it. Fires on first token fetch and on every refresh; registration only
     // succeeds once authenticated, so [_handleAuthState] also retries on login.
     NotificationService.instance.onToken = _registerDeviceToken;
+    // A message from the team arrived while open: update the bell and the
+    // home row.
+    NotificationService.instance.onAnnouncement =
+        () => unawaited(AnnouncementsStore.instance.refresh(force: true));
     // Surface a notification for every new message that arrives over the live
     // socket while the user is not reading that exact conversation.
     _inboxEventSubscription = _inboxClient.events.listen(_handleInboxEvent);
@@ -349,6 +357,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
         state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed && _isAuthenticated) {
       unawaited(_inboxClient.connect(force: true));
+      unawaited(AnnouncementsStore.instance.refresh());
     }
   }
 
@@ -404,6 +413,15 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
         case PushDestination.paymentResult:
           unawaited(
             _showPaymentReturn(PaymentReturn(attemptID: data['attemptID'])),
+          );
+        case PushDestination.announcements:
+          final id = data['announcementID'];
+          if (id != null && id.isNotEmpty) {
+            AnnouncementsStore.instance.reportOpened(id, AnnouncementVia.push);
+          }
+          AppTabsShell.select(navigator.context, AppTabsShell.home);
+          navigator.push<void>(
+            MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),
           );
         case PushDestination.home:
           AppTabsShell.select(navigator.context, AppTabsShell.home);
@@ -535,6 +553,10 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
       // A brand-new account gets the first-steps guide.
       if (state.action == AuthAction.register) OnboardingStore.instance.start();
       unawaited(_resolveCurrentUser());
+      // The bell's count and the home message row.
+      AnnouncementsStore.instance
+        ..attach(AnnouncementsRepository(context.read<GraphQLRepository>()))
+        ..refresh(force: true);
       // The FCM token may have been fetched before login (when registration was
       // skipped for lack of auth); register it now that we're authenticated.
       final token = NotificationService.instance.currentToken;

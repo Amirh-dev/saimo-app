@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'active_chat_tracker.dart';
+import 'announcement_push.dart';
 
 /// Android notification channel id. Must match the value declared in
 /// AndroidManifest.xml (`default_notification_channel_id`) so FCM system
@@ -98,12 +99,15 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await _createChannels(plugin);
 
   if (!_isChatPush(data)) {
-    await _showGeneralNotification(
-      plugin,
-      title: title,
-      body: body,
-      data: data,
-    );
+    await Future.wait([
+      _showGeneralNotification(
+        plugin,
+        title: title,
+        body: body,
+        data: data,
+      ),
+      reportAnnouncementReceived(data),
+    ]);
     return;
   }
 
@@ -165,6 +169,10 @@ class NotificationService {
   /// mutation, which stores the token against the current user so the server
   /// can target this device. Registration is a no-op until authenticated.
   Future<void> Function(String token)? onToken;
+
+  /// Called when a message from the team arrives while the app is open, so
+  /// the bell and the home row can refresh.
+  void Function()? onAnnouncement;
 
   Future<bool>? _localReady;
 
@@ -318,6 +326,10 @@ class NotificationService {
   void _onForegroundMessage(RemoteMessage message) {
     final data = message.data;
     if (!_isChatPush(data)) {
+      if (isAnnouncementPush(data)) {
+        unawaited(reportAnnouncementReceived(data));
+        onAnnouncement?.call();
+      }
       final body = message.notification?.body ?? _bodyFromData(data);
       if (body == null || kIsWeb) return;
       unawaited(() async {
@@ -623,6 +635,10 @@ Future<void> _showGeneralNotification(
   required Map<String, dynamic> data,
 }) async {
   final id = generalNotificationKey(data).hashCode & 0x7fffffff;
+  // A message from the team may carry a picture: a thumbnail beside the
+  // text, the full picture when expanded. Without it (or when it does not
+  // load) the notification is text only.
+  final picture = defaultTargetPlatform == TargetPlatform.android ? await downloadPushImage(data) : null;
   await plugin.show(
     id,
     title,
@@ -635,8 +651,18 @@ Future<void> _showGeneralNotification(
         importance: Importance.high,
         priority: Priority.high,
         icon: '@drawable/ic_stat_notification',
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
-        styleInformation: BigTextStyleInformation(body),
+        largeIcon: picture != null
+            // ignore: unnecessary_cast
+            ? ByteArrayAndroidBitmap(picture) as AndroidBitmap<Object>
+            : const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+        styleInformation: picture != null
+            ? BigPictureStyleInformation(
+                ByteArrayAndroidBitmap(picture),
+                contentTitle: title,
+                summaryText: body,
+                hideExpandedLargeIcon: true,
+              )
+            : BigTextStyleInformation(body),
       ),
       iOS: const DarwinNotificationDetails(),
     ),
@@ -655,6 +681,7 @@ String generalNotificationKey(Map<String, dynamic> data) {
       data['attemptID'] ??
       data['taskID'] ??
       data['subscriptionID'] ??
+      data['announcementID'] ??
       '';
   return kind.isEmpty ? '$type:$subject' : '$type:$kind:$subject';
 }
