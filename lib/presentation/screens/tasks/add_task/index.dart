@@ -26,6 +26,7 @@ import 'package:simo_learn/presentation/screens/tasks/weekly_repeat.dart';
 import 'package:simo_learn/presentation/widgets/re_button.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/re_text_field.dart';
+import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/_utils.dart';
 
 DateTime _toDateTime(Jalali date, {TimeOfDay? time}) {
@@ -571,7 +572,9 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
       _reminderTime = picked;
       _isReminderEnabled = true;
     });
-    unawaited(ensureAlarmAccess(context));
+    if (await ensureAlarmAccess(context) || !mounted) return;
+    setState(() => _isReminderEnabled = false);
+    showReToast(context, kAlarmNotSetMessage, ReToastType.error);
   }
 
   Future<void> _changeReminderTime() async {
@@ -1150,7 +1153,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> with _TaskFormFeedback {
       _reminderTime = picked;
       _isReminderEnabled = true;
     });
-    unawaited(ensureAlarmAccess(context));
+    if (await ensureAlarmAccess(context) || !mounted) return;
+    setState(() => _isReminderEnabled = false);
+    showReToast(context, kAlarmNotSetMessage, ReToastType.error);
   }
 
   Future<void> _changeReminderTime() async {

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/active_chat_tracker.dart';
+import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/presentation/screens/chat/advisor_widgets.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
@@ -303,11 +304,27 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
       _startInboxSubscription();
       _loadInitial();
     });
+    // While this chat is on screen its messages don't notify, and the ones
+    // already in the tray are read now.
+    if (widget.targetUserID != null) {
+      ActiveChatTracker.instance.openConversation(widget.targetUserID);
+    }
+    _clearNotifications();
+  }
+
+  void _clearNotifications() {
+    unawaited(NotificationService.instance.clearConversation(
+      otherUserID: widget.targetUserID,
+      chatID: widget.chatID,
+    ));
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (widget.targetUserID != null) {
+      ActiveChatTracker.instance.closeConversation(widget.targetUserID);
+    }
     _logChatLive('room listener disposed chatID=${widget.chatID}');
     _eventSubscription?.cancel();
     _statusSubscription?.cancel();
@@ -356,6 +373,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen>
     // connected status triggers the single NetworkOnly catch-up below.
     _inboxClient.connect(source: 'chat_room');
     _markChatRead(source: 'resume');
+    _clearNotifications();
   }
 
   Future<void> _loadInitial() async {

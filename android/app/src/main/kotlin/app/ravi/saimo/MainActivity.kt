@@ -1,10 +1,14 @@
 package app.ravi.saimo
 
+import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
+import android.os.Process
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -48,6 +52,8 @@ class MainActivity : FlutterActivity() {
                         showOverLockScreen(false)
                         result.success(null)
                     }
+                    "access" -> result.success(alarmAccess())
+                    "openSetting" -> result.success(openSetting(call.arguments as? String))
                     else -> result.notImplemented()
                 }
             }
@@ -115,6 +121,78 @@ class MainActivity : FlutterActivity() {
                 android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             if (show) window.addFlags(flags) else window.clearFlags(flags)
         }
+    }
+
+    // What a ringing alarm needs beyond Android's own permissions. Xiaomi
+    // deletes the alarms of a swiped-away app and blocks its page unless
+    // «نمایش روی صفحه قفل», «نمایش پنجره در پس‌زمینه» and battery «بدون
+    // محدودیت» are on. A switch this ROM does not have reads as null.
+    private fun alarmAccess(): Map<String, Any?> {
+        val power = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return mapOf(
+            "xiaomi" to isXiaomi(),
+            "lockScreen" to if (isXiaomi()) miuiOp(10020) else null,
+            "backgroundPopup" to if (isXiaomi()) miuiOp(10021) else null,
+            "battery" to power.isIgnoringBatteryOptimizations(packageName),
+        )
+    }
+
+    private fun isXiaomi(): Boolean {
+        val names = "${Build.MANUFACTURER} ${Build.BRAND}".lowercase()
+        return listOf("xiaomi", "redmi", "poco").any { names.contains(it) }
+    }
+
+    // MIUI keeps its own switches as app ops: 10020 show on lock screen,
+    // 10021 open pages from the background.
+    private fun miuiOp(op: Int): Boolean? = try {
+        val ops = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val check = AppOpsManager::class.java.getMethod(
+            "checkOpNoThrow",
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            String::class.java,
+        )
+        check.invoke(ops, op, Process.myUid(), packageName) as Int == AppOpsManager.MODE_ALLOWED
+    } catch (e: Exception) {
+        null
+    }
+
+    // Opens the settings page for one of the alarm's needs, falling back to
+    // the app's info page when this phone has no such page.
+    private fun openSetting(which: String?): Boolean {
+        val pages = mutableListOf<Intent>()
+        when (which) {
+            "lockScreen", "backgroundPopup" -> if (isXiaomi()) {
+                for (page in listOf(
+                    "com.miui.permcenter.permissions.PermissionsEditorActivity",
+                    "com.miui.permcenter.permissions.AppPermissionsEditorActivity",
+                )) {
+                    pages += Intent("miui.intent.action.APP_PERM_EDITOR")
+                        .setClassName("com.miui.securitycenter", page)
+                        .putExtra("extra_pkgname", packageName)
+                }
+            }
+            "battery" -> if (isXiaomi()) {
+                pages += Intent()
+                    .setClassName("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity")
+                    .putExtra("package_name", packageName)
+                    .putExtra("package_label", applicationInfo.loadLabel(packageManager).toString())
+            }
+            "notifications" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                pages += Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            }
+        }
+        pages += Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        for (page in pages) {
+            try {
+                startActivity(page)
+                return true
+            } catch (e: Exception) {
+                // Not on this phone, or not allowed: try the next page.
+            }
+        }
+        return false
     }
 
     private fun linkFrom(intent: Intent?): String? {

@@ -39,8 +39,10 @@ class ActiveChatTracker {
     _openConversationUserID = otherUserID;
   }
 
-  /// Clears the currently open conversation.
-  void closeConversation() {
+  /// Clears the currently open conversation; with [otherUserID], only when
+  /// that conversation is still the open one.
+  void closeConversation([String? otherUserID]) {
+    if (otherUserID != null && otherUserID != _openConversationUserID) return;
     _openConversationUserID = null;
   }
 

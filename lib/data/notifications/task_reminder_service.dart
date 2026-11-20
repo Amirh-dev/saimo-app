@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -125,6 +126,9 @@ class TaskAlarm {
   }
 }
 
+/// Something a ringing alarm needs that the user turns on in Settings.
+enum AlarmNeed { notifications, ringOnTime, lockScreen, backgroundPopup, battery }
+
 /// Rings task reminders like an alarm clock: at the exact minute, with the
 /// alarm sound repeating, over the lock screen. Alarms are local, built from
 /// the server's schedule by [sync], so tasks a counselor planned and a new
@@ -212,6 +216,76 @@ class TaskReminderService {
       await _android?.requestFullScreenIntentPermission();
     } catch (error) {
       _log('full screen permission failed: $error');
+    }
+  }
+
+  /// What still stops an alarm from ringing on this phone, in the order the
+  /// checklist shows it. Empty when everything is on.
+  Future<List<AlarmNeed>> missingAccess() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return const [];
+    if (!await _ensureReady()) return const [];
+    final missing = <AlarmNeed>[];
+    if (await _android?.areNotificationsEnabled() == false) {
+      missing.add(AlarmNeed.notifications);
+    }
+    if (!await canRingOnTime()) missing.add(AlarmNeed.ringOnTime);
+    Map<String, Object?>? phone;
+    try {
+      phone = await _lockChannel.invokeMapMethod<String, Object?>('access');
+    } catch (error) {
+      _log('access check failed: $error');
+    }
+    if (phone?['xiaomi'] == true) {
+      if (phone!['lockScreen'] == false) missing.add(AlarmNeed.lockScreen);
+      if (phone['backgroundPopup'] == false) {
+        missing.add(AlarmNeed.backgroundPopup);
+      }
+      if (phone['battery'] != true && !await _batteryConfirmed()) {
+        missing.add(AlarmNeed.battery);
+      }
+    }
+    return missing;
+  }
+
+  /// Opens the system page that turns [need] on.
+  Future<void> openAccess(AlarmNeed need) async {
+    switch (need) {
+      case AlarmNeed.notifications:
+        // A refused prompt does not show again: then the settings page.
+        if (await requestPermission()) return;
+        await _openSetting('notifications');
+      case AlarmNeed.ringOnTime:
+        await requestRingOnTime();
+      case AlarmNeed.lockScreen:
+      case AlarmNeed.backgroundPopup:
+      case AlarmNeed.battery:
+        await _openSetting(need.name);
+    }
+  }
+
+  Future<void> _openSetting(String which) async {
+    try {
+      await _lockChannel.invokeMethod<bool>('openSetting', which);
+    } catch (error) {
+      _log('open setting failed: $error');
+    }
+  }
+
+  static const _batteryConfirmedKey = 'task_alarm_battery_confirmed';
+
+  /// Xiaomi's battery «بدون محدودیت» is not always readable, so the user's
+  /// word counts once they have been to its page.
+  Future<void> confirmBattery() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_batteryConfirmedKey, true);
+  }
+
+  Future<bool> _batteryConfirmed() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_batteryConfirmedKey) ?? false;
+    } catch (_) {
+      return false;
     }
   }
 

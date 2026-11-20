@@ -457,6 +457,33 @@ class NotificationService {
     );
   }
 
+  /// Removes the notification of a conversation the user is now reading
+  /// (keyed like [showMessageNotification]: the other user, else the chat),
+  /// and the bundle summary once no chat is left in it.
+  Future<void> clearConversation({String? otherUserID, String? chatID}) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    final keys = [otherUserID, chatID].whereType<String>().where((k) => k.isNotEmpty);
+    if (keys.isEmpty) return;
+    if (!await ensureLocalNotificationsReady()) return;
+    try {
+      for (final key in keys) {
+        await _localNotifications.cancel(key.hashCode & 0x7fffffff);
+      }
+      final android = _localNotifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final active = await _localNotifications.getActiveNotifications();
+      final chatsLeft = active.any((n) =>
+          n.groupKey == kMessagesGroupKey && n.id != _summaryNotificationId);
+      if (!chatsLeft) {
+        await _localNotifications.cancel(_summaryNotificationId);
+      } else if (android != null) {
+        await _updateMessagesGroupSummary(_localNotifications, android);
+      }
+    } catch (error) {
+      _log('clear conversation failed: $error');
+    }
+  }
+
   void _log(String message) {
     if (kDebugMode) debugPrint('[Notifications] $message');
   }
