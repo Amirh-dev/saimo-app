@@ -30,7 +30,7 @@ Future<bool> ensureAlarmAccess(BuildContext context) async {
       needs: missing,
       check: reminders.missingAccess,
       open: reminders.openAccess,
-      confirmBattery: reminders.confirmBattery,
+      confirm: reminders.confirmAccess,
     ),
   );
   if (done != true) return false;
@@ -49,14 +49,14 @@ class AlarmAccessSheet extends StatefulWidget {
     required this.needs,
     required this.check,
     required this.open,
-    required this.confirmBattery,
+    required this.confirm,
   });
 
   /// What was missing when the sheet opened; these rows stay listed.
   final List<AlarmNeed> needs;
   final Future<List<AlarmNeed>> Function() check;
   final Future<void> Function(AlarmNeed need) open;
-  final Future<void> Function() confirmBattery;
+  final Future<void> Function(AlarmNeed need) confirm;
 
   @override
   State<AlarmAccessSheet> createState() => _AlarmAccessSheetState();
@@ -90,10 +90,10 @@ class _AlarmAccessSheetState extends State<AlarmAccessSheet>
   }
 
   Future<void> _open(AlarmNeed need) async {
-    // Xiaomi's battery page cannot always be read back: after a visit the
-    // row asks the user instead.
-    if (need == AlarmNeed.battery && _visited.contains(need)) {
-      await widget.confirmBattery();
+    // Xiaomi's switches cannot always be read back: after a visit the row
+    // asks the user instead, so a wrong reading never blocks the reminder.
+    if (need.confirmable && _visited.contains(need)) {
+      await widget.confirm(need);
       await _recheck();
       return;
     }
@@ -154,8 +154,7 @@ class _AlarmAccessSheetState extends State<AlarmAccessSheet>
                 _NeedRow(
                   need: need,
                   done: !_missing.contains(need),
-                  askConfirm:
-                      need == AlarmNeed.battery && _visited.contains(need),
+                  askConfirm: need.confirmable && _visited.contains(need),
                   onTap: () => _open(need),
                 ),
                 const SizedBox(height: 8),

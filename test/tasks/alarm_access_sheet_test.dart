@@ -7,13 +7,13 @@ import 'package:simo_learn/presentation/screens/tasks/alarm_access_sheet.dart';
 void main() {
   late List<AlarmNeed> missing;
   late List<AlarmNeed> opened;
-  late bool batteryConfirmed;
+  late List<AlarmNeed> confirmed;
   bool? result;
 
   Future<void> pump(WidgetTester tester, List<AlarmNeed> needs) async {
     missing = [...needs];
     opened = [];
-    batteryConfirmed = false;
+    confirmed = [];
     result = null;
     tester.view.physicalSize = const Size(390 * 2, 844 * 2);
     tester.view.devicePixelRatio = 2;
@@ -31,9 +31,9 @@ void main() {
                     needs: needs,
                     check: () async => [...missing],
                     open: (need) async => opened.add(need),
-                    confirmBattery: () async {
-                      batteryConfirmed = true;
-                      missing.remove(AlarmNeed.battery);
+                    confirm: (need) async {
+                      confirmed.add(need);
+                      missing.remove(need);
                     },
                   ),
                 );
@@ -85,8 +85,22 @@ void main() {
 
     await tester.tap(row);
     await tester.pumpAndSettle();
-    expect(batteryConfirmed, isTrue);
+    expect(confirmed, [AlarmNeed.battery]);
     expect(doneButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('a Xiaomi switch read wrong can be confirmed; Android ones not',
+      (tester) async {
+    await pump(tester, [AlarmNeed.ringOnTime, AlarmNeed.lockScreen]);
+    await tester.tap(find.byKey(const ValueKey('alarm-need-ringOnTime')));
+    await tester.tap(find.byKey(const ValueKey('alarm-need-lockScreen')));
+    await tester.pumpAndSettle();
+    // Still read as off after the visit: only the Xiaomi row asks.
+    expect(find.text('روشنش کردم'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('alarm-need-lockScreen')));
+    await tester.pumpAndSettle();
+    expect(confirmed, [AlarmNeed.lockScreen]);
+    expect(doneButton(tester).onPressed, isNull);
   });
 
   testWidgets('later leaves the reminder unset', (tester) async {

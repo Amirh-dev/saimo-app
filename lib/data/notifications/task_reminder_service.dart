@@ -127,7 +127,16 @@ class TaskAlarm {
 }
 
 /// Something a ringing alarm needs that the user turns on in Settings.
-enum AlarmNeed { notifications, ringOnTime, lockScreen, backgroundPopup, battery }
+enum AlarmNeed {
+  notifications,
+  ringOnTime,
+  lockScreen,
+  backgroundPopup,
+  battery;
+
+  /// Xiaomi's own switches: the user may confirm them after a visit.
+  bool get confirmable => this == lockScreen || this == backgroundPopup || this == battery;
+}
 
 /// Rings task reminders like an alarm clock: at the exact minute, with the
 /// alarm sound repeating, over the lock screen. Alarms are local, built from
@@ -236,11 +245,16 @@ class TaskReminderService {
       _log('access check failed: $error');
     }
     if (phone?['xiaomi'] == true) {
-      if (phone!['lockScreen'] == false) missing.add(AlarmNeed.lockScreen);
-      if (phone['backgroundPopup'] == false) {
+      // A switch this phone has no reading for (null) is not asked for.
+      if (phone!['lockScreen'] == false &&
+          !await _confirmed(AlarmNeed.lockScreen)) {
+        missing.add(AlarmNeed.lockScreen);
+      }
+      if (phone['backgroundPopup'] == false &&
+          !await _confirmed(AlarmNeed.backgroundPopup)) {
         missing.add(AlarmNeed.backgroundPopup);
       }
-      if (phone['battery'] != true && !await _batteryConfirmed()) {
+      if (phone['battery'] != true && !await _confirmed(AlarmNeed.battery)) {
         missing.add(AlarmNeed.battery);
       }
     }
@@ -271,19 +285,21 @@ class TaskReminderService {
     }
   }
 
-  static const _batteryConfirmedKey = 'task_alarm_battery_confirmed';
-
-  /// Xiaomi's battery «بدون محدودیت» is not always readable, so the user's
-  /// word counts once they have been to its page.
-  Future<void> confirmBattery() async {
+  /// Xiaomi's own switches are not read the same way on every version, so
+  /// after a visit to its page the user's word counts: a wrong reading
+  /// never keeps them from setting a reminder.
+  Future<void> confirmAccess(AlarmNeed need) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_batteryConfirmedKey, true);
+    await prefs.setBool(_confirmedKey(need), true);
   }
 
-  Future<bool> _batteryConfirmed() async {
+  static String _confirmedKey(AlarmNeed need) =>
+      'task_alarm_confirmed_${need.name}';
+
+  Future<bool> _confirmed(AlarmNeed need) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_batteryConfirmedKey) ?? false;
+      return prefs.getBool(_confirmedKey(need)) ?? false;
     } catch (_) {
       return false;
     }
