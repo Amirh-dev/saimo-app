@@ -184,8 +184,13 @@ class TaskReminderService {
   Future<void> detach() async {
     _repository = null;
     if (!await _ensureReady()) return;
-    for (final request in await _plugin.pendingNotificationRequests()) {
-      if (_isTaskReminder(request.payload)) await _plugin.cancel(request.id);
+    try {
+      for (final request in await _plugin.pendingNotificationRequests()) {
+        if (_isTaskReminder(request.payload)) await _plugin.cancel(request.id);
+      }
+    } catch (error) {
+      // Logout must finish even if the native side fails.
+      _log('detach failed: $error');
     }
   }
 
@@ -440,8 +445,8 @@ query TaskAlarms($input: TaskScheduleInput!) {
   /// Rings again [snoozeDuration] from now.
   Future<void> snooze(TaskAlarm alarm) async {
     if (!await _ensureReady()) return;
-    await _plugin.cancel(_baseId(alarm.taskId));
     try {
+      await _plugin.cancel(_baseId(alarm.taskId));
       await _schedule(
         _baseId(alarm.taskId) + 1,
         alarm.movedTo(DateTime.now().add(snoozeDuration)),

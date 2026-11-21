@@ -4,6 +4,23 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+/// Whether [message] describes the device being offline or unable to reach
+/// the server (no DNS, dropped connection, failed TLS), not a bug. Matched on
+/// text because GraphQL wraps the socket error in its own exception types.
+bool isConnectivityError(String message) =>
+    _connectivityMarkers.any(message.contains);
+
+const _connectivityMarkers = [
+  'Failed host lookup',
+  'SocketException',
+  'Connection refused',
+  'Connection reset',
+  'Connection closed',
+  'Connection timed out',
+  'Network is unreachable',
+  'HandshakeException',
+];
+
 /// Sends one GraphQL request; throws on failure.
 typedef ActivitySend = Future<void> Function(
   String query,
@@ -193,7 +210,7 @@ mutation ReportClientErrors($errors: [ClientErrorInput!]!) {
     if (_unsupported) return;
     try {
       final message = _clip(error.toString().trim(), 500);
-      if (message.isEmpty) return;
+      if (message.isEmpty || isConnectivityError(message)) return;
       final stackText = stack == null ? null : _stackHead(stack);
       final key = '$message\n${stackText?.split('\n').first ?? ''}';
       final existing = _errors[key];

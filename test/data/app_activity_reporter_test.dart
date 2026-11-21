@@ -50,8 +50,8 @@ void main() {
     for (final call in activityCalls()) {
       for (final item in input(call)['screenViews'] as List) {
         final view = item as Map<String, dynamic>;
-        result.update(view['screen'] as String,
-            (value) => value + (view['views'] as int),
+        result.update(
+            view['screen'] as String, (value) => value + (view['views'] as int),
             ifAbsent: () => view['views'] as int);
       }
     }
@@ -152,6 +152,23 @@ void main() {
     expect(first['stack'], startsWith('#0 main'));
     expect(first['appVersion'], '1.0.43');
     expect(reporter.pendingErrorCount, 0);
+  });
+
+  test('connectivity failures are not reported', () async {
+    final reporter = build();
+    await reporter.setSignedIn(true);
+    reporter.recordError(
+      Exception("ServerException(originalException: ClientException with "
+          "SocketException: Failed host lookup: 'api.saimo.app' "
+          "(OS Error: No address associated with hostname, errno = 7))"),
+      StackTrace.current,
+    );
+    reporter.recordError(
+        Exception('HandshakeException: Connection terminated'), null);
+    expect(reporter.pendingErrorCount, 0);
+
+    reporter.recordError(StateError('real bug'), null);
+    expect(reporter.pendingErrorCount, 1);
   });
 
   test('signing out sends what is pending and forgets the rest', () async {
