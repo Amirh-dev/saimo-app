@@ -3,6 +3,9 @@ package app.ravi.saimo
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -54,6 +57,18 @@ class MainActivity : FlutterActivity() {
                     }
                     "access" -> result.success(alarmAccess())
                     "openSetting" -> result.success(openSetting(call.arguments as? String))
+                    else -> result.notImplemented()
+                }
+            }
+
+        // TimerEndNotice: the timer ran out while the app is open.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "app.ravi.saimo/chime")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "play" -> {
+                        playChime()
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -135,6 +150,21 @@ class MainActivity : FlutterActivity() {
             "backgroundPopup" to if (isXiaomi()) miuiOp(10021) else null,
             "battery" to power.isIgnoringBatteryOptimizations(packageName),
         )
+    }
+
+    // The timer-end tune, as a notification sound: its volume, and silent
+    // when the phone is on silent or vibrate.
+    private fun playChime() {
+        val audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val player = MediaPlayer.create(this, R.raw.timer_end, attributes, audio.generateAudioSessionId())
+            ?: return
+        player.setOnCompletionListener { it.release() }
+        player.start()
     }
 
     private fun isXiaomi(): Boolean {

@@ -1,5 +1,6 @@
 import 'notification_service.dart';
 import 'task_reminder_service.dart';
+import 'timer_end_notice.dart';
 
 /// Reminder kinds the server sends inside a reminder push's `kind` field.
 /// The push's `type` stays [kPushTypeConsistencyAtRisk] so older builds still
@@ -42,6 +43,8 @@ PushDestination pushDestination(Map<String, String> data) {
       return PushDestination.paymentResult;
     case kPushTypeTaskAlarm:
       return PushDestination.taskAlarm;
+    case kPushTypeTimerEnd:
+      return PushDestination.tasks;
     case kPushTypeConsistencyAtRisk:
       return switch (data['kind']) {
         kReminderPlanEmpty ||

@@ -17,6 +17,7 @@ import 'package:simo_learn/data/notifications/device_token_repository.dart';
 import 'package:simo_learn/data/notifications/notification_service.dart';
 import 'package:simo_learn/data/notifications/push_destination.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
+import 'package:simo_learn/data/notifications/timer_end_notice.dart';
 import 'package:simo_learn/features/announcements/announcements_repository.dart';
 import 'package:simo_learn/features/announcements/announcements_store.dart';
 import 'package:simo_learn/features/auth/cubit/auth_cubit.dart';
@@ -310,6 +311,8 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     _consultantRepository = ConsultantRepository(graphql);
     // Tapping a notification (from any app state) opens what it is about.
     NotificationService.instance.onOpen = _openFromNotification;
+    // A timer running out: a chime in the app, a notification outside it.
+    TimerEndNotice.instance.attach();
     // Register this device's FCM token with the backend so the server can push
     // to it. Fires on first token fetch and on every refresh; registration only
     // succeeds once authenticated, so [_handleAuthState] also retries on login.

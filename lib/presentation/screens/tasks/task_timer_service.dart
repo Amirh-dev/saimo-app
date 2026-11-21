@@ -89,6 +89,15 @@ class TaskTimerService extends ChangeNotifier {
 
   int get remainingSeconds => math.max(0, _totalSeconds - elapsedSeconds);
 
+  /// When the running session reaches zero; null while paused or done.
+  DateTime? get endsAt {
+    final startedAt = _sessionStartedAt;
+    if (startedAt == null || _isCompleted) return null;
+    return startedAt.add(
+      Duration(seconds: math.max(0, _totalSeconds - _baseElapsedSeconds)),
+    );
+  }
+
   /// True when [taskId] is the task this service currently holds.
   bool isActive(String? taskId) => taskId != null && taskId == _taskId;
 
@@ -310,6 +319,13 @@ class TaskTimerService extends ChangeNotifier {
   /// Tasks whose timer just ran out and the server confirmed as done.
   Stream<Map<String, dynamic>> get completions => _completions.stream;
 
+  final StreamController<Duration> _timeUp =
+      StreamController<Duration>.broadcast();
+
+  /// The running timer reached zero, with how late the app noticed it (the
+  /// tick is late when the app was in the background or asleep).
+  Stream<Duration> get timeUp => _timeUp.stream;
+
   /// Forget the current task entirely (e.g. after a successful refresh where
   /// the server already reports the task as done).
   void clear() {
@@ -374,6 +390,10 @@ class TaskTimerService extends ChangeNotifier {
 
   void _onTick() {
     if (remainingSeconds <= 0) {
+      final end = endsAt;
+      if (end != null && !_timeUp.isClosed) {
+        _timeUp.add(DateTime.now().difference(end));
+      }
       // Time is up: auto-complete. complete() stops the ticker and notifies.
       complete();
       return;
