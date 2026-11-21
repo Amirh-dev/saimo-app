@@ -26,6 +26,7 @@ DashboardTaskItem _item(
 
 class _Taps {
   final opened = <String>[];
+  final details = <String>[];
   int added = 0;
   int allTasks = 0;
 }
@@ -50,6 +51,7 @@ Future<_Taps> _pump(
             onAllTasksTap: () => taps.allTasks++,
             onAddTap: () => taps.added++,
             onOpenTask: (task) => taps.opened.add(task.id),
+            onTaskDetails: (task) => taps.details.add(task.id),
           ),
         ),
       ),
@@ -78,9 +80,12 @@ void main() {
     expect(find.text('دقیقه'), findsNWidgets(3));
 
     await tester.tap(find.text('ادامه'));
-    // One tap on any capsule opens its timer; no double tap.
+    // The capsule opens the task's details; the dot under it, its timer.
     await tester.tap(find.text('فیزیک'));
+    expect(taps.details, ['فیزیک']);
+    await tester.tap(find.bySemanticsLabel('تایمر فیزیک'));
     expect(taps.opened, ['زیست', 'فیزیک']);
+    expect(taps.details, ['فیزیک']);
   });
 
   testWidgets('a running timer is offered as it is, a fresh task to start',

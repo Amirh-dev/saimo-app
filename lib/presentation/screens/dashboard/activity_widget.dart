@@ -19,6 +19,7 @@ class TodayActivityWidget extends StatefulWidget {
     required this.onAllTasksTap,
     required this.onAddTap,
     required this.onOpenTask,
+    required this.onTaskDetails,
     this.consistency,
   });
 
@@ -31,6 +32,9 @@ class TodayActivityWidget extends StatefulWidget {
 
   /// Opens a task's timer.
   final ValueChanged<DashboardTaskItem> onOpenTask;
+
+  /// Opens a task's details sheet (start, edit, move, report, delete).
+  final ValueChanged<DashboardTaskItem> onTaskDetails;
 
   /// Places the flame on the progress bar; 70% while it is unknown.
   final DashboardConsistency? consistency;
@@ -434,7 +438,8 @@ class _TodayActivityWidgetState extends State<TodayActivityWidget>
             task: widget.tasks[slot.index!],
             suggested: slot.index == suggested,
             fill: _fill(position),
-            onTap: widget.onOpenTask,
+            onTap: widget.onTaskDetails,
+            onStart: widget.onOpenTask,
             onLongPress: _showTitle,
           ),
         TodaySlotKind.add => _EmptyColumn(onTap: widget.onAddTap, add: true),
@@ -594,6 +599,7 @@ class _TaskColumn extends StatelessWidget {
     required this.suggested,
     required this.fill,
     required this.onTap,
+    required this.onStart,
     required this.onLongPress,
   });
 
@@ -602,7 +608,12 @@ class _TaskColumn extends StatelessWidget {
   /// The strip's task: its dot turns into a solid button in its color.
   final bool suggested;
   final Animation<double> fill;
+
+  /// The capsule itself: the task's details.
   final ValueChanged<DashboardTaskItem> onTap;
+
+  /// The play/pause dot under it: straight to the timer.
+  final ValueChanged<DashboardTaskItem> onStart;
   final void Function(BuildContext context, DashboardTaskItem task) onLongPress;
 
   static const BorderRadius _capsule = BorderRadius.all(Radius.circular(100));
@@ -688,34 +699,17 @@ class _TaskColumn extends StatelessWidget {
             ),
             // Keeps every dot's center on the dashed line.
             SizedBox(height: suggested ? _Chart.suggestedGap : 8),
-            if (suggested)
-              _Dot(
-                size: _Chart.suggestedDot,
-                ring: 2,
-                background: stage.color,
-                shadow: stage.color.withValues(alpha: 0.35),
-                child: Icon(
-                  stage.icon,
-                  textDirection: TextDirection.ltr,
-                  size: 15,
-                  color: Colors.white,
-                ),
-              )
-            else
-              _Dot(
-                size: _Chart.dot,
-                background: stage == _Stage.idle
-                    ? AppColors.gray2
-                    : stage.color.withValues(alpha: 0.12),
-                child: Icon(
-                  stage.icon,
-                  // Play and pause point the same way in either direction.
-                  textDirection: TextDirection.ltr,
-                  size: 14,
-                  color: stage.color,
-                ),
+            // The dot is its own button: it skips the sheet and goes
+            // straight to the timer.
+            Semantics(
+              button: true,
+              label: 'تایمر ${task.title}',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onStart(task),
+                child: _dot(stage),
               ),
-            SizedBox(height: suggested ? _Chart.suggestedGap : 8),
+            ),
             // «۱۰۰ از ۱۲۰» is a little wide for a column; it shrinks rather
             // than run into the next one.
             FittedBox(
@@ -746,6 +740,36 @@ class _TaskColumn extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _dot(_Stage stage) {
+    if (suggested) {
+      return _Dot(
+        size: _Chart.suggestedDot,
+        ring: 2,
+        background: stage.color,
+        shadow: stage.color.withValues(alpha: 0.35),
+        child: Icon(
+          stage.icon,
+          textDirection: TextDirection.ltr,
+          size: 15,
+          color: Colors.white,
+        ),
+      );
+    }
+    return _Dot(
+      size: _Chart.dot,
+      background: stage == _Stage.idle
+          ? AppColors.gray2
+          : stage.color.withValues(alpha: 0.12),
+      child: Icon(
+        stage.icon,
+        // Play and pause point the same way in either direction.
+        textDirection: TextDirection.ltr,
+        size: 14,
+        color: stage.color,
       ),
     );
   }

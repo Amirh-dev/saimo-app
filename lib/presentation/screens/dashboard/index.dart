@@ -22,11 +22,17 @@ import 'package:simo_learn/presentation/screens/dashboard/study_metrics.dart';
 import 'package:simo_learn/presentation/screens/goals/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/index.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_details_sheet.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
+import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
+import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
+import 'package:simo_learn/presentation/screens/tasks/weekly/plan_sheets.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
+import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/presentation/widgets/modal.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
 import 'package:simo_learn/presentation/widgets/user_avatar.dart';
@@ -141,6 +147,86 @@ class _DashboardScreenState extends State<DashboardScreen> with AppTabRevisit {
   }
 }
 
+/// A task id whose details are being fetched, so a second tap waits.
+String? _openingTaskId;
+
+/// Opens the same details sheet the tasks tab shows (start, edit, move,
+/// report, delete) for a capsule of today's chart. The home only knows a
+/// task's progress, so the whole task is fetched first.
+Future<void> _openTaskDetails(
+    BuildContext context, DashboardTaskItem item) async {
+  if (_openingTaskId != null) return;
+  _openingTaskId = item.id;
+  final cubit = context.read<DashboardCubit>();
+  final api = GraphQLTasksApi(context.read<GraphQLRepository>());
+  final today = Jalali.now();
+
+  Map<String, dynamic>? task;
+  try {
+    final tasks =
+        await api.fetchSchedule(start: today, end: today.addDays(1));
+    task = tasks.where((t) => t['id'] == item.id).firstOrNull;
+  } catch (error) {
+    debugPrint('Dashboard task details failed: $error');
+  } finally {
+    _openingTaskId = null;
+  }
+  if (!context.mounted) return;
+  if (task == null) {
+    showReToast(context, 'دریافت تسک ناموفق بود. دوباره امتحان کن.',
+        ReToastType.failed);
+    return;
+  }
+  final details = task;
+
+  final action =
+      await showTaskDetailsSheet(context, task: details, timed: true);
+  if (!context.mounted || action == null) return;
+
+  switch (action) {
+    case TaskSheetAction.primary:
+      await context.to<void>(TaskTimerScreen(task: details, onPop: () {}));
+    case TaskSheetAction.edit:
+      final edited = await context.to<Map<String, dynamic>>(
+        AddTimedTaskScreen(task: details),
+      );
+      if (edited == null || !context.mounted) return;
+      showReToast(context, 'تسک با موفقیت ویرایش شد', ReToastType.success);
+    case TaskSheetAction.report:
+      // The sheet offers a report only once a timed task is done.
+      final saved = await showTaskReportPopup(
+        context,
+        initial: details['report'] as TaskReport?,
+        onSubmit: (report) => api.saveReport(details, report),
+      );
+      if (saved != null && context.mounted) {
+        showReToast(context, 'گزارش تسک ثبت شد', ReToastType.success);
+      }
+    case TaskSheetAction.move:
+      final day =
+          await showMoveTaskSheet(context, task: details, today: today);
+      if (day == null || !context.mounted) return;
+      try {
+        await api.moveTask(details, day);
+        if (context.mounted) {
+          showReToast(context, 'تسک منتقل شد', ReToastType.success);
+        }
+      } catch (error) {
+        if (!context.mounted) return;
+        showReToast(
+          context,
+          error is TaskActionException
+              ? error.message
+              : 'جابه‌جایی تسک ناموفق بود. دوباره امتحان کن.',
+          ReToastType.failed,
+        );
+      }
+    case TaskSheetAction.delete:
+      await requestDeleteTask(context, details);
+  }
+  if (context.mounted) unawaited(cubit.load());
+}
+
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({required this.state});
 
@@ -229,6 +315,8 @@ class _DashboardContent extends StatelessWidget {
                         onOpenTask: (task) => context.to<void>(
                           TaskTimerScreen(task: task.toMap(), onPop: () {}),
                         ),
+                        onTaskDetails: (task) =>
+                            _openTaskDetails(context, task),
                       ),
                     ),
                   ),
