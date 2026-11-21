@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/data/auth/token_storage.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/features/auth/test_accounts.dart';
 import 'package:simo_learn/features/profile/user_major.dart';
 import 'package:simo_learn/graphql/__generated__/schema.schema.gql.dart';
 import 'package:simo_learn/graphql/mutations/__generated__/register.req.gql.dart';
@@ -490,6 +491,7 @@ mutation UpdateProfile($input: UpdateProfileInput!) {
     }
 
     _registration = null;
+    setCurrentPhoneNumber(null);
     emit(const AuthLoading(AuthAction.logout));
     try {
       await _graphql.clearAuthSession();
@@ -635,6 +637,7 @@ query GetMeForAuthCompletion {
     required AuthAction action,
     String? accessToken,
   }) {
+    setCurrentPhoneNumber(profile.phoneNumber);
     if (!profile.isComplete) {
       emit(
         AuthNeedsRegistration(

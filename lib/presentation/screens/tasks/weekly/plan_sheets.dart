@@ -378,7 +378,7 @@ class _QuickAddSheet extends StatefulWidget {
 }
 
 class _QuickAddSheetState extends State<_QuickAddSheet> {
-  static const List<int> _minuteOptions = kTaskDurations;
+  final List<int> _minuteOptions = taskDurationOptions;
 
   late Jalali _day = widget.initialDay;
   late bool _timed = widget.initialTimed;

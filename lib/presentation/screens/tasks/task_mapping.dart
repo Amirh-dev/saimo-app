@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:shamsi_date/shamsi_date.dart';
+import 'package:simo_learn/features/auth/test_accounts.dart';
 import 'package:simo_learn/utils/helpers.dart';
 
 /// Converts tasks from the API into the maps the tasks screens, the details
@@ -238,3 +239,8 @@ Map<String, dynamic> plannedTaskFromApi(Map<String, dynamic> task) {
 /// and the one picked by default.
 const List<int> kTaskDurations = [25, 45, 60, 90, 120];
 const int kDefaultTaskMinutes = 45;
+
+/// The durations this user is offered: test accounts also get 1 minute, to
+/// try the timer and its end notice without waiting.
+List<int> get taskDurationOptions =>
+    isTestAccount ? const [1, ...kTaskDurations] : kTaskDurations;

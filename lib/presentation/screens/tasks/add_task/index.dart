@@ -406,7 +406,7 @@ class _AddTimedTaskScreenState extends State<AddTimedTaskScreen>
   ];
 
   // The same durations quick add offers.
-  static const List<int> _baseMinuteOptions = kTaskDurations;
+  static List<int> get _baseMinuteOptions => taskDurationOptions;
   late List<int> _minuteOptions;
 
   bool get _isEditing => widget.task != null;
