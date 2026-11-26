@@ -1,3 +1,4 @@
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -109,7 +110,7 @@ class ReImage extends StatelessWidget {
 
   Widget _buildImage({BoxFit? defaultFit}) {
     if (path.startsWith('http') || path.startsWith('https')) {
-      return Image.network(
+      return NetImage(
         path,
         height: height,
         width: width,

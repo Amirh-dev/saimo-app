@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'package:flutter/material.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_repository.dart';
@@ -530,7 +531,7 @@ class _HeroAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     const fallback = Icon(SolarIconsBold.user, size: 40, color: AppColors.gray);
     final image = path.startsWith('http')
-        ? Image.network(
+        ? NetImage(
             path,
             fit: BoxFit.cover,
             cacheWidth: 288,
@@ -897,7 +898,7 @@ class _VerifiedCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 220),
-                child: Image.network(
+                child: NetImage(
                   url,
                   key: const ValueKey('student-card-photo'),
                   fit: BoxFit.contain,

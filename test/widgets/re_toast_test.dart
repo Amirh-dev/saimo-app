@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:simo_learn/presentation/widgets/notice_card.dart';
 import 'package:simo_learn/presentation/widgets/re_toast.dart';
 import 'package:simo_learn/utils/colors.dart';
 
@@ -31,12 +32,7 @@ void main() {
 
       expect(find.text(message), findsOneWidget);
       expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Container &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration! as BoxDecoration).color == color,
-        ),
+        find.byWidgetPredicate((widget) => widget is NoticeIcon && widget.color == color),
         findsOneWidget,
       );
 

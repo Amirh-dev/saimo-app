@@ -1,3 +1,4 @@
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:simo_learn/presentation/widgets/re_text.dart';
@@ -27,8 +28,9 @@ class UserAvatar extends StatelessWidget {
     final url = imageUrl?.trim() ?? '';
     final placeholder = UserAvatarPlaceholder(name: name, size: size);
     final Widget image = url.startsWith('http')
-        ? Image.network(
+        ? NetImage(
             url,
+            cacheWidth: (size * 3).round(),
             width: size,
             height: size,
             fit: BoxFit.cover,

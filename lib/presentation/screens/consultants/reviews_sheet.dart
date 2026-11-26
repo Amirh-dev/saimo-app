@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/presentation/screens/consultants/consultant_models.dart';
@@ -700,7 +701,7 @@ class _ReviewAuthorAvatar extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: url == null
           ? initial
-          : Image.network(
+          : NetImage(
               url,
               key: const ValueKey('review-author-photo'),
               fit: BoxFit.cover,

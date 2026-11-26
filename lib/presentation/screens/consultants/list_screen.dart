@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ import 'package:simo_learn/presentation/screens/consultants/plans_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/reviews_sheet.dart';
 import 'package:simo_learn/presentation/screens/consultants/success_sheet.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
+import 'package:simo_learn/presentation/widgets/notice_card.dart';
 import 'package:simo_learn/utils/_utils.dart';
 import 'package:solar_icons/solar_icons.dart';
 
@@ -293,19 +295,21 @@ class _ConsultantListScreenState extends State<ConsultantListScreen> {
   }
 
   SnackBar _snack(String message, {bool error = false}) {
+    const duration = Duration(seconds: 6);
     return SnackBar(
-      backgroundColor: error ? AppColors.errorColor : AppColors.black1,
-      duration: const Duration(seconds: 6),
-      content: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ReText(
-          message,
-          maxLines: 5,
-          color: AppColors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          textAlign: TextAlign.right,
-        ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      padding: EdgeInsets.zero,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      duration: duration,
+      content: NoticeCard(
+        title: message,
+        titleLines: 5,
+        duration: duration,
+        leading: error
+            ? const NoticeIcon(icon: Icons.error_outline, color: AppColors.toastError)
+            : const NoticeIcon(icon: Icons.schedule_rounded, color: AppColors.toastInfo),
       ),
     );
   }
@@ -1102,8 +1106,9 @@ class _Avatar extends StatelessWidget {
   Widget _buildImage() {
     const fallback = Icon(SolarIconsBold.user, size: 24, color: AppColors.gray);
     if (path.startsWith('http')) {
-      return Image.network(
+      return NetImage(
         path,
+        cacheWidth: 180,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => fallback,
       );

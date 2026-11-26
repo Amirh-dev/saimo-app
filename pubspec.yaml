@@ -43,6 +43,12 @@ dependencies:
   shamsi_date: ^1.1.1
   device_info_plus: ^10.1.2
   flutter_svg: ^2.0.10+1
+  path_provider: ^2.1.6
+  # 2.3+ switched to jni (native build, no NDK here); 2.2.23 is the last
+  # pigeon release and uses AGP 8.13.1, which the Gradle cache has. Older
+  # 2.2.x needs AGP 8.5.0, which cannot be downloaded here.
+  path_provider_android: 2.2.23
+  crypto: ^3.0.3
   intl: ^0.20.2
   solar_icons: ^0.1.0
   pinput: ^5.0.1

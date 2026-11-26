@@ -1,3 +1,4 @@
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -178,8 +179,9 @@ class _CounselorAvatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: hasPhoto
-            ? Image.network(
+            ? NetImage(
                 avatar,
+                cacheWidth: (_avatarSize * 3).round(),
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => fallback,
                 loadingBuilder: (_, child, progress) =>

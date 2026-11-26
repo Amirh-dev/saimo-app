@@ -14,6 +14,7 @@ import 'package:simo_learn/presentation/screens/consultants/consultant_models.da
 import 'package:simo_learn/presentation/screens/consultants/details_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/list_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/reviews_sheet.dart';
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 
 /// Answers the counselors query with [answer], or throws [error].
 class _CounselorsGraphQLRepository extends GraphQLRepository {
@@ -365,11 +366,11 @@ void main() {
 
     final photo = _inSheet(find.byKey(const ValueKey('review-author-photo')));
     expect(photo, findsOneWidget);
-    final image = tester.widget<Image>(photo).image;
     expect(
-      (image is ResizeImage ? image.imageProvider : image) as NetworkImage,
-      isA<NetworkImage>().having((p) => p.url, 'url',
-          'https://api.saimo.app/uploads/avatars/r1/p.jpg'),
+      tester.widget<NetImage>(photo),
+      isA<NetImage>()
+          .having((p) => p.url, 'url', 'https://api.saimo.app/uploads/avatars/r1/p.jpg')
+          .having((p) => p.cacheWidth, 'cacheWidth', 132),
     );
     // The review without a photo keeps the first letter of the name.
     expect(_inSheet(find.text('س')), findsOneWidget);

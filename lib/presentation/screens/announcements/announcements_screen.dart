@@ -1,3 +1,4 @@
+import 'package:simo_learn/presentation/widgets/net_image.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -549,7 +550,7 @@ class _Empty extends StatelessWidget {
 
 /// Where message pictures come from; tests swap in local bytes.
 @visibleForTesting
-ImageProvider Function(String url) announcementImage = NetworkImage.new;
+ImageProvider Function(String url) announcementImage = netImageProvider;
 
 /// Persian digits for counts.
 String faDigits(int n) =>

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:simo_learn/presentation/widgets/re_text.dart';
+import 'package:simo_learn/presentation/widgets/notice_card.dart';
 import 'package:simo_learn/utils/colors.dart';
 import 'package:simo_learn/utils/helpers.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -16,6 +16,20 @@ enum ReToastType {
 }
 
 OverlayEntry? _currentToastEntry;
+
+// `OverlayEntry.mounted` stays true until the next frame after `remove()`,
+// so it can't guard against a second removal (which throws on `_overlay!`).
+final Expando<bool> _removedToastEntries = Expando<bool>();
+
+void _removeToastEntry(OverlayEntry entry) {
+  if (_removedToastEntries[entry] == true) return;
+  _removedToastEntries[entry] = true;
+  try {
+    entry.remove();
+  } catch (_) {
+    // Overlay already gone (e.g. navigator disposed) — nothing to remove.
+  }
+}
 
 class _AnimatedReToast extends StatefulWidget {
   const _AnimatedReToast({
@@ -99,94 +113,18 @@ class _AnimatedReToastState extends State<_AnimatedReToast>
                 child: Opacity(opacity: _controller.value, child: child),
               );
             },
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 68),
-              margin: const EdgeInsets.only(top: 16, left: 16, right: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              decoration: BoxDecoration(
-                color: widget.backgroundColor,
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withOpacity(0.12),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  widget.icon != null ? _ToastCircle(
-                    backgroundColor: AppColors.white,
-                    child: Icon(
-                      widget.icon,
-                      color: widget.backgroundColor,
-                      size: 28,
-                    ),
-                  ) : const SizedBox(),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ReText(
-                      widget.title,
-                      textDirection: TextDirection.rtl,
-                      color: widget.contentColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      lineHeight: 1.55,
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Semantics(
-                    key: const Key('re-toast-dismiss'),
-                    button: true,
-                    label: 'بستن اعلان',
-                    child: Material(
-                      color: AppColors.white.withOpacity(0.20),
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: _dismiss,
-                        child: const SizedBox.square(
-                          dimension: 40,
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: AppColors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+              child: NoticeCard(
+                title: widget.title,
+                leading: widget.icon == null ? null : NoticeIcon(icon: widget.icon!, color: widget.backgroundColor, iconColor: widget.contentColor),
+                duration: widget.showDuration,
+                onClose: _dismiss,
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ToastCircle extends StatelessWidget {
-  const _ToastCircle({required this.backgroundColor, required this.child});
-
-  final Color backgroundColor;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
-      child: child,
     );
   }
 }
@@ -201,22 +139,22 @@ void showReToast(
   final style = switch (type) {
     ReToastType.success => (
         backgroundColor: AppColors.toastSuccess,
-        contentColor: AppColors.white,
+        contentColor: AppColors.toastSuccess,
         icon: Icons.check_rounded,
       ),
     ReToastType.error => (
         backgroundColor: AppColors.toastError,
-        contentColor: AppColors.white,
+        contentColor: AppColors.toastError,
         icon: Icons.error_outline,
       ),
     ReToastType.info => (
         backgroundColor: AppColors.toastInfo,
-        contentColor: AppColors.white,
+        contentColor: AppColors.toastInfo,
         icon: SolarIconsOutline.infoCircle,
       ),
     ReToastType.warning => (
         backgroundColor: AppColors.toastWarning,
-        contentColor: AppColors.black1,
+        contentColor: const Color(0xFFC98A00),
         icon: SolarIconsOutline.dangerTriangle,
       ),
   };
@@ -224,9 +162,8 @@ void showReToast(
   const slideDuration = Duration(milliseconds: 420);
   const showDuration = Duration(milliseconds: 3000);
 
-  if (_currentToastEntry?.mounted ?? false) {
-    _currentToastEntry?.remove();
-  }
+  final previousEntry = _currentToastEntry;
+  if (previousEntry != null) _removeToastEntry(previousEntry);
   _currentToastEntry = null;
 
   final overlayState =
@@ -248,7 +185,7 @@ void showReToast(
           if (_currentToastEntry == overlayEntry) {
             _currentToastEntry = null;
           }
-          if (overlayEntry.mounted) overlayEntry.remove();
+          _removeToastEntry(overlayEntry);
         },
       );
     },
