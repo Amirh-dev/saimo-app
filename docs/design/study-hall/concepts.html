@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Study hall concepts</title>
+<style>
+@font-face { font-family: IRANSansX; src: url('../../../assets/fonts/IRANSansXVF.ttf'); font-weight: 100 1000; }
+:root { --primary:#F14922; --tint:#FDECE7; --black1:#23232B; --gray:#8b8b91; --gray1:#F5F5F9; --gray2:#EBECF0; --ink2:#6b6b73; --green:#1AC56A; --blue:#3D63F0; --win:#FFD27A; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:IRANSansX; font-variation-settings:'DOTS' 4; background:#fff; color:var(--black1); padding:40px 40px 60px; }
+h1 { font-size:30px; font-weight:1000; margin-bottom:6px; }
+.sub { font-size:14px; font-weight:600; color:#777; margin-bottom:56px; }
+.row { display:flex; flex-wrap:wrap; gap:80px 40px; align-items:flex-start; }
+.wrap { position:relative; width:390px; }
+.tag { position:absolute; top:-34px; right:0; font-size:15px; font-weight:900; color:#3a3a42; white-space:nowrap; }
+.tag small { font-weight:700; color:#777; font-size:12.5px; margin-right:6px; }
+.phone { width:390px; height:844px; background:var(--gray1); border-radius:44px; overflow:hidden; position:relative; outline:10px solid #23232B; }
+.notes { margin-top:24px; font-size:12.5px; font-weight:600; line-height:2.05; color:#44444c; }
+.notes b { font-weight:900; color:var(--black1); }
+.status { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 30px; font-size:13px; font-weight:800; direction:ltr; position:relative; z-index:3; }
+.gesture { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; border-radius:100px; background:#23232B55; z-index:20; }
+.ic { width:20px; height:20px; display:block; }
+.ic path, .ic circle, .ic rect { fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.hdr { display:flex; align-items:center; justify-content:space-between; padding:6px 20px 10px; position:relative; z-index:3; }
+.hdr h2 { font-size:18px; font-weight:1000; }
+.round { width:40px; height:40px; border-radius:50%; background:#fff; display:grid; place-items:center; box-shadow:0 4px 14px #23232B10; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:100px; padding:6px 12px; font-size:12px; font-weight:800; }
+.pill.dark { background:var(--black1); color:#fff; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--primary); box-shadow:0 0 0 3px #F1492233; }
+.btn { border:0; font:inherit; font-weight:900; font-size:15px; border-radius:100px; padding:14px 22px; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.btn.main { background:var(--primary); color:#fff; box-shadow:0 8px 20px #F1492240; }
+.btn.ghost { background:var(--gray1); color:var(--black1); }
+.av { width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:900; color:#fff; }
+.a1{background:#8E93A6}.a2{background:#B4A89A}.a3{background:#6F7C8F}.a5{background:#7D7580}
+.sheet { position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:34px 34px 0 0; padding:18px 20px 30px; z-index:4; }
+.big { font-size:38px; font-weight:1000; line-height:1; }
+.subj { display:inline-block; margin-top:8px; font-size:12px; font-weight:800; color:var(--ink2); background:var(--gray1); border-radius:100px; padding:5px 12px; }
+
+/* 1 building */
+.night { background:#151729; }
+.night .status, .night .hdr { color:#fff; }
+.night .round { background:#ffffff14; box-shadow:none; color:#fff; }
+.sky { position:absolute; inset:0; }
+.nbrs { display:flex; gap:10px; margin-top:16px; }
+.nb { flex:1; text-align:center; font-size:11.5px; font-weight:800; color:var(--ink2); }
+.nb .w { height:74px; border-radius:16px; background:#22253A; position:relative; overflow:hidden; margin-bottom:6px; }
+.nb .w.lit { background:linear-gradient(#FFE3A6,#FFC966); }
+.nb.me .w { box-shadow:0 0 0 3px var(--primary); }
+.nb b { color:var(--black1); font-weight:1000; }
+
+/* 2 bench */
+.board { margin:6px 20px 0; height:118px; border-radius:22px; background:#2F4A3F; border:8px solid #C9AE8A; position:relative; color:#EFEDE4; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+.board .c1 { font-size:26px; font-weight:1000; } .board .c2 { font-size:12px; font-weight:700; opacity:.8; }
+.partner { display:flex; align-items:center; gap:12px; }
+.partner .av { width:48px; height:48px; font-size:18px; }
+.partner b { font-size:16px; font-weight:1000; display:block; } .partner span { font-size:12px; font-weight:700; color:var(--gray); }
+.together { margin-top:14px; display:flex; gap:10px; }
+.together > div { flex:1; background:var(--gray1); border-radius:22px; padding:12px 14px; }
+.together b { font-size:20px; font-weight:1000; display:block; } .together span { font-size:11px; font-weight:800; color:var(--gray); }
+.react { display:flex; gap:8px; margin-top:14px; }
+.react div { flex:1; text-align:center; background:var(--gray1); border-radius:100px; padding:9px 0; font-size:12.5px; font-weight:900; }
+
+/* 3 event */
+.poster { margin:8px 16px 0; border-radius:32px; background:#1B1D2A; color:#fff; padding:22px 20px 20px; position:relative; overflow:hidden; box-shadow:0 18px 40px #23232B40; }
+.poster .glow { position:absolute; width:260px; height:260px; border-radius:50%; background:radial-gradient(#F1492255, transparent 70%); top:-80px; left:-60px; }
+.poster .kicker { font-size:12px; font-weight:900; color:#FFB59F; }
+.poster h3 { font-size:25px; font-weight:1000; line-height:1.55; margin-top:8px; }
+.guest { display:flex; align-items:center; gap:14px; margin-top:16px; position:relative; }
+.guest .face { width:64px; height:64px; border-radius:50%; background:#3A3D52; display:grid; place-items:center; position:relative; }
+.medal { position:absolute; bottom:-6px; left:-6px; background:var(--primary); color:#fff; font-size:11px; font-weight:1000; border-radius:100px; padding:3px 8px; border:3px solid #1B1D2A; }
+.guest b { font-size:15px; font-weight:1000; display:block; } .guest span { font-size:12px; color:#B9BBCB; font-weight:700; }
+.when { display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+.when div { background:#ffffff14; border-radius:100px; padding:7px 12px; font-size:12px; font-weight:800; }
+.goingrow { display:flex; align-items:center; justify-content:space-between; margin-top:18px; }
+.goingrow span { font-size:12.5px; font-weight:800; color:#D7D8E2; }
+.qs { margin:20px 16px 0; background:#fff; border-radius:28px; padding:16px 18px; }
+.qs h4 { font-size:15px; font-weight:1000; } .qs .s { font-size:11.5px; color:var(--gray); font-weight:700; margin-top:2px; }
+.q { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--gray1); font-size:13px; font-weight:800; }
+.q:last-child { border:0; }
+.q .up { margin-right:auto; display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:900; color:var(--ink2); background:var(--gray1); border-radius:14px; padding:4px 10px; }
+.q .up.on { background:var(--black1); color:#fff; }
+
+/* 4 counter */
+.hero { text-align:center; padding:10px 20px 0; }
+.hero .k { font-size:13px; font-weight:800; color:var(--gray); }
+.hero .n { font-size:52px; font-weight:1000; letter-spacing:.5px; margin-top:4px; line-height:1.3; }
+.hero .of { font-size:14px; font-weight:800; color:var(--ink2); }
+.track { margin:26px 20px 0; position:relative; height:150px; }
+.statsrow { display:flex; gap:10px; padding:0 16px; margin-top:12px; }
+.statsrow > div { flex:1; background:#fff; border-radius:24px; padding:14px; }
+.statsrow b { font-size:19px; font-weight:1000; display:block; } .statsrow span { font-size:11px; color:var(--gray); font-weight:800; }
+.mycard { margin:12px 16px 0; background:var(--black1); color:#fff; border-radius:28px; padding:16px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 14px 30px #23232B40; }
+.mycard b { font-size:22px; font-weight:1000; display:block; } .mycard span { font-size:12px; color:#C9C9D2; font-weight:700; }
+.feed { margin:12px 16px 0; background:#fff; border-radius:24px; padding:6px 16px; }
+.feed div { display:flex; justify-content:space-between; padding:10px 0; font-size:12.5px; font-weight:800; border-bottom:1px solid var(--gray1); }
+.feed div:last-child { border:0; } .feed div span { color:var(--gray); }
+</style>
+</head>
+<body>
+<h1>سالن مطالعه، چهار ایده</h1>
+<div class="sub">یه پیش‌نمایش از هر کدوم؛ هنوز هیچ‌کدوم نهایی نیست</div>
+
+<div class="row">
+
+<!-- 1. Building -->
+<div class="wrap">
+  <div class="tag">۱. ساختمان سایمو <small>هر پنجره یه نفر</small></div>
+  <div class="phone night">
+    <svg class="sky" id="bld" width="390" height="844" viewBox="0 0 390 844" font-family="IRANSansX"></svg>
+    <div class="status"><span>23:40</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>ساختمان سایمو</h2>
+      <span class="pill" style="background:#ffffff1a;color:#fff"><span class="dot"></span>۳٬۲۱۸ روشن</span>
+    </div>
+    <div class="sheet" style="top:612px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="big">۴۲:۱۰</div><span class="subj">زیست‌شناسی فصل ۳</span></div>
+        <div style="text-align:left;font-size:12px;font-weight:800;color:var(--gray);line-height:1.9">پنجره‌ی تو<br><b style="color:var(--black1);font-size:14px">طبقه‌ی ۱۲، واحد ۴</b></div>
+      </div>
+      <div class="nbrs" id="nbrs"></div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>تصویر اصلی:</b> یه ساختمون توی شب؛ هر پنجره‌ی روشن یعنی یه نفر الان داره می‌خونه.<br>
+    پنجره‌ی خودت با نارنجی معلومه. هر چی بیشتر بخونی، پنجره‌ات وسیله می‌گیره (گلدون، گربه، پوستر).<br>
+    <b>مارکتینگ:</b> تایم‌لپس روشن شدن ساختمون از ۵ عصر تا ۲ شب، و کارت اشتراک «پنجره‌ی من امشب ۳ ساعت روشن بود».
+  </div>
+</div>
+
+<!-- 2. Bench mate -->
+<div class="wrap">
+  <div class="tag">۲. هم‌نیمکتی <small>یه نفر، نه سیصد نفر</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>هم‌نیمکتی امشب</h2>
+      <span class="pill dark"><span class="dot"></span>جلسه‌ی ۵۰ دقیقه</span>
+    </div>
+    <div class="board"><div class="c1">۱۸۴ روز تا کنکور</div><div class="c2">جلسه‌ی ساعت ۲۱، ۱۸ دقیقه مونده</div></div>
+    <svg id="bench" width="390" height="250" viewBox="0 0 390 250" font-family="IRANSansX" style="display:block;margin-top:4px"></svg>
+    <div class="sheet" style="top:446px">
+      <div class="partner">
+        <span class="av a2">م</span>
+        <div><b>مریم</b><span>تجربی دوازدهم، هدف: پزشکی تهران</span></div>
+        <span class="pill" style="margin-right:auto;background:var(--gray1);color:var(--ink2)">از مشهد</span>
+      </div>
+      <div class="together">
+        <div><b>۴</b><span>جلسه با هم خوندین</span></div>
+        <div><b>۳:۲۰</b><span>ساعت با هم، این هفته</span></div>
+      </div>
+      <div class="react"><div>💪 ادامه بده</div><div>🔥 ایول</div><div>☕ استراحت؟</div></div>
+      <button class="btn main" style="width:100%;margin-top:16px">هم‌نیمکتی ثابتم باشه</button>
+      <div style="text-align:center;font-size:11.5px;font-weight:800;color:var(--gray);margin-top:10px">هر جلسه می‌تونی هم‌نیمکتی جدید بگیری</div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>یه نفر کنارت:</b> هر جلسه سایمو یه هم‌رشته‌ای با هدف شبیه پیدا می‌کنه و کنار هم «می‌نشینین».<br>
+    تخته سیاه و نیمکت، حس مدرسه. اگه به هم خوردین، ثابتش می‌کنی.<br>
+    <b>مارکتینگ:</b> «هم‌نیمکتی کنکوری‌ات رو پیدا کن»؛ اسمش خودش تبلیغه.
+  </div>
+</div>
+
+<!-- 3. Guest night -->
+<div class="wrap">
+  <div class="tag">۳. شب مهمان <small>با رتبه‌برترها درس بخون</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>سالن مطالعه</h2>
+      <span style="width:40px"></span>
+    </div>
+    <div class="poster">
+      <div class="glow"></div>
+      <div class="kicker">مهمان این هفته</div>
+      <h3>پنج‌شنبه شب با رتبه ۳ کنکور تجربی درس بخون</h3>
+      <div class="guest">
+        <div class="face"><svg width="34" height="34" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#6E728C"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7z" fill="#6E728C"/></svg><span class="medal">رتبه ۳</span></div>
+        <div><b>مهمان امشب</b><span>پزشکی تهران، ورودی ۱۴۰۵</span></div>
+      </div>
+      <div class="when"><div>پنج‌شنبه، ۲۱ تا ۲۴</div><div>سه جلسه‌ی ۵۰ دقیقه</div><div>جواب سؤال توی استراحت</div></div>
+      <div class="goingrow">
+        <span>۱٬۲۴۰ نفر میان</span>
+        <button class="btn main" style="padding:11px 20px;font-size:14px">یادم بنداز</button>
+      </div>
+    </div>
+    <div class="qs">
+      <h4>سؤال‌هایی که توی استراحت جواب می‌ده</h4>
+      <div class="s">به سؤال‌ها رأی بده؛ سه تای اول جواب می‌گیرن</div>
+      <div class="q"><span>روزی چند ساعت می‌خوندی؟</span><span class="up on">▲<br>۴۱۲</span></div>
+      <div class="q"><span>زیست رو با چه کتابی خوندی؟</span><span class="up">▲<br>۳۸۸</span></div>
+      <div class="q"><span>ماه آخر چی‌کار کردی؟</span><span class="up">▲<br>۲۹۰</span></div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>رویداد هفتگی:</b> یه رتبه‌برتر یا مشاور معروف کنار همه ساکت درس می‌خونه و توی استراحت جواب می‌ده.<br>
+    توی ساختمان (ایده‌ی ۱) پنجره‌ی مهمون طلایی می‌شه.<br>
+    <b>مارکتینگ:</b> هر هفته یه پوستر آماده برای استوری؛ مشاورها هم ازش مشتری می‌گیرن.
+  </div>
+</div>
+
+<!-- 4. Shared goal -->
+<div class="wrap">
+  <div class="tag">۴. هدف مشترک <small>همه با هم تا یک میلیون ساعت</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>یک میلیون ساعت</h2>
+      <span style="width:40px"></span>
+    </div>
+    <div class="hero">
+      <div class="k">ساعت‌هایی که سایموئی‌ها با هم خوندن</div>
+      <div class="n">۶۴۲٬۳۱۸</div>
+      <div class="of">از ۱٬۰۰۰٬۰۰۰ ساعت، تا روز کنکور</div>
+    </div>
+    <svg class="track" id="track" width="350" height="150" viewBox="0 0 350 150" font-family="IRANSansX"></svg>
+    <div class="statsrow">
+      <div><b>+۱۲٬۴۰۰</b><span>ساعت امروز</span></div>
+      <div><b>۱۸۴</b><span>روز تا کنکور</span></div>
+    </div>
+    <div class="mycard">
+      <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#ffffff22" stroke-width="6"/><circle cx="24" cy="24" r="20" fill="none" stroke="#F14922" stroke-width="6" stroke-linecap="round" stroke-dasharray="125.6" stroke-dashoffset="80" transform="rotate(-90 24 24)"/></svg>
+      <div><b>۱۸۲ ساعت</b><span>سهم تو، بیشتر از ۷۱٪ کاربرها</span></div>
+    </div>
+    <div class="feed">
+      <div>تجربی<span>۳۱۲٬۰۴۰ ساعت</span></div>
+      <div>ریاضی<span>۲۱۸٬۵۵۰ ساعت</span></div>
+      <div>انسانی<span>۱۱۱٬۷۲۸ ساعت</span></div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>یه عدد برای همه:</b> هر دقیقه‌ای که هر کسی می‌خونه به یه شمارنده‌ی مشترک اضافه می‌شه.<br>
+    سهم خودت هم معلومه. رشته‌ها با هم مسابقه می‌دن، نه آدم‌ها.<br>
+    <b>مارکتینگ:</b> «سایموئی‌ها از ۵۰۰ هزار ساعت رد شدن»؛ هر نقطه‌ی عطف یه پست. بهتره لایه‌ای روی ایده‌ی ۱ باشه.
+  </div>
+</div>
+
+</div>
+
+<script>
+// deterministic random
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const fa = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+// ---- 1. building
+(() => {
+  let s = `<defs>
+    <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101225"/><stop offset="1" stop-color="#262A4E"/></linearGradient>
+    <radialGradient id="wg"><stop offset="0" stop-color="#FFD27A" stop-opacity=".35"/><stop offset="1" stop-color="#FFD27A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="og"><stop offset="0" stop-color="#F14922" stop-opacity=".55"/><stop offset="1" stop-color="#F14922" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#skyg)"/>`;
+  for (let i = 0; i < 40; i++) s += `<circle cx="${rnd()*390}" cy="${110+rnd()*200}" r="${rnd()*1.3+.4}" fill="#fff" opacity="${.3+rnd()*.6}"/>`;
+  s += `<circle cx="320" cy="140" r="16" fill="#F5EBD0"/><circle cx="327" cy="135" r="15" fill="#1A1C33"/>`;
+  // back skyline
+  const back = [[0,470,70],[62,520,50],[300,450,60],[345,500,50]];
+  for (const [x,y,w] of back) {
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${844-y}" fill="#1D2038"/>`;
+    for (let yy = y+14; yy < 620; yy += 22) for (let xx = x+8; xx < x+w-8; xx += 14)
+      if (rnd() < .22) s += `<rect x="${xx}" y="${yy}" width="7" height="10" rx="1.5" fill="#FFD27A" opacity=".35"/>`;
+  }
+  // main building
+  const bx = 92, bw = 206, top = 196;
+  s += `<rect x="${bx-6}" y="${top-14}" width="${bw+12}" height="18" rx="4" fill="#2C2F4A"/>`;
+  s += `<rect x="${bx}" y="${top}" width="${bw}" height="${844-top}" fill="#262940"/>`;
+  // roof sign
+  s += `<rect x="${bx+bw/2-46}" y="${top-52}" width="92" height="34" rx="10" fill="#1B1D2E" stroke="#F14922" stroke-width="2"/>
+        <line x1="${bx+bw/2-30}" y1="${top-18}" x2="${bx+bw/2-30}" y2="${top-14}" stroke="#3a3d58" stroke-width="3"/>
+        <line x1="${bx+bw/2+30}" y1="${top-18}" x2="${bx+bw/2+30}" y2="${top-14}" stroke="#3a3d58" stroke-width="3"/>
+        <text x="${bx+bw/2}" y="${top-29}" text-anchor="middle" font-size="16" font-weight="1000" fill="#FF7A55" style="font-variation-settings:'DOTS' 4">سایمو</text>`;
+  const cols = 6, cw = 26, ch = 30, gx = (bw - cols*cw)/(cols+1);
+  let fl = 0;
+  for (let y = top + 16; y < 620; y += ch + 12) {
+    fl++;
+    for (let c = 0; c < cols; c++) {
+      const x = bx + gx + c*(cw+gx);
+      const me = fl === 6 && c === 2;
+      const guest = fl === 2 && c === 4;
+      const lit = me || guest || rnd() < .74;
+      if (lit) s += `<rect x="${x-10}" y="${y-10}" width="${cw+20}" height="${ch+20}" fill="url(#${me?'og':'wg'})"/>`;
+      const fill = guest ? '#FFE9A8' : lit ? (rnd()<.3 ? '#FFC966' : '#FFD98C') : '#1C1F33';
+      s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" rx="4" fill="${fill}"/>`;
+      if (lit) {
+        // tiny silhouette + lamp
+        s += `<circle cx="${x+cw/2-3}" cy="${y+ch-15}" r="3.6" fill="#7A5A30" opacity=".55"/>
+              <path d="M${x+cw/2-9} ${y+ch} q6 -10 12 0z" fill="#7A5A30" opacity=".55"/>`;
+      }
+      s += `<line x1="${x}" y1="${y+ch/2}" x2="${x+cw}" y2="${y+ch/2}" stroke="#262940" stroke-width="1.4" opacity=".35"/>`;
+      if (me) s += `<rect x="${x-3}" y="${y-3}" width="${cw+6}" height="${ch+6}" rx="6" fill="none" stroke="#F14922" stroke-width="3"/>
+        <g transform="translate(${x+cw/2},${y-16})"><rect x="-17" y="-11" width="34" height="22" rx="11" fill="#F14922"/><text y="4.5" text-anchor="middle" font-size="12" font-weight="1000" fill="#fff">تو</text><path d="M-4 11 L0 16 L4 11z" fill="#F14922"/></g>`;
+      if (guest) s += `<g transform="translate(${x+cw/2},${y-16})"><rect x="-26" y="-11" width="52" height="22" rx="11" fill="#FFE9A8"/><text y="4.5" text-anchor="middle" font-size="11" font-weight="1000" fill="#5A4210">مهمان</text></g>`;
+    }
+  }
+  // ground glow
+  s += `<rect y="600" width="390" height="40" fill="#151729" opacity=".0"/>`;
+  document.getElementById('bld').innerHTML = s;
+
+  // neighbors zoom
+  const n = [
+    ['نگار','۱:۰۵',true,false,'🌿'],
+    ['تو','۴۲:۱۰',true,true,'🐈'],
+    ['امیر','بیرون',false,false,''],
+  ];
+  document.getElementById('nbrs').innerHTML = n.map(([nm,t,lit,me,prop]) => `
+    <div class="nb ${me?'me':''}">
+      <div class="w ${lit?'lit':''}">
+        <svg width="100%" height="74" viewBox="0 0 100 74" preserveAspectRatio="xMidYMax meet">
+          ${lit?`<circle cx="46" cy="38" r="10" fill="#7A5A30" opacity=".55"/><path d="M28 74 q18 -28 36 0z" fill="#7A5A30" opacity=".55"/><path d="M72 48 l10 -6 l-2 10z" fill="#FFF3D1"/><line x1="78" y1="50" x2="78" y2="62" stroke="#B88A40" stroke-width="2"/>`:''}
+          <rect x="0" y="62" width="100" height="12" fill="${lit?'#E8AF4E':'#2C2F45'}"/>
+          <line x1="50" y1="0" x2="50" y2="62" stroke="${lit?'#F0BE60':'#2C2F45'}" stroke-width="2" opacity=".6"/>
+          ${prop?`<text x="16" y="60" font-size="16">${prop}</text>`:''}
+        </svg>
+      </div>
+      <b>${nm}</b>، ${t}
+    </div>`).join('');
+})();
+
+// ---- 2. bench
+(() => {
+  const person = (x, c, head) => `<path d="M${x-30} 150 C${x-30} 112 ${x+30} 112 ${x+30} 150 Z" fill="${c}"/><circle cx="${x}" cy="96" r="18" fill="${head}"/>`;
+  const chip = (x, label, me) => `<g transform="translate(${x},52)"><rect x="-44" y="-13" width="88" height="26" rx="13" fill="${me?'#23232B':'#fff'}" ${me?'':'filter="url(#sh2)"'}/><circle cx="32" cy="0" r="3.5" fill="#F14922"/><text x="24" y="4.5" font-size="12" font-weight="900" fill="${me?'#fff':'#23232B'}" text-anchor="start" direction="rtl">${label}</text></g>`;
+  document.getElementById('bench').innerHTML = `
+    <defs><filter id="sh2" x="-30%" y="-60%" width="160%" height="220%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#23232B" flood-opacity=".14"/></filter>
+    <radialGradient id="g2"><stop offset="0" stop-color="#FFD58A" stop-opacity=".5"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient></defs>
+    <circle cx="125" cy="120" r="60" fill="url(#g2)"/><circle cx="265" cy="120" r="60" fill="url(#g2)"/>
+    ${person(265, '#23232B', '#3A3A44')}
+    ${person(125, '#B4A89A', '#8E93A6')}
+    <rect x="40" y="146" width="310" height="18" rx="8" fill="#C9AE8A"/>
+    <rect x="48" y="162" width="294" height="44" rx="10" fill="#B2966F"/>
+    <line x1="195" y1="164" x2="195" y2="204" stroke="#9C8160" stroke-width="2"/>
+    <path d="M232 146 l22 -5 l0 7 l-22 5z M254 141 l22 5 l0 7 l-22 -5z" fill="#fff"/>
+    <path d="M92 146 l22 -5 l0 7 l-22 5z M114 141 l22 5 l0 7 l-22 -5z" fill="#fff"/>
+    <rect x="70" y="214" width="12" height="36" fill="#9C8160"/><rect x="308" y="214" width="12" height="36" fill="#9C8160"/>
+    ${chip(265, 'تو، ۴۲:۱۰', true)}
+    ${chip(125, 'مریم، ۳۸:۰۵', false)}
+    <text x="195" y="236" text-anchor="middle" font-size="11" font-weight="800" fill="#8b8b91">جای خالی یعنی رفته بیرون</text>`;
+})();
+
+// ---- 4. track
+(() => {
+  const W = 350, y = 70, p = 0.642;
+  const ms = [[0,'۰'],[.25,'۲۵۰ هزار'],[.5,'۵۰۰ هزار'],[.75,'۷۵۰ هزار'],[1,'۱ میلیون']];
+  const X = v => W - 14 - v*(W-28); // RTL: start at right
+  let s = `<rect x="14" y="${y-9}" width="${W-28}" height="18" rx="9" fill="#EBECF0"/>
+    <rect x="${X(p)}" y="${y-9}" width="${X(0)-X(p)}" height="18" rx="9" fill="#F14922"/>`;
+  for (const [v,l] of ms) {
+    const done = v <= p;
+    s += `<circle cx="${X(v)}" cy="${y}" r="${v===1?14:9}" fill="${done?'#23232B':'#fff'}" stroke="${done?'#23232B':'#D5D6DC'}" stroke-width="3"/>
+      ${done&&v>0?`<path d="M${X(v)-4} ${y} l3 3 l5 -6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`:''}
+      <text x="${X(v)}" y="${y+36}" text-anchor="middle" font-size="11.5" font-weight="800" fill="${done?'#23232B':'#8b8b91'}" style="font-variation-settings:'DOTS' 4">${l}</text>`;
+  }
+  s += `<g transform="translate(${X(p)},${y-34})"><rect x="-30" y="-13" width="60" height="26" rx="13" fill="#23232B"/><text y="4.5" text-anchor="middle" font-size="12" font-weight="1000" fill="#fff">۶۴٪</text><path d="M-5 13 L0 19 L5 13z" fill="#23232B"/></g>
+        <text x="${X(1)}" y="${y+56}" text-anchor="middle" font-size="10.5" font-weight="800" fill="#8b8b91">روز کنکور</text>`;
+  document.getElementById('track').innerHTML = s;
+})();
+</script>
+</body>
+</html>

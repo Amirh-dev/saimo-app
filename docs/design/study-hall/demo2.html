@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Saimo building demo v2</title>
+<style>
+@font-face { font-family: IRANSansX; src: url('../../../assets/fonts/IRANSansXVF.ttf'); font-weight: 100 1000; }
+:root { --primary:#F14922; --black1:#23232B; --gray:#8b8b91; --gray1:#F5F5F9; --gray2:#EBECF0; --ink2:#6b6b73; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:IRANSansX; font-variation-settings:'DOTS' 4; background:#fff; color:var(--black1); padding:40px 40px 60px; }
+h1 { font-size:30px; font-weight:1000; margin-bottom:6px; }
+.sub { font-size:14px; font-weight:600; color:#777; margin-bottom:56px; }
+.row { display:flex; flex-wrap:wrap; gap:80px 40px; align-items:flex-start; }
+.wrap { position:relative; width:390px; }
+.tag { position:absolute; top:-34px; right:0; font-size:15px; font-weight:900; color:#3a3a42; white-space:nowrap; }
+.tag small { font-weight:700; color:#777; font-size:12.5px; margin-right:6px; }
+.phone { width:390px; height:844px; background:#151729; border-radius:44px; overflow:hidden; position:relative; outline:10px solid #23232B; color:#fff; }
+.notes { margin-top:24px; font-size:12.5px; font-weight:600; line-height:2.05; color:#44444c; }
+.notes b { font-weight:900; color:var(--black1); }
+.status { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 30px; font-size:13px; font-weight:800; direction:ltr; position:relative; z-index:3; }
+.gesture { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; border-radius:100px; background:#23232B55; z-index:20; }
+.ic { width:20px; height:20px; display:block; }
+.ic path, .ic circle, .ic rect, .ic line { fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.hdr { display:flex; align-items:center; justify-content:space-between; padding:6px 20px 10px; position:relative; z-index:3; }
+.hdr h2 { font-size:18px; font-weight:1000; }
+.round { width:40px; height:40px; border-radius:50%; background:#ffffff14; display:grid; place-items:center; cursor:pointer; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:100px; padding:6px 12px; font-size:12px; font-weight:800; background:#ffffff1a; color:#fff; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--primary); box-shadow:0 0 0 3px #F1492233; }
+
+@keyframes fall { from { transform:translate(0,-40px); } to { transform:translate(-14px,320px); } }
+.drop { animation:fall linear infinite; }
+@keyframes fallS { from { transform:translate(0,-14px); } to { transform:translate(-4px,50px); } }
+.dropS { animation:fallS linear infinite; }
+@keyframes steam { 0% { transform:translateY(0); opacity:0; } 25% { opacity:.75; } 100% { transform:translateY(-46px); opacity:0; } }
+.steam { animation:steam 3.2s ease-out infinite; }
+@keyframes flick { 0%,100% { opacity:.55; } 20% { opacity:.8; } 45% { opacity:.45; } 70% { opacity:.75; } }
+.flick { animation:flick 1.3s ease-in-out infinite; }
+@keyframes tw { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+.tw { animation:tw 2s ease-in-out infinite; }
+@keyframes tail { 0%,100% { transform:rotate(0); } 50% { transform:rotate(14deg); } }
+.tail { animation:tail 2.4s ease-in-out infinite; transform-box:fill-box; transform-origin:0% 100%; }
+
+/* window screen */
+.winwrap { margin:2px 20px 0; position:relative; }
+.timerrow { position:absolute; top:26px; right:26px; display:flex; align-items:center; gap:10px; background:#1B1D2ECC; border-radius:100px; padding:8px 14px 8px 10px; }
+.timerrow .t { font-size:20px; font-weight:1000; line-height:1; }
+.timerrow .s { font-size:11px; font-weight:800; color:#C9CBDA; }
+.dock { position:absolute; left:0; right:0; bottom:0; top:404px; background:#fff; color:var(--black1); border-radius:34px 34px 0 0; padding:12px 16px 30px; }
+.dtabs { display:flex; gap:4px; background:var(--gray1); border-radius:100px; padding:4px; }
+.dtabs div { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:900; padding:9px 0; border-radius:100px; color:var(--ink2); cursor:pointer; }
+.dtabs div .ic { width:17px; height:17px; }
+.dtabs div.on { background:var(--black1); color:#fff; box-shadow:0 6px 16px #23232B33; }
+.panel { margin-top:12px; }
+.presets { display:flex; gap:8px; }
+.presets div { background:var(--gray1); border-radius:100px; padding:7px 12px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap; }
+.snd { display:flex; align-items:center; gap:12px; padding:6px 0; border-bottom:1px solid var(--gray1); }
+.snd:last-child { border:0; }
+.snd .si { width:36px; height:36px; border-radius:50%; background:var(--gray1); display:grid; place-items:center; flex:none; color:var(--ink2); }
+.snd.onn .si { background:var(--black1); color:#fff; }
+.snd .nm { width:88px; font-size:13px; font-weight:900; }
+.snd .nm small { display:block; font-size:10.5px; color:var(--gray); font-weight:700; }
+.snd input[type=range] { flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:100px; background:linear-gradient(to right, var(--black1) var(--v,50%), var(--gray2) var(--v,50%)); direction:ltr; transform:scaleX(-1); }
+.snd input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 2px 8px #23232B40; }
+.snd.off input[type=range] { opacity:.3; }
+.sw2 { width:40px; height:24px; border-radius:100px; background:var(--gray2); position:relative; flex:none; cursor:pointer; }
+.sw2::after { content:''; position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 4px #0003; }
+.snd.onn .sw2 { background:var(--primary); }
+.snd.onn .sw2::after { right:19px; }
+.play { display:flex; align-items:center; gap:6px; background:var(--black1); color:#fff; border-radius:100px; padding:7px 14px 7px 12px; font-size:12px; font-weight:900; cursor:pointer; margin-right:auto; }
+
+.subtabs { display:flex; gap:6px; overflow:hidden; }
+.subtabs div { border-radius:100px; padding:7px 13px; font-size:12px; font-weight:900; background:var(--gray1); color:var(--ink2); cursor:pointer; white-space:nowrap; }
+.subtabs div.on { background:var(--black1); color:#fff; }
+.tiles { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px; }
+.tile { aspect-ratio:1; border-radius:18px; background:var(--gray1); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; position:relative; overflow:hidden; }
+.tile.on { background:var(--black1); box-shadow:0 8px 18px #23232B40; }
+.tile .lbl { position:static; line-height:1.3; font-size:9.5px; font-weight:900; color:var(--ink2); }
+.tile.on .lbl { color:#fff; }
+.tile .lock { position:absolute; top:5px; left:5px; font-size:9px; font-weight:900; background:#fff; color:var(--ink2); border-radius:100px; padding:1px 6px; }
+.tile.locked > svg, .tile.locked > .em { opacity:.4; }
+.sw { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+.sw span { width:32px; height:32px; border-radius:50%; cursor:pointer; box-shadow:inset 0 0 0 1px #0000000f; }
+.sw span.on { box-shadow:0 0 0 3px #fff, 0 0 0 5.5px var(--black1); }
+.lab { font-size:12px; font-weight:900; color:var(--ink2); margin-top:14px; }
+.em { font-size:26px; }
+.hint { font-size:11.5px; font-weight:700; color:var(--gray); margin-top:12px; line-height:1.9; }
+.tasks .t { display:flex; align-items:center; gap:12px; background:var(--gray1); border-radius:22px; padding:12px 14px; margin-bottom:8px; }
+.tasks b { font-size:13.5px; font-weight:900; display:block; } .tasks span { font-size:11px; font-weight:700; color:var(--gray); }
+.tasks .pl { margin-right:auto; width:34px; height:34px; border-radius:50%; background:#fff; display:grid; place-items:center; }
+.tasks .t.run { background:var(--black1); color:#fff; } .tasks .t.run span { color:#C9C9D2; } .tasks .t.run .pl { background:var(--primary); color:#fff; }
+
+/* building */
+.pop { position:absolute; z-index:6; background:#fff; color:var(--black1); border-radius:24px; padding:12px 14px; display:flex; align-items:center; gap:12px; box-shadow:0 18px 40px #0007; width:250px; }
+.pop .face { width:46px; height:46px; border-radius:16px; background:linear-gradient(#FFE3A6,#FFC566); overflow:hidden; flex:none; }
+.pop b { font-size:14px; font-weight:1000; display:block; }
+.pop span { font-size:11.5px; font-weight:700; color:var(--gray); }
+.pop .x { margin-right:auto; display:flex; gap:6px; }
+.pop .x div { width:34px; height:34px; border-radius:50%; background:var(--gray1); display:grid; place-items:center; font-size:15px; }
+.pop::after { content:''; position:absolute; bottom:-8px; right:var(--ar,120px); border:9px solid transparent; border-bottom:0; border-top-color:#fff; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; top:626px; background:#fff; color:var(--black1); border-radius:34px 34px 0 0; padding:14px 16px 30px; z-index:4; }
+.mine { display:flex; align-items:center; gap:12px; background:var(--gray1); border-radius:26px; padding:8px 8px 8px 16px; cursor:pointer; }
+.mine .thumb { width:58px; height:58px; border-radius:18px; overflow:hidden; background:linear-gradient(#FFE7B0,#FFC566); box-shadow:0 0 0 3px var(--primary); flex:none; }
+.mine b { font-size:14.5px; font-weight:1000; display:block; } .mine span { font-size:11.5px; font-weight:700; color:var(--gray); }
+.mine .t { margin-right:auto; font-size:24px; font-weight:1000; }
+.tools { display:flex; justify-content:space-between; margin-top:14px; padding:0 6px; }
+.tools div { display:flex; flex-direction:column; align-items:center; gap:6px; font-size:11.5px; font-weight:900; color:var(--black1); cursor:pointer; width:70px; }
+.tools .tc { width:52px; height:52px; border-radius:50%; background:var(--gray1); display:grid; place-items:center; position:relative; }
+.tools .tc .ic { width:22px; height:22px; }
+.tools .badge { position:absolute; top:-2px; left:-4px; background:var(--black1); color:#fff; font-size:9.5px; font-weight:900; border-radius:100px; padding:1px 6px; border:2px solid #fff; }
+.coach { position:absolute; z-index:7; background:var(--primary); color:#fff; font-size:12px; font-weight:900; border-radius:14px; padding:8px 12px; box-shadow:0 10px 24px #F1492255; }
+.coach::after { content:''; position:absolute; bottom:-7px; right:28px; border:8px solid transparent; border-bottom:0; border-top-color:var(--primary); }
+</style>
+</head>
+<body>
+<h1>ساختمان سایمو، دمو ۲</h1>
+<div class="sub">همه‌چیزِ تو یه جاست: «پنجره‌ی من». پایینش چهار ابزار، و خود پنجره پیش‌نمایش زنده‌ست. همه‌ی گوشی‌ها با هم عوض می‌شن.</div>
+
+<div class="row">
+
+<div class="wrap">
+  <div class="tag">۱. ساختمان <small>پنجره‌ی تو و ابزارها، پایین صفحه</small></div>
+  <div class="phone" id="P0">
+    <svg id="bld" style="position:absolute;inset:0" width="390" height="844" viewBox="0 0 390 844" font-family="IRANSansX"></svg>
+    <div class="status"><span>23:40</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>ساختمان سایمو</h2>
+      <span class="pill"><span class="dot"></span>۳٬۲۱۸ روشن</span>
+    </div>
+    <div class="pop" id="pop" style="display:none"></div>
+    <div class="bsheet">
+      <div class="mine" onclick="go('sound')">
+        <div class="thumb" id="thumb"></div>
+        <div><b>پنجره‌ی من</b><span>طبقه‌ی ۱۲، زیست فصل ۳</span></div>
+        <div class="t">۴۲:۱۰</div>
+      </div>
+      <div class="tools">
+        <div onclick="go('avatar')"><span class="tc"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg></span>آواتار</div>
+        <div onclick="go('sound')"><span class="tc"><svg class="ic" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="2"/><rect x="17" y="14" width="4" height="6" rx="2"/></svg><span class="badge" id="sndcount">۳</span></span>صدا</div>
+        <div onclick="go('desk')"><span class="tc"><svg class="ic" viewBox="0 0 24 24"><path d="M3 10h18M5 10v9M19 10v9"/><path d="M8 10V7a2 2 0 0 1 2-2h1"/><path d="M14 10l2-5 2 5"/></svg></span>میز</div>
+        <div onclick="go('tasks')"><span class="tc"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 10l2 2 4-4M8 16h8"/></svg></span>تسک‌ها</div>
+      </div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>پایین ساختمان همیشه همین کارته:</b> پنجره‌ی خودت + تایمر، و زیرش چهار دکمه‌ی ثابت: آواتار، صدا، میز، تسک‌ها.<br>
+    هر دکمه مستقیم می‌ره همون تب توی «پنجره‌ی من». روی پنجره‌ی خودت توی ساختمون هم بزنی، همون‌جا می‌ره.<br>
+    <b>بار اول:</b> ورود به سالن اول تب آواتار رو باز می‌کنه با «اول خودتو بساز».
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tag">۲. پنجره‌ی من، تب صدا</div>
+  <div class="phone" id="P1"></div>
+  <div class="notes">
+    <b>یه صفحه برای همه‌ی ابزارها:</b> بالا پنجره‌ات، پایین داک با چهار تب. هر تغییری همون لحظه توی پنجره دیده می‌شه.<br>
+    صدا: بارون روی شیشه می‌باره، سماور بخار می‌ده، شومینه نور نارنجی می‌ده.
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tag">۳. پنجره‌ی من، تب آواتار <small>پنجره زوم می‌شه روی صورت</small></div>
+  <div class="phone" id="P2"></div>
+  <div class="notes">
+    <b>بدون حجاب، با کلی مدل:</b> ۹ مدل مو (بلند، موج‌دار، دم‌اسبی، گوجه‌ای، کوتاه چتری، فرفری، کوتاه، فشن، شلخته)، ۸ رنگ مو، ۴ مدل چشم، لبخند، رژگونه.<br>
+    اکسسوری: هدفون، عینک، گیره‌ی مو، گوشواره. لباس: هودی، بافت، پیراهن، تی‌شرت.<br>
+    توی این تب پنجره روی صورت زوم می‌کنه تا جزئیات دیده بشه.
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tag">۴. پنجره‌ی من، تب میز <small>جایزه‌ی ساعت مطالعه</small></div>
+  <div class="phone" id="P3"></div>
+  <div class="notes">
+    <b>وسیله‌ها جایزه‌ان:</b> هر چند ساعت مطالعه یکی باز می‌شه؛ قفل‌ها ساعت لازم رو نشون می‌دن.<br>
+    ریسه، گربه، گلدون، کتاب، شمع و ... همون لحظه روی میز و پنجره میان؛ توی ساختمون هم دیده می‌شن.<br>
+    تب تسک‌ها: لیست امروز، با دکمه‌ی شروع تایمر.
+  </div>
+</div>
+
+</div>
+
+<script>
+const fa = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// ================= avatar =================
+const SKIN = ['#F7DCC6','#EFC7A6','#D9A57E','#B07A55','#7E5238'];
+const HAIRC = ['#2A201C','#4B3022','#7A4B2C','#A8693A','#D6A867','#8C3F33','#C77D8F','#6B6F8C'];
+const TOPC = ['#6F7C8F','#2E3A59','#B4A89A','#3F5B4F','#C98B7A','#E8E1D6','#8E7CA8','#23232B'];
+const HAIRS = [['long','بلند'],['wavy','موج‌دار'],['pony','دم‌اسبی'],['bun','گوجه‌ای'],['bob','چتری'],['curly','فرفری'],['short','کوتاه'],['quiff','فشن'],['messy','شلخته']];
+const EYES = [['big','درشت'],['lash','مژه'],['dot','ساده'],['happy','خندون']];
+const TOPS = [['hoodie','هودی'],['sweater','بافت'],['shirt','پیراهن'],['tee','تی‌شرت']];
+const ACCS = [['headphones','هدفون'],['glasses','عینک'],['clip','گیره'],['earrings','گوشواره']];
+const me = { skin:1, hair:'wavy', hairC:2, eyes:'big', mouth:'smile', blush:true, acc:{ headphones:true, glasses:false, clip:true, earrings:true }, top:'sweater', topC:4 };
+const props = { lights:true, cat:true, plant:true, books:false, candle:false, mug:false, neon:false, star:false };
+const PROPS = [['lights','ریسه','✨',0],['cat','گربه','🐈',0],['plant','گلدون','🌿',0],['books','کتاب‌ها','📚',0],['candle','شمع','🕯️',20],['mug','ماگ','☕',35],['neon','نئون','💡',60],['star','ستاره','⭐',100]];
+const myHours = 42;
+
+const darken = (hex, k=.72) => '#' + [1,3,5].map(i => Math.round(parseInt(hex.substr(i,2),16)*k).toString(16).padStart(2,'0')).join('');
+
+function hairBack(h, c) {
+  switch (h) {
+    case 'long': return `<path d="M-35 -100 C-40 -148 40 -148 35 -100 L40 -36 Q0 -26 -40 -36Z" fill="${c}"/>`;
+    case 'wavy': return `<path d="M-35 -100 C-40 -148 40 -148 35 -100 Q47 -86 38 -72 Q49 -58 39 -42 Q0 -30 -39 -42 Q-49 -58 -38 -72 Q-47 -86 -35 -100Z" fill="${c}"/>`;
+    case 'bob': return `<path d="M-37 -100 C-42 -150 42 -150 37 -100 L38 -66 Q0 -58 -38 -66Z" fill="${c}"/>`;
+    case 'pony': return `<path d="M22 -124 C56 -128 58 -82 42 -54 C46 -84 38 -104 20 -110Z" fill="${c}"/>`;
+    case 'bun': return `<circle cx="0" cy="-136" r="15" fill="${c}"/>`;
+    case 'curly': { let s=''; const pts=[[-34,-116],[-38,-100],[-38,-84],[-36,-70],[34,-116],[38,-100],[38,-84],[36,-70],[-24,-132],[24,-132],[0,-138],[-12,-136],[12,-136]];
+      for (const [x,y] of pts) s += `<circle cx="${x}" cy="${y}" r="12" fill="${c}"/>`; return s; }
+    default: return '';
+  }
+}
+function hairFront(h, c) {
+  switch (h) {
+    case 'long': return `<path d="M-31 -94 C-33 -142 33 -142 31 -94 C28 -114 16 -124 0 -120 C-12 -118 -24 -108 -31 -94Z" fill="${c}"/>`;
+    case 'wavy': return `<path d="M-31 -94 C-33 -142 33 -142 31 -94 C29 -108 19 -118 5 -120 Q0 -113 -5 -120 C-19 -118 -29 -108 -31 -94Z" fill="${c}"/>`;
+    case 'bob': return `<path d="M-31 -100 C-32 -142 32 -142 31 -100 L31 -106 Q0 -101 -31 -106Z" fill="${c}"/>`;
+    case 'pony': case 'bun': return `<path d="M-30 -98 C-32 -140 32 -140 30 -98 C26 -118 -26 -118 -30 -98Z" fill="${c}"/>`;
+    case 'curly': { let s=''; for (const [x,y] of [[-22,-122],[-8,-127],[8,-127],[22,-122],[-29,-110],[29,-110]]) s += `<circle cx="${x}" cy="${y}" r="10" fill="${c}"/>`; return s; }
+    case 'short': return `<path d="M-30 -100 C-32 -140 32 -140 30 -100 C25 -118 -4 -126 -30 -100Z" fill="${c}"/>`;
+    case 'quiff': return `<path d="M-30 -100 C-32 -128 -14 -148 10 -144 C31 -140 33 -118 30 -100 C24 -116 -6 -124 -30 -100Z" fill="${c}"/>`;
+    case 'messy': return `<path d="M-31 -98 L-35 -118 L-24 -114 L-27 -134 L-14 -124 L-8 -143 L2 -128 L12 -142 L16 -126 L29 -134 L26 -116 L35 -116 L31 -98 C24 -116 -6 -122 -31 -98Z" fill="${c}"/>`;
+  }
+  return '';
+}
+function avatar(c, sil) {
+  const f = k => sil || k;
+  const skin = SKIN[c.skin], hc = HAIRC[c.hairC], tc = TOPC[c.topC];
+  let g = '';
+  // body
+  g += `<path d="M-56 0 C-56 -44 -32 -60 0 -60 C32 -60 56 -44 56 0 Z" fill="${f(tc)}"/>`;
+  if (!sil) {
+    if (c.top === 'hoodie') g += `<path d="M-28 -58 C-22 -40 22 -40 28 -58" stroke="${darken(tc)}" stroke-width="7" fill="none" stroke-linecap="round"/><line x1="-8" y1="-44" x2="-9" y2="-24" stroke="#ffffffaa" stroke-width="2.4" stroke-linecap="round"/><line x1="8" y1="-44" x2="9" y2="-24" stroke="#ffffffaa" stroke-width="2.4" stroke-linecap="round"/>`;
+    if (c.top === 'sweater') g += `<path d="M-15 -59 C-10 -50 10 -50 15 -59" stroke="${darken(tc)}" stroke-width="5" fill="none"/><path d="M-50 -22 H50" stroke="${darken(tc,.86)}" stroke-width="5"/><path d="M-50 -12 H50" stroke="#ffffff55" stroke-width="3"/>`;
+    if (c.top === 'shirt') g += `<path d="M-15 -60 L-2 -44 L-6 -62Z M15 -60 L2 -44 L6 -62Z" fill="#fff"/><line x1="0" y1="-44" x2="0" y2="0" stroke="${darken(tc)}" stroke-width="1.6"/><circle cx="0" cy="-32" r="1.6" fill="${darken(tc)}"/><circle cx="0" cy="-18" r="1.6" fill="${darken(tc)}"/>`;
+    if (c.top === 'tee') g += `<path d="M-14 -59 C-10 -50 10 -50 14 -59" stroke="${darken(tc)}" stroke-width="3" fill="none"/>`;
+  }
+  g += hairBack(c.hair, f(hc));
+  g += `<rect x="-10" y="-70" width="20" height="16" rx="6" fill="${f(sil ? skin : darken(skin,.93))}"/>`;
+  g += `<circle cx="-28" cy="-92" r="6" fill="${f(skin)}"/><circle cx="28" cy="-92" r="6" fill="${f(skin)}"/>`;
+  g += `<ellipse cx="0" cy="-96" rx="28" ry="32" fill="${f(skin)}"/>`;
+  if (!sil) {
+    if (c.acc.earrings) g += `<circle cx="-29" cy="-84" r="2.8" fill="#E9C46A"/><circle cx="29" cy="-84" r="2.8" fill="#E9C46A"/>`;
+    const bc = darken(hc, .8);
+    g += `<path d="M-16 -104 Q-10 -108 -4 -105" stroke="${bc}" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M16 -104 Q10 -108 4 -105" stroke="${bc}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    const ink = '#2A2A33';
+    for (const x of [-10, 10]) {
+      if (c.eyes === 'big') g += `<ellipse cx="${x}" cy="-94" rx="4.6" ry="5.4" fill="#fff"/><circle cx="${x}" cy="-93.4" r="3.4" fill="${ink}"/><circle cx="${x+1.2}" cy="-95" r="1.2" fill="#fff"/>`;
+      if (c.eyes === 'lash') g += `<circle cx="${x}" cy="-94" r="3.2" fill="${ink}"/><path d="M${x-4.5} -96.5 Q${x} -100 ${x+4.5} -96.5" stroke="${ink}" stroke-width="1.6" fill="none"/><path d="M${x+(x<0?-4.5:4.5)} -96.5 l${x<0?-2.6:2.6} -2.6" stroke="${ink}" stroke-width="1.6" stroke-linecap="round"/>`;
+      if (c.eyes === 'dot') g += `<circle cx="${x}" cy="-94" r="2.8" fill="${ink}"/>`;
+      if (c.eyes === 'happy') g += `<path d="M${x-4} -93 Q${x} -98 ${x+4} -93" stroke="${ink}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+    }
+    if (c.blush) g += `<ellipse cx="-17" cy="-84" rx="5.5" ry="3.2" fill="#F08A8A" opacity=".32"/><ellipse cx="17" cy="-84" rx="5.5" ry="3.2" fill="#F08A8A" opacity=".32"/>`;
+    g += `<path d="M-1.5 -87 Q0.5 -85 2.5 -87.5" stroke="${darken(skin,.78)}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+    g += `<path d="M-6 -80 Q0 -74.5 6 -80" stroke="#7A3A3A" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  }
+  g += hairFront(c.hair, f(hc));
+  if (!sil && c.acc.clip && !['short','quiff','messy'].includes(c.hair)) g += `<rect x="12" y="-124" width="14" height="5" rx="2.5" fill="#F4A7B9" transform="rotate(-20 19 -121)"/>`;
+  if (!sil && c.acc.glasses) g += `<circle cx="-10" cy="-94" r="8" stroke="#2A2A33" stroke-width="2" fill="#ffffff22"/><circle cx="10" cy="-94" r="8" stroke="#2A2A33" stroke-width="2" fill="#ffffff22"/><line x1="-2" y1="-94" x2="2" y2="-94" stroke="#2A2A33" stroke-width="2"/>`;
+  if (c.acc.headphones) {
+    const hp = sil || '#3A3D52';
+    g += `<path d="M-33 -94 C-37 -150 37 -150 33 -94" stroke="${hp}" stroke-width="6" fill="none" stroke-linecap="round"/><rect x="-40" y="-106" width="13" height="24" rx="6" fill="${sil || '#F4F1EA'}"/><rect x="27" y="-106" width="13" height="24" rx="6" fill="${sil || '#F4F1EA'}"/>`;
+  }
+  return g;
+}
+
+// ================= sounds =================
+const SI = {
+  rain:'<path d="M7 15a4 4 0 0 1 .5-8A5 5 0 0 1 17 8a3.5 3.5 0 0 1 0 7z"/><path d="M9 18l-1 2M13 18l-1 2M17 18l-1 2"/>',
+  samovar:'<path d="M6 10h10l-1.5 9h-7z"/><path d="M16 12h2a2 2 0 0 1 0 4h-2.5M9 3q-1 2 0 4M12 3q-1 2 0 4"/>',
+  fire:'<path d="M12 3c1 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-4 2-6 1 1 2 2 3 2 0-3-1-4 1-7z"/>',
+  library:'<path d="M4 19V5M8 19V5M12 19l3-14 4 1-3 14z"/><path d="M3 19h18"/>',
+  brown:'<path d="M3 12q2.25-6 4.5 0t4.5 0 4.5 0 4.5 0"/>',
+  white:'<path d="M3 12h2M7 9v6M11 6v12M15 9v6M19 11v2"/>',
+};
+const sounds = [
+  { id:'rain', nm:'بارون', sub:'روی شیروانی', on:true, v:70 },
+  { id:'samovar', nm:'سماور', sub:'قل‌قل آروم', on:true, v:40 },
+  { id:'fire', nm:'شومینه', sub:'ترق‌ترق', on:false, v:50 },
+  { id:'library', nm:'کتابخونه', sub:'ورق و پچ‌پچ', on:false, v:50 },
+  { id:'brown', nm:'نویز قهوه‌ای', sub:'بم و یکنواخت', on:true, v:30 },
+  { id:'white', nm:'نویز سفید', sub:'صاف', on:false, v:40 },
+];
+const presets = [['کتابخونه‌ی بارونی',{ rain:60, library:50, brown:20 }],['شب امتحان',{ rain:70, samovar:40, brown:30 }],['کنار شومینه',{ fire:70, rain:30 }]];
+const isOn = id => { const s = sounds.find(x => x.id === id); return s.on ? s.v : 0; };
+
+// ================= window svg =================
+function windowSVG(p, mode) {
+  const W = 350, H = 300, gx = 14, gy = 14, gw = 322, gh = 252, zoom = mode === 'avatar';
+  let s = `<svg width="350" height="300" viewBox="0 0 350 300"><defs>
+    <linearGradient id="${p}room" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE7B0"/><stop offset="1" stop-color="#FFC566"/></linearGradient>
+    <radialGradient id="${p}lamp"><stop offset="0" stop-color="#FFF6DD" stop-opacity=".9"/><stop offset="1" stop-color="#FFF6DD" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${p}fire" cx=".15" cy=".95" r=".9"><stop offset="0" stop-color="#FF7A2E" stop-opacity=".85"/><stop offset="1" stop-color="#FF7A2E" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${p}bulb"><stop offset="0" stop-color="#FFF7D6"/><stop offset=".4" stop-color="#FFE08A" stop-opacity=".9"/><stop offset="1" stop-color="#FFE08A" stop-opacity="0"/></radialGradient>
+    <clipPath id="${p}glass"><rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="16"/></clipPath></defs>
+  <rect width="${W}" height="${H}" rx="26" fill="#2A2D46"/>
+  <g clip-path="url(#${p}glass)">
+    <rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" fill="url(#${p}room)"/>`;
+  if (!zoom) {
+    s += `<rect x="34" y="70" width="86" height="5" rx="2.5" fill="#D89C4A" opacity=".7"/>
+    ${[0,10,19,30,40,52,62,72].map((x,i)=>`<rect x="${38+x}" y="${44+(i%3)*4}" width="8" height="${26-(i%3)*4}" rx="2" fill="${['#C98A3F','#B97C38','#D9A55A'][i%3]}" opacity=".75"/>`).join('')}
+    <rect x="232" y="40" width="58" height="72" rx="6" fill="#FFF2D6" opacity=".9"/>
+    <text x="261" y="72" text-anchor="middle" font-family="IRANSansX" font-size="11" font-weight="1000" fill="#B26B1E">۱۸۴</text>
+    <text x="261" y="88" text-anchor="middle" font-family="IRANSansX" font-size="8" font-weight="800" fill="#B26B1E">روز تا کنکور</text>`;
+    if (props.neon) s += `<text x="100" y="128" text-anchor="middle" font-family="IRANSansX" font-size="18" font-weight="1000" fill="none" stroke="#FF6FA0" stroke-width="1.6" class="tw">بخون!</text>`;
+    s += `<circle cx="276" cy="168" r="80" fill="url(#${p}lamp)"/>`;
+  } else {
+    s += `<circle cx="175" cy="140" r="130" fill="#FFF6DD" opacity=".5"/>`;
+  }
+  if (isOn('fire')) s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" fill="url(#${p}fire)" class="flick"/>`;
+  s += zoom ? `<g transform="translate(175,300) scale(1.72)">${avatar(me)}</g>` : `<g transform="translate(170,236) scale(1.08)">${avatar(me)}</g>`;
+  if (!zoom) {
+    s += `<rect x="${gx}" y="222" width="${gw}" height="16" fill="#B87A3E"/><rect x="${gx}" y="238" width="${gw}" height="40" fill="#9E6632"/>
+    <path d="M128 224 l40 -8 l0 8 l-40 8z M168 216 l40 8 l0 8 l-40 -8z" fill="#FFF8EA"/><line x1="168" y1="216" x2="168" y2="224" stroke="#E2C9A0" stroke-width="1.5"/>
+    <path d="M300 222 L300 176 L284 160" stroke="#6B4A2A" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M262 156 L292 146 L290 172 Z" fill="#FFF1C8"/><rect x="288" y="218" width="24" height="6" rx="3" fill="#6B4A2A"/>
+    <g transform="translate(84,222)"><ellipse cx="0" cy="0" rx="18" ry="4" fill="#E9D3AE"/><path d="M-9 -22 L9 -22 L6 -2 L-6 -2 Z" fill="#C4562A" opacity=".85"/><path d="M-9 -22 L9 -22 L6 -2 L-6 -2 Z" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/>
+      ${isOn('samovar') ? [0,1,2].map(i=>`<path class="steam" style="animation-delay:${i*1.05}s" d="M${-5+i*5} -26 q-5 -8 0 -15 q5 -7 0 -15" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0"/>`).join('') : ''}</g>`;
+    if (props.cat) s += `<g transform="translate(232,222)"><path class="tail" d="M16 -4 q16 -2 14 -20" stroke="#4A4A55" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="0" cy="-10" rx="18" ry="12" fill="#4A4A55"/><circle cx="-14" cy="-22" r="9" fill="#4A4A55"/><path d="M-21 -27 l2 -9 l5 6z M-9 -28 l1 -9 l-6 5z" fill="#4A4A55"/></g>`;
+    if (props.plant) s += `<g transform="translate(40,222)"><path d="M-10 0 L10 0 L7 -14 L-7 -14Z" fill="#C9744A"/><path d="M0 -14 q-12 -10 -6 -24 M0 -14 q10 -12 4 -26 M0 -14 q2 -14 -1 -22" stroke="#4F7A55" stroke-width="5" fill="none" stroke-linecap="round"/></g>`;
+    if (props.books) s += `<g transform="translate(118,222)"><rect x="-16" y="-8" width="32" height="8" rx="2" fill="#6F7C8F"/><rect x="-13" y="-15" width="28" height="7" rx="2" fill="#C98B7A"/><rect x="-15" y="-21" width="26" height="6" rx="2" fill="#3F5B4F"/></g>`;
+    if (props.candle) s += `<g transform="translate(212,222)"><rect x="-5" y="-16" width="10" height="16" rx="2" fill="#FFF8EA"/><path d="M0 -26 q4 5 0 9 q-4 -4 0 -9z" fill="#FFB347" class="tw"/></g>`;
+    if (props.mug) s += `<g transform="translate(270,222)"><rect x="-8" y="-16" width="16" height="16" rx="3" fill="#8E7CA8"/><path d="M8 -12 h3 a3 3 0 0 1 0 6 h-3" stroke="#8E7CA8" stroke-width="2.4" fill="none"/></g>`;
+    if (props.lights) {
+      s += `<path d="M14 30 Q175 88 336 30" stroke="#6B4A2A" stroke-width="1.4" fill="none"/>`;
+      for (let i = 1; i < 12; i++) { const t = i/12, x = (1-t)*(1-t)*14 + 2*(1-t)*t*175 + t*t*336, y = (1-t)*(1-t)*30 + 2*(1-t)*t*88 + t*t*30;
+        s += `<circle cx="${x}" cy="${y+5}" r="9" fill="url(#${p}bulb)" class="tw" style="animation-delay:${(i%4)*.4}s"/><circle cx="${x}" cy="${y+5}" r="2.6" fill="#FFF7D6"/>`; }
+    }
+  } else {
+    s += `<rect x="${gx}" y="256" width="${gw}" height="16" fill="#B87A3E"/>`;
+  }
+  if (isOn('rain') && !zoom) {
+    s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" fill="#3A4A6A" opacity=".14"/>`;
+    seed = 5; const n = Math.round(14 + isOn('rain')*0.4);
+    for (let i = 0; i < n; i++) { const x = gx + rnd()*gw + 20, d = (0.7+rnd()*0.7).toFixed(2), de = (rnd()*-2).toFixed(2);
+      s += `<line class="drop" style="animation-duration:${d}s;animation-delay:${de}s" x1="${x}" y1="${gy}" x2="${x-3}" y2="${gy+18}" stroke="#E8F1FF" stroke-width="1.6" stroke-linecap="round" opacity=".75"/>`; }
+    for (let i = 0; i < 22; i++) { const x = gx+8+rnd()*(gw-16), y = gy+8+rnd()*(gh-30), rr = 1.6+rnd()*2.4;
+      s += `<circle cx="${x}" cy="${y}" r="${rr}" fill="#fff" opacity=".42"/>`; if (rnd() < .35) s += `<path d="M${x} ${y} q-1 ${10+rnd()*16} 1 ${20+rnd()*20}" stroke="#fff" stroke-width="1.2" opacity=".3" fill="none"/>`; }
+  }
+  s += `</g><rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="16" fill="none" stroke="#3A3E5A" stroke-width="5"/>
+  <rect x="6" y="${gy+gh+4}" width="${W-12}" height="14" rx="7" fill="#3A3E5A"/></svg>`;
+  return s;
+}
+
+// ================= window phone =================
+const TABS = [['sound','صدا','<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="2"/><rect x="17" y="14" width="4" height="6" rx="2"/>'],
+  ['avatar','آواتار','<circle cx="12" cy="9" r="4"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>'],
+  ['desk','میز','<path d="M3 10h18M5 10v9M19 10v9"/><path d="M14 10l2-5 2 5"/>'],
+  ['tasks','تسک‌ها','<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 10l2 2 4-4M8 16h8"/>']];
+const phones = { P1:{ tab:'sound' }, P2:{ tab:'avatar', sub:'hair' }, P3:{ tab:'desk' } };
+
+function miniHead(c) { return `<svg width="44" height="44" viewBox="-46 -150 92 92" style="margin-bottom:0">${avatar(c)}</svg>`; }
+function swatches(list, key) { return `<div class="sw">${list.map((c,i)=>`<span class="${me[key]===i?'on':''}" style="background:${c}" onclick="me.${key}=${i};refresh()"></span>`).join('')}</div>`; }
+
+function panel(id) {
+  const st = phones[id];
+  if (st.tab === 'sound') {
+    return `<div class="presets">${presets.map(([n],i)=>`<div onclick="applyPreset(${i})">${n}</div>`).join('')}<span class="play" onclick="toggleAudio()">${ctx && ctx.state==='running' ? '❚❚' : '▶'}</span></div>
+      <div style="margin-top:4px">${sounds.map((s,i)=>`
+      <div class="snd ${s.on?'onn':'off'}">
+        <span class="si"><svg class="ic" viewBox="0 0 24 24">${SI[s.id]}</svg></span>
+        <span class="nm">${s.nm}<small>${s.sub}</small></span>
+        <input type="range" min="0" max="100" value="${s.v}" style="--v:${s.v}%" oninput="sounds[${i}].v=+this.value;this.style.setProperty('--v',this.value+'%');sounds[${i}].on=true;soft()">
+        <span class="sw2" onclick="sounds[${i}].on=!sounds[${i}].on;refresh()"></span>
+      </div>`).join('')}</div>`;
+  }
+  if (st.tab === 'avatar') {
+    const subs = [['hair','مو'],['face','صورت'],['top','لباس'],['acc','اکسسوری']];
+    let o = `<div class="subtabs">${subs.map(([k,l])=>`<div class="${st.sub===k?'on':''}" onclick="phones.${id}.sub='${k}';refresh()">${l}</div>`).join('')}<div onclick="randomize()" style="margin-right:auto">🎲 تصادفی</div></div>`;
+    if (st.sub === 'hair') o += `<div class="tiles">${HAIRS.map(([h,l])=>`<div class="tile ${me.hair===h?'on':''}" onclick="me.hair='${h}';refresh()">${miniHead({...me,hair:h,acc:{}})}<span class="lbl">${l}</span></div>`).join('')}</div>` + swatches(HAIRC,'hairC');
+    if (st.sub === 'face') o += `<div class="tiles">${EYES.map(([e,l])=>`<div class="tile ${me.eyes===e?'on':''}" onclick="me.eyes='${e}';refresh()">${miniHead({...me,eyes:e,acc:{}})}<span class="lbl">${l}</span></div>`).join('')}<div class="tile ${me.blush?'on':''}" onclick="me.blush=!me.blush;refresh()">${miniHead({...me,blush:true,acc:{}})}<span class="lbl">رژگونه</span></div></div><div class="lab">رنگ پوست</div>` + swatches(SKIN,'skin');
+    if (st.sub === 'top') o += `<div class="tiles">${TOPS.map(([t,l])=>`<div class="tile ${me.top===t?'on':''}" onclick="me.top='${t}';refresh()"><svg width="46" height="40" viewBox="-60 -70 120 74">${avatar({...me,top:t,acc:{}})}</svg><span class="lbl">${l}</span></div>`).join('')}</div>` + swatches(TOPC,'topC');
+    if (st.sub === 'acc') o += `<div class="tiles">${ACCS.map(([a,l])=>`<div class="tile ${me.acc[a]?'on':''}" onclick="me.acc.${a}=!me.acc.${a};refresh()">${miniHead({...me,acc:{[a]:true}})}<span class="lbl">${l}</span></div>`).join('')}</div><div class="hint">چند تا رو با هم می‌تونی بزنی.</div>`;
+    return o;
+  }
+  if (st.tab === 'desk') {
+    return `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:15px;font-weight:1000">وسیله‌های میز</b><span style="font-size:12px;font-weight:800;color:var(--gray)">${fa(myHours)} ساعت مطالعه</span></div>
+      <div class="tiles" style="grid-template-columns:repeat(4,1fr)">${PROPS.map(([k,l,e,h])=>{ const locked = h > myHours;
+        return `<div class="tile ${props[k]?'on':''} ${locked?'locked':''}" onclick="${locked?'':`props.${k}=!props.${k};refresh()`}"><span class="em">${e}</span><span class="lbl">${l}</span>${locked?`<span class="lock">🔒 ${fa(h)} ساعت</span>`:''}</div>`; }).join('')}</div>
+      <div class="bar" style="margin-top:16px;height:8px;border-radius:100px;background:var(--gray2);overflow:hidden"><i style="display:block;height:100%;width:${(myHours-35)/(60-35)*100}%;background:var(--primary);border-radius:100px"></i></div>
+      <div class="hint">${fa(60-myHours)} ساعت دیگه تا «نئون». وسیله‌ها توی ساختمون هم دیده می‌شن.</div>`;
+  }
+  if (st.tab === 'tasks') {
+    return `<div class="tasks"><div class="t run"><div><b>زیست‌شناسی فصل ۳</b><span>۴۲ از ۱۲۰ دقیقه</span></div><span class="pl">❚❚</span></div>
+      <div class="t"><div><b>فیزیک، تست</b><span>۶۰ دقیقه</span></div><span class="pl">▶</span></div>
+      <div class="t"><div><b>شیمی، جمع‌بندی</b><span>۴۵ دقیقه</span></div><span class="pl">▶</span></div></div>`;
+  }
+}
+function renderWindowPhone(id) {
+  const st = phones[id];
+  document.getElementById(id).innerHTML = `
+    <div class="status"><span>23:40</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2>پنجره‌ی من</h2>
+      <span class="pill">طبقه‌ی ۱۲</span>
+    </div>
+    <div class="winwrap">${windowSVG(id, st.tab)}
+      ${st.tab==='avatar' ? '' : `<div class="timerrow"><span class="dot"></span><span class="t">۴۲:۱۰</span><span class="s">زیست، فصل ۳</span></div>`}
+    </div>
+    <div class="dock">
+      <div class="dtabs">${TABS.map(([k,l,ic])=>`<div class="${st.tab===k?'on':''}" onclick="phones.${id}.tab='${k}';refresh()"><svg class="ic" viewBox="0 0 24 24">${ic}</svg>${l}</div>`).join('')}</div>
+      <div class="panel">${panel(id)}</div>
+    </div>
+    <div class="gesture"></div>`;
+}
+function go(tab) { phones.P1.tab = tab; refresh(); document.getElementById('P1').scrollIntoView({ behavior:'smooth', block:'center' }); }
+function applyPreset(i) { const p = presets[i][1]; sounds.forEach(s => { s.on = s.id in p; if (s.on) s.v = p[s.id]; }); refresh(); }
+function randomize() {
+  me.skin = Math.floor(Math.random()*SKIN.length); me.hair = HAIRS[Math.floor(Math.random()*HAIRS.length)][0];
+  me.hairC = Math.floor(Math.random()*HAIRC.length); me.eyes = EYES[Math.floor(Math.random()*EYES.length)][0];
+  me.top = TOPS[Math.floor(Math.random()*TOPS.length)][0]; me.topC = Math.floor(Math.random()*TOPC.length);
+  me.acc = { headphones: Math.random()<.4, glasses: Math.random()<.3, clip: Math.random()<.3, earrings: Math.random()<.4 }; refresh();
+}
+let softT; function soft() { clearTimeout(softT); softT = setTimeout(refresh, 150); }
+
+// ================= building =================
+const people = [];
+(function () {
+  seed = 21; const hs = HAIRS.map(h => h[0]);
+  for (let i = 0; i < 60; i++) people.push({ c:{ skin:0, hair:hs[Math.floor(rnd()*hs.length)], hairC:0, topC:0, top:'tee', acc:{ headphones: rnd()<.3 } },
+    lit: rnd() < .78, fx: ['','','rain','steam','fire','','rain','lights'][Math.floor(rnd()*8)],
+    subj: ['زیست','فیزیک','شیمی','ریاضی','ادبیات','عربی'][Math.floor(rnd()*6)], t: `${Math.floor(rnd()*2)}:${String(Math.floor(rnd()*60)).padStart(2,'0')}` });
+})();
+const fxName = { rain:'بارون', steam:'سماور', fire:'شومینه', lights:'بی‌صدا', '':'بی‌صدا' };
+function building() {
+  let s = `<defs>
+    <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101225"/><stop offset="1" stop-color="#262A4E"/></linearGradient>
+    <linearGradient id="wl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE3A6"/><stop offset="1" stop-color="#FFC566"/></linearGradient>
+    <radialGradient id="wg"><stop offset="0" stop-color="#FFD27A" stop-opacity=".3"/><stop offset="1" stop-color="#FFD27A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="og"><stop offset="0" stop-color="#F14922" stop-opacity=".6"/><stop offset="1" stop-color="#F14922" stop-opacity="0"/></radialGradient>
+  </defs><rect width="390" height="844" fill="url(#skyg)"/>`;
+  seed = 3;
+  for (let i = 0; i < 40; i++) s += `<circle cx="${rnd()*390}" cy="${100+rnd()*120}" r="${rnd()*1.3+.4}" fill="#fff" opacity="${.3+rnd()*.6}"/>`;
+  s += `<circle cx="330" cy="128" r="15" fill="#F5EBD0"/><circle cx="337" cy="123" r="14" fill="#16182D"/>`;
+  for (const [x,y,w] of [[0,430,52],[338,410,52]]) { s += `<rect x="${x}" y="${y}" width="${w}" height="${844-y}" fill="#1D2038"/>`;
+    for (let yy=y+14; yy<640; yy+=22) for (let xx=x+8; xx<x+w-8; xx+=14) if (rnd()<.25) s += `<rect x="${xx}" y="${yy}" width="7" height="10" rx="1.5" fill="#FFD27A" opacity=".3"/>`; }
+  const bx = 58, bw = 274, top = 178;
+  s += `<rect x="${bx-6}" y="${top-14}" width="${bw+12}" height="18" rx="4" fill="#2C2F4A"/><rect x="${bx}" y="${top}" width="${bw}" height="${844-top}" fill="#262940"/>
+    <rect x="${bx+bw/2-46}" y="${top-52}" width="92" height="34" rx="10" fill="#1B1D2E" stroke="#F14922" stroke-width="2"/>
+    <text x="${bx+bw/2}" y="${top-29}" text-anchor="middle" font-size="16" font-weight="1000" fill="#FF7A55" style="font-variation-settings:'DOTS' 4">سایمو</text>`;
+  const cols = 5, cw = 40, ch = 46, gx = (bw - cols*cw)/(cols+1);
+  let k = 0; window.winPos = {};
+  for (let r = 0, y = top + 18; y < 640; r++, y += ch + 14) {
+    for (let c = 0; c < cols; c++, k++) {
+      const x = bx + gx + c*(cw+gx), isMe = r === 5 && c === 2;
+      const p = isMe ? { c:me, lit:true, fx: isOn('rain')?'rain':isOn('samovar')?'steam':isOn('fire')?'fire':'' } : people[k % people.length];
+      winPos[k] = [x + cw/2, y];
+      if (p.lit) s += `<rect x="${x-12}" y="${y-12}" width="${cw+24}" height="${ch+24}" fill="url(#${isMe?'og':'wg'})"/>`;
+      s += `<clipPath id="bw${k}"><rect x="${x}" y="${y}" width="${cw}" height="${ch}" rx="5"/></clipPath><g clip-path="url(#bw${k})" style="cursor:pointer" onclick="${isMe?"go('sound')":`openPop(${k})`}">`;
+      s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="${p.lit?'url(#wl)':'#1C1F33'}"/>`;
+      if (p.lit) {
+        if (p.fx === 'fire') s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="#FF7A2E" class="flick" opacity=".5"/>`;
+        s += `<g transform="translate(${x+cw/2},${y+ch-4}) scale(.24)">${isMe ? avatar(me) : avatar(p.c, '#8A6432')}</g>`;
+        s += `<rect x="${x}" y="${y+ch-6}" width="${cw}" height="6" fill="${isMe?'#B87A3E':'#D99A48'}"/>`;
+        if (p.fx === 'lights' || (isMe && props.lights)) for (let i = 1; i < 6; i++) s += `<circle cx="${x+i*cw/6}" cy="${y+4+Math.sin(i/6*Math.PI)*5}" r="1.6" fill="#FFF7D6" class="tw" style="animation-delay:${i*.3}s"/>`;
+        if (p.fx === 'rain') { s += `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="#3A4A6A" opacity=".2"/>`;
+          for (let i = 0; i < 6; i++) { const dx = x + 4 + i*6.5; s += `<line class="dropS" style="animation-duration:${(.6+((i*37)%5)/10).toFixed(2)}s;animation-delay:-${(i*.23).toFixed(2)}s" x1="${dx}" y1="${y}" x2="${dx-1.5}" y2="${y+8}" stroke="#EAF2FF" stroke-width="1.2" opacity=".85"/>`; } }
+      }
+      s += `</g>`;
+      if (isMe) s += `<rect x="${x-3}" y="${y-3}" width="${cw+6}" height="${ch+6}" rx="7" fill="none" stroke="#F14922" stroke-width="3"/>
+        <g transform="translate(${x+cw/2},${y-15})"><rect x="-17" y="-11" width="34" height="22" rx="11" fill="#F14922"/><text y="4.5" text-anchor="middle" font-size="12" font-weight="1000" fill="#fff">تو</text></g>`;
+    }
+  }
+  document.getElementById('bld').innerHTML = s;
+  document.getElementById('thumb').innerHTML = `<svg width="58" height="58" viewBox="-60 -150 120 120">${avatar(me)}</svg>`;
+  document.getElementById('sndcount').textContent = fa(sounds.filter(x => x.on).length);
+}
+function openPop(k) {
+  const p = people[k % people.length]; if (!p.lit) return;
+  const [cx, y] = winPos[k], pop = document.getElementById('pop');
+  const left = Math.max(12, Math.min(390-262, cx - 125));
+  pop.style.display = 'flex'; pop.style.left = left + 'px'; pop.style.top = (y - 84) + 'px';
+  pop.style.setProperty('--ar', (250 - (cx - left) - 9) + 'px');
+  const c = { ...p.c, skin:k%5, hairC:k%8, topC:k%8, eyes:EYES[k%4][0], blush:true, top:TOPS[k%4][0], acc:{ ...p.c.acc, earrings:k%2===0 } };
+  const girl = ['long','wavy','pony','bun','bob'].includes(p.c.hair);
+  pop.innerHTML = `<div class="face"><svg width="46" height="46" viewBox="-56 -150 112 112">${avatar(c)}</svg></div>
+    <div><b>${girl ? ['نگار','مریم','سارا','کیانا','ترانه'][k%5] : ['امیر','رضا','آرش','پارسا','علی'][k%5]}</b><span>${p.subj}، ${fa(p.t)}، ${fxName[p.fx]}</span></div>
+    <div class="x"><div>💪</div><div>🔥</div></div>`;
+}
+
+// ================= audio =================
+let ctx, nodes = {};
+function noiseBuffer(kind) { const len = ctx.sampleRate*4, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0); let last = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random()*2-1; if (kind === 'brown') { last = (last + .02*w)/1.02; d[i] = last*3.5; } else d[i] = w; } return b; }
+function makeSrc(kind, filt) { const src = ctx.createBufferSource(); src.buffer = noiseBuffer(kind); src.loop = true; const g = ctx.createGain(); g.gain.value = 0;
+  let n = src; if (filt) { const f = ctx.createBiquadFilter(); f.type = filt[0]; f.frequency.value = filt[1]; f.Q.value = filt[2]||.7; src.connect(f); n = f; }
+  n.connect(g); g.connect(ctx.destination); src.start(); return g; }
+function toggleAudio() {
+  if (!ctx) { ctx = new AudioContext(); nodes.rain = makeSrc('white', ['bandpass', 1400, .5]); nodes.brown = makeSrc('brown'); nodes.white = makeSrc('white', ['lowpass', 9000]); }
+  else if (ctx.state === 'running') ctx.suspend(); else ctx.resume();
+  setTimeout(refresh, 50);
+}
+function updateAudio() { if (!ctx) return; const m = { rain:.5, brown:.6, white:.12 }; for (const k in nodes) nodes[k].gain.setTargetAtTime(isOn(k)/100*m[k], ctx.currentTime, .2); }
+
+function refresh() { for (const id in phones) renderWindowPhone(id); building(); updateAudio(); }
+refresh();
+(() => { for (let k = 5; k < 25; k++) { const p = people[k]; if (p.lit && p.fx === 'rain' && Math.floor(k/5) >= 1 && Math.floor(k/5) <= 3) { openPop(k); break; } } })();
+</script>
+</body>
+</html>

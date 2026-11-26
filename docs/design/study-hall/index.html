@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Study hall mockups</title>
+<style>
+@font-face { font-family: IRANSansX; src: url('../../../assets/fonts/IRANSansXVF.ttf'); font-weight: 100 1000; }
+:root { --primary:#F14922; --tint:#FDECE7; --black1:#23232B; --gray:#8b8b91; --gray1:#F5F5F9; --gray2:#EBECF0; --card:#fff; --ink2:#6b6b73; --green:#1AC56A; --blue:#3D63F0; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:IRANSansX; font-variation-settings:'DOTS' 4; background:#fff; color:var(--black1); padding:40px 40px 60px; }
+h1 { font-size:30px; font-weight:1000; margin-bottom:6px; }
+.sub { font-size:14px; font-weight:600; color:#777; margin-bottom:56px; }
+.row { display:flex; flex-wrap:wrap; gap:80px 40px; align-items:flex-start; }
+.wrap { position:relative; width:390px; }
+.tag { position:absolute; top:-34px; right:0; font-size:15px; font-weight:900; color:#3a3a42; white-space:nowrap; }
+.tag small { font-weight:700; color:#777; font-size:12.5px; margin-right:6px; }
+.phone { width:390px; height:844px; background:var(--gray1); border-radius:44px; overflow:hidden; position:relative; outline:10px solid #23232B; outline-offset:0; }
+.notes { margin-top:24px; font-size:12.5px; font-weight:600; line-height:2.05; color:#44444c; }
+.notes b { font-weight:900; color:var(--black1); }
+.status { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 30px; font-size:13px; font-weight:800; direction:ltr; }
+.gesture { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; border-radius:100px; background:#23232B55; z-index:20; }
+.ic { width:20px; height:20px; display:block; }
+.ic path, .ic circle, .ic rect { fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+
+/* shared bits */
+.hdr { display:flex; align-items:center; justify-content:space-between; padding:6px 20px 10px; }
+.hdr h2 { font-size:21px; font-weight:1000; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:100px; padding:6px 12px; font-size:12px; font-weight:800; }
+.pill.dark { background:var(--black1); color:#fff; }
+.pill.soft { background:#fff; color:var(--ink2); box-shadow:0 4px 14px #23232B10; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--primary); box-shadow:0 0 0 3px #F1492233; }
+.round { width:40px; height:40px; border-radius:50%; background:#fff; display:grid; place-items:center; box-shadow:0 4px 14px #23232B10; }
+.btn { border:0; font:inherit; font-weight:900; font-size:15px; border-radius:100px; padding:14px 22px; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.btn.main { background:var(--primary); color:#fff; box-shadow:0 8px 20px #F1492240; }
+.btn.ghost { background:var(--gray1); color:var(--black1); }
+.av { width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:900; color:#fff; border:2.5px solid #fff; }
+.stack { display:flex; } .stack .av { margin-left:-9px; }
+.a1{background:#8E93A6}.a2{background:#B4A89A}.a3{background:#6F7C8F}.a4{background:#A0A4B4}.a5{background:#7D7580}
+
+/* nav */
+.nav { position:absolute; bottom:22px; left:16px; right:16px; height:70px; background:#fff; border-radius:100px; box-shadow:0 10px 30px #23232B18; display:flex; justify-content:space-around; align-items:center; direction:rtl; z-index:10; }
+.nav div { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:800; color:#9C9CA5; }
+.nav div.on { color:var(--primary); }
+.nav .ic { width:24px; height:24px; }
+.nav .on .ic path,.nav .on .ic rect,.nav .on .ic circle { fill:currentColor; stroke:currentColor; }
+
+/* home */
+.welcome { display:flex; justify-content:space-between; align-items:center; padding:8px 20px 14px; }
+.welcome h2 { font-size:22px; font-weight:1000; }
+.usercard { margin:0 16px; background:#fff; border-radius:30px; padding:16px; box-shadow:0 6px 20px #23232B0c; }
+.usercard .u { display:flex; align-items:center; gap:12px; }
+.usercard .u .face { width:50px; height:50px; border-radius:50%; background:var(--gray1); display:grid; place-items:center; font-weight:900; font-size:20px; color:var(--gray); }
+.usercard .u b { font-size:15px; font-weight:900; }
+.stats2 { display:flex; gap:10px; margin-top:14px; }
+.stats2 > div { flex:1; background:var(--gray1); border-radius:100px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+.stats2 .c { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:#fff; }
+.stats2 b { font-size:15px; font-weight:1000; display:block; line-height:1.2; } .stats2 span { font-size:10.5px; color:var(--gray); font-weight:700; }
+
+.hallcard { margin:16px 16px 0; border-radius:30px; overflow:hidden; background:#fff; box-shadow:0 14px 34px #23232B18; position:relative; }
+.hallcard .scene { height:132px; position:relative; }
+.hallcard .body { padding:14px 18px 16px; display:flex; align-items:center; gap:12px; }
+.hallcard .body .txt { flex:1; }
+.hallcard .body b { font-size:16px; font-weight:1000; display:block; }
+.hallcard .body span { font-size:12px; font-weight:700; color:var(--ink2); }
+.hallcard .live { position:absolute; top:12px; right:14px; }
+.sec { display:flex; justify-content:space-between; align-items:center; padding:22px 22px 10px; }
+.sec h3 { font-size:18px; font-weight:1000; }
+.ghostcard { margin:0 16px; height:82px; background:#fff; border-radius:26px; opacity:.6; }
+
+/* sheet */
+.scrim { position:absolute; inset:0; background:#23232B66; z-index:15; }
+.sheet { position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:32px 32px 0 0; padding:12px 20px 34px; z-index:16; }
+.grab { width:44px; height:5px; border-radius:100px; background:var(--gray2); margin:0 auto 14px; }
+.sheet .t { display:flex; justify-content:space-between; align-items:center; }
+.sheet h4 { font-size:18px; font-weight:1000; }
+.sheet .s { font-size:12.5px; color:var(--gray); font-weight:700; margin-top:4px; }
+.opt { margin-top:14px; border-radius:26px; padding:16px; display:flex; gap:14px; align-items:center; background:var(--gray1); }
+.opt .oi { width:46px; height:46px; border-radius:50%; background:#fff; display:grid; place-items:center; flex:none; }
+.opt b { font-size:15px; font-weight:1000; display:block; } .opt span { font-size:12px; font-weight:700; color:var(--gray); }
+.opt.sel { background:var(--black1); color:#fff; box-shadow:0 14px 30px #23232B40; transform:scale(1.02); }
+.opt.sel span { color:#c9c9d2; } .opt.sel .oi { background:#ffffff1a; color:#fff; }
+.opt .radio { width:22px; height:22px; border-radius:50%; border:2px solid #cfd0d6; margin-right:auto; flex:none; }
+.opt.sel .radio { border:6px solid var(--primary); background:#fff; }
+.halls { display:flex; gap:8px; margin-top:12px; }
+.halls div { font-size:11.5px; font-weight:800; padding:6px 12px; border-radius:100px; background:#ffffff1a; color:#fff; }
+.halls div.on { background:#fff; color:var(--black1); }
+
+/* tasks bg */
+.tasklist { padding:0 16px; display:flex; flex-direction:column; gap:10px; }
+.task { background:#fff; border-radius:24px; padding:16px 18px; display:flex; align-items:center; gap:12px; }
+.task .ck { width:26px; height:26px; border-radius:50%; border:2px solid var(--gray2); }
+.task b { font-size:14px; font-weight:900; display:block; } .task span { font-size:11.5px; color:var(--gray); font-weight:700; }
+
+/* hall screen */
+.room { position:relative; height:360px; }
+.room svg { display:block; }
+.panel { position:absolute; left:0; right:0; bottom:0; top:452px; background:#fff; border-radius:34px 34px 0 0; padding:18px 20px 30px; box-shadow:0 -10px 30px #23232B10; }
+.sess { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; color:var(--ink2); }
+.bar { height:8px; border-radius:100px; background:var(--gray2); margin-top:8px; overflow:hidden; } .bar i { display:block; height:100%; border-radius:100px; background:var(--primary); }
+.mine { display:flex; align-items:center; gap:14px; margin-top:18px; }
+.mine .big { font-size:40px; font-weight:1000; letter-spacing:1px; line-height:1; }
+.mine .subj { display:inline-block; margin-top:8px; font-size:12px; font-weight:800; color:var(--ink2); background:var(--gray1); border-radius:100px; padding:5px 12px; }
+.ring { width:64px; height:64px; margin-right:auto; }
+.acts { display:flex; gap:10px; margin-top:20px; } .acts .btn { flex:1; }
+.near { margin-top:18px; display:flex; align-items:center; gap:10px; background:var(--gray1); border-radius:100px; padding:8px 10px 8px 16px; font-size:12.5px; font-weight:800; color:var(--ink2); }
+.near .more { margin-right:auto; color:var(--black1); display:flex; align-items:center; gap:2px; }
+
+/* list view */
+.seg { margin:4px 20px 0; background:#fff; border-radius:100px; padding:4px; display:flex; box-shadow:0 4px 14px #23232B0c; }
+.seg div { flex:1; text-align:center; font-size:13px; font-weight:900; padding:9px; border-radius:100px; color:var(--gray); }
+.seg div.on { background:var(--black1); color:#fff; }
+.sesscard { margin:14px 16px 0; background:#fff; border-radius:28px; padding:16px 18px; display:flex; align-items:center; gap:14px; box-shadow:0 6px 20px #23232B0c; }
+.sesscard b { font-size:15px; font-weight:1000; display:block; } .sesscard span { font-size:12px; font-weight:700; color:var(--gray); }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 16px 0; }
+.seat { background:#fff; border-radius:24px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+.seat .top { display:flex; align-items:center; gap:8px; }
+.seat .top .av { border:0; width:34px; height:34px; }
+.seat b { font-size:13px; font-weight:900; display:block; } .seat .sj { font-size:11px; font-weight:700; color:var(--gray); }
+.seat .tm { display:flex; align-items:center; justify-content:space-between; background:var(--gray1); border-radius:100px; padding:6px 10px; font-size:13px; font-weight:1000; }
+.seat .tm .st { font-size:10.5px; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:5px; }
+.seat.away { opacity:.5; } .seat.away .tm .st { color:var(--gray); }
+.seat.me { background:var(--black1); color:#fff; box-shadow:0 14px 28px #23232B40; } .seat.me .sj { color:#c9c9d2; } .seat.me .tm { background:#ffffff1a; }
+.seat .react { font-size:11px; font-weight:800; color:var(--gray); display:flex; gap:4px; }
+
+/* night / chat */
+.night { background:#1B1D2A; color:#fff; }
+.night .status { color:#fff; }
+.night .round { background:#ffffff14; box-shadow:none; color:#fff; }
+.chat { position:absolute; left:0; right:0; bottom:0; top:430px; background:#fff; color:var(--black1); border-radius:34px 34px 0 0; padding:16px 18px 30px; display:flex; flex-direction:column; }
+.chat .h { display:flex; justify-content:space-between; align-items:center; }
+.chat .h b { font-size:17px; font-weight:1000; }
+.brk { font-size:12px; font-weight:900; background:#E7EDFF; color:var(--blue); border-radius:100px; padding:6px 12px; }
+.msgs { flex:1; display:flex; flex-direction:column; gap:9px; margin-top:14px; }
+.m { display:flex; gap:8px; align-items:flex-end; max-width:86%; }
+.m .bub { background:var(--gray1); border-radius:20px 20px 20px 6px; padding:9px 13px; font-size:12.5px; font-weight:700; line-height:1.8; }
+.m .bub small { display:block; font-size:10.5px; color:var(--gray); font-weight:800; }
+.m.me { align-self:flex-end; flex-direction:row-reverse; } .m.me .bub { background:var(--black1); color:#fff; border-radius:20px 20px 6px 20px; }
+.m .av { border:0; width:26px; height:26px; font-size:10px; flex:none; }
+.quick { display:flex; gap:8px; margin-top:10px; }
+.quick div { background:var(--gray1); border-radius:100px; padding:7px 12px; font-size:12px; font-weight:800; }
+.input { margin-top:10px; display:flex; align-items:center; gap:10px; background:var(--gray1); border-radius:100px; padding:6px 6px 6px 16px; }
+.input span { flex:1; font-size:13px; font-weight:700; color:var(--gray); padding-right:8px; }
+.send { width:38px; height:38px; border-radius:50%; background:var(--primary); color:#fff; display:grid; place-items:center; }
+.closing { text-align:center; font-size:11px; font-weight:800; color:var(--gray); margin-top:10px; }
+</style>
+</head>
+<body>
+<h1>سالن مطالعه، طرح اولیه</h1>
+<div class="sub">ورودی از خانه و از تایمر تسک، اتاق دوبعدی با عمق، نمای لیست، و استراحت با چت</div>
+
+<div class="row">
+
+<!-- 1. Home card -->
+<div class="wrap">
+  <div class="tag">۱. خانه <small>کارت زنده‌ی سالن</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="welcome"><h2>خوش آمدید</h2><span class="pill soft">انتخاب مشاور</span></div>
+    <div class="usercard">
+      <div class="u"><div class="face">ع</div><div><b>علی رضایی</b></div></div>
+      <div class="stats2">
+        <div><span class="c" style="background:var(--blue)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><div><b>۲:۱۵</b><span>مطالعه‌ی امروز</span></div></div>
+        <div><span class="c" style="background:var(--primary)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 3 2 0-3-1-4 0-6z"/></svg></span><div><b>×۳</b><span>ضریب امروز</span></div></div>
+      </div>
+    </div>
+
+    <div class="hallcard">
+      <div class="scene" id="mini"></div>
+      <div class="live"><span class="pill dark"><span class="dot"></span>زنده</span></div>
+      <div class="body">
+        <div class="txt"><b>سالن مطالعه</b><span>۳۴۲ نفر همین الان دارن درس می‌خونن</span></div>
+        <button class="btn main" style="padding:11px 20px;font-size:14px">ورود</button>
+      </div>
+    </div>
+
+    <div class="sec"><h3>اهداف</h3><span class="pill soft">همه اهداف</span></div>
+    <div class="ghostcard"></div>
+    <div class="sec"><h3>خلاصه فعالیت امروز</h3></div>
+    <div class="ghostcard"></div>
+
+    <div class="nav" id="nav"></div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>کارت زنده</b> زیر کارت کاربر: یه تکه‌ی کوچیک از اتاق با چراغ‌های روشن و تعداد آدم‌ها.<br>
+    عدد زنده کنجکاوی می‌سازه. بدون تب جدید.<br>
+    اگه کاربر الان توی سالن باشه، دکمه می‌شه «برگرد به سالن».
+  </div>
+</div>
+
+<!-- 2. Timer start sheet -->
+<div class="wrap">
+  <div class="tag">۲. شروع تایمر تسک <small>تنها یا توی سالن</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr"><h2>تسک‌ها</h2></div>
+    <div class="tasklist">
+      <div class="task"><span class="ck"></span><div><b>زیست‌شناسی فصل ۳</b><span>۱۲۰ دقیقه</span></div></div>
+      <div class="task"><span class="ck"></span><div><b>فیزیک، تست</b><span>۶۰ دقیقه</span></div></div>
+      <div class="task"><span class="ck"></span><div><b>شیمی، جمع‌بندی</b><span>۴۵ دقیقه</span></div></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="grab"></div>
+      <div class="t"><div><h4>زیست‌شناسی فصل ۳</h4><div class="s">تسک زمان‌دار، ۱۲۰ دقیقه</div></div>
+        <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>
+
+      <div class="opt">
+        <span class="oi"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg></span>
+        <div><b>تنها بخون</b><span>مثل همیشه، فقط تایمر</span></div>
+        <span class="radio"></span>
+      </div>
+      <div class="opt sel">
+        <span class="oi"><svg class="ic" viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c1-3 3-5 6-5s5 2 6 5M14 15c3 0 6 1 8 5"/></svg></span>
+        <div style="flex:1"><b>توی سالن بخون</b><span>۱۲۸ نفر الان توی سالن تجربی‌ان</span>
+          <div class="halls"><div class="on">تجربی دوازدهم</div><div>کلاس آقای محمدی</div></div>
+        </div>
+        <span class="radio" style="align-self:flex-start"></span>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn main" style="flex:1">شروع</button>
+        <button class="btn ghost">لغو</button>
+      </div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>مهم‌ترین ورودی:</b> کسی که الان تایمر رو می‌زنه، همین الان می‌خواد درس بخونه.<br>
+    انتخاب آخر یادش می‌مونه؛ اگه دفعه‌ی قبل سالن رو زده، پیش‌فرض سالنه.<br>
+    سالن کلاس مشاور فقط برای کسایی که مشاور دارن نشون داده می‌شه.
+  </div>
+</div>
+
+<!-- 3. Hall: room view (day) -->
+<div class="wrap">
+  <div class="tag">۳. سالن، نمای اتاق <small>روز</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <div style="text-align:center"><h2 style="font-size:17px">سالن تجربی دوازدهم</h2></div>
+      <span class="pill dark"><span class="dot"></span>۱۲۸</span>
+    </div>
+    <div class="room" id="roomDay"></div>
+    <div class="panel">
+      <div class="sess"><span>جلسه‌ی ساعت ۱۸، ۵۰ دقیقه</span><span>۱۸ دقیقه مونده</span></div>
+      <div class="bar"><i style="width:64%"></i></div>
+      <div class="mine">
+        <div>
+          <div class="big">۴۲:۱۰</div>
+          <span class="subj">زیست‌شناسی فصل ۳</span>
+        </div>
+        <svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#EBECF0" stroke-width="7"/><circle cx="32" cy="32" r="27" fill="none" stroke="#F14922" stroke-width="7" stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="60" transform="rotate(-90 32 32)"/></svg>
+      </div>
+      <div class="acts">
+        <button class="btn ghost">مکث</button>
+        <button class="btn ghost">خروج از سالن</button>
+      </div>
+      <div class="near">
+        <div class="stack"><span class="av a1">م</span><span class="av a2">ز</span><span class="av a3">ر</span></div>
+        <span>+۱۱۶ نفر دیگه</span>
+        <span class="more">نمای لیست <svg class="ic" style="width:16px" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></span>
+      </div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>اتاق دوبعدی با عمق:</b> سه ردیف میز، ردیف‌های عقب کوچیک‌تر. پشت پنجره روز یا شب واقعیه.<br>
+    چراغ میز روشن یعنی داره می‌خونه؛ کم‌رنگ یعنی رفته بیرون. صندلی خودت پررنگه با «تو».<br>
+    فقط حدود ۱۲ نفرِ نزدیکت توی اتاق‌ان؛ بقیه توی لیست.
+  </div>
+</div>
+
+<!-- 4. Hall: list view -->
+<div class="wrap">
+  <div class="tag">۴. سالن، نمای لیست <small>برای سالن‌های شلوغ</small></div>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2 style="font-size:17px">سالن تجربی دوازدهم</h2>
+      <span class="pill dark"><span class="dot"></span>۱۲۸</span>
+    </div>
+    <div class="seg"><div>اتاق</div><div class="on">لیست</div></div>
+    <div class="sesscard">
+      <svg class="ring" style="width:54px;height:54px;margin:0" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#EBECF0" stroke-width="7"/><circle cx="32" cy="32" r="27" fill="none" stroke="#F14922" stroke-width="7" stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="60" transform="rotate(-90 32 32)"/></svg>
+      <div style="flex:1"><b>۱۸ دقیقه تا استراحت</b><span>جلسه‌ی ساعت ۱۸، ۵۰ دقیقه</span></div>
+    </div>
+    <div class="grid">
+      <div class="seat me"><div class="top"><span class="av a3">ع</span><div><b>تو</b><div class="sj">زیست، فصل ۳</div></div></div><div class="tm"><span>۴۲:۱۰</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat"><div class="top"><span class="av a1">م</span><div><b>مریم</b><div class="sj">فیزیک، تست</div></div></div><div class="tm"><span>۱:۰۵:۲۰</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat"><div class="top"><span class="av a2">ز</span><div><b>زهرا</b><div class="sj">شیمی</div></div></div><div class="tm"><span>۳۸:۴۲</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat away"><div class="top"><span class="av a4">ر</span><div><b>رضا</b><div class="sj">ریاضی</div></div></div><div class="tm"><span>۲۲:۰۱</span><span class="st">بیرون</span></div></div>
+      <div class="seat"><div class="top"><span class="av a5">س</span><div><b>سارا</b><div class="sj">زیست، فصل ۵</div></div></div><div class="tm"><span>۵۰:۰۰</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat"><div class="top"><span class="av a1">ا</span><div><b>امیر</b><div class="sj">ادبیات</div></div></div><div class="tm"><span>۱۵:۳۰</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat"><div class="top"><span class="av a3">ن</span><div><b>نگار</b><div class="sj">فیزیک</div></div></div><div class="tm"><span>۱:۲۰:۴۴</span><span class="st"><span class="dot"></span>داره می‌خونه</span></div></div>
+      <div class="seat away"><div class="top"><span class="av a2">ح</span><div><b>حسین</b><div class="sj">شیمی</div></div></div><div class="tm"><span>۰۹:۱۲</span><span class="st">بیرون</span></div></div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>همون اطلاعات، بدون تصویر:</b> اسم، درس، زمان، وضعیت. توی سالن‌های صدنفری راحت‌تر خونده می‌شه.<br>
+    کارت خودت تیره و بالای لیست؛ بقیه بر اساس زمان پیوسته مرتب می‌شن.<br>
+    زدن روی یه صندلی: یه واکنش کوچیک («ادامه بده 💪») بدون چت.
+  </div>
+</div>
+
+<!-- 5. Break + chat (night) -->
+<div class="wrap">
+  <div class="tag">۵. استراحت <small>شب، چت فقط این‌جا باز می‌شه</small></div>
+  <div class="phone night">
+    <div class="status"><span>22:10</span><span>●●● 100%</span></div>
+    <div class="hdr">
+      <span class="round"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+      <h2 style="font-size:17px">سالن تجربی دوازدهم</h2>
+      <span class="pill" style="background:#ffffff1a;color:#fff"><span class="dot"></span>۹۴</span>
+    </div>
+    <div class="room" id="roomNight"></div>
+    <div class="chat">
+      <div class="h"><b>چت استراحت</b><span class="brk">استراحت، ۷:۴۰ مونده</span></div>
+      <div class="msgs">
+        <div class="m"><span class="av a1">م</span><div class="bub"><small>مریم</small>کسی تست‌های فصل ۵ فیزیک رو زده؟ سخت بود</div></div>
+        <div class="m"><span class="av a2">ز</span><div class="bub"><small>زهرا</small>آره، ۱۴ از ۲۰ شد 😅</div></div>
+        <div class="m me"><div class="bub">من دو ساعت زیستم تموم شد 🎉</div></div>
+        <div class="m"><span class="av a5">س</span><div class="bub"><small>سارا</small>ایول! جلسه‌ی بعد منم زیست می‌خونم</div></div>
+      </div>
+      <div class="quick"><div>💪</div><div>🔥</div><div>👏</div><div>☕</div></div>
+      <div class="input"><span>یه چیزی بنویس…</span><span class="send"><svg class="ic" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span></div>
+      <div class="closing">با شروع جلسه‌ی بعد چت بسته می‌شه</div>
+    </div>
+    <div class="gesture"></div>
+  </div>
+  <div class="notes">
+    <b>شب:</b> پنجره ماه و ستاره، اتاق تاریک، فقط چراغ‌های میز گرم. همون حس شب زنگ تسک.<br>
+    توی استراحت چراغ‌ها خاموش‌ان و صندلی‌ها نیم‌خالی؛ آبی یعنی مکث، مثل مراحل تسک.<br>
+    چت فقط ۱۰ دقیقه‌ی استراحت؛ با شروع جلسه بسته می‌شه. ری‌اکشن‌ها همیشه باز.
+  </div>
+</div>
+
+</div>
+
+<script>
+const fa = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const avc = ['#8E93A6','#B4A89A','#6F7C8F','#A0A4B4','#7D7580'];
+
+function desk(x, y, s, o, night) {
+  // o: {state:'on'|'away'|'brk', me, t, c}
+  const dim = o.state === 'away' ? .42 : 1;
+  const lampOn = o.state === 'on';
+  const deskTop = night ? '#3A3D52' : '#FFFFFF', deskFront = night ? '#2B2E40' : '#DADCE3';
+  const body = o.me ? '#23232B' : (night ? '#5B5F78' : avc[o.c % 5]);
+  const head = o.me ? '#3A3A44' : (night ? '#6E728C' : avc[(o.c + 2) % 5]);
+  let chip = '';
+  if (o.t || o.me) {
+    const label = o.me ? 'تو، ' + fa(o.t) : (o.state === 'away' ? 'بیرون' : o.state === 'brk' ? 'استراحت' : fa(o.t));
+    const w = o.me ? 70 : (label.length * 6.2 + 26);
+    const bg = o.me ? '#23232B' : (night ? '#2E3146' : '#FFFFFF');
+    const fg = o.me ? '#fff' : (night ? '#E6E7EF' : '#23232B');
+    const dotc = o.state === 'on' ? '#F14922' : o.state === 'brk' ? '#3D63F0' : '#9C9CA5';
+    chip = `<g transform="translate(0,-92)">
+      <rect x="${-w/2}" y="-11" width="${w}" height="22" rx="11" fill="${bg}" ${night||o.me?'':'filter="url(#sh)"'}/>
+      <circle cx="${w/2-11}" cy="0" r="3.2" fill="${dotc}"/>
+      <text x="${w/2-19}" y="4.2" font-size="11" font-weight="900" fill="${fg}" text-anchor="start" direction="rtl">${label}</text></g>`;
+  }
+  const glow = lampOn ? `<circle cx="22" cy="-30" r="${night?44:34}" fill="url(#glow${night?'N':''})"/>` : '';
+  const lampHead = lampOn ? (night ? '#FFD58A' : '#FFE2A8') : (night ? '#4A4D63' : '#C6C8D0');
+  const meLift = o.me ? `<ellipse cx="0" cy="10" rx="50" ry="8" fill="#23232B" opacity="${night?.5:.12}"/>` : '';
+  return `<g transform="translate(${x},${y}) scale(${s})" opacity="${dim}">
+    ${meLift}${glow}
+    <path d="M-22 -24 C-22 -42 22 -42 22 -24 Z" fill="${body}"/>
+    <circle cx="0" cy="-54" r="13" fill="${head}"/>
+    ${o.state==='brk'? '' : ''}
+    <rect x="-40" y="-26" width="80" height="11" rx="5" fill="${deskTop}"/>
+    <rect x="-37" y="-17" width="74" height="24" rx="6" fill="${deskFront}"/>
+    ${o.state!=='away' ? `<path d="M-14 -24 l12 -3 l0 5 l-12 3z M-2 -27 l12 3 l0 5 l-12 -3z" fill="${night?'#C9CBDA':'#EDEEF2'}"/>` : ''}
+    <path d="M30 -24 L30 -36 L22 -44" stroke="${night?'#5A5D74':'#B9BBC5'}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M15 -42 L29 -48 L27 -37 Z" fill="${lampHead}"/>
+    ${chip}
+  </g>`;
+}
+
+function room(id, night, opts = {}) {
+  const W = 390, H = opts.h || 360, sc = opts.scale || 1;
+  const wall = night ? '#22253A' : '#ECEEF4', floor = night ? '#1B1D2A' : '#E2E4EB';
+  const wallLine = night ? '#2C2F46' : '#E2E4EC';
+  const sky = night
+    ? `<rect x="125" y="18" width="140" height="86" rx="16" fill="#2E3560"/>
+       <circle cx="225" cy="45" r="12" fill="#F5EBD0"/><circle cx="231" cy="41" r="11" fill="#2E3560"/>
+       <circle cx="150" cy="38" r="1.6" fill="#fff"/><circle cx="172" cy="62" r="1.2" fill="#fff"/><circle cx="198" cy="32" r="1.4" fill="#fff"/><circle cx="246" cy="80" r="1.2" fill="#fff"/>`
+    : `<rect x="125" y="18" width="140" height="86" rx="16" fill="#DCE8F7"/>
+       <circle cx="230" cy="44" r="13" fill="#FFF1CF"/>
+       <path d="M140 92 q20 -18 40 -6 q16 -14 34 -2 q14 -8 26 4 L240 104 L140 104z" fill="#EAF1FA"/>`;
+  const frame = `<rect x="125" y="18" width="140" height="86" rx="16" fill="none" stroke="${night?'#3A3E5A':'#fff'}" stroke-width="6"/>
+    <line x1="195" y1="18" x2="195" y2="104" stroke="${night?'#3A3E5A':'#fff'}" stroke-width="4"/>`;
+  const shelf = (x) => `<g transform="translate(${x},34)"><rect width="74" height="5" rx="2.5" fill="${night?'#34374E':'#DADCE4'}" y="40"/>
+    ${[0,9,17,27,36,48,56].map((bx,i)=>`<rect x="${bx+6}" y="${14+(i%3)*4}" width="${i%2?7:8}" height="${26-(i%3)*4}" rx="2" fill="${night?['#3B3F58','#454962','#363A52'][i%3]:['#CFD2DC','#C3C6D1','#D8DAE2'][i%3]}"/>`).join('')}</g>`;
+  const rows = opts.rows || [
+    { y:170, s:.64, xs:[55,125,195,265,335] },
+    { y:252, s:.8,  xs:[60,150,240,330] },
+    { y:345, s:1,   xs:[75,195,315] },
+  ];
+  const states = opts.states;
+  let k = 0, desks = '';
+  for (const r of rows) for (const x of r.xs) { desks += desk(x, r.y, r.s, states[k], night); k++; }
+  document.getElementById(id).innerHTML = `
+  <svg width="${W*sc}" height="${H*sc}" viewBox="0 0 ${W} ${H}" font-family="IRANSansX" style="font-variation-settings:'DOTS' 4">
+    <defs>
+      <radialGradient id="glow"><stop offset="0" stop-color="#FFD58A" stop-opacity=".55"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient>
+      <radialGradient id="glowN"><stop offset="0" stop-color="#FFC56A" stop-opacity=".42"/><stop offset="1" stop-color="#FFC56A" stop-opacity="0"/></radialGradient>
+      <filter id="sh" x="-30%" y="-60%" width="160%" height="220%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#23232B" flood-opacity=".12"/></filter>
+    </defs>
+    <rect width="${W}" height="${H}" fill="${floor}"/>
+    <rect width="${W}" height="128" fill="${wall}"/>
+    <rect y="124" width="${W}" height="6" fill="${wallLine}"/>
+    ${[160,205,260,325].map(y=>`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${night?'#202232':'#D9DBE3'}" stroke-width="1"/>`).join('')}
+    ${sky}${frame}${opts.noShelves?'':shelf(22)+shelf(294)}
+    ${desks}
+  </svg>`;
+}
+
+const day = [
+  {state:'on',t:'1:05',c:0},{state:'on',t:'38:42',c:1},{state:'away',t:'x',c:2},{state:'on',t:'50:00',c:3},{state:'on',t:'15:30',c:4},
+  {state:'on',t:'1:20',c:1},{state:'on',t:'22:01',c:3},{state:'away',t:'x',c:0},{state:'on',t:'44:05',c:2},
+  {state:'on',t:'1:12',c:4},{state:'on',me:true,t:'42:10',c:0},{state:'on',t:'09:12',c:2},
+];
+room('roomDay', false, { states: day });
+
+const nightS = [
+  {state:'brk',c:0},{state:'on',t:'x',c:1},{state:'away',t:'x',c:2},{state:'brk',t:'x',c:3},{state:'brk',c:4},
+  {state:'brk',t:'x',c:1},{state:'brk',c:3},{state:'away',c:0},{state:'brk',t:'x',c:2},
+  {state:'brk',t:'x',c:4},{state:'brk',me:true,t:'2:00',c:0},{state:'brk',c:2},
+];
+// night room: fewer chips, break state
+nightS.forEach(s => { if (s.state==='brk' && !s.me) delete s.t; });
+nightS[1].state = 'brk'; delete nightS[1].t;
+room('roomNight', true, { states: nightS, h: 360 });
+// me chip in break shows break
+document.querySelectorAll('#roomNight text').forEach(t => { if (t.textContent.startsWith('تو')) t.textContent = 'تو، استراحت'; });
+document.querySelectorAll('#roomNight rect[width="70"]').forEach(r => { r.setAttribute('width', 84); r.setAttribute('x', -42); });
+document.querySelectorAll('#roomNight circle[r="3.2"]').forEach(c => { if (c.getAttribute('cx')==='24') c.setAttribute('cx', 31); });
+document.querySelectorAll('#roomNight text').forEach(t => { if (t.textContent.startsWith('تو')) t.setAttribute('x', 23); });
+
+// mini scene for home card: one front-ish row
+room('mini', false, {
+  h: 132, noShelves: false,
+  rows: [ { y:118, s:.62, xs:[40,105,170,235,300,365] } ],
+  states: [{state:'on',c:0},{state:'on',c:1},{state:'away',c:2},{state:'on',c:3},{state:'on',c:4},{state:'on',c:1}],
+});
+document.querySelector('#mini svg').setAttribute('viewBox', '0 0 390 132');
+document.querySelector('#mini svg').setAttribute('width', '358');
+document.querySelector('#mini svg').setAttribute('height', '132');
+document.querySelector('#mini svg').setAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+// nav
+const tabs = [
+  ['خانه','<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',true],
+  ['تسک‌ها','<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 10l2 2 4-4M8 16h8"/>'],
+  ['کوله‌پشتی','<path d="M7 8a5 5 0 0 1 10 0v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9 14h6"/>'],
+  ['آمار','<path d="M5 20V11M12 20V5M19 20v-7"/>'],
+  ['پروفایل','<circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/>'],
+];
+document.getElementById('nav').innerHTML = tabs.map(([l,p,on]) => `<div class="${on?'on':''}"><svg class="ic" viewBox="0 0 24 24">${p}</svg>${l}</div>`).join('');
+</script>
+</body>
+</html>
