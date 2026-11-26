@@ -67,10 +67,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   static const _usernameDebounceDuration = Duration(milliseconds: 650);
 
+  // Stored as UNDER_4_HOURS / BETWEEN_4_AND_7 / OVER_7_HOURS; since the study
+  // hall (Nov 2026) the last two mean 4 to 8 and 8 to 14 hours. The value
+  // names stay so installed builds can still register.
   static const List<String> _studyOptions = [
     'زیر ۴ ساعت',
-    '۴ تا ۷ ساعت',
-    'بیش از ۷ ساعت',
+    '۴ تا ۸ ساعت',
+    'بیش از ۸ ساعت',
   ];
 
   /// Usernames are Latin, but a Persian keyboard types Persian digits; they

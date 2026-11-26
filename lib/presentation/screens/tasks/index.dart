@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
+import 'package:simo_learn/presentation/screens/study_hall/study_desk_screen.dart';
 import 'package:simo_learn/core/global/global_data.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
 import 'package:simo_learn/data/notifications/task_reminder_service.dart';
@@ -18,7 +19,6 @@ import 'package:simo_learn/presentation/screens/tasks/task_details_sheet.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_mapping.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
-import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/checklists_popup.dart';
@@ -1367,7 +1367,7 @@ $kTaskFields
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => TaskTimerScreen(
+              builder: (_) => StudyDeskScreen(
                 task: task,
                 onPop: _reloadActiveView,
               ),

@@ -85,6 +85,7 @@ dependencies:
   # 0.5.x line webview_flutter already resolves.
   web: ^0.5.1
   url_launcher: ^6.3.3
+  just_audio: ^0.9.44
 
 dev_dependencies:
   flutter_test:
@@ -115,6 +116,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/sounds/
   fonts:
     - family: IRANSansVar
       fonts:

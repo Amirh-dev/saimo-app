@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
+import 'package:simo_learn/presentation/screens/study_hall/study_desk_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/widgets/_widgets.dart';
 import 'package:simo_learn/utils/colors.dart';
@@ -53,7 +54,7 @@ class TaskTimerBanner extends StatelessWidget {
 
     navigator.push(
       MaterialPageRoute(
-        builder: (_) => TaskTimerScreen(task: task, onPop: () {}),
+        builder: (_) => StudyDeskScreen(task: task, onPop: () {}),
       ),
     );
   }

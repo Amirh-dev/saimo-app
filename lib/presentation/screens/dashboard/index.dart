@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:simo_learn/data/graphql/graphql_repository.dart';
+import 'package:simo_learn/presentation/screens/study_hall/study_desk_screen.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_cubit.dart';
 import 'package:simo_learn/features/dashboard/cubit/dashboard_state.dart';
 import 'package:simo_learn/features/dashboard/dashboard_repository.dart';
@@ -28,7 +29,6 @@ import 'package:simo_learn/presentation/screens/tasks/task_report_popup.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_repository.dart';
 import 'package:simo_learn/presentation/screens/tasks/tasks_api.dart';
 import 'package:simo_learn/presentation/screens/tasks/weekly/plan_sheets.dart';
-import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/widgets/app_bottom_navigation_bar.dart';
 import 'package:simo_learn/presentation/widgets/app_exit_guard.dart';
@@ -185,7 +185,7 @@ Future<void> _openTaskDetails(
 
   switch (action) {
     case TaskSheetAction.primary:
-      await context.to<void>(TaskTimerScreen(task: details, onPop: () {}));
+      await context.to<void>(StudyDeskScreen(task: details, onPop: () {}));
     case TaskSheetAction.edit:
       final edited = await context.to<Map<String, dynamic>>(
         AddTimedTaskScreen(task: details),
@@ -313,7 +313,7 @@ class _DashboardContent extends StatelessWidget {
                           AddTimedTaskScreen(onBack: cubit.load),
                         ),
                         onOpenTask: (task) => context.to<void>(
-                          TaskTimerScreen(task: task.toMap(), onPop: () {}),
+                          StudyDeskScreen(task: task.toMap(), onPop: () {}),
                         ),
                         onTaskDetails: (task) =>
                             _openTaskDetails(context, task),

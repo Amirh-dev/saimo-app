@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:persian_datetime_picker/persian_datetime_picker.dart';
 import 'package:simo_learn/presentation/screens/app_tabs_shell.dart';
+import 'package:simo_learn/presentation/screens/study_hall/study_desk_screen.dart';
 import 'package:simo_learn/presentation/screens/consultants/active_counselor_store.dart';
 import 'package:simo_learn/app/routes.dart';
 import 'package:simo_learn/data/activity/app_activity_reporter.dart';
@@ -44,7 +45,6 @@ import 'package:simo_learn/presentation/screens/tasks/simo_guard.dart';
 import 'package:simo_learn/presentation/screens/tasks/add_task/index.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_alarm_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_report_prompt.dart';
-import 'package:simo_learn/presentation/screens/tasks/task_timer_screen.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_service.dart';
 import 'package:simo_learn/presentation/screens/tasks/task_timer_banner.dart';
 import 'package:simo_learn/presentation/widgets/app_page_transitions.dart';
@@ -586,7 +586,7 @@ class _LiveInboxConnectorState extends State<_LiveInboxConnector>
     if (current == null) return;
     unawaited(current.push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => TaskTimerScreen(task: task.toMap(), onPop: () {}),
+        builder: (_) => StudyDeskScreen(task: task.toMap(), onPop: () {}),
       ),
     ));
   }
